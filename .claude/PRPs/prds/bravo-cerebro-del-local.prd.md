@@ -155,7 +155,7 @@ Un restaurante puede, en una web app responsive y por tenant aislado: cargar la 
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 |---|-------|-------------|--------|----------|---------|----------|
-| 1 | Fundaciones | Scaffold Clean Arch + DI container, Postgres, multi-tenant (`tenant_id`+RLS), auth/roles (RBAC), config por tenant | pending | - | - | - |
+| 1 | Fundaciones + Identidad | Scaffold Clean Arch + DI, Postgres multi-tenant (`tenant_id`+RLS), config + **sistema de login completo** (JWT access+refresh, hash, recuperación/cambio por SMTP, verificación email, invitaciones, RBAC, rate-limit, audit) | in-progress | - | - | `.claude/PRPs/plans/fase-1-fundaciones.plan.md` |
 | 2 | Comandas + KDS | Dominio Comanda/Mesa/Item, flujo mozo→cocina, KDS web | pending | - | 1 | - |
 | 3 | Cobro + Pagos | Port `PasarelaDePago`; adapters MP, QR interoperable (T3.0), Payway/posnet; captura webhooks + conciliación batch; entidad `Pago`; match pago↔comanda | pending | with 5, 6, 7 | 2 | - |
 | 4 | Facturación AFIP | Port `FacturacionElectronica`, adapter AFIP (WSAA/WSFEv1), tipos A/B/C, CAE | pending | - | 3 | - |
@@ -236,7 +236,7 @@ Un restaurante puede, en una web app responsive y por tenant aislado: cargar la 
 | Dispositivos / cliente | Web app responsive (escritorio+tablet+móvil) + RBAC, BYOD | App nativa desktop (Electron/Tauri) / hardware dedicado | Un solo código, cero hardware que comprar |
 | Posicionamiento | IA conversacional | Alertas proactivas | Maxirest ya comunica alertas; lo conversacional es el gap |
 | Frontend design system | Cult UI vía shadcn MCP | Componentes a mano | Velocidad y consistencia visual |
-| Idioma del dominio | Español (ubiquitous language) | Inglés | Dominio rioplatense; plomería técnica en inglés |
+| Idioma | Backend 100% en inglés (código, endpoints, DB) · UX en español | Dominio en español | Código consistente en inglés; el usuario ve español (emails, textos, `message` de error en ES) |
 
 ---
 

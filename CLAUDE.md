@@ -40,7 +40,9 @@ Backend en **Clean Architecture + Ports & Adapters + SOLID + Repository + DI por
 
 ## Convenciones
 
-- **Ubiquitous language en español** para el dominio (`Comanda`, `Mesa`, `Mozo`, `Turno`, `Comprobante`); plomería técnica en inglés.
+- **Idioma del código — backend 100% en inglés:** clases, funciones, variables, **endpoints**, tablas/columnas de DB y comentarios. Sin excepciones.
+- **Idioma de la UX — español:** contenido de emails y textos mostrados al usuario en español. Los errores de API devuelven un `code` en inglés (estable, ej. `invalid_credentials`) + un `message` en español para mostrar.
+- **Glosario dominio (ES → código EN):** Comanda=`Order`, Ítem=`OrderItem`, Mesa=`Table`, Mozo=`Waiter`, Turno=`Shift`, Comprobante=`Invoice`, Facturación=`Invoicing`, Pago=`Payment`, Pasarela=`PaymentGateway`, Empleado=`Employee`, Fichaje=`TimeClock`, Stock/Insumo=`Inventory`/`Ingredient`, Receta=`Recipe`, Proveedor=`Supplier`, Reserva=`Reservation`, No-show=`NoShow`, Copiloto=`Copilot`. Roles: `OWNER/MANAGER/WAITER/KITCHEN/CASHIER`.
 - Cobertura de tests **80%+** en dominio y casos de uso.
 
 ## Flujo de trabajo (spec-driven / PRP)

@@ -358,7 +358,7 @@ Meta de cobertura: **80%+** en dominio y casos de uso (la lógica crítica).
 
 ## 11. Convenciones
 
-- **Ubiquitous language en español** para el dominio: `Comanda`, `Mesa`, `Mozo`, `Turno`, `Comprobante`. Plomería técnica en inglés (`Repository`, `session_factory`). No mezclar idiomas dentro de un mismo concepto.
+- **Idioma — backend 100% en inglés:** todo el código (clases, funciones, variables, **endpoints**, tablas/columnas de DB, comentarios) en inglés. La **UX va en español** (emails y textos al usuario); los errores de API devuelven `code` en inglés + `message` en español. Glosario ES→EN en `CLAUDE.md`. **Nota:** los snippets de esta guía son ilustrativos del PATRÓN/estructura — los identificadores reales se escriben en inglés según el glosario (ej. `Comanda`→`Order`, `CerrarYFacturar`→`CloseAndInvoice`).
 - **Tres cosas distintas, nunca las confundas:**
   - *Entidad de dominio* (`Comanda`) — reglas de negocio.
   - *Modelo ORM* (`ComandaORM`) — mapeo a tablas.
