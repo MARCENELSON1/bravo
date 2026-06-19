@@ -1,0 +1,70 @@
+[project]
+name = "bravo-backend"
+version = "0.1.0"
+description = "BRAVO — multi-tenant hospitality operations backend (FastAPI + Clean Architecture)"
+authors = [{ name = "BRAVO" }]
+requires-python = ">=3.12,<4.0"
+readme = "README.md"
+dependencies = [
+    "fastapi>=0.115,<1.0",
+    "uvicorn[standard]>=0.34,<1.0",
+    "sqlalchemy[asyncio]>=2.0,<3.0",
+    # greenlet is required by SQLAlchemy's async engine; declared explicitly
+    # because its marker excludes macOS arm64 (platform_machine == "arm64").
+    "greenlet>=3.1",
+    "asyncpg>=0.30,<1.0",
+    "alembic>=1.14,<2.0",
+    "pydantic>=2.10,<3.0",
+    "pydantic-settings>=2.7,<3.0",
+    "dependency-injector>=4.43,<5.0",
+    "pyjwt>=2.10,<3.0",
+    "argon2-cffi>=23.1",
+    "aiosmtplib>=3.0,<4.0",
+    "python-multipart>=0.0.20",
+    "email-validator>=2.2",
+]
+
+[tool.poetry]
+packages = [{ include = "app" }]
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8.3"
+pytest-asyncio = ">=0.25"
+pytest-cov = ">=6.0"
+httpx = ">=0.28"
+ruff = ">=0.9"
+mypy = ">=1.14"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["app/domain", "app/application"]
+branch = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.ruff.lint.per-file-ignores]
+# FastAPI dependency injection requires calls (Depends/Provide) in arg defaults.
+"app/presentation/**" = ["B008"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+no_implicit_optional = true
+warn_redundant_casts = true
+exclude = ['(^|/)alembic/']
+
+[build-system]
+requires = ["poetry-core>=2.0"]
+build-backend = "poetry.core.masonry.api"
