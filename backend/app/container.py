@@ -18,14 +18,28 @@ from app.application.identity.refresh_token import RefreshAccessToken
 from app.application.identity.request_password_reset import RequestPasswordReset
 from app.application.identity.reset_password import ResetPassword
 from app.application.identity.verify_email import VerifyEmail
+from app.application.order.use_cases import (
+    AddOrderItem,
+    AdvanceOrder,
+    CreateOrder,
+    GetKdsOrders,
+    GetOrder,
+    ListOrders,
+    SendOrder,
+)
+from app.application.product.use_cases import CreateProduct, ListProducts
+from app.application.table.use_cases import CreateTable, ListTables
 from app.config import Settings
 from app.infrastructure.email.console_sender import ConsoleEmailSender
 from app.infrastructure.email.smtp_sender import SmtpEmailSender
 from app.infrastructure.persistence.audit_repo import SqlAlchemyAuditRepository
 from app.infrastructure.persistence.database import Database
 from app.infrastructure.persistence.invitation_repo import SqlAlchemyInvitationRepository
+from app.infrastructure.persistence.order_repo import SqlAlchemyOrderRepository
+from app.infrastructure.persistence.product_repo import SqlAlchemyProductRepository
 from app.infrastructure.persistence.refresh_token_repo import SqlAlchemyRefreshTokenRepository
 from app.infrastructure.persistence.reset_token_repo import SqlAlchemyResetTokenRepository
+from app.infrastructure.persistence.table_repo import SqlAlchemyTableRepository
 from app.infrastructure.persistence.tenant_repo import SqlAlchemyTenantRepository
 from app.infrastructure.persistence.user_repo import SqlAlchemyUserRepository
 from app.infrastructure.persistence.verification_token_repo import (
@@ -71,6 +85,15 @@ class Container(containers.DeclarativeContainer):
     )
     user_repository = providers.Factory(
         SqlAlchemyUserRepository, session_factory=db.provided.session
+    )
+    table_repository = providers.Factory(
+        SqlAlchemyTableRepository, session_factory=db.provided.session
+    )
+    product_repository = providers.Factory(
+        SqlAlchemyProductRepository, session_factory=db.provided.session
+    )
+    order_repository = providers.Factory(
+        SqlAlchemyOrderRepository, session_factory=db.provided.session
     )
     refresh_token_repository = providers.Factory(
         SqlAlchemyRefreshTokenRepository, session_factory=db.provided.session
@@ -188,4 +211,49 @@ class Container(containers.DeclarativeContainer):
         tokens=token_service,
         audit=audit_repository,
         tenant_context=tenant_context,
+    )
+
+    # --- Fase 2: comandas / KDS ---
+    create_product = providers.Factory(
+        CreateProduct,
+        products=product_repository,
+        tenants=tenant_repository,
+        tenant_context=tenant_context,
+    )
+    list_products = providers.Factory(
+        ListProducts, products=product_repository, tenant_context=tenant_context
+    )
+    create_table = providers.Factory(
+        CreateTable, tables=table_repository, tenant_context=tenant_context
+    )
+    list_tables = providers.Factory(
+        ListTables, tables=table_repository, tenant_context=tenant_context
+    )
+    create_order = providers.Factory(
+        CreateOrder,
+        orders=order_repository,
+        tables=table_repository,
+        tenants=tenant_repository,
+        tenant_context=tenant_context,
+    )
+    get_order = providers.Factory(
+        GetOrder, orders=order_repository, tenant_context=tenant_context
+    )
+    add_order_item = providers.Factory(
+        AddOrderItem,
+        orders=order_repository,
+        products=product_repository,
+        tenant_context=tenant_context,
+    )
+    send_order = providers.Factory(
+        SendOrder, orders=order_repository, tenant_context=tenant_context
+    )
+    advance_order = providers.Factory(
+        AdvanceOrder, orders=order_repository, tenant_context=tenant_context
+    )
+    list_orders = providers.Factory(
+        ListOrders, orders=order_repository, tenant_context=tenant_context
+    )
+    get_kds_orders = providers.Factory(
+        GetKdsOrders, orders=order_repository, tenant_context=tenant_context
     )
