@@ -38,6 +38,24 @@ export function HomePage() {
             </div>
           </dl>
 
+          {session.role !== "KITCHEN" && session.role !== "CASHIER" ? (
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/app/floor">Comandas (mesas)</Link>
+            </Button>
+          ) : null}
+
+          {session.role !== "WAITER" && session.role !== "CASHIER" ? (
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/app/kds">Cocina (KDS)</Link>
+            </Button>
+          ) : null}
+
+          {canInvite ? (
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/app/products">Productos</Link>
+            </Button>
+          ) : null}
+
           {canInvite ? (
             <Button asChild variant="outline" className="w-full">
               <Link to="/app/invite">Invitar a tu equipo</Link>

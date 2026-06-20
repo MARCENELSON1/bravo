@@ -10,7 +10,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.container import Container
-from app.presentation.api.v1 import auth, ping, tenants, users
+from app.presentation.api.v1 import auth, kds, orders, ping, products, tables, tenants, users
 from app.presentation.errors import register_error_handlers
 
 
@@ -30,6 +30,10 @@ def create_app() -> FastAPI:
     app.include_router(tenants.router, prefix="/api/v1")
     app.include_router(users.router, prefix="/api/v1")
     app.include_router(ping.router, prefix="/api/v1")
+    app.include_router(tables.router, prefix="/api/v1")
+    app.include_router(products.router, prefix="/api/v1")
+    app.include_router(orders.router, prefix="/api/v1")
+    app.include_router(kds.router, prefix="/api/v1")
 
     @app.middleware("http")
     async def security_headers(

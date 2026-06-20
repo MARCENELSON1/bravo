@@ -17,6 +17,14 @@ from app.domain.identity.exceptions import (
     InvalidToken,
     TokenAlreadyUsed,
 )
+from app.domain.order.exceptions import EmptyOrder, InvalidOrderTransition, OrderNotFound
+from app.domain.product.exceptions import InactiveProduct, ProductNotFound
+from app.domain.shared.exceptions import (
+    CurrencyMismatch,
+    InvalidMoneyAmount,
+    UnsupportedCurrency,
+)
+from app.domain.table.exceptions import TableNotFound
 from app.domain.tenant.exceptions import TenantAlreadyExists, TenantNotFound
 from app.domain.user.exceptions import (
     EmailAlreadyRegistered,
@@ -45,6 +53,16 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (TokenAlreadyUsed, 409),
     (InvalidInvitation, 400),
     (InvalidEmail, 422),
+    # Fase 2 — comandas/productos/mesas + Money
+    (TableNotFound, 404),
+    (ProductNotFound, 404),
+    (OrderNotFound, 404),
+    (InactiveProduct, 409),
+    (InvalidOrderTransition, 409),
+    (EmptyOrder, 422),
+    (UnsupportedCurrency, 422),
+    (CurrencyMismatch, 422),
+    (InvalidMoneyAmount, 422),
 ]
 
 

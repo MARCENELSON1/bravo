@@ -10,6 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     DateTime,
     ForeignKey,
@@ -32,6 +33,8 @@ class TenantORM(Base):
     id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
     slug: Mapped[str] = mapped_column(String(63), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(120))
+    country: Mapped[str] = mapped_column(String(2), server_default="AR")
+    currency: Mapped[str] = mapped_column(String(3), server_default="ARS")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -146,6 +149,78 @@ class AuthAuditORM(Base):
     user_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True)
     event: Mapped[str] = mapped_column(String(40))
     detail: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+# --- Fase 2: comandas (tenant-scoped) -------------------------------------
+
+
+class TableORM(Base):
+    __tablename__ = "tables"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    number: Mapped[int] = mapped_column(Integer)
+    name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class ProductORM(Base):
+    __tablename__ = "products"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    price_amount: Mapped[int] = mapped_column(BigInteger)
+    price_currency: Mapped[str] = mapped_column(String(3))
+    category: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class OrderORM(Base):
+    __tablename__ = "orders"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    table_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
+    waiter_id: Mapped[str] = mapped_column(Uuid(as_uuid=False))
+    status: Mapped[str] = mapped_column(String(20), default="OPEN", index=True)
+    currency: Mapped[str] = mapped_column(String(3))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class OrderItemORM(Base):
+    __tablename__ = "order_items"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    order_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("orders.id", ondelete="CASCADE"), index=True
+    )
+    product_id: Mapped[str] = mapped_column(Uuid(as_uuid=False))
+    name: Mapped[str] = mapped_column(String(120))
+    unit_price_amount: Mapped[int] = mapped_column(BigInteger)
+    quantity: Mapped[int] = mapped_column(Integer)
+    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    position: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

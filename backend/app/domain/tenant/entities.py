@@ -11,4 +11,6 @@ class Tenant:
     id: str
     slug: str
     name: str
+    country: str = "AR"
+    currency: str = "ARS"
     created_at: datetime | None = None

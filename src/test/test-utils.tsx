@@ -34,7 +34,12 @@ export function renderWithProviders(
   ui: ReactNode,
   { authApi, route = "/" }: { authApi?: Partial<AuthApi>; route?: string } = {}
 ) {
-  const services: Services = { authApi: makeFakeAuthApi(authApi) }
+  const services: Services = {
+    authApi: makeFakeAuthApi(authApi),
+    ordersApi: {} as unknown as Services["ordersApi"],
+    productsApi: {} as unknown as Services["productsApi"],
+    tablesApi: {} as unknown as Services["tablesApi"],
+  }
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })

@@ -1,5 +1,9 @@
 # BRAVO — El cerebro del local
 
+> ⚠️ **SUPERSEDED (2026-06-20).** Esta PRD quedó reemplazada por la PRD unificada
+> `.claude/PRPs/prds/nucleo.prd.md` (fusión con "Ratiot": un producto, dos capas
+> captura+inteligencia, motor-primero). Se conserva como referencia histórica.
+
 > SaaS multi-tenant de operaciones para PyMEs de hospitality (restaurantes primero; hoteles/turismo en fases futuras). Wedge: comandas digitales + cobro/captura de pagos + facturación AFIP + fichaje + **copiloto IA conversacional en español**.
 
 ## Problem Statement

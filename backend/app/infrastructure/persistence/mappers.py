@@ -14,6 +14,11 @@ from app.domain.identity.tokens import (
     PasswordResetToken,
     RefreshToken,
 )
+from app.domain.order.entities import Order, OrderItem
+from app.domain.order.value_objects import OrderStatus
+from app.domain.product.entities import Product
+from app.domain.shared.money import Money
+from app.domain.table.entities import Table
 from app.domain.tenant.entities import Tenant
 from app.domain.user.entities import User
 from app.domain.user.value_objects import Email, Role
@@ -21,8 +26,12 @@ from app.infrastructure.persistence.models import (
     AuthAuditORM,
     EmailVerificationTokenORM,
     InvitationORM,
+    OrderItemORM,
+    OrderORM,
     PasswordResetTokenORM,
+    ProductORM,
     RefreshTokenORM,
+    TableORM,
     TenantORM,
     UserORM,
 )
@@ -31,11 +40,24 @@ from app.infrastructure.persistence.models import (
 
 
 def tenant_to_domain(row: TenantORM) -> Tenant:
-    return Tenant(id=row.id, slug=row.slug, name=row.name, created_at=row.created_at)
+    return Tenant(
+        id=row.id,
+        slug=row.slug,
+        name=row.name,
+        country=row.country,
+        currency=row.currency,
+        created_at=row.created_at,
+    )
 
 
 def tenant_to_orm(tenant: Tenant) -> TenantORM:
-    return TenantORM(id=tenant.id, slug=tenant.slug, name=tenant.name)
+    return TenantORM(
+        id=tenant.id,
+        slug=tenant.slug,
+        name=tenant.name,
+        country=tenant.country,
+        currency=tenant.currency,
+    )
 
 
 # --- User -----------------------------------------------------------------
@@ -201,4 +223,106 @@ def audit_to_domain(row: AuthAuditORM) -> AuthAuditEntry:
         user_id=row.user_id,
         detail=row.detail,
         created_at=row.created_at,
+    )
+
+
+# --- Table ----------------------------------------------------------------
+
+
+def table_to_domain(row: TableORM) -> Table:
+    return Table(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        number=row.number,
+        name=row.name,
+        active=row.active,
+        created_at=row.created_at,
+    )
+
+
+def table_to_orm(table: Table) -> TableORM:
+    return TableORM(
+        id=table.id,
+        tenant_id=table.tenant_id,
+        number=table.number,
+        name=table.name,
+        active=table.active,
+    )
+
+
+# --- Product --------------------------------------------------------------
+
+
+def product_to_domain(row: ProductORM) -> Product:
+    return Product(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        name=row.name,
+        price=Money(row.price_amount, row.price_currency),
+        category=row.category,
+        active=row.active,
+        created_at=row.created_at,
+    )
+
+
+def product_to_orm(product: Product) -> ProductORM:
+    return ProductORM(
+        id=product.id,
+        tenant_id=product.tenant_id,
+        name=product.name,
+        price_amount=product.price.amount,
+        price_currency=product.price.currency,
+        category=product.category,
+        active=product.active,
+    )
+
+
+# --- Order (aggregate: order + items) -------------------------------------
+
+
+def order_to_domain(row: OrderORM, item_rows: list[OrderItemORM]) -> Order:
+    return Order(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        table_id=row.table_id,
+        waiter_id=row.waiter_id,
+        currency=row.currency,
+        status=OrderStatus(row.status),
+        items=[
+            OrderItem(
+                id=item.id,
+                product_id=item.product_id,
+                name=item.name,
+                unit_price=Money(item.unit_price_amount, row.currency),
+                quantity=item.quantity,
+                note=item.note,
+            )
+            for item in item_rows
+        ],
+        created_at=row.created_at,
+    )
+
+
+def order_to_orm(order: Order) -> OrderORM:
+    return OrderORM(
+        id=order.id,
+        tenant_id=order.tenant_id,
+        table_id=order.table_id,
+        waiter_id=order.waiter_id,
+        status=order.status.value,
+        currency=order.currency,
+    )
+
+
+def order_item_to_orm(item: OrderItem, order: Order, position: int) -> OrderItemORM:
+    return OrderItemORM(
+        id=item.id,
+        tenant_id=order.tenant_id,
+        order_id=order.id,
+        product_id=item.product_id,
+        name=item.name,
+        unit_price_amount=item.unit_price.amount,
+        quantity=item.quantity,
+        note=item.note,
+        position=position,
     )
