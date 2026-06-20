@@ -27,15 +27,23 @@ from app.application.order.use_cases import (
     ListOrders,
     SendOrder,
 )
+from app.application.payment.use_cases import (
+    ListExpenses,
+    ListOrderPayments,
+    RegisterExpense,
+    RegisterPayment,
+)
 from app.application.product.use_cases import CreateProduct, ListProducts
 from app.application.table.use_cases import CreateTable, ListTables
 from app.config import Settings
 from app.infrastructure.email.console_sender import ConsoleEmailSender
 from app.infrastructure.email.smtp_sender import SmtpEmailSender
+from app.infrastructure.payments.manual_gateway import ManualPaymentGateway
 from app.infrastructure.persistence.audit_repo import SqlAlchemyAuditRepository
 from app.infrastructure.persistence.database import Database
 from app.infrastructure.persistence.invitation_repo import SqlAlchemyInvitationRepository
 from app.infrastructure.persistence.order_repo import SqlAlchemyOrderRepository
+from app.infrastructure.persistence.payment_repo import SqlAlchemyPaymentRepository
 from app.infrastructure.persistence.product_repo import SqlAlchemyProductRepository
 from app.infrastructure.persistence.refresh_token_repo import SqlAlchemyRefreshTokenRepository
 from app.infrastructure.persistence.reset_token_repo import SqlAlchemyResetTokenRepository
@@ -256,4 +264,30 @@ class Container(containers.DeclarativeContainer):
     )
     get_kds_orders = providers.Factory(
         GetKdsOrders, orders=order_repository, tenant_context=tenant_context
+    )
+
+    # --- Fase 3: pagos (ingresos/egresos) ---
+    payment_repository = providers.Factory(
+        SqlAlchemyPaymentRepository, session_factory=db.provided.session
+    )
+    payment_gateway = providers.Singleton(ManualPaymentGateway)
+    register_payment = providers.Factory(
+        RegisterPayment,
+        payments=payment_repository,
+        orders=order_repository,
+        gateway=payment_gateway,
+        tenant_context=tenant_context,
+    )
+    register_expense = providers.Factory(
+        RegisterExpense,
+        payments=payment_repository,
+        tenants=tenant_repository,
+        gateway=payment_gateway,
+        tenant_context=tenant_context,
+    )
+    list_order_payments = providers.Factory(
+        ListOrderPayments, payments=payment_repository, tenant_context=tenant_context
+    )
+    list_expenses = providers.Factory(
+        ListExpenses, payments=payment_repository, tenant_context=tenant_context
     )

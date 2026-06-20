@@ -16,6 +16,8 @@ from app.domain.identity.tokens import (
 )
 from app.domain.order.entities import Order, OrderItem
 from app.domain.order.value_objects import OrderStatus
+from app.domain.payment.entities import Payment
+from app.domain.payment.value_objects import PaymentDirection, PaymentMethod, PaymentStatus
 from app.domain.product.entities import Product
 from app.domain.shared.money import Money
 from app.domain.table.entities import Table
@@ -29,6 +31,7 @@ from app.infrastructure.persistence.models import (
     OrderItemORM,
     OrderORM,
     PasswordResetTokenORM,
+    PaymentORM,
     ProductORM,
     RefreshTokenORM,
     TableORM,
@@ -325,4 +328,41 @@ def order_item_to_orm(item: OrderItem, order: Order, position: int) -> OrderItem
         quantity=item.quantity,
         note=item.note,
         position=position,
+    )
+
+
+# --- Payment --------------------------------------------------------------
+
+
+def payment_to_domain(row: PaymentORM) -> Payment:
+    return Payment(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        direction=PaymentDirection(row.direction),
+        amount=Money(row.amount, row.currency),
+        method=PaymentMethod(row.method),
+        status=PaymentStatus(row.status),
+        order_id=row.order_id,
+        category=row.category,
+        counterparty=row.counterparty,
+        description=row.description,
+        external_ref=row.external_ref,
+        created_at=row.created_at,
+    )
+
+
+def payment_to_orm(payment: Payment) -> PaymentORM:
+    return PaymentORM(
+        id=payment.id,
+        tenant_id=payment.tenant_id,
+        direction=payment.direction.value,
+        amount=payment.amount.amount,
+        currency=payment.amount.currency,
+        method=payment.method.value,
+        status=payment.status.value,
+        order_id=payment.order_id,
+        category=payment.category,
+        counterparty=payment.counterparty,
+        description=payment.description,
+        external_ref=payment.external_ref,
     )

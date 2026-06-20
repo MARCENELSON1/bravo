@@ -11,4 +11,5 @@ class OrderStatus(StrEnum):
     PREPARING = "PREPARING"
     READY = "READY"
     SERVED = "SERVED"
+    PAID = "PAID"
     CANCELLED = "CANCELLED"
