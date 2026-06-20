@@ -28,6 +28,7 @@ from app.application.order.use_cases import (
     SendOrder,
 )
 from app.application.payment.use_cases import (
+    ConfirmGatewayPayment,
     ListExpenses,
     ListOrderPayments,
     RegisterExpense,
@@ -39,6 +40,7 @@ from app.config import Settings
 from app.infrastructure.email.console_sender import ConsoleEmailSender
 from app.infrastructure.email.smtp_sender import SmtpEmailSender
 from app.infrastructure.payments.manual_gateway import ManualPaymentGateway
+from app.infrastructure.payments.mercadopago_gateway import MercadoPagoGateway
 from app.infrastructure.persistence.audit_repo import SqlAlchemyAuditRepository
 from app.infrastructure.persistence.database import Database
 from app.infrastructure.persistence.invitation_repo import SqlAlchemyInvitationRepository
@@ -270,12 +272,31 @@ class Container(containers.DeclarativeContainer):
     payment_repository = providers.Factory(
         SqlAlchemyPaymentRepository, session_factory=db.provided.session
     )
-    payment_gateway = providers.Singleton(ManualPaymentGateway)
+    # Online gateway (MercadoPago): also serves the inbound webhook regardless of
+    # which gateway is selected for charging, so notifications are always handled.
+    mercadopago_gateway = providers.Singleton(
+        MercadoPagoGateway,
+        access_token=config.provided.mp_access_token,
+        webhook_secret=config.provided.mp_webhook_secret,
+        notification_url=config.provided.mp_notification_url,
+    )
+    payment_gateway = providers.Selector(
+        config.provided.payment_gateway,
+        manual=providers.Singleton(ManualPaymentGateway),
+        mercadopago=mercadopago_gateway,
+    )
     register_payment = providers.Factory(
         RegisterPayment,
         payments=payment_repository,
         orders=order_repository,
         gateway=payment_gateway,
+        tenant_context=tenant_context,
+    )
+    confirm_gateway_payment = providers.Factory(
+        ConfirmGatewayPayment,
+        payments=payment_repository,
+        orders=order_repository,
+        notifications=mercadopago_gateway,
         tenant_context=tenant_context,
     )
     register_expense = providers.Factory(

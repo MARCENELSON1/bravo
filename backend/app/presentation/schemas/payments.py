@@ -29,3 +29,6 @@ class PaymentResponse(BaseModel):
     category: str | None
     counterparty: str | None
     description: str | None
+    # Present only for online charges still awaiting confirmation: the payer is
+    # redirected here (a Checkout Pro link, also usable as a QR).
+    checkout_url: str | None = None

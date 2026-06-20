@@ -28,6 +28,11 @@ class Payment:
     description: str | None = None
     external_ref: str | None = None
     created_at: datetime | None = None
+    # Transient gateway artifacts (NOT persisted): online gateways set these so
+    # the caller can redirect the payer to a checkout link / render a QR. They
+    # stay None for already-collected payments (cash/card/transfer).
+    checkout_url: str | None = None
+    qr_data: str | None = None
 
     def confirm(self) -> None:
         self.status = PaymentStatus.CONFIRMED

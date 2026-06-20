@@ -3,18 +3,35 @@ from __future__ import annotations
 from uuid import uuid4
 
 from app.domain.identity.ports import TenantContext
-from app.domain.order.entities import Order
 from app.domain.order.exceptions import OrderNotFound
 from app.domain.order.repository import OrderRepository
 from app.domain.order.value_objects import OrderStatus
 from app.domain.payment.entities import Payment
-from app.domain.payment.exceptions import InvalidPaymentAmount
-from app.domain.payment.ports import PaymentGateway
+from app.domain.payment.exceptions import InvalidPaymentAmount, InvalidWebhookSignature
+from app.domain.payment.ports import PaymentGateway, PaymentNotificationGateway
 from app.domain.payment.repository import PaymentRepository
 from app.domain.payment.value_objects import PaymentDirection, PaymentMethod, PaymentStatus
 from app.domain.shared.money import Money
 from app.domain.tenant.exceptions import TenantNotFound
 from app.domain.tenant.repository import TenantRepository
+
+
+async def _settle_order(
+    payments: PaymentRepository, orders: OrderRepository, tenant_id: str, order_id: str
+) -> None:
+    """Mark the order PAID once confirmed INFLOW payments cover its total."""
+    order = await orders.get_by_id(tenant_id, order_id)
+    if order is None:
+        return
+    confirmed = await payments.list_by_order(tenant_id, order_id)
+    paid = sum(
+        p.amount.amount
+        for p in confirmed
+        if p.direction is PaymentDirection.INFLOW and p.status is PaymentStatus.CONFIRMED
+    )
+    if paid >= order.total().amount and order.status is not OrderStatus.PAID:
+        order.mark_paid()
+        await orders.save(order)
 
 
 class RegisterPayment:
@@ -53,19 +70,8 @@ class RegisterPayment:
         )
         payment = await self._gateway.charge(payment=payment)
         await self._payments.add(payment)
-        await self._reconcile(tenant_id, order)
+        await _settle_order(self._payments, self._orders, tenant_id, order.id)
         return payment
-
-    async def _reconcile(self, tenant_id: str, order: Order) -> None:
-        payments = await self._payments.list_by_order(tenant_id, order.id)
-        paid = sum(
-            p.amount.amount
-            for p in payments
-            if p.direction is PaymentDirection.INFLOW and p.status is PaymentStatus.CONFIRMED
-        )
-        if paid >= order.total().amount and order.status is not OrderStatus.PAID:
-            order.mark_paid()
-            await self._orders.save(order)
 
 
 class RegisterExpense:
@@ -133,3 +139,61 @@ class ListExpenses:
     async def execute(self, *, tenant_id: str) -> list[Payment]:
         self._tenant_context.set(tenant_id)
         return await self._payments.list_expenses(tenant_id)
+
+
+class ConfirmGatewayPayment:
+    """Handle an inbound gateway notification (webhook).
+
+    The endpoint is public and carries no user token, so this:
+      1. authenticates the request via the gateway signature;
+      2. asks the gateway for the authoritative status (never trusts the body);
+      3. routes to the tenant/payment via the ``external_reference`` we set when
+         charging (``"<tenant_id>:<payment_id>"``);
+      4. confirms (or fails) the payment idempotently and settles its order.
+    """
+
+    def __init__(
+        self,
+        payments: PaymentRepository,
+        orders: OrderRepository,
+        notifications: PaymentNotificationGateway,
+        tenant_context: TenantContext,
+    ) -> None:
+        self._payments = payments
+        self._orders = orders
+        self._notifications = notifications
+        self._tenant_context = tenant_context
+
+    async def execute(
+        self,
+        *,
+        data_id: str | None,
+        request_id: str | None,
+        ts: str | None,
+        received_hmac: str,
+    ) -> None:
+        if not self._notifications.verify_signature(
+            data_id=data_id, request_id=request_id, ts=ts, received_hmac=received_hmac
+        ):
+            raise InvalidWebhookSignature()
+        if data_id is None:
+            return
+        status = await self._notifications.fetch_status(gateway_payment_id=data_id)
+        ref = status.external_reference
+        if not ref or ":" not in ref:
+            return  # not one of ours — ignore quietly
+        tenant_id, payment_id = ref.split(":", 1)
+        self._tenant_context.set(tenant_id)
+        payment = await self._payments.get_by_id(tenant_id, payment_id)
+        if payment is None or payment.status is PaymentStatus.CONFIRMED:
+            return  # unknown or already settled → idempotent no-op
+        if status.status is PaymentStatus.CONFIRMED:
+            payment.confirm()
+            payment.external_ref = status.gateway_payment_id
+            await self._payments.save(payment)
+            if payment.order_id is not None:
+                await _settle_order(self._payments, self._orders, tenant_id, payment.order_id)
+        elif status.status is PaymentStatus.FAILED:
+            payment.fail()
+            payment.external_ref = status.gateway_payment_id
+            await self._payments.save(payment)

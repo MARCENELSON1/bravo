@@ -64,6 +64,17 @@ class Settings(BaseSettings):
     max_login_attempts: int = 5
     lockout_minutes: int = 15
 
+    # Payments gateway. "manual" confirms immediately (cash/card/transfer already
+    # collected). "mercadopago" creates a Checkout Pro link/QR for online charges
+    # (method MERCADOPAGO/QR) and confirms them via webhook. Secrets come from the
+    # environment only and are never logged.
+    payment_gateway: Literal["manual", "mercadopago"] = "manual"
+    mp_access_token: str = ""
+    mp_webhook_secret: str = ""
+    # Public URL MercadoPago posts notifications to (a tunnel in dev, the API
+    # host in prod). Empty → rely on the dashboard-configured webhook.
+    mp_notification_url: str = ""
+
     @model_validator(mode="after")
     def _reject_insecure_production(self) -> "Settings":
         """Fail fast on insecure configuration outside of dev."""
@@ -80,6 +91,11 @@ class Settings(BaseSettings):
             problems.append("EMAIL_TRANSPORT must be 'smtp' (console logs token links)")
         if not self.cookie_secure:
             problems.append("COOKIE_SECURE must be true (refresh cookie over HTTPS only)")
+        if self.payment_gateway == "mercadopago":
+            if not self.mp_access_token:
+                problems.append("MP_ACCESS_TOKEN must be set when PAYMENT_GATEWAY=mercadopago")
+            if not self.mp_webhook_secret:
+                problems.append("MP_WEBHOOK_SECRET must be set to validate webhooks")
         if problems:
             raise ValueError(f"Insecure settings for env={self.env!r}: " + "; ".join(problems))
         return self

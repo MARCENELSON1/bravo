@@ -11,3 +11,8 @@ class PaymentNotFound(DomainError):
 class InvalidPaymentAmount(DomainError):
     code = "invalid_payment_amount"
     message = "El monto del pago debe ser mayor a cero."
+
+
+class InvalidWebhookSignature(DomainError):
+    code = "invalid_webhook_signature"
+    message = "La firma de la notificación no es válida."

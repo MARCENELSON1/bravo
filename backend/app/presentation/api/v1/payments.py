@@ -29,6 +29,7 @@ def payment_to_response(payment: Payment) -> PaymentResponse:
         category=payment.category,
         counterparty=payment.counterparty,
         description=payment.description,
+        checkout_url=payment.checkout_url,
     )
 
 

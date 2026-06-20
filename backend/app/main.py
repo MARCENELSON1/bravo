@@ -21,6 +21,7 @@ from app.presentation.api.v1 import (
     tables,
     tenants,
     users,
+    webhooks,
 )
 from app.presentation.errors import register_error_handlers
 
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
     app.include_router(kds.router, prefix="/api/v1")
     app.include_router(payments.router, prefix="/api/v1")
     app.include_router(expenses.router, prefix="/api/v1")
+    app.include_router(webhooks.router, prefix="/api/v1")
 
     @app.middleware("http")
     async def security_headers(
