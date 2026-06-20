@@ -164,7 +164,7 @@ Dueño al cierre ve en pesos cómo le fue + una acción para mañana
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 |---|-------|-------------|--------|----------|---------|----------|
 | 1 | Fundaciones + Identidad | Clean Arch + DI, multi-tenant (`tenant_id`+RLS), login completo (JWT, cookie HttpOnly, RBAC, audit) + frontend de identidad | **complete** | - | - | `.claude/PRPs/plans/completed/fase-1-fundaciones.plan.md` + `frontend-identidad.plan.md` |
-| 2 | Comandas + KDS | Dominio `Order`/`Table`/`OrderItem`, flujo mozo→cocina, KDS web (restaurante) | in-progress | - | 1 | `.claude/PRPs/plans/fase-2-comandas-kds.plan.md` |
+| 2 | Comandas + KDS | Dominio `Order`/`Table`/`OrderItem`, flujo mozo→cocina, KDS web (restaurante) | complete | - | 1 | `.claude/PRPs/plans/completed/fase-2-comandas-kds.plan.md` |
 | 3 | Cobro + Pagos | Port `PaymentGateway`; adapters MP / QR (T3.0) / Payway; `Payment`; webhooks + conciliación batch; match pago↔comanda | pending | with 5,6 | 2 | - |
 | 4 | Facturación AFIP | Port `ElectronicInvoicing`, adapter AFIP (WSAA/WSFEv1), tipos A/B/C, CAE | pending | - | 3 | - |
 | 5 | Fichaje | `Shift`, horas/extras + mesas/ventas por mozo derivadas de la comanda | pending | with 3,6 | 2 | - |
