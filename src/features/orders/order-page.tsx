@@ -1,8 +1,10 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
+import type { OrderDTO, PaymentMethod } from "@/api/types-operations"
+import { useAuth } from "@/auth/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,18 +17,51 @@ import {
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { useAddItem, useOrder, useSendOrder } from "@/hooks/use-orders"
+import { useOrderPayments, useRegisterPayment } from "@/hooks/use-payments"
 import { useProducts } from "@/hooks/use-products"
 import { formatMoney } from "@/lib/money"
 
+const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: "CASH", label: "Efectivo" },
+  { value: "CARD", label: "Tarjeta" },
+  { value: "TRANSFER", label: "Transferencia" },
+  { value: "MERCADOPAGO", label: "MercadoPago (link/QR)" },
+  { value: "QR", label: "QR" },
+]
+const CHARGE_ROLES = ["CASHIER", "MANAGER", "OWNER"]
+const EDIT_ROLES = ["WAITER", "MANAGER", "OWNER"]
+
 export function OrderPage() {
   const { orderId = "" } = useParams()
-  const order = useOrder(orderId)
+  const { session } = useAuth()
+  const role = session?.role ?? ""
+  const canCharge = CHARGE_ROLES.includes(role)
+  const canEdit = EDIT_ROLES.includes(role)
+
+  // While an online charge is pending we poll the order until the webhook flips
+  // it to PAID.
+  const [awaitingOnline, setAwaitingOnline] = useState(false)
+  // While waiting for the webhook, poll until the order flips to PAID (the
+  // function form reads the latest data, so polling stops on its own).
+  const order = useOrder(orderId, {
+    refetchInterval: awaitingOnline
+      ? (query) => (query.state.data?.status === "PAID" ? false : 3000)
+      : false,
+  })
   const products = useProducts()
   const addItem = useAddItem(orderId)
   const sendOrder = useSendOrder()
   const navigate = useNavigate()
   const [productId, setProductId] = useState("")
   const [quantity, setQuantity] = useState("1")
+
+  const isPaid = order.data?.status === "PAID"
+  useEffect(() => {
+    // Fires once when the webhook flips the order to PAID while we were waiting.
+    if (isPaid && awaitingOnline) {
+      toast.success("¡Cobro confirmado! La comanda quedó pagada.")
+    }
+  }, [isPaid, awaitingOnline])
 
   if (order.isPending) {
     return (
@@ -89,7 +124,7 @@ export function OrderPage() {
         </Link>
       </div>
 
-      {isOpen ? (
+      {isOpen && canEdit ? (
         <Card>
           <CardHeader>
             <CardTitle>Agregar ítem</CardTitle>
@@ -151,11 +186,153 @@ export function OrderPage() {
         </CardContent>
       </Card>
 
-      {isOpen ? (
+      {isOpen && canEdit ? (
         <Button onClick={send} disabled={sendOrder.isPending || data.items.length === 0}>
           {sendOrder.isPending ? "Enviando…" : "Enviar a cocina"}
         </Button>
       ) : null}
+
+      {canCharge && data.status !== "CANCELLED" ? (
+        <CobroSection order={data} onPendingOnline={() => setAwaitingOnline(true)} />
+      ) : null}
     </div>
+  )
+}
+
+function CobroSection({
+  order,
+  onPendingOnline,
+}: {
+  order: OrderDTO
+  onPendingOnline: () => void
+}) {
+  const payments = useOrderPayments(order.id)
+  const registerPayment = useRegisterPayment(order.id)
+  const [method, setMethod] = useState<PaymentMethod>("CASH")
+  const [amount, setAmount] = useState("")
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
+
+  const list = payments.data ?? []
+  const confirmed = list
+    .filter((p) => p.direction === "INFLOW" && p.status === "CONFIRMED")
+    .reduce((sum, p) => sum + p.amount, 0)
+  const remaining = Math.max(order.total_amount - confirmed, 0)
+  const isPaid = order.status === "PAID"
+
+  const cobrar = () => {
+    // The cashier types pesos; the API works in minor units.
+    const minor = amount.trim() ? Math.round(Number(amount) * 100) : remaining
+    if (!Number.isFinite(minor) || minor < 1) {
+      toast.error("Ingresá un monto válido.")
+      return
+    }
+    setCheckoutUrl(null)
+    registerPayment.mutate(
+      { method, amount: minor },
+      {
+        onSuccess: (payment) => {
+          setAmount("")
+          if (payment.status === "PENDING" && payment.checkout_url) {
+            setCheckoutUrl(payment.checkout_url)
+            onPendingOnline()
+            toast.info("Generamos el link de pago. Compartilo o que escaneen el QR.")
+          } else {
+            toast.success("Cobro registrado.")
+          }
+        },
+        onError: (error) =>
+          toast.error(isApiError(error) ? error.message : "No pudimos registrar el cobro."),
+      }
+    )
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>Cobrar</span>
+          {isPaid ? (
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+              Pagada
+            </span>
+          ) : null}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {list.length > 0 ? (
+          <ul className="flex flex-col divide-y divide-border text-sm">
+            {list.map((p) => (
+              <li key={p.id} className="flex items-center justify-between py-1.5">
+                <span className="text-muted-foreground">
+                  {PAYMENT_METHODS.find((m) => m.value === p.method)?.label ?? p.method}
+                </span>
+                <span className="flex items-center gap-2">
+                  {formatMoney(p.amount, p.currency)}
+                  <span
+                    className={
+                      p.status === "CONFIRMED"
+                        ? "text-xs text-emerald-600"
+                        : "text-xs text-amber-600"
+                    }
+                  >
+                    {p.status === "CONFIRMED" ? "confirmado" : "pendiente"}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        {!isPaid ? (
+          <div className="flex items-center justify-between text-sm font-medium">
+            <span>Restante</span>
+            <span>{formatMoney(remaining, order.currency)}</span>
+          </div>
+        ) : null}
+
+        {!isPaid ? (
+          <div className="flex items-end gap-2">
+            <Select value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
+              <SelectTrigger className="flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_METHODS.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              placeholder={(remaining / 100).toFixed(2)}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="max-w-[8rem]"
+            />
+            <Button onClick={cobrar} disabled={registerPayment.isPending}>
+              {registerPayment.isPending ? "…" : "Cobrar"}
+            </Button>
+          </div>
+        ) : null}
+
+        {checkoutUrl && !isPaid ? (
+          <div className="flex flex-col gap-2 rounded-md border border-dashed p-3 text-sm">
+            <p className="text-muted-foreground">
+              Pago online generado. Esperando confirmación de MercadoPago…
+            </p>
+            <Button asChild variant="outline">
+              <a href={checkoutUrl} target="_blank" rel="noreferrer">
+                Abrir checkout / QR
+              </a>
+            </Button>
+            <Spinner className="size-4 self-center text-muted-foreground" />
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
   )
 }

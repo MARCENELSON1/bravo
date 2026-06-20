@@ -2,6 +2,7 @@ import { createContext, useContext } from "react"
 
 import type { AuthApi } from "@/api/auth-api"
 import type { OrdersApi } from "@/api/orders-api"
+import type { PaymentsApi } from "@/api/payments-api"
 import type { ProductsApi } from "@/api/products-api"
 import type { TablesApi } from "@/api/tables-api"
 
@@ -11,6 +12,7 @@ import type { TablesApi } from "@/api/tables-api"
 export interface Services {
   authApi: AuthApi
   ordersApi: OrdersApi
+  paymentsApi: PaymentsApi
   productsApi: ProductsApi
   tablesApi: TablesApi
 }

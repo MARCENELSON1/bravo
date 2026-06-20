@@ -37,6 +37,7 @@ export function renderWithProviders(
   const services: Services = {
     authApi: makeFakeAuthApi(authApi),
     ordersApi: {} as unknown as Services["ordersApi"],
+    paymentsApi: {} as unknown as Services["paymentsApi"],
     productsApi: {} as unknown as Services["productsApi"],
     tablesApi: {} as unknown as Services["tablesApi"],
   }

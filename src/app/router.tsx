@@ -9,6 +9,7 @@ import { InviteUserPage } from "@/features/identity/invite-user-page"
 import { LoginPage } from "@/features/identity/login-page"
 import { OnboardingPage } from "@/features/identity/onboarding-page"
 import { VerifyEmailPage } from "@/features/identity/verify-email-page"
+import { ExpensesPage } from "@/features/expenses/expenses-page"
 import { KdsPage } from "@/features/kds/kds-page"
 import { OrderPage } from "@/features/orders/order-page"
 import { ProductsPage } from "@/features/products/products-page"
@@ -26,7 +27,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "/app", element: <HomePage /> },
       {
-        element: <RequireRole allow={["WAITER", "MANAGER", "OWNER"]} />,
+        element: <RequireRole allow={["WAITER", "CASHIER", "MANAGER", "OWNER"]} />,
         children: [
           { path: "/app/floor", element: <FloorPage /> },
           { path: "/app/orders/:orderId", element: <OrderPage /> },
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "/app/invite", element: <InviteUserPage /> },
           { path: "/app/products", element: <ProductsPage /> },
+          { path: "/app/expenses", element: <ExpensesPage /> },
         ],
       },
     ],

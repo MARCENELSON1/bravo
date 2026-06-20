@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 import { AuthApi } from "@/api/auth-api"
 import { FetchHttpClient } from "@/api/http-client"
 import { OrdersApi } from "@/api/orders-api"
+import { PaymentsApi } from "@/api/payments-api"
 import { ProductsApi } from "@/api/products-api"
 import { TablesApi } from "@/api/tables-api"
 import { API_BASE_URL } from "@/lib/env"
@@ -23,6 +24,7 @@ export function ServicesProvider({
     return {
       authApi: new AuthApi(http),
       ordersApi: new OrdersApi(http),
+      paymentsApi: new PaymentsApi(http),
       productsApi: new ProductsApi(http),
       tablesApi: new TablesApi(http),
     }

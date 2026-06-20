@@ -38,7 +38,7 @@ export function HomePage() {
             </div>
           </dl>
 
-          {session.role !== "KITCHEN" && session.role !== "CASHIER" ? (
+          {session.role !== "KITCHEN" ? (
             <Button asChild variant="outline" className="w-full">
               <Link to="/app/floor">Comandas (mesas)</Link>
             </Button>
@@ -53,6 +53,12 @@ export function HomePage() {
           {canInvite ? (
             <Button asChild variant="outline" className="w-full">
               <Link to="/app/products">Productos</Link>
+            </Button>
+          ) : null}
+
+          {canInvite ? (
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/app/expenses">Egresos</Link>
             </Button>
           ) : null}
 

@@ -1,14 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import type { Query } from "@tanstack/react-query"
 
 import type { OrderAction } from "@/api/orders-api"
+import type { OrderDTO } from "@/api/types-operations"
 import { useServices } from "@/services/services-context"
 
-export function useOrder(orderId: string) {
+type OrderRefetchInterval = number | false | ((query: Query<OrderDTO>) => number | false)
+
+export function useOrder(orderId: string, options?: { refetchInterval?: OrderRefetchInterval }) {
   const { ordersApi } = useServices()
   return useQuery({
     queryKey: ["order", orderId],
     queryFn: () => ordersApi.get(orderId),
     enabled: Boolean(orderId),
+    // Used to poll for the webhook-driven transition to PAID after an online charge.
+    refetchInterval: options?.refetchInterval ?? false,
   })
 }
 

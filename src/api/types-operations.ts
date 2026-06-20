@@ -6,6 +6,7 @@ export type OrderStatus =
   | "PREPARING"
   | "READY"
   | "SERVED"
+  | "PAID"
   | "CANCELLED"
 
 export interface ProductDTO {
@@ -53,4 +54,38 @@ export interface OrderDTO {
 
 export interface CreateOrderResponse {
   order_id: string
+}
+
+// --- Fase 3: pagos (ingresos/egresos) ---
+
+export type PaymentMethod = "CASH" | "CARD" | "TRANSFER" | "MERCADOPAGO" | "QR"
+export type PaymentStatus = "PENDING" | "CONFIRMED" | "FAILED" | "REFUNDED"
+export type PaymentDirection = "INFLOW" | "OUTFLOW"
+
+export interface PaymentDTO {
+  id: string
+  direction: PaymentDirection
+  order_id: string | null
+  method: PaymentMethod
+  amount: number // minor units (e.g. centavos)
+  currency: string
+  status: PaymentStatus
+  category: string | null
+  counterparty: string | null
+  description: string | null
+  // Present only for online charges awaiting confirmation (MercadoPago link/QR).
+  checkout_url: string | null
+}
+
+export interface RegisterPaymentBody {
+  method: PaymentMethod
+  amount: number // minor units
+}
+
+export interface RegisterExpenseBody {
+  method: PaymentMethod
+  amount: number // minor units
+  category: string | null
+  counterparty: string | null
+  description: string | null
 }
