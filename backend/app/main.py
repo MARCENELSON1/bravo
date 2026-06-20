@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -36,6 +37,18 @@ def create_app() -> FastAPI:
 
     app = FastAPI(title="BRAVO API", version="0.1.0", lifespan=lifespan)
     app.state.container = container
+
+    # CORS for split-domain deploys (SPA and API on different origins). With no
+    # origins configured (dev), the SPA is same-origin via the Vite proxy.
+    origins = [o.strip() for o in container.config().cors_origins.split(",") if o.strip()]
+    if origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     register_error_handlers(app)
     app.include_router(auth.router, prefix="/api/v1")

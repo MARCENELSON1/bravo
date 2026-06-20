@@ -7,6 +7,7 @@ Create Date: 2026-06-18
 
 from __future__ import annotations
 
+import os
 from collections.abc import Sequence
 
 from alembic import op
@@ -23,7 +24,9 @@ depends_on: str | Sequence[str] | None = None
 # enforced for non-owner/non-superuser roles, so this is what makes the
 # tenant isolation policies bite. The password is for local dev only.
 APP_ROLE = "bravo_app"
-APP_ROLE_PASSWORD = "bravo_app"
+# Local dev default; in prod set APP_ROLE_PASSWORD to a strong secret (the app's
+# DATABASE_URL connects as this role). Use a quote/backslash-free value.
+APP_ROLE_PASSWORD = os.environ.get("APP_ROLE_PASSWORD", "bravo_app")
 
 # Sensitive tenant-scoped tables that get FORCE RLS + an isolation policy.
 # Token tables are looked up by their unique high-entropy hash (the capability)
@@ -46,6 +49,8 @@ def upgrade() -> None:
         $$;
         """
     )
+    # Keep the role password in sync with the environment (idempotent re-runs).
+    op.execute(f"ALTER ROLE {APP_ROLE} LOGIN PASSWORD '{APP_ROLE_PASSWORD}';")
     op.execute(f"GRANT USAGE ON SCHEMA public TO {APP_ROLE};")
     op.execute(
         f"GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO {APP_ROLE};"

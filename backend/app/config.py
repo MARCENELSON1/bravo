@@ -52,6 +52,12 @@ class Settings(BaseSettings):
     # Base URL used to build links inside emails (points to the frontend).
     app_base_url: str = "http://localhost:5173"
 
+    # CORS — comma-separated allowed origins (the SPA origin in a split-domain
+    # deploy). Empty in dev (the Vite proxy makes the SPA same-origin). When set,
+    # responses allow credentials so the HttpOnly refresh cookie works cross-site
+    # (which also requires COOKIE_SAMESITE=none).
+    cors_origins: str = ""
+
     # Refresh-token cookie. The refresh token is delivered as an HttpOnly cookie
     # scoped to the auth endpoints (the SPA never reads it); the access token
     # stays in the JSON body and is kept in memory. See README "Token storage".
@@ -87,7 +93,7 @@ class Settings(BaseSettings):
             problems.append("DATABASE_URL must be set explicitly")
         if not self.app_base_url.startswith("https://"):
             problems.append("APP_BASE_URL must use https")
-        if self.email_transport == "console":
+        if self.email_transport == "console" and self.env == "production":
             problems.append("EMAIL_TRANSPORT must be 'smtp' (console logs token links)")
         if not self.cookie_secure:
             problems.append("COOKIE_SECURE must be true (refresh cookie over HTTPS only)")
