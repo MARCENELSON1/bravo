@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.application.identity.authenticate import Authenticate
@@ -11,53 +11,101 @@ from app.application.identity.refresh_token import RefreshAccessToken
 from app.application.identity.request_password_reset import RequestPasswordReset
 from app.application.identity.reset_password import ResetPassword
 from app.application.identity.verify_email import VerifyEmail
+from app.config import Settings
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
 from app.presentation.deps import current_identity
 from app.presentation.schemas.auth import (
+    AccessTokenResponse,
     ChangePasswordRequest,
     ForgotPasswordRequest,
     LogoutRequest,
     MessageResponse,
     RefreshRequest,
     ResetPasswordRequest,
-    TokenResponse,
     VerifyEmailRequest,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/login", response_model=TokenResponse)
+def _set_refresh_cookie(response: Response, token: str, config: Settings) -> None:
+    """Store the refresh token in an HttpOnly cookie scoped to the auth routes."""
+    response.set_cookie(
+        key=config.refresh_cookie_name,
+        value=token,
+        max_age=config.refresh_token_ttl_days * 24 * 60 * 60,
+        httponly=True,
+        secure=config.cookie_secure,
+        samesite=config.cookie_samesite,
+        path=config.cookie_path,
+    )
+
+
+def _clear_refresh_cookie(response: Response, config: Settings) -> None:
+    response.delete_cookie(
+        key=config.refresh_cookie_name,
+        path=config.cookie_path,
+        httponly=True,
+        secure=config.cookie_secure,
+        samesite=config.cookie_samesite,
+    )
+
+
+def _read_refresh_token(
+    request: Request,
+    body: RefreshRequest | LogoutRequest | None,
+    config: Settings,
+) -> str:
+    """Prefer the HttpOnly cookie; fall back to the body for non-browser clients."""
+    from_cookie = request.cookies.get(config.refresh_cookie_name)
+    from_body = body.refresh_token if body else None
+    return from_cookie or from_body or ""
+
+
+@router.post("/login", response_model=AccessTokenResponse)
 @inject
 async def login(
+    response: Response,
     form: OAuth2PasswordRequestForm = Depends(),
     use_case: Authenticate = Depends(Provide[Container.authenticate]),
-) -> TokenResponse:
+    config: Settings = Depends(Provide[Container.config]),
+) -> AccessTokenResponse:
     # OAuth2 password flow: the tenant slug travels in the form's ``client_id``.
     tokens = await use_case.execute(
         tenant_slug=form.client_id or "", email=form.username, password=form.password
     )
-    return TokenResponse(access_token=tokens.access_token, refresh_token=tokens.refresh_token)
+    _set_refresh_cookie(response, tokens.refresh_token, config)
+    return AccessTokenResponse(access_token=tokens.access_token)
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post("/refresh", response_model=AccessTokenResponse)
 @inject
 async def refresh(
-    body: RefreshRequest,
+    request: Request,
+    response: Response,
+    body: RefreshRequest | None = None,
     use_case: RefreshAccessToken = Depends(Provide[Container.refresh_access_token]),
-) -> TokenResponse:
-    tokens = await use_case.execute(refresh_token=body.refresh_token)
-    return TokenResponse(access_token=tokens.access_token, refresh_token=tokens.refresh_token)
+    config: Settings = Depends(Provide[Container.config]),
+) -> AccessTokenResponse:
+    token = _read_refresh_token(request, body, config)
+    tokens = await use_case.execute(refresh_token=token)
+    _set_refresh_cookie(response, tokens.refresh_token, config)
+    return AccessTokenResponse(access_token=tokens.access_token)
 
 
 @router.post("/logout", response_model=MessageResponse)
 @inject
 async def logout(
-    body: LogoutRequest,
+    request: Request,
+    response: Response,
+    body: LogoutRequest | None = None,
     use_case: Logout = Depends(Provide[Container.logout]),
+    config: Settings = Depends(Provide[Container.config]),
 ) -> MessageResponse:
-    await use_case.execute(refresh_token=body.refresh_token)
+    # Idempotent and neutral: revoke the token (if any) and clear the cookie.
+    await use_case.execute(refresh_token=_read_refresh_token(request, body, config))
+    _clear_refresh_cookie(response, config)
     return MessageResponse(message="Sesión cerrada.")
 
 

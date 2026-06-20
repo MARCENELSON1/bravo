@@ -66,6 +66,10 @@ async def test_full_login_lifecycle(client):
 
     await _verify_last_email(http, fake_email)
     tokens = await _login(http, slug="resto", email="owner@resto.com", password=PASSWORD)
+    # The refresh token is delivered as an HttpOnly cookie, not in the body.
+    assert "refresh_token" not in tokens
+    old_refresh = http.cookies.get("bravo_refresh")
+    assert old_refresh
 
     # /ping echoes the tenant + role from the access token.
     ping = await http.get(
@@ -74,17 +78,16 @@ async def test_full_login_lifecycle(client):
     assert ping.status_code == 200
     assert ping.json()["role"] == "OWNER"
 
-    # Refresh rotates: a new refresh token, and the old one stops working.
-    rotated = await http.post(
-        "/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
-    )
-    assert rotated.status_code == 200
+    # Refresh rotates using the cookie: a new access token + a rotated cookie.
+    rotated = await http.post("/api/v1/auth/refresh")
+    assert rotated.status_code == 200, rotated.text
     new_tokens = rotated.json()
-    assert new_tokens["refresh_token"] != tokens["refresh_token"]
+    assert new_tokens["access_token"]
+    assert http.cookies.get("bravo_refresh") != old_refresh
 
-    reused = await http.post(
-        "/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
-    )
+    # The old refresh token is single-use: replaying it (via body) fails.
+    http.cookies.delete("bravo_refresh")
+    reused = await http.post("/api/v1/auth/refresh", json={"refresh_token": old_refresh})
     assert reused.status_code == 401
 
     # Change password (revokes sessions), then log in with the new password.

@@ -52,6 +52,14 @@ class Settings(BaseSettings):
     # Base URL used to build links inside emails (points to the frontend).
     app_base_url: str = "http://localhost:5173"
 
+    # Refresh-token cookie. The refresh token is delivered as an HttpOnly cookie
+    # scoped to the auth endpoints (the SPA never reads it); the access token
+    # stays in the JSON body and is kept in memory. See README "Token storage".
+    refresh_cookie_name: str = "bravo_refresh"
+    cookie_secure: bool = True
+    cookie_samesite: Literal["lax", "strict", "none"] = "lax"
+    cookie_path: str = "/api/v1/auth"
+
     # Login throttling / lockout
     max_login_attempts: int = 5
     lockout_minutes: int = 15
@@ -70,6 +78,8 @@ class Settings(BaseSettings):
             problems.append("APP_BASE_URL must use https")
         if self.email_transport == "console":
             problems.append("EMAIL_TRANSPORT must be 'smtp' (console logs token links)")
+        if not self.cookie_secure:
+            problems.append("COOKIE_SECURE must be true (refresh cookie over HTTPS only)")
         if problems:
             raise ValueError(f"Insecure settings for env={self.env!r}: " + "; ".join(problems))
         return self

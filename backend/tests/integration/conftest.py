@@ -64,7 +64,8 @@ async def client(clean_tables: None) -> AsyncIterator[tuple[AsyncClient, FakeEma
     container.email_sender.override(providers.Object(fake_email))
     transport = ASGITransport(app=app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as http:
+        # https scheme so the Secure refresh cookie is stored/resent by the jar.
+        async with AsyncClient(transport=transport, base_url="https://test") as http:
             yield http, fake_email
     finally:
         container.email_sender.reset_override()

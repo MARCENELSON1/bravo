@@ -3,18 +3,20 @@ from __future__ import annotations
 from pydantic import BaseModel, EmailStr, Field
 
 
-class TokenResponse(BaseModel):
+class AccessTokenResponse(BaseModel):
+    # The refresh token is NOT in the body: it travels in an HttpOnly cookie.
     access_token: str
-    refresh_token: str
     token_type: str = "bearer"
 
 
+# Body is optional: browsers send the refresh token via the HttpOnly cookie.
+# The optional field is a fallback for non-browser clients and tests.
 class RefreshRequest(BaseModel):
-    refresh_token: str
+    refresh_token: str | None = None
 
 
 class LogoutRequest(BaseModel):
-    refresh_token: str
+    refresh_token: str | None = None
 
 
 class ChangePasswordRequest(BaseModel):
