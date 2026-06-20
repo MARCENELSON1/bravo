@@ -17,6 +17,14 @@ Como **cajero (CASHIER) / encargado (MANAGER) / dueño (OWNER)** quiero **regist
 ## Problem → Solution
 Hoy la comanda termina en `SERVED` sin cobro (Fase 2). → El cajero **registra uno o más pagos** contra la comanda; cuando la suma de pagos confirmados cubre el total, la comanda pasa a **`PAID`**. Los pagos quedan tenant-scoped, con su medio y monto (`Money`), conciliados con la comanda. Los adapters de pasarelas reales se enchufan luego sin tocar el dominio.
 
+## Estado de implementación (2026-06-20) — ✅ COMPLETA
+Implementada por **3 tramos**, todos commiteados en `feat/fase-3-cobro-pagos`:
+- **Tramo 1 (`df54a0a`)** — backend de pagos **manual** + dominio `Payment` (INFLOW/OUTFLOW) + `Order.PAID` + migración 0003 (RLS) + casos de uso + API `/orders/{id}/payments` y `/expenses`. 74 tests.
+- **Tramo 2 (`05c8f48`)** — **`MercadoPagoGateway` real** (Checkout Pro link/QR vía httpx) + port `PaymentNotificationGateway` + **webhook firmado** `POST /api/v1/webhooks/mercadopago` (HMAC `x-signature`, idempotente, routing por `external_reference` sin token, concilia → `PAID`) + `providers.Selector` manual|mercadopago + config `MP_*`. 83 tests (adapter vía `httpx.MockTransport` + e2e webhook).
+- **Tramo 3 (`bcf7c81`)** — frontend: `PaymentsApi` + hooks TanStack, bloque **Cobrar** en `order-page` (efectivo/tarjeta/transferencia confirman al toque; MP/QR muestran link + polling hasta `PAID`), página de **egresos**, ruteo/nav (CASHIER puede cobrar). tsc + eslint + 17 tests + build.
+
+**Diferido (mismo port, después):** QR interoperable T3.0 (BCRA), Payway/posnet, money-out real de MP para egresos (hoy el egreso se registra/manual-confirma). Pendiente sólo **validación manual en vivo** con credenciales sandbox + túnel.
+
 ## Metadata
 - **Complexity**: **XL** (dominio + persistencia + migración RLS + casos de uso + API + frontend de cobro; toca el agregado `Order` para sumar `PAID`). Partible en commits backend↔frontend (igual que Fase 2).
 - **Source PRD**: `.claude/PRPs/prds/nucleo.prd.md`

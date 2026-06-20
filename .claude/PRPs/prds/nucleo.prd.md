@@ -165,7 +165,7 @@ Dueño al cierre ve en pesos cómo le fue + una acción para mañana
 |---|-------|-------------|--------|----------|---------|----------|
 | 1 | Fundaciones + Identidad | Clean Arch + DI, multi-tenant (`tenant_id`+RLS), login completo (JWT, cookie HttpOnly, RBAC, audit) + frontend de identidad | **complete** | - | - | `.claude/PRPs/plans/completed/fase-1-fundaciones.plan.md` + `frontend-identidad.plan.md` |
 | 2 | Comandas + KDS | Dominio `Order`/`Table`/`OrderItem`, flujo mozo→cocina, KDS web (restaurante) | complete | - | 1 | `.claude/PRPs/plans/completed/fase-2-comandas-kds.plan.md` |
-| 3 | Cobro + Pagos | Port `PaymentGateway`; adapters MP / QR (T3.0) / Payway; `Payment`; webhooks + conciliación batch; match pago↔comanda | in-progress | with 5,6 | 2 | `.claude/PRPs/plans/fase-3-cobro-pagos.plan.md` |
+| 3 | Cobro + Pagos | Port `PaymentGateway`; adapters `Manual` + `MercadoPago` real (link/QR) + webhook firmado; `Payment` (ingresos/egresos); conciliación → comanda `PAID` | **complete** | with 5,6 | 2 | `.claude/PRPs/plans/fase-3-cobro-pagos.plan.md` |
 | 4 | Facturación AFIP | Port `ElectronicInvoicing`, adapter AFIP (WSAA/WSFEv1), tipos A/B/C, CAE | pending | - | 3 | - |
 | 5 | Fichaje | `Shift`, horas/extras + mesas/ventas por mozo derivadas de la comanda | pending | with 3,6 | 2 | - |
 | 6 | Stock + Food cost | `Inventory`/`Recipe`/`Supplier`, descuento por venta (receta opt-in), alertas de quiebre | pending | with 3,5 | 2 | - |
