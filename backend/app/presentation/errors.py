@@ -17,6 +17,13 @@ from app.domain.identity.exceptions import (
     InvalidToken,
     TokenAlreadyUsed,
 )
+from app.domain.inventory.exceptions import (
+    IngredientNotFound,
+    InvalidQuantity,
+    InvalidUnitCost,
+    RecipeNotFound,
+    SupplierNotFound,
+)
 from app.domain.invoice.exceptions import (
     InvoiceNotFound,
     OrderNotInvoiceable,
@@ -109,6 +116,12 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (PresenceRateLimited, 429),
     (InvalidPresenceDevice, 401),
     (PresenceDisabled, 409),
+    # Fase 6 — inventario / food cost
+    (IngredientNotFound, 404),
+    (SupplierNotFound, 404),
+    (RecipeNotFound, 404),
+    (InvalidQuantity, 422),
+    (InvalidUnitCost, 422),
 ]
 
 
