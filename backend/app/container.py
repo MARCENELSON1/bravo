@@ -10,6 +10,11 @@ from dependency_injector import containers, providers
 
 from app.application.analytics.projection import ProjectOrderSales
 from app.application.analytics.rebuild import RebuildSalesFacts
+from app.application.analytics.use_cases import (
+    GetPaymentMix,
+    GetProductPerformance,
+    GetRevenueSummary,
+)
 from app.application.identity.accept_invitation import AcceptInvitation
 from app.application.identity.authenticate import Authenticate
 from app.application.identity.change_password import ChangePassword
@@ -100,6 +105,11 @@ from app.infrastructure.payments.credentials_resolver import DbPaymentCredential
 from app.infrastructure.payments.manual_gateway import ManualPaymentGateway
 from app.infrastructure.payments.mercadopago_gateway import MercadoPagoGateway
 from app.infrastructure.payments.mercadopago_oauth import MercadoPagoOAuthClient
+from app.infrastructure.persistence.analytics_repo import (
+    SqlAlchemyPaymentMixReadModel,
+    SqlAlchemyProductPerformanceReadModel,
+    SqlAlchemyRevenueReadModel,
+)
 from app.infrastructure.persistence.audit_repo import SqlAlchemyAuditRepository
 from app.infrastructure.persistence.credentials_repo import (
     SqlAlchemyPaymentCredentialRepository,
@@ -700,5 +710,25 @@ class Container(containers.DeclarativeContainer):
         RebuildSalesFacts,
         orders=order_repository,
         projector=project_order_sales,
+        tenant_context=tenant_context,
+    )
+    revenue_read_model = providers.Factory(
+        SqlAlchemyRevenueReadModel, session_factory=db.provided.session
+    )
+    payment_mix_read_model = providers.Factory(
+        SqlAlchemyPaymentMixReadModel, session_factory=db.provided.session
+    )
+    product_performance_read_model = providers.Factory(
+        SqlAlchemyProductPerformanceReadModel, session_factory=db.provided.session
+    )
+    get_revenue_summary = providers.Factory(
+        GetRevenueSummary, read_model=revenue_read_model, tenant_context=tenant_context
+    )
+    get_payment_mix = providers.Factory(
+        GetPaymentMix, read_model=payment_mix_read_model, tenant_context=tenant_context
+    )
+    get_product_performance = providers.Factory(
+        GetProductPerformance,
+        read_model=product_performance_read_model,
         tenant_context=tenant_context,
     )

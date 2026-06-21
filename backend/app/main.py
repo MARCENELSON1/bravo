@@ -12,6 +12,7 @@ from starlette.responses import Response
 
 from app.container import Container
 from app.presentation.api.v1 import (
+    analytics,
     auth,
     expenses,
     integrations,
@@ -76,6 +77,7 @@ def create_app() -> FastAPI:
     app.include_router(timeclock.router, prefix="/api/v1")
     app.include_router(inventory.router, prefix="/api/v1")
     app.include_router(reservations.router, prefix="/api/v1")
+    app.include_router(analytics.router, prefix="/api/v1")
 
     @app.middleware("http")
     async def security_headers(

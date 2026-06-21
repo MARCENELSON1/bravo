@@ -111,3 +111,115 @@ async def test_food_cost_snapshot_when_recipe(client, admin_engine):
     assert count == 1
     assert total == 300000
     assert food_cost == 32000  # (80000 × 0.2) × 2
+
+
+# --- T2: gold KPIs over the canonical model -------------------------------
+
+
+async def test_revenue_summary(client):
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    pid = await _product(http, h, "Milanesa", 150000)
+    iid = await _ingredient(http, h, "Carne", unit_cost_amount=80000)
+    await http.put(
+        f"/api/v1/products/{pid}/recipe",
+        json={"items": [{"ingredient_id": iid, "qty": 200}]},
+        headers=h,
+    )
+    order_id = await _order_with(http, h, pid, 2)
+    await _pay(http, h, order_id, 300000)
+    await http.post(
+        "/api/v1/expenses",
+        json={
+            "method": "TRANSFER",
+            "amount": 50000,
+            "category": "Proveedores",
+            "counterparty": None,
+            "description": None,
+        },
+        headers=h,
+    )
+
+    summary = (await http.get("/api/v1/analytics/revenue", headers=h)).json()
+    assert summary["sales_amount"] == 300000
+    assert summary["collected_amount"] == 300000
+    assert summary["expense_amount"] == 50000
+    assert summary["food_cost_amount"] == 32000
+    assert summary["gross_margin_amount"] == 268000
+    assert summary["orders_count"] == 1
+    assert summary["average_ticket_amount"] == 300000
+    assert summary["currency"] == "ARS"
+
+
+async def test_payment_mix(client):
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    pid = await _product(http, h, "Milanesa", 150000)
+    order_id = await _order_with(http, h, pid, 2)
+    await _pay(http, h, order_id, 300000)  # CASH INFLOW
+    await http.post(
+        "/api/v1/expenses",
+        json={
+            "method": "TRANSFER",
+            "amount": 50000,
+            "category": "Proveedores",
+            "counterparty": None,
+            "description": None,
+        },
+        headers=h,
+    )
+
+    mix = (await http.get("/api/v1/analytics/payment-mix", headers=h)).json()
+    by_key = {(r["method"], r["direction"]): r for r in mix}
+    assert by_key[("CASH", "INFLOW")]["amount"] == 300000
+    assert by_key[("CASH", "INFLOW")]["count"] == 1
+    assert by_key[("TRANSFER", "OUTFLOW")]["amount"] == 50000
+
+
+async def test_product_performance_ordered_by_sales(client):
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    pa = await _product(http, h, "Milanesa", 150000)
+    pb = await _product(http, h, "Gaseosa", 100000)
+    oa = await _order_with(http, h, pa, 2)  # 300000
+    await _pay(http, h, oa, 300000)
+    ob = await _order_with(http, h, pb, 1)  # 100000
+    await _pay(http, h, ob, 100000)
+
+    rows = (await http.get("/api/v1/analytics/products", headers=h)).json()
+    assert len(rows) == 2
+    assert rows[0]["product_id"] == pa  # highest sales first
+    assert rows[0]["sales_amount"] == 300000
+    assert rows[0]["units_sold"] == 2
+    assert rows[1]["product_id"] == pb
+
+
+async def test_rebuild_backfills_missing_facts(client, admin_engine):
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    pid = await _product(http, h, "Milanesa", 150000)
+    order_id = await _order_with(http, h, pid, 2)
+    await _pay(http, h, order_id, 300000)
+
+    # Wipe the projection to simulate orders captured before it existed.
+    async with admin_engine.begin() as conn:
+        await conn.execute(text("DELETE FROM sale_facts"))
+    assert (await _facts(admin_engine, order_id))[0] == 0
+
+    rebuilt = await http.post("/api/v1/analytics/rebuild", headers=h)
+    assert rebuilt.status_code == 200, rebuilt.text
+    assert rebuilt.json()["projected"] == 1
+    assert (await _facts(admin_engine, order_id))[0] == 1  # re-projected
+
+
+async def test_analytics_rls_isolation(client):
+    http, fake_email = client
+    t1 = await _onboard_verify_login(http, fake_email, slug="uno", email="a@uno.com")
+    pid = await _product(http, _auth(t1), "Milanesa", 150000)
+    oid = await _order_with(http, _auth(t1), pid, 2)
+    await _pay(http, _auth(t1), oid, 300000)
+
+    t2 = await _onboard_verify_login(http, fake_email, slug="dos", email="b@dos.com")
+    summary = (await http.get("/api/v1/analytics/revenue", headers=_auth(t2))).json()
+    assert summary["sales_amount"] == 0
+    assert summary["orders_count"] == 0
