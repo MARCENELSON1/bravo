@@ -10,6 +10,7 @@ import { PaymentsApi } from "@/api/payments-api"
 import { ProductsApi } from "@/api/products-api"
 import { ReportsApi } from "@/api/reports-api"
 import { TablesApi } from "@/api/tables-api"
+import { TimeClockApi } from "@/api/timeclock-api"
 import { API_BASE_URL } from "@/lib/env"
 import { ServicesContext } from "@/services/services-context"
 import type { Services } from "@/services/services-context"
@@ -33,6 +34,7 @@ export function ServicesProvider({
       productsApi: new ProductsApi(http),
       reportsApi: new ReportsApi(http),
       tablesApi: new TablesApi(http),
+      timeClockApi: new TimeClockApi(http),
     }
   }, [value])
   return <ServicesContext.Provider value={services}>{children}</ServicesContext.Provider>

@@ -48,7 +48,16 @@ from app.application.payment.use_cases import (
 )
 from app.application.product.use_cases import CreateProduct, ListProducts
 from app.application.reporting.dashboard import GetDashboardSummary
+from app.application.reporting.staff import GetStaffReport
 from app.application.table.use_cases import CreateTable, ListTables
+from app.application.timeclock.use_cases import (
+    AdjustShift,
+    ClockIn,
+    ClockOut,
+    GetMyTimeclock,
+    ListShifts,
+    Punch,
+)
 from app.config import Settings
 from app.infrastructure.email.console_sender import ConsoleEmailSender
 from app.infrastructure.email.smtp_sender import SmtpEmailSender
@@ -72,6 +81,8 @@ from app.infrastructure.persistence.payment_repo import SqlAlchemyPaymentReposit
 from app.infrastructure.persistence.product_repo import SqlAlchemyProductRepository
 from app.infrastructure.persistence.refresh_token_repo import SqlAlchemyRefreshTokenRepository
 from app.infrastructure.persistence.reset_token_repo import SqlAlchemyResetTokenRepository
+from app.infrastructure.persistence.shift_repo import SqlAlchemyShiftRepository
+from app.infrastructure.persistence.staff_report_repo import SqlAlchemyStaffReportReadModel
 from app.infrastructure.persistence.table_repo import SqlAlchemyTableRepository
 from app.infrastructure.persistence.tax_credentials_repo import (
     SqlAlchemyTaxCredentialRepository,
@@ -397,6 +408,12 @@ class Container(containers.DeclarativeContainer):
     get_dashboard_summary = providers.Factory(
         GetDashboardSummary, read_model=dashboard_read_model, tenant_context=tenant_context
     )
+    staff_report_read_model = providers.Factory(
+        SqlAlchemyStaffReportReadModel, session_factory=db.provided.session
+    )
+    get_staff_report = providers.Factory(
+        GetStaffReport, read_model=staff_report_read_model, tenant_context=tenant_context
+    )
 
     # --- Fase 4: facturación electrónica AFIP ---
     invoice_repository = providers.Factory(
@@ -442,4 +459,27 @@ class Container(containers.DeclarativeContainer):
     )
     disconnect_afip = providers.Factory(
         DisconnectAfip, credentials=tax_credential_repository, tenant_context=tenant_context
+    )
+
+    # --- Fase 5: fichaje (shifts) ---
+    shift_repository = providers.Factory(
+        SqlAlchemyShiftRepository, session_factory=db.provided.session
+    )
+    clock_in = providers.Factory(
+        ClockIn, shifts=shift_repository, tenant_context=tenant_context
+    )
+    clock_out = providers.Factory(
+        ClockOut, shifts=shift_repository, tenant_context=tenant_context
+    )
+    punch = providers.Factory(
+        Punch, shifts=shift_repository, tenant_context=tenant_context
+    )
+    get_my_timeclock = providers.Factory(
+        GetMyTimeclock, shifts=shift_repository, tenant_context=tenant_context
+    )
+    list_shifts = providers.Factory(
+        ListShifts, shifts=shift_repository, tenant_context=tenant_context
+    )
+    adjust_shift = providers.Factory(
+        AdjustShift, shifts=shift_repository, tenant_context=tenant_context
     )

@@ -16,6 +16,7 @@ import { InvoicesPage } from "@/features/invoices/invoices-page"
 import { KdsPage } from "@/features/kds/kds-page"
 import { OrderPage } from "@/features/orders/order-page"
 import { ProductsPage } from "@/features/products/products-page"
+import { StaffPage } from "@/features/timeclock/staff-page"
 
 export const router = createBrowserRouter([
   // Public
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
               { path: "/app/products", element: <ProductsPage /> },
               { path: "/app/expenses", element: <ExpensesPage /> },
               { path: "/app/invoices", element: <InvoicesPage /> },
+              { path: "/app/staff", element: <StaffPage /> },
               { path: "/app/integrations", element: <IntegrationsPage /> },
             ],
           },

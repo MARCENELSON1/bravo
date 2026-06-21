@@ -8,6 +8,7 @@ import type { PaymentsApi } from "@/api/payments-api"
 import type { ProductsApi } from "@/api/products-api"
 import type { ReportsApi } from "@/api/reports-api"
 import type { TablesApi } from "@/api/tables-api"
+import type { TimeClockApi } from "@/api/timeclock-api"
 
 // DI for the data layer. The context + hook live here (no component) so the
 // provider file can export only a component (Fast Refresh friendly). Tests pass
@@ -21,6 +22,7 @@ export interface Services {
   productsApi: ProductsApi
   reportsApi: ReportsApi
   tablesApi: TablesApi
+  timeClockApi: TimeClockApi
 }
 
 export const ServicesContext = createContext<Services | null>(null)

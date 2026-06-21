@@ -43,6 +43,7 @@ export function renderWithProviders(
     productsApi: {} as unknown as Services["productsApi"],
     reportsApi: {} as unknown as Services["reportsApi"],
     tablesApi: {} as unknown as Services["tablesApi"],
+    timeClockApi: {} as unknown as Services["timeClockApi"],
   }
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },

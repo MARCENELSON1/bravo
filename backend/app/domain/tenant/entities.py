@@ -13,4 +13,5 @@ class Tenant:
     name: str
     country: str = "AR"
     currency: str = "ARS"
+    standard_workday_minutes: int = 480
     created_at: datetime | None = None

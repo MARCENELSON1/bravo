@@ -37,6 +37,7 @@ class TenantORM(Base):
     name: Mapped[str] = mapped_column(String(120))
     country: Mapped[str] = mapped_column(String(2), server_default="AR")
     currency: Mapped[str] = mapped_column(String(3), server_default="ARS")
+    standard_workday_minutes: Mapped[int] = mapped_column(Integer, server_default="480")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -332,4 +333,28 @@ class TaxCredentialORM(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+# --- Fase 5: fichaje (shifts, tenant-scoped) -------------------------------
+
+
+class ShiftORM(Base):
+    __tablename__ = "shifts"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    clock_in_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    clock_out_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    source: Mapped[str] = mapped_column(String(20))
+    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    adjusted_by: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
     )
