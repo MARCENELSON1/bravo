@@ -15,6 +15,7 @@ from app.presentation.api.v1 import (
     auth,
     expenses,
     integrations,
+    invoices,
     kds,
     orders,
     payments,
@@ -22,6 +23,7 @@ from app.presentation.api.v1 import (
     products,
     reports,
     tables,
+    tax,
     tenants,
     users,
     webhooks,
@@ -66,6 +68,8 @@ def create_app() -> FastAPI:
     app.include_router(webhooks.router, prefix="/api/v1")
     app.include_router(integrations.router, prefix="/api/v1")
     app.include_router(reports.router, prefix="/api/v1")
+    app.include_router(invoices.router, prefix="/api/v1")
+    app.include_router(tax.router, prefix="/api/v1")
 
     @app.middleware("http")
     async def security_headers(

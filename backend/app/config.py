@@ -88,6 +88,11 @@ class Settings(BaseSettings):
     mp_marketplace_fee: int = 0
     # TTL of the signed OAuth ``state`` (anti-CSRF), minutes.
     oauth_state_ttl_min: int = 10
+
+    # Facturación electrónica AFIP. "fake" autoriza al instante (dev/MVP, sin
+    # AFIP); "afip" usa WSAA + WSFEv1 reales. AFIP_ENV: homologación vs prod.
+    invoicing_provider: str = "fake"
+    afip_env: str = "homo"
     # Public URL MercadoPago posts notifications to (a tunnel in dev, the API
     # host in prod). Empty → rely on the dashboard-configured webhook.
     mp_notification_url: str = ""
