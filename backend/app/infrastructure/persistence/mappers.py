@@ -14,6 +14,13 @@ from app.domain.identity.tokens import (
     PasswordResetToken,
     RefreshToken,
 )
+from app.domain.inventory.entities import Ingredient, StockMovement, Supplier
+from app.domain.inventory.recipe import Recipe, RecipeItem
+from app.domain.inventory.value_objects import (
+    MovementDirection,
+    MovementReason,
+    UnitOfMeasure,
+)
 from app.domain.invoice.credentials import TaxCredential
 from app.domain.invoice.entities import Invoice, VatItem
 from app.domain.invoice.value_objects import (
@@ -43,6 +50,7 @@ from app.domain.user.value_objects import Email, Role
 from app.infrastructure.persistence.models import (
     AuthAuditORM,
     EmailVerificationTokenORM,
+    IngredientORM,
     InvitationORM,
     InvoiceORM,
     OrderItemORM,
@@ -51,8 +59,12 @@ from app.infrastructure.persistence.models import (
     PaymentCredentialORM,
     PaymentORM,
     ProductORM,
+    RecipeItemORM,
+    RecipeORM,
     RefreshTokenORM,
     ShiftORM,
+    StockMovementORM,
+    SupplierORM,
     TableORM,
     TaxCredentialORM,
     TenantORM,
@@ -542,4 +554,115 @@ def payment_credential_to_orm(credential: PaymentCredential) -> PaymentCredentia
         expires_at=credential.expires_at,
         live_mode=credential.live_mode,
         status=credential.status.value,
+    )
+
+
+# --- Inventory: ingredient / supplier / recipe / stock movement -----------
+
+
+def ingredient_to_domain(row: IngredientORM) -> Ingredient:
+    return Ingredient(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        name=row.name,
+        unit=UnitOfMeasure(row.unit),
+        stock_qty=row.stock_qty,
+        min_qty=row.min_qty,
+        unit_cost=Money(row.unit_cost_amount, row.unit_cost_currency),
+        active=row.active,
+        created_at=row.created_at,
+    )
+
+
+def ingredient_to_orm(ingredient: Ingredient) -> IngredientORM:
+    return IngredientORM(
+        id=ingredient.id,
+        tenant_id=ingredient.tenant_id,
+        name=ingredient.name,
+        unit=ingredient.unit.value,
+        stock_qty=ingredient.stock_qty,
+        min_qty=ingredient.min_qty,
+        unit_cost_amount=ingredient.unit_cost.amount,
+        unit_cost_currency=ingredient.unit_cost.currency,
+        active=ingredient.active,
+    )
+
+
+def supplier_to_domain(row: SupplierORM) -> Supplier:
+    return Supplier(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        name=row.name,
+        contact=row.contact,
+        active=row.active,
+        created_at=row.created_at,
+    )
+
+
+def supplier_to_orm(supplier: Supplier) -> SupplierORM:
+    return SupplierORM(
+        id=supplier.id,
+        tenant_id=supplier.tenant_id,
+        name=supplier.name,
+        contact=supplier.contact,
+        active=supplier.active,
+    )
+
+
+def stock_movement_to_domain(row: StockMovementORM) -> StockMovement:
+    unit_cost = (
+        Money(row.unit_cost_amount, row.unit_cost_currency)
+        if row.unit_cost_amount is not None and row.unit_cost_currency is not None
+        else None
+    )
+    return StockMovement(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        ingredient_id=row.ingredient_id,
+        direction=MovementDirection(row.direction),
+        reason=MovementReason(row.reason),
+        qty=row.qty,
+        order_id=row.order_id,
+        unit_cost=unit_cost,
+        note=row.note,
+        created_at=row.created_at,
+    )
+
+
+def stock_movement_to_orm(movement: StockMovement) -> StockMovementORM:
+    return StockMovementORM(
+        id=movement.id,
+        tenant_id=movement.tenant_id,
+        ingredient_id=movement.ingredient_id,
+        direction=movement.direction.value,
+        reason=movement.reason.value,
+        qty=movement.qty,
+        order_id=movement.order_id,
+        unit_cost_amount=movement.unit_cost.amount if movement.unit_cost else None,
+        unit_cost_currency=movement.unit_cost.currency if movement.unit_cost else None,
+        note=movement.note,
+    )
+
+
+def recipe_to_domain(row: RecipeORM, item_rows: list[RecipeItemORM]) -> Recipe:
+    return Recipe(
+        product_id=row.product_id,
+        tenant_id=row.tenant_id,
+        items=[
+            RecipeItem(ingredient_id=item.ingredient_id, qty=item.qty) for item in item_rows
+        ],
+    )
+
+
+def recipe_to_orm(recipe: Recipe) -> RecipeORM:
+    return RecipeORM(product_id=recipe.product_id, tenant_id=recipe.tenant_id)
+
+
+def recipe_item_to_orm(item: RecipeItem, recipe: Recipe, item_id: str) -> RecipeItemORM:
+    return RecipeItemORM(
+        id=item_id,
+        tenant_id=recipe.tenant_id,
+        product_id=recipe.product_id,
+        ingredient_id=item.ingredient_id,
+        qty=item.qty,
     )
