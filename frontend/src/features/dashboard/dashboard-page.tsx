@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { Link } from "react-router-dom"
 
+import { AnimatedNumber } from "@/components/ui/animated-number"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import {
   TextureCard,
@@ -17,21 +18,16 @@ import {
   TextureCardHeader,
   TextureCardTitle,
 } from "@/components/ui/texture-card"
+import { useDashboard } from "@/hooks/use-dashboard"
+import { formatMoney } from "@/lib/money"
 
 interface Kpi {
   label: string
-  value: string
+  value: number | undefined
+  format: (n: number) => string
   hint: string
   icon: ComponentType<{ className?: string }>
 }
-
-const KPIS: Kpi[] = [
-  { label: "Ventas de hoy", value: "—", hint: "Cobrado del día", icon: TrendingUp },
-  { label: "Comandas activas", value: "—", hint: "En curso", icon: UtensilsCrossed },
-  { label: "Ticket promedio", value: "—", hint: "Por comanda", icon: CreditCard },
-  { label: "Egresos de hoy", value: "—", hint: "Salidas del día", icon: Receipt },
-  { label: "Neto", value: "—", hint: "Ventas − egresos", icon: Wallet },
-]
 
 const SHORTCUTS = [
   { label: "Ir a Mesas", to: "/app/floor", icon: UtensilsCrossed },
@@ -40,19 +36,55 @@ const SHORTCUTS = [
 ]
 
 export function DashboardPage() {
+  const summary = useDashboard()
+  const d = summary.data
+  const currency = d?.currency ?? "ARS"
+  const money = (n: number) => formatMoney(Math.round(n), currency)
+  const count = (n: number) => String(Math.round(n))
+
+  const kpis: Kpi[] = [
+    {
+      label: "Ventas cobradas",
+      value: d?.sales,
+      format: money,
+      hint: `${d?.payment_count ?? 0} cobros`,
+      icon: TrendingUp,
+    },
+    {
+      label: "Comandas activas",
+      value: d?.active_orders,
+      format: count,
+      hint: "En curso",
+      icon: UtensilsCrossed,
+    },
+    {
+      label: "Ticket promedio",
+      value: d?.avg_ticket,
+      format: money,
+      hint: `${d?.paid_orders ?? 0} pagadas`,
+      icon: CreditCard,
+    },
+    {
+      label: "Egresos",
+      value: d?.expenses,
+      format: money,
+      hint: "Salidas registradas",
+      icon: Receipt,
+    },
+    { label: "Neto", value: d?.net, format: money, hint: "Ventas − egresos", icon: Wallet },
+  ]
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-8">
       <header className="flex flex-col gap-1">
         <GradientHeading size="lg" weight="bold">
           Resumen
         </GradientHeading>
-        <p className="text-sm text-muted-foreground">
-          Tu local de un vistazo. Las métricas en vivo llegan con los reportes.
-        </p>
+        <p className="text-sm text-muted-foreground">Tu local de un vistazo.</p>
       </header>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {KPIS.map((kpi) => (
+        {kpis.map((kpi) => (
           <TextureCard key={kpi.label}>
             <TextureCardHeader className="flex flex-row items-center justify-between px-5 pt-5">
               <TextureCardTitle className="text-sm font-medium text-muted-foreground">
@@ -62,7 +94,11 @@ export function DashboardPage() {
             </TextureCardHeader>
             <TextureCardContent className="px-5 pb-5 pt-1">
               <div className="text-3xl font-semibold tabular-nums text-foreground">
-                {kpi.value}
+                {summary.isPending || kpi.value === undefined ? (
+                  <span className="text-muted-foreground">—</span>
+                ) : (
+                  <AnimatedNumber value={kpi.value} format={kpi.format} />
+                )}
               </div>
               <p className="text-xs text-muted-foreground">{kpi.hint}</p>
             </TextureCardContent>

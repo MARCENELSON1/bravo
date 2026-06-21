@@ -7,6 +7,7 @@ import { IntegrationsApi } from "@/api/integrations-api"
 import { OrdersApi } from "@/api/orders-api"
 import { PaymentsApi } from "@/api/payments-api"
 import { ProductsApi } from "@/api/products-api"
+import { ReportsApi } from "@/api/reports-api"
 import { TablesApi } from "@/api/tables-api"
 import { API_BASE_URL } from "@/lib/env"
 import { ServicesContext } from "@/services/services-context"
@@ -28,6 +29,7 @@ export function ServicesProvider({
       ordersApi: new OrdersApi(http),
       paymentsApi: new PaymentsApi(http),
       productsApi: new ProductsApi(http),
+      reportsApi: new ReportsApi(http),
       tablesApi: new TablesApi(http),
     }
   }, [value])
