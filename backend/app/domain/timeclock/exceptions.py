@@ -26,3 +26,31 @@ class ShiftAlreadyClosed(DomainError):
 class InvalidShiftTime(DomainError):
     code = "invalid_shift_time"
     message = "La hora de salida no puede ser anterior a la de entrada."
+
+
+# --- Presence layer (QR / typeable code) ---
+
+
+class InvalidPresenceToken(DomainError):
+    code = "invalid_presence_token"
+    message = "El código de fichaje no es válido o ya expiró."
+
+
+class PresenceTokenReused(DomainError):
+    code = "presence_token_reused"
+    message = "Ese código ya se usó. Esperá a que aparezca el próximo."
+
+
+class PresenceRateLimited(DomainError):
+    code = "presence_rate_limited"
+    message = "Demasiados intentos. Probá de nuevo en un momento."
+
+
+class InvalidPresenceDevice(DomainError):
+    code = "invalid_presence_device"
+    message = "El dispositivo de fichaje no está autorizado."
+
+
+class PresenceDisabled(DomainError):
+    code = "presence_disabled"
+    message = "El fichaje por presencia no está habilitado."

@@ -16,6 +16,8 @@ import { InvoicesPage } from "@/features/invoices/invoices-page"
 import { KdsPage } from "@/features/kds/kds-page"
 import { OrderPage } from "@/features/orders/order-page"
 import { ProductsPage } from "@/features/products/products-page"
+import { PresenceDisplayPage } from "@/features/timeclock/presence-display-page"
+import { PunchPage } from "@/features/timeclock/punch-page"
 import { StaffPage } from "@/features/timeclock/staff-page"
 
 export const router = createBrowserRouter([
@@ -24,6 +26,8 @@ export const router = createBrowserRouter([
   { path: "/onboarding", element: <OnboardingPage /> },
   { path: "/verify-email", element: <VerifyEmailPage /> },
   { path: "/accept-invitation", element: <AcceptInvitationPage /> },
+  // Local fichaje display (device-authenticated, no employee session).
+  { path: "/fichaje", element: <PresenceDisplayPage /> },
 
   // Protected
   {
@@ -33,6 +37,7 @@ export const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { path: "/app", element: <DashboardPage /> },
+          { path: "/app/fichar", element: <PunchPage /> },
           {
             element: <RequireRole allow={["WAITER", "CASHIER", "MANAGER", "OWNER"]} />,
             children: [

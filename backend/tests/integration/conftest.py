@@ -26,6 +26,7 @@ from tests.fakes import FakeEmailSender
 load_dotenv()
 
 _TABLES = [
+    "used_presence_tokens",
     "shifts",
     "invoices",
     "tax_credentials",

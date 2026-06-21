@@ -13,6 +13,8 @@ export interface RequestOptions {
   form?: URLSearchParams
   // Attach the Bearer access token and enable transparent refresh-on-401.
   auth?: boolean
+  // Extra request headers (e.g. the presence display's X-Device-Token).
+  headers?: Record<string, string>
   signal?: AbortSignal
 }
 
@@ -64,6 +66,8 @@ export class FetchHttpClient implements HttpClient {
       const token = getAccessToken()
       if (token) headers["Authorization"] = `Bearer ${token}`
     }
+
+    if (options.headers) Object.assign(headers, options.headers)
 
     return fetch(this.baseUrl + path, {
       method,

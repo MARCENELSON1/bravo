@@ -65,4 +65,41 @@ describe("TimeClockApi", () => {
     expect(path).toContain("/reports/staff?")
     expect(path).toContain("from=2026-06-01")
   })
+
+  it("registers a presence device", async () => {
+    const request = vi.fn().mockResolvedValue({ device_token: "dev.tok" })
+    const api = new TimeClockApi({ request } as unknown as HttpClient)
+
+    await api.registerPresenceDevice()
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("POST")
+    expect(path).toBe("/timeclock/presence/devices")
+    expect(options).toMatchObject({ auth: true })
+  })
+
+  it("fetches the challenge with the device token header (no user auth)", async () => {
+    const request = vi.fn().mockResolvedValue({ qr_payload: "1.ab", code: "ABCDEF" })
+    const api = new TimeClockApi({ request } as unknown as HttpClient)
+
+    await api.presenceChallenge("dev.tok")
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("GET")
+    expect(path).toBe("/timeclock/presence/current")
+    expect(options.headers).toMatchObject({ "X-Device-Token": "dev.tok" })
+    expect(options.auth).toBeUndefined()
+  })
+
+  it("punches by presenting a token", async () => {
+    const request = vi.fn().mockResolvedValue({ id: "s1", source: "PRESENCE" })
+    const api = new TimeClockApi({ request } as unknown as HttpClient)
+
+    await api.presencePunch("ABCDEF")
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("POST")
+    expect(path).toBe("/timeclock/presence/punch")
+    expect(options).toMatchObject({ body: { presented: "ABCDEF" }, auth: true })
+  })
 })

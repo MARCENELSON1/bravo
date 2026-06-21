@@ -2,6 +2,8 @@ import type { HttpClient } from "@/api/http-client"
 import type {
   AdjustShiftBody,
   MyTimeclockDTO,
+  PresenceChallengeDTO,
+  PresenceDeviceDTO,
   ShiftDTO,
   ShiftsQuery,
   StaffReportDTO,
@@ -47,5 +49,29 @@ export class TimeClockApi {
     if (query.to) qs.set("to", query.to)
     const suffix = qs.toString() ? `?${qs.toString()}` : ""
     return this.http.request<StaffReportDTO>("GET", `/reports/staff${suffix}`, { auth: true })
+  }
+
+  // --- Presence layer (Fase 5.5) ---
+
+  // OWNER/MANAGER provisions a local display, getting its device token.
+  registerPresenceDevice(): Promise<PresenceDeviceDTO> {
+    return this.http.request<PresenceDeviceDTO>("POST", "/timeclock/presence/devices", {
+      auth: true,
+    })
+  }
+
+  // Display: current rotating challenge, authenticated by the device token.
+  presenceChallenge(deviceToken: string): Promise<PresenceChallengeDTO> {
+    return this.http.request<PresenceChallengeDTO>("GET", "/timeclock/presence/current", {
+      headers: { "X-Device-Token": deviceToken },
+    })
+  }
+
+  // Employee (own session): punch by presenting the scanned/typed token.
+  presencePunch(presented: string): Promise<ShiftDTO> {
+    return this.http.request<ShiftDTO>("POST", "/timeclock/presence/punch", {
+      body: { presented },
+      auth: true,
+    })
   }
 }

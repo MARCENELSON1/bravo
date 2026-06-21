@@ -358,3 +358,25 @@ class ShiftORM(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+class UsedPresenceTokenORM(Base):
+    """Single-use ledger for presence tokens: one row per consumed
+    ``(tenant, time_step, user)``. Also feeds the per-user rate limit."""
+
+    __tablename__ = "used_presence_tokens"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "time_step", "user_id", name="uq_used_presence_token"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    time_step: Mapped[int] = mapped_column(BigInteger)
+    user_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

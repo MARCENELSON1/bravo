@@ -97,6 +97,19 @@ class Settings(BaseSettings):
     # host in prod). Empty → rely on the dashboard-configured webhook.
     mp_notification_url: str = ""
 
+    # Fichaje por presencia (Fase 5.5). "hmac" = QR/código rotativo firmado;
+    # "off" = deshabilitado. El secreto de firma cae al jwt_secret si no se setea.
+    presence_provider: Literal["hmac", "off"] = "hmac"
+    presence_secret: str = ""
+    presence_period_seconds: int = 30
+    presence_rate_max: int = 10
+    presence_rate_window_seconds: int = 60
+
+    @property
+    def effective_presence_secret(self) -> str:
+        """Dedicated presence-signing secret, falling back to the JWT secret."""
+        return self.presence_secret or self.jwt_secret
+
     @model_validator(mode="after")
     def _reject_insecure_production(self) -> "Settings":
         """Fail fast on insecure configuration outside of dev."""
