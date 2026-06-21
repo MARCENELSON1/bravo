@@ -10,8 +10,14 @@ Hace que **cada tenant cobre con su propia cuenta de MercadoPago**. Hoy (Fase 3)
 > 2. **Clave de cifrado** para tokens en reposo: `CREDENTIALS_ENCRYPTION_KEY` (Fernet, 32 bytes url-safe base64) — **solo env / secret manager, nunca al repo**.
 > 3. La API exacta de OAuth de MP (endpoints `/oauth/token`, authorize URL, `/users/me`, campos `user_id`/`refresh_token`/`expires_in`) se **consulta desde el MCP** (`search_documentation`) durante la implementación — **no inventar la API**.
 
-## Estado de implementación
-PENDIENTE — depende de Fase 3 (✅ completa, `feat/fase-3-cobro-pagos`). Se implementa en rama nueva `feat/fase-3.5-mp-oauth`.
+## Estado de implementación — ✅ COMPLETA (backend + frontend)
+Implementada en `feat/fase-3-cobro-pagos` por tramos:
+- **T1 `cecd528`** — fundación: `PaymentCredential` + cifrado Fernet + tabla `payment_credentials` (migración 0004 RLS) + repo/errores.
+- **T2+T3 `a0e8f10`** — OAuth client (authorize/token/refresh/users-me) + use cases connect/callback/disconnect/status con state firmado; resolver por tenant (descifra, refresca on-expiry, fallback env); gateway cobra con el token del tenant (+ marketplace_fee).
+- **T4 `433c389`** — API `integrations/mercadopago` (connect/callback/status/disconnect) + ruteo del webhook por `user_id→tenant`; cipher lazy; e2e del connect.
+- **T5 `14d96d7`** — frontend: `IntegrationsPage` (conectar/estado/desconectar) + cliente/hook + nav.
+
+96 tests backend + 20 front. **Falta (no bloqueante):** app MP con OAuth (`MP_CLIENT_ID/SECRET` + redirect) y `CREDENTIALS_ENCRYPTION_KEY` para prueba en vivo; y, para multi-tenant real, una sesión RLS-exenta para `get_by_account_id` del webhook (hoy cae al token app).
 
 ## User Story
 Como **dueño (OWNER) / encargado (MANAGER)** quiero **vincular la cuenta de MercadoPago de mi local a NÚCLEO una sola vez**, para que **los cobros por MercadoPago/QR caigan en mi propia cuenta** (y no en una cuenta compartida), manteniendo la comanda conciliada igual que hoy.
