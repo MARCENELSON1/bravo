@@ -34,9 +34,11 @@ import {
 import { formatMoney } from "@/lib/money"
 import { buildDisplayUrl } from "@/lib/presence"
 import {
-  formatDateTime,
+  formatClock,
+  formatDate,
   formatMinutes,
   fromDateTimeLocal,
+  isNextDay,
   SHIFT_SOURCE_LABELS,
   toDateTimeLocal,
 } from "@/lib/timeclock"
@@ -268,6 +270,7 @@ export function StaffPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Empleado</TableHead>
+                  <TableHead>Fecha</TableHead>
                   <TableHead>Entrada</TableHead>
                   <TableHead>Salida</TableHead>
                   <TableHead className="text-right">Horas</TableHead>
@@ -279,9 +282,19 @@ export function StaffPage() {
                 {shifts.data.map((s) => (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">{labelFor(s.user_id)}</TableCell>
-                    <TableCell className="tabular-nums">{formatDateTime(s.clock_in_at)}</TableCell>
+                    <TableCell className="tabular-nums">{formatDate(s.clock_in_at)}</TableCell>
+                    <TableCell className="tabular-nums">{formatClock(s.clock_in_at)}</TableCell>
                     <TableCell className="tabular-nums">
-                      {s.clock_out_at ? formatDateTime(s.clock_out_at) : "—"}
+                      {s.clock_out_at ? (
+                        <>
+                          {formatClock(s.clock_out_at)}
+                          {isNextDay(s.clock_in_at, s.clock_out_at) ? (
+                            <span className="text-muted-foreground"> +1d</span>
+                          ) : null}
+                        </>
+                      ) : (
+                        "—"
+                      )}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {s.worked_minutes !== null ? (

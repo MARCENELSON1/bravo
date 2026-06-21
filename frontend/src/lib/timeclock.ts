@@ -13,6 +13,20 @@ export function formatClock(iso: string): string {
   return new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })
 }
 
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+}
+
+// True when two instants fall on different calendar days (a shift that crosses
+// midnight — common in hospitality). Lets the table flag the salida as "+1d".
+export function isNextDay(fromIso: string, toIso: string): boolean {
+  return new Date(fromIso).toDateString() !== new Date(toIso).toDateString()
+}
+
 export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString("es-AR", {
     day: "2-digit",
