@@ -1,6 +1,7 @@
 import type { ComponentType } from "react"
 import {
   Boxes,
+  CalendarClock,
   ChefHat,
   Clock,
   FileText,
@@ -53,6 +54,12 @@ export const NAV_GROUPS: NavGroup[] = [
         roles: ["WAITER", "CASHIER", "MANAGER", "OWNER"],
       },
       { label: "Cocina", to: "/app/kds", icon: ChefHat, roles: ["KITCHEN", "MANAGER", "OWNER"] },
+      {
+        label: "Reservas",
+        to: "/app/reservations",
+        icon: CalendarClock,
+        roles: ["WAITER", "CASHIER", "MANAGER", "OWNER"],
+      },
       {
         label: "Fichar",
         to: "/app/fichar",

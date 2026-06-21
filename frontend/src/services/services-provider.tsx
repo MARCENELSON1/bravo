@@ -10,6 +10,7 @@ import { OrdersApi } from "@/api/orders-api"
 import { PaymentsApi } from "@/api/payments-api"
 import { ProductsApi } from "@/api/products-api"
 import { ReportsApi } from "@/api/reports-api"
+import { ReservationsApi } from "@/api/reservations-api"
 import { TablesApi } from "@/api/tables-api"
 import { TimeClockApi } from "@/api/timeclock-api"
 import { API_BASE_URL } from "@/lib/env"
@@ -35,6 +36,7 @@ export function ServicesProvider({
       paymentsApi: new PaymentsApi(http),
       productsApi: new ProductsApi(http),
       reportsApi: new ReportsApi(http),
+      reservationsApi: new ReservationsApi(http),
       tablesApi: new TablesApi(http),
       timeClockApi: new TimeClockApi(http),
     }

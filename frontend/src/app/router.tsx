@@ -18,6 +18,7 @@ import { InvoicesPage } from "@/features/invoices/invoices-page"
 import { KdsPage } from "@/features/kds/kds-page"
 import { OrderPage } from "@/features/orders/order-page"
 import { ProductsPage } from "@/features/products/products-page"
+import { ReservationsPage } from "@/features/reservations/reservations-page"
 import { PresenceDisplayPage } from "@/features/timeclock/presence-display-page"
 import { PunchPage } from "@/features/timeclock/punch-page"
 import { StaffPage } from "@/features/timeclock/staff-page"
@@ -45,6 +46,7 @@ export const router = createBrowserRouter([
             children: [
               { path: "/app/floor", element: <FloorPage /> },
               { path: "/app/orders/:orderId", element: <OrderPage /> },
+              { path: "/app/reservations", element: <ReservationsPage /> },
             ],
           },
           {

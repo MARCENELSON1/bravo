@@ -8,6 +8,7 @@ import type { OrdersApi } from "@/api/orders-api"
 import type { PaymentsApi } from "@/api/payments-api"
 import type { ProductsApi } from "@/api/products-api"
 import type { ReportsApi } from "@/api/reports-api"
+import type { ReservationsApi } from "@/api/reservations-api"
 import type { TablesApi } from "@/api/tables-api"
 import type { TimeClockApi } from "@/api/timeclock-api"
 
@@ -23,6 +24,7 @@ export interface Services {
   paymentsApi: PaymentsApi
   productsApi: ProductsApi
   reportsApi: ReportsApi
+  reservationsApi: ReservationsApi
   tablesApi: TablesApi
   timeClockApi: TimeClockApi
 }
