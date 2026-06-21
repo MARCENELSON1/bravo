@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
+import { ThemeProvider } from "@/app/theme-provider"
 import { AuthProvider } from "@/auth/auth-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { ServicesProvider } from "@/services/services-provider"
@@ -20,13 +21,15 @@ export function Providers({
   services?: Services
 }) {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ServicesProvider value={services}>
-        <AuthProvider>
-          {children}
-          <Toaster position="top-center" />
-        </AuthProvider>
-      </ServicesProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ServicesProvider value={services}>
+          <AuthProvider>
+            {children}
+            <Toaster position="top-center" />
+          </AuthProvider>
+        </ServicesProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   )
 }

@@ -1,10 +1,11 @@
 import { createBrowserRouter, Navigate } from "react-router-dom"
 
+import { AppShell } from "@/components/shell/app-shell"
 import { RequireAuth } from "@/auth/require-auth"
 import { RequireRole } from "@/auth/require-role"
+import { DashboardPage } from "@/features/dashboard/dashboard-page"
 import { FloorPage } from "@/features/floor/floor-page"
 import { AcceptInvitationPage } from "@/features/identity/accept-invitation-page"
-import { HomePage } from "@/features/identity/home-page"
 import { InviteUserPage } from "@/features/identity/invite-user-page"
 import { LoginPage } from "@/features/identity/login-page"
 import { OnboardingPage } from "@/features/identity/onboarding-page"
@@ -26,25 +27,30 @@ export const router = createBrowserRouter([
   {
     element: <RequireAuth />,
     children: [
-      { path: "/app", element: <HomePage /> },
       {
-        element: <RequireRole allow={["WAITER", "CASHIER", "MANAGER", "OWNER"]} />,
+        element: <AppShell />,
         children: [
-          { path: "/app/floor", element: <FloorPage /> },
-          { path: "/app/orders/:orderId", element: <OrderPage /> },
-        ],
-      },
-      {
-        element: <RequireRole allow={["KITCHEN", "MANAGER", "OWNER"]} />,
-        children: [{ path: "/app/kds", element: <KdsPage /> }],
-      },
-      {
-        element: <RequireRole allow={["OWNER", "MANAGER"]} />,
-        children: [
-          { path: "/app/invite", element: <InviteUserPage /> },
-          { path: "/app/products", element: <ProductsPage /> },
-          { path: "/app/expenses", element: <ExpensesPage /> },
-          { path: "/app/integrations", element: <IntegrationsPage /> },
+          { path: "/app", element: <DashboardPage /> },
+          {
+            element: <RequireRole allow={["WAITER", "CASHIER", "MANAGER", "OWNER"]} />,
+            children: [
+              { path: "/app/floor", element: <FloorPage /> },
+              { path: "/app/orders/:orderId", element: <OrderPage /> },
+            ],
+          },
+          {
+            element: <RequireRole allow={["KITCHEN", "MANAGER", "OWNER"]} />,
+            children: [{ path: "/app/kds", element: <KdsPage /> }],
+          },
+          {
+            element: <RequireRole allow={["OWNER", "MANAGER"]} />,
+            children: [
+              { path: "/app/invite", element: <InviteUserPage /> },
+              { path: "/app/products", element: <ProductsPage /> },
+              { path: "/app/expenses", element: <ExpensesPage /> },
+              { path: "/app/integrations", element: <IntegrationsPage /> },
+            ],
+          },
         ],
       },
     ],
