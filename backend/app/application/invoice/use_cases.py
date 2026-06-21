@@ -59,8 +59,10 @@ class IssueInvoice:
         else:
             net, vat, vat_items = split_vat(total)
 
+        # Reuse the row when retrying a prior DRAFT/REJECTED attempt: one invoice
+        # per order (get_by_order expects at most one) — never accumulate rows.
         invoice = Invoice(
-            id=str(uuid4()),
+            id=existing.id if existing is not None else str(uuid4()),
             tenant_id=tenant_id,
             type=inv_type,
             point_of_sale=credential.point_of_sale,
@@ -86,7 +88,10 @@ class IssueInvoice:
             )
         else:
             invoice.reject(result.observations or "Rechazado por AFIP")
-        await self._invoices.add(invoice)
+        if existing is not None:
+            await self._invoices.save(invoice)
+        else:
+            await self._invoices.add(invoice)
         return invoice
 
 

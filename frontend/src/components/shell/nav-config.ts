@@ -1,6 +1,7 @@
 import type { ComponentType } from "react"
 import {
   ChefHat,
+  FileText,
   LayoutDashboard,
   Package,
   Plug,
@@ -58,7 +59,15 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "Finanzas",
-    items: [{ label: "Egresos", to: "/app/expenses", icon: Receipt, roles: ["OWNER", "MANAGER"] }],
+    items: [
+      { label: "Egresos", to: "/app/expenses", icon: Receipt, roles: ["OWNER", "MANAGER"] },
+      {
+        label: "Comprobantes",
+        to: "/app/invoices",
+        icon: FileText,
+        roles: ["OWNER", "MANAGER"],
+      },
+    ],
   },
   {
     label: "Administración",

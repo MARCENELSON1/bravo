@@ -12,6 +12,7 @@ import { OnboardingPage } from "@/features/identity/onboarding-page"
 import { VerifyEmailPage } from "@/features/identity/verify-email-page"
 import { ExpensesPage } from "@/features/expenses/expenses-page"
 import { IntegrationsPage } from "@/features/integrations/integrations-page"
+import { InvoicesPage } from "@/features/invoices/invoices-page"
 import { KdsPage } from "@/features/kds/kds-page"
 import { OrderPage } from "@/features/orders/order-page"
 import { ProductsPage } from "@/features/products/products-page"
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
               { path: "/app/invite", element: <InviteUserPage /> },
               { path: "/app/products", element: <ProductsPage /> },
               { path: "/app/expenses", element: <ExpensesPage /> },
+              { path: "/app/invoices", element: <InvoicesPage /> },
               { path: "/app/integrations", element: <IntegrationsPage /> },
             ],
           },

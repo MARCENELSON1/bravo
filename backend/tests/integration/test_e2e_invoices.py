@@ -4,12 +4,15 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from datetime import date
 
 import pytest_asyncio
 from cryptography.fernet import Fernet
 from dependency_injector import providers
 from httpx import ASGITransport, AsyncClient
 
+from app.domain.invoice.entities import Invoice
+from app.domain.invoice.ports import CaeResult, ElectronicInvoicing
 from app.infrastructure.security.fernet_cipher import FernetTokenCipher
 from tests.fakes import FakeEmailSender
 from tests.integration.test_e2e_auth import _onboard_verify_login
@@ -109,3 +112,68 @@ async def test_invoice_requires_afip_connected(afip_client) -> None:
     )
     assert bad.status_code == 409
     assert bad.json()["code"] == "tax_gateway_not_connected"
+
+
+class _RejectThenAuthorize(ElectronicInvoicing):
+    """Rejects the first authorize() (e.g. AFIP observation) then approves —
+    exercises the reissue-after-reject path."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def authorize(self, *, invoice: Invoice) -> CaeResult:
+        self.calls += 1
+        if self.calls == 1:
+            return CaeResult(False, None, None, None, "10016: dato faltante")
+        return CaeResult(True, 1, "68000000000001", date(2030, 1, 1), None)
+
+
+@pytest_asyncio.fixture
+async def rejecting_afip_client(
+    clean_tables: None,
+) -> AsyncIterator[tuple[AsyncClient, FakeEmailSender]]:
+    from app.main import create_app
+
+    app = create_app()
+    container = app.state.container
+    fake_email = FakeEmailSender()
+    container.email_sender.override(providers.Object(fake_email))
+    container.token_cipher.override(
+        providers.Object(FernetTokenCipher(Fernet.generate_key().decode()))
+    )
+    container.invoicing_provider.override(providers.Object(_RejectThenAuthorize()))
+    transport = ASGITransport(app=app)
+    try:
+        async with AsyncClient(transport=transport, base_url="https://test") as http:
+            yield http, fake_email
+    finally:
+        container.email_sender.reset_override()
+        container.token_cipher.reset_override()
+        container.invoicing_provider.reset_override()
+        await container.db().dispose()
+
+
+async def test_reissue_after_reject_keeps_single_invoice(rejecting_afip_client) -> None:
+    http, fake_email = rejecting_afip_client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    await http.put("/api/v1/integrations/afip", json=_AFIP, headers=h)
+    order_id = await _paid_order(http, h)
+
+    first = await http.post(
+        f"/api/v1/orders/{order_id}/invoice", json={"doc_type": "CONSUMIDOR_FINAL"}, headers=h
+    )
+    assert first.status_code == 201
+    assert first.json()["status"] == "REJECTED"
+
+    retry = await http.post(
+        f"/api/v1/orders/{order_id}/invoice", json={"doc_type": "CONSUMIDOR_FINAL"}, headers=h
+    )
+    assert retry.status_code == 201
+    assert retry.json()["status"] == "AUTHORIZED"
+
+    # Single row per order: get_by_order must not raise MultipleResultsFound.
+    got = await http.get(f"/api/v1/orders/{order_id}/invoice", headers=h)
+    assert got.status_code == 200
+    assert got.json()["status"] == "AUTHORIZED"
+    assert len((await http.get("/api/v1/invoices", headers=h)).json()) == 1

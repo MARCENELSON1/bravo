@@ -3,8 +3,10 @@ import { Link, useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
+import type { DocType } from "@/api/types-invoicing"
 import type { OrderDTO, PaymentMethod } from "@/api/types-operations"
 import { useAuth } from "@/auth/auth-context"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { GradientHeading } from "@/components/ui/gradient-heading"
@@ -17,9 +19,16 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
+import { useIssueInvoice, useOrderInvoice } from "@/hooks/use-invoices"
 import { useAddItem, useOrder, useSendOrder } from "@/hooks/use-orders"
 import { useOrderPayments, useRegisterPayment } from "@/hooks/use-payments"
 import { useProducts } from "@/hooks/use-products"
+import {
+  DOC_TYPE_LABELS,
+  INVOICE_STATUS_LABELS,
+  invoiceNumber,
+  invoiceTypeLabel,
+} from "@/lib/invoice-labels"
 import { formatMoney } from "@/lib/money"
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
@@ -31,6 +40,7 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
 ]
 const CHARGE_ROLES = ["CASHIER", "MANAGER", "OWNER"]
 const EDIT_ROLES = ["WAITER", "MANAGER", "OWNER"]
+const INVOICE_ROLES = ["OWNER", "MANAGER"]
 
 export function OrderPage() {
   const { orderId = "" } = useParams()
@@ -38,6 +48,7 @@ export function OrderPage() {
   const role = session?.role ?? ""
   const canCharge = CHARGE_ROLES.includes(role)
   const canEdit = EDIT_ROLES.includes(role)
+  const canInvoice = INVOICE_ROLES.includes(role)
 
   // While an online charge is pending we poll the order until the webhook flips
   // it to PAID.
@@ -201,7 +212,134 @@ export function OrderPage() {
       {canCharge && data.status !== "CANCELLED" ? (
         <CobroSection order={data} onPendingOnline={() => setAwaitingOnline(true)} />
       ) : null}
+
+      {canInvoice && data.status === "PAID" ? <FacturaSection order={data} /> : null}
     </div>
+  )
+}
+
+const INVOICE_DOC_TYPES: { value: DocType; label: string }[] = [
+  { value: "CONSUMIDOR_FINAL", label: DOC_TYPE_LABELS.CONSUMIDOR_FINAL },
+  { value: "CUIT", label: DOC_TYPE_LABELS.CUIT },
+  { value: "DNI", label: DOC_TYPE_LABELS.DNI },
+]
+
+// Shown on a paid comanda (OWNER/MANAGER): emits the AFIP comprobante or, if one
+// already exists, shows its CAE. The A/B/C type is derived server-side.
+function FacturaSection({ order }: { order: OrderDTO }) {
+  const invoice = useOrderInvoice(order.id)
+  const issue = useIssueInvoice(order.id)
+  const [docType, setDocType] = useState<DocType>("CONSUMIDOR_FINAL")
+  const [docNumber, setDocNumber] = useState("")
+
+  const emitir = () => {
+    const needsDoc = docType !== "CONSUMIDOR_FINAL"
+    const number = needsDoc ? docNumber.trim() : "0"
+    if (needsDoc && !/^\d{7,11}$/.test(number)) {
+      toast.error("Ingresá un CUIT/DNI válido (solo números).")
+      return
+    }
+    issue.mutate(
+      { doc_type: docType, doc_number: number },
+      {
+        onSuccess: (inv) => {
+          if (inv.status === "AUTHORIZED") toast.success(`Factura autorizada · CAE ${inv.cae}`)
+          else
+            toast.error(
+              `AFIP rechazó el comprobante${inv.rejection ? `: ${inv.rejection}` : "."}`
+            )
+        },
+        onError: (error) =>
+          toast.error(isApiError(error) ? error.message : "No pudimos emitir la factura."),
+      }
+    )
+  }
+
+  if (invoice.isPending) {
+    return (
+      <Card>
+        <CardContent className="flex justify-center py-6">
+          <Spinner className="size-5 text-muted-foreground" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const existing = invoice.data
+  if (existing && existing.status === "AUTHORIZED") {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Facturación</span>
+            <Badge>{INVOICE_STATUS_LABELS.AUTHORIZED}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-1 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">{invoiceTypeLabel(existing.type)}</span>
+            <span className="font-medium tabular-nums">
+              {invoiceNumber(existing.point_of_sale, existing.number)}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">CAE</span>
+            <span className="font-mono text-xs">{existing.cae}</span>
+          </div>
+          {existing.cae_expiration ? (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Vencimiento CAE</span>
+              <span>{existing.cae_expiration}</span>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Facturar</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {existing && existing.status === "REJECTED" ? (
+          <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+            AFIP rechazó el último intento
+            {existing.rejection ? `: ${existing.rejection}` : "."} Probá de nuevo.
+          </p>
+        ) : null}
+        <div className="flex items-end gap-2">
+          <Select value={docType} onValueChange={(v) => setDocType(v as DocType)}>
+            <SelectTrigger className="flex-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {INVOICE_DOC_TYPES.map((d) => (
+                <SelectItem key={d.value} value={d.value}>
+                  {d.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {docType !== "CONSUMIDOR_FINAL" ? (
+            <Input
+              inputMode="numeric"
+              placeholder={docType === "CUIT" ? "CUIT" : "DNI"}
+              value={docNumber}
+              onChange={(e) => setDocNumber(e.target.value)}
+              className="max-w-[10rem]"
+            />
+          ) : null}
+        </div>
+        <Button onClick={emitir} disabled={issue.isPending}>
+          {issue.isPending ? "Emitiendo…" : "Emitir factura"}
+        </Button>
+        <p className="text-xs text-muted-foreground">
+          Necesitás AFIP conectado en Integraciones. El tipo (A/B/C) se determina solo.
+        </p>
+      </CardContent>
+    </Card>
   )
 }
 
