@@ -52,6 +52,7 @@ from app.application.table.use_cases import CreateTable, ListTables
 from app.config import Settings
 from app.infrastructure.email.console_sender import ConsoleEmailSender
 from app.infrastructure.email.smtp_sender import SmtpEmailSender
+from app.infrastructure.invoicing.afip_invoicing import AfipInvoicing
 from app.infrastructure.invoicing.credentials_resolver import DbTaxCredentialsResolver
 from app.infrastructure.invoicing.fake_invoicing import FakeInvoicing
 from app.infrastructure.payments.credentials_resolver import DbPaymentCredentialsResolver
@@ -410,6 +411,11 @@ class Container(containers.DeclarativeContainer):
     invoicing_provider = providers.Selector(
         config.provided.invoicing_provider,
         fake=providers.Singleton(FakeInvoicing),
+        afip=providers.Singleton(
+            AfipInvoicing,
+            resolver=tax_credentials_resolver,
+            afip_env=config.provided.afip_env,
+        ),
     )
     issue_invoice = providers.Factory(
         IssueInvoice,
