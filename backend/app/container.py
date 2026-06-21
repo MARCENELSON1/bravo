@@ -50,6 +50,11 @@ from app.application.product.use_cases import CreateProduct, ListProducts
 from app.application.reporting.dashboard import GetDashboardSummary
 from app.application.reporting.staff import GetStaffReport
 from app.application.table.use_cases import CreateTable, ListTables
+from app.application.timeclock.presence import (
+    GetPresenceChallenge,
+    PunchWithPresence,
+    RegisterPresenceDevice,
+)
 from app.application.timeclock.use_cases import (
     AdjustShift,
     ClockIn,
@@ -78,6 +83,9 @@ from app.infrastructure.persistence.invitation_repo import SqlAlchemyInvitationR
 from app.infrastructure.persistence.invoice_repo import SqlAlchemyInvoiceRepository
 from app.infrastructure.persistence.order_repo import SqlAlchemyOrderRepository
 from app.infrastructure.persistence.payment_repo import SqlAlchemyPaymentRepository
+from app.infrastructure.persistence.presence_store_repo import (
+    SqlAlchemyPresenceUsageStore,
+)
 from app.infrastructure.persistence.product_repo import SqlAlchemyProductRepository
 from app.infrastructure.persistence.refresh_token_repo import SqlAlchemyRefreshTokenRepository
 from app.infrastructure.persistence.reset_token_repo import SqlAlchemyResetTokenRepository
@@ -96,6 +104,8 @@ from app.infrastructure.security.fernet_cipher import FernetTokenCipher
 from app.infrastructure.security.hasher import Argon2Hasher
 from app.infrastructure.security.tenant_context import ContextVarTenantContext
 from app.infrastructure.security.token_service import JwtTokenService
+from app.infrastructure.timeclock.hmac_presence import HmacPresenceToken
+from app.infrastructure.timeclock.no_presence import NoPresence
 
 
 class Container(containers.DeclarativeContainer):
@@ -482,4 +492,33 @@ class Container(containers.DeclarativeContainer):
     )
     adjust_shift = providers.Factory(
         AdjustShift, shifts=shift_repository, tenant_context=tenant_context
+    )
+
+    # --- Fase 5.5: capa de presencia (QR + código rotativo) ---
+    presence_usage_store = providers.Factory(
+        SqlAlchemyPresenceUsageStore, session_factory=db.provided.session
+    )
+    presence_token = providers.Selector(
+        config.provided.presence_provider,
+        hmac=providers.Singleton(
+            HmacPresenceToken,
+            store=presence_usage_store,
+            secret=config.provided.effective_presence_secret,
+            period_seconds=config.provided.presence_period_seconds,
+            rate_max=config.provided.presence_rate_max,
+            rate_window_seconds=config.provided.presence_rate_window_seconds,
+        ),
+        off=providers.Singleton(NoPresence),
+    )
+    register_presence_device = providers.Factory(
+        RegisterPresenceDevice, presence=presence_token, tenant_context=tenant_context
+    )
+    get_presence_challenge = providers.Factory(
+        GetPresenceChallenge, presence=presence_token
+    )
+    punch_with_presence = providers.Factory(
+        PunchWithPresence,
+        presence=presence_token,
+        punch=punch,
+        tenant_context=tenant_context,
     )

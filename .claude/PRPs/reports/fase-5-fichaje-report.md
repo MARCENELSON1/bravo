@@ -9,8 +9,9 @@ OWNER/MANAGER **listan y corrigen** fichajes con auditoría (`adjusted_by`,
 `source=MANAGER`); y un **reporte por mozo** cruza horas/extras con
 mesas/ventas (`Order.waiter_id` + comandas PAID) en un read model dedicado.
 Todo sobre la Clean Arch + multi-tenant + RLS ya existentes. Timestamps **de
-servidor** (anti-fraude). **T6 (capa de presencia QR/código) queda diferido**
-como Fase 5.5 — ver "Out of scope / Próximo".
+servidor** (anti-fraude). **T6 (capa de presencia QR + código rotativo) también
+implementado**: pantalla display responsive (mobile + desktop) + punch del
+empleado por escaneo (cámara) o código tipeado, detrás del port `PresenceToken`.
 
 ## Assessment vs Reality
 
@@ -29,17 +30,17 @@ como Fase 5.5 — ver "Out of scope / Próximo".
 | T3 | Casos de uso + API + RBAC | ✅ Complete | ClockIn/ClockOut/Punch/GetMyTimeclock/ListShifts/AdjustShift + router `/timeclock` |
 | T4 | Read model + reporte por mozo | ✅ Complete | `StaffReportReadModel` + `GET /reports/staff` (OWNER/MANAGER) |
 | T5 | Frontend base | ✅ Complete | `TimeClockApi` + hooks, widget `ClockToggle` en topbar, página **Personal**, nav + ruta |
-| T6 | Capa de presencia (QR + código) | ⏸️ Diferido | Fase 5.5 — el plan lo define incremental y aislado detrás de `PresenceToken` |
+| T6 | Capa de presencia (QR + código) | ✅ Complete | Port `PresenceToken` + `HmacPresenceToken` (rotativo, single-use, rate-limit, device token) + display responsive + scanner/código |
 
 ## Validation Results
 
 | Level | Status | Notes |
 |---|---|---|
-| Static Analysis | ✅ Pass | `ruff check app tests` + `mypy app` (170 files) limpios; `tsc` + `eslint src` limpios |
-| Unit Tests | ✅ Pass | Backend 10 unit (timeclock domain) + frontend 9 (api+lib) nuevos |
-| Build | ✅ Pass | `vite build` OK |
-| Integration | ✅ Pass | Backend **127 tests** (e2e fichaje 7 + e2e staff report 2 nuevos, RLS incluido) |
-| Coverage | ✅ Pass | domain/application nuevos 94–100% (≥80% exigido) |
+| Static Analysis | ✅ Pass | `ruff check app tests` + `mypy app` (176 files) limpios; `tsc` + `eslint src` limpios |
+| Unit Tests | ✅ Pass | Backend 10 timeclock + 11 presence; frontend 12 (api+lib) nuevos |
+| Build | ✅ Pass | `vite build` OK (+ dep `qrcode.react`) |
+| Integration | ✅ Pass | Backend **141 tests** (e2e fichaje 7 + staff report 2 + presencia 3, RLS incluido); frontend **33** |
+| Coverage | ✅ Pass | domain/application nuevos 100% (≥80% exigido); adapter HMAC 96% |
 
 ## Files Changed
 
@@ -88,10 +89,15 @@ como Fase 5.5 — ver "Out of scope / Próximo".
 | `app/router.tsx` | ruta `/app/staff` (OWNER/MANAGER) |
 
 ## Deviations from Plan
-- **T6 diferido a Fase 5.5.** El plan ya lo describe como incremental y aislado
-  detrás del port `PresenceToken`; T1–T5 son una entrega coherente y shippable
-  (fichaje propio + corrección + reporte). El toggle base (`source=SELF`) ya es
-  el fallback honor-system que T6 complementa, así que nada queda a medias.
+- **T6 entregado (no diferido).** Se implementó completo tras T1–T5 (mismo branch).
+  Decisión de alcance: **un dispositivo lógico por tenant** (`device_id="local"`),
+  device token **stateless firmado** (sin tabla de dispositivos) — multi-dispositivo
+  con registro por aparato queda como futuro. **Rate-limit** = cap de fichajes por
+  usuario/ventana (anti-spam); el throttling anti-fuerza-bruta del código corto se
+  apoya en su entropía + TTL + sesión válida (hardening fino a nivel ops, anotado).
+- **Scanner sin dependencia pesada:** cámara vía `BarcodeDetector` nativo (con shim
+  de tipos) + fallback universal de **código tipeado** (anda en mobile y desktop).
+  Sólo se sumó `qrcode.react` para renderizar el QR del display.
 - **Endpoints `/clock-in` + `/clock-out` además del `/punch`.** El plan permitía
   "o /clock-in+/clock-out"; expuse ambos: el toggle `/punch` para el widget y los
   estrictos para poder rechazar doble-entrada / salida-sin-abrir con `code` estable
@@ -105,10 +111,16 @@ como Fase 5.5 — ver "Out of scope / Próximo".
   no en `models.py`) — corregido en el acto.
 - ruff reordenó imports en la migración `0006` (esperado, autofix).
 
-## Next Steps (T6 — Fase 5.5, opcional)
-- [ ] `PresenceToken` port + `HmacPresenceToken` (token rotativo por tiempo,
+## Next Steps
+- [ ] PR/merge de T6 a `main` (T1–T5 ya mergeados en `105d6a8`).
+- [ ] Validación manual: display en una pantalla del local + scanner de cámara en
+      un celular real (BarcodeDetector: Chrome/Android sí; iOS Safari → código tipeado).
+- [ ] (Hardening futuro) registro multi-dispositivo + purga/TTL de `used_presence_tokens`.
+- [ ] Code review (`/code-review`).
+
+### T6 backend (Fase 5.5)
+- [x] `PresenceToken` port + `HmacPresenceToken` (token rotativo por tiempo,
       single-use por (token,user), rate-limit) + tabla `used_presence_tokens` + Selector `presence_provider`.
-- [ ] Credencial de dispositivo por local (provisión por OWNER; molde = conectar integración) + `GET /timeclock/presence/current`.
-- [ ] `POST /timeclock/punch` acepta `{presented}` → `verify` → toggle `source=PRESENCE`.
-- [ ] Pantalla display (QR + código rotando) + scanner/​input en la app.
-- [ ] Code review (`/code-review`) + PR/merge a `main`.
+- [x] Credencial de dispositivo stateless firmada (OWNER provisiona) + `GET /timeclock/presence/current`.
+- [x] `POST /timeclock/presence/punch` acepta `{presented}` → `verify` → toggle `source=PRESENCE`.
+- [x] Pantalla display responsive (QR + código rotando) + scanner cámara/​código tipeado.

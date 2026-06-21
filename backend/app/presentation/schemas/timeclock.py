@@ -29,3 +29,20 @@ class ClockInRequest(BaseModel):
 class AdjustShiftRequest(BaseModel):
     clock_in_at: datetime
     clock_out_at: datetime | None = None
+
+
+# --- Presence layer (Fase 5.5) ---
+
+
+class PresenceChallengeResponse(BaseModel):
+    qr_payload: str
+    code: str
+    expires_at: datetime
+
+
+class PresenceDeviceResponse(BaseModel):
+    device_token: str
+
+
+class PresencePunchRequest(BaseModel):
+    presented: str

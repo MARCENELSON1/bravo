@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Package,
   Plug,
+  QrCode,
   Receipt,
   UtensilsCrossed,
   Users,
@@ -50,6 +51,12 @@ export const NAV_GROUPS: NavGroup[] = [
         roles: ["WAITER", "CASHIER", "MANAGER", "OWNER"],
       },
       { label: "Cocina", to: "/app/kds", icon: ChefHat, roles: ["KITCHEN", "MANAGER", "OWNER"] },
+      {
+        label: "Fichar",
+        to: "/app/fichar",
+        icon: QrCode,
+        roles: ["OWNER", "MANAGER", "WAITER", "KITCHEN", "CASHIER"],
+      },
     ],
   },
   {

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { QRCodeSVG } from "qrcode.react"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
@@ -24,8 +25,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useAdjustShift, useShifts, useStaffReport } from "@/hooks/use-timeclock"
+import {
+  useAdjustShift,
+  useRegisterPresenceDevice,
+  useShifts,
+  useStaffReport,
+} from "@/hooks/use-timeclock"
 import { formatMoney } from "@/lib/money"
+import { buildDisplayUrl } from "@/lib/presence"
 import {
   formatDateTime,
   formatMinutes,
@@ -106,6 +113,58 @@ function AdjustSheet({ shift }: { shift: ShiftDTO }) {
   )
 }
 
+// OWNER/MANAGER provisions the local display: generates an enrolment link (and a
+// QR of it) to open on the screen that will show the rotating fichaje QR.
+function DeviceProvisionCard() {
+  const register = useRegisterPresenceDevice()
+  const [url, setUrl] = useState<string | null>(null)
+
+  const generate = () => {
+    register.mutate(undefined, {
+      onSuccess: (device) => setUrl(buildDisplayUrl(device.device_token)),
+      onError: (error) =>
+        toast.error(isApiError(error) ? error.message : "No pudimos generar el dispositivo."),
+    })
+  }
+
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="outline">Dispositivo de fichaje</Button>
+      </SheetTrigger>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Dispositivo de fichaje</SheetTitle>
+          <SheetDescription>
+            Generá un enlace y abrilo en la pantalla del local (tablet o monitor). Esa pantalla
+            muestra el QR y el código rotativo que el personal escanea o tipea para fichar.
+          </SheetDescription>
+        </SheetHeader>
+        <div className="flex flex-col gap-3 px-4 pb-4">
+          <Button onClick={generate} disabled={register.isPending}>
+            {register.isPending ? "Generando…" : url ? "Generar otro enlace" : "Generar enlace"}
+          </Button>
+          {url ? (
+            <>
+              <Input readOnly value={url} onFocus={(e) => e.target.select()} />
+              <div className="flex justify-center rounded-xl border border-border bg-white p-4">
+                <QRCodeSVG value={url} marginSize={2} className="h-44 w-44" />
+              </div>
+              <Button variant="outline" onClick={() => window.open(url, "_blank", "noopener")}>
+                Abrir pantalla
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Escaneá este QR desde la tablet del local para abrir la pantalla, o copiá el enlace.
+                Guardá el enlace en un lugar seguro: habilita el fichaje de ese dispositivo.
+              </p>
+            </>
+          ) : null}
+        </div>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
 export function StaffPage() {
   const [from, setFrom] = useState("")
   const [to, setTo] = useState("")
@@ -130,7 +189,7 @@ export function StaffPage() {
             Horas, extras, mesas y ventas por empleado. Corregí fichajes olvidados.
           </p>
         </div>
-        <div className="flex items-end gap-2">
+        <div className="flex flex-wrap items-end gap-2">
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
             Desde
             <Input
@@ -149,6 +208,7 @@ export function StaffPage() {
               className="w-auto"
             />
           </label>
+          <DeviceProvisionCard />
         </div>
       </header>
 

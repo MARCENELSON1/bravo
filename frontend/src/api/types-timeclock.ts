@@ -43,3 +43,13 @@ export interface StaffReportDTO {
   currency: string
   rows: StaffReportRowDTO[]
 }
+
+export interface PresenceChallengeDTO {
+  qr_payload: string
+  code: string
+  expires_at: string
+}
+
+export interface PresenceDeviceDTO {
+  device_token: string
+}

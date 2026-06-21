@@ -3,8 +3,13 @@ from __future__ import annotations
 from datetime import datetime
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Header, Query, status
 
+from app.application.timeclock.presence import (
+    GetPresenceChallenge,
+    PunchWithPresence,
+    RegisterPresenceDevice,
+)
 from app.application.timeclock.use_cases import (
     AdjustShift,
     ClockIn,
@@ -23,6 +28,9 @@ from app.presentation.schemas.timeclock import (
     AdjustShiftRequest,
     ClockInRequest,
     MyTimeclockResponse,
+    PresenceChallengeResponse,
+    PresenceDeviceResponse,
+    PresencePunchRequest,
     ShiftResponse,
 )
 
@@ -124,5 +132,49 @@ async def adjust_shift(
         clock_in_at=body.clock_in_at,
         clock_out_at=body.clock_out_at,
         by=identity.user_id,
+    )
+    return shift_to_response(shift)
+
+
+# --- Presence layer (Fase 5.5): QR + typeable code ---
+
+
+@router.post(
+    "/timeclock/presence/devices",
+    response_model=PresenceDeviceResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+@inject
+async def register_presence_device(
+    identity: AccessClaims = Depends(require_roles(*_MANAGE_ROLES)),
+    use_case: RegisterPresenceDevice = Depends(Provide[Container.register_presence_device]),
+) -> PresenceDeviceResponse:
+    token = await use_case.execute(tenant_id=identity.tenant_id)
+    return PresenceDeviceResponse(device_token=token)
+
+
+@router.get("/timeclock/presence/current", response_model=PresenceChallengeResponse)
+@inject
+async def presence_current(
+    x_device_token: str = Header(alias="X-Device-Token"),
+    use_case: GetPresenceChallenge = Depends(Provide[Container.get_presence_challenge]),
+) -> PresenceChallengeResponse:
+    challenge = await use_case.execute(device_token=x_device_token)
+    return PresenceChallengeResponse(
+        qr_payload=challenge.qr_payload,
+        code=challenge.code,
+        expires_at=challenge.expires_at,
+    )
+
+
+@router.post("/timeclock/presence/punch", response_model=ShiftResponse)
+@inject
+async def presence_punch(
+    body: PresencePunchRequest,
+    identity: AccessClaims = Depends(current_identity),
+    use_case: PunchWithPresence = Depends(Provide[Container.punch_with_presence]),
+) -> ShiftResponse:
+    shift = await use_case.execute(
+        tenant_id=identity.tenant_id, user_id=identity.user_id, presented=body.presented
     )
     return shift_to_response(shift)

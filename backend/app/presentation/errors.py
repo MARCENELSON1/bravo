@@ -39,8 +39,13 @@ from app.domain.shared.exceptions import (
 from app.domain.table.exceptions import TableNotFound
 from app.domain.tenant.exceptions import TenantAlreadyExists, TenantNotFound
 from app.domain.timeclock.exceptions import (
+    InvalidPresenceDevice,
+    InvalidPresenceToken,
     InvalidShiftTime,
     NoOpenShift,
+    PresenceDisabled,
+    PresenceRateLimited,
+    PresenceTokenReused,
     ShiftAlreadyClosed,
     ShiftAlreadyOpen,
     ShiftNotFound,
@@ -98,6 +103,12 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (NoOpenShift, 409),
     (ShiftAlreadyClosed, 409),
     (InvalidShiftTime, 422),
+    # Fase 5.5 — presencia (QR / código)
+    (InvalidPresenceToken, 401),
+    (PresenceTokenReused, 409),
+    (PresenceRateLimited, 429),
+    (InvalidPresenceDevice, 401),
+    (PresenceDisabled, 409),
 ]
 
 
