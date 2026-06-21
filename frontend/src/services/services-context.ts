@@ -1,6 +1,7 @@
 import { createContext, useContext } from "react"
 
 import type { AuthApi } from "@/api/auth-api"
+import type { IntegrationsApi } from "@/api/integrations-api"
 import type { OrdersApi } from "@/api/orders-api"
 import type { PaymentsApi } from "@/api/payments-api"
 import type { ProductsApi } from "@/api/products-api"
@@ -11,6 +12,7 @@ import type { TablesApi } from "@/api/tables-api"
 // fakes via the provider's `value` — the equivalent of overriding a DI provider.
 export interface Services {
   authApi: AuthApi
+  integrationsApi: IntegrationsApi
   ordersApi: OrdersApi
   paymentsApi: PaymentsApi
   productsApi: ProductsApi

@@ -64,6 +64,12 @@ export function HomePage() {
 
           {canInvite ? (
             <Button asChild variant="outline" className="w-full">
+              <Link to="/app/integrations">Integraciones (MercadoPago)</Link>
+            </Button>
+          ) : null}
+
+          {canInvite ? (
+            <Button asChild variant="outline" className="w-full">
               <Link to="/app/invite">Invitar a tu equipo</Link>
             </Button>
           ) : null}

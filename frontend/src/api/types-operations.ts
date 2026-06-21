@@ -89,3 +89,12 @@ export interface RegisterExpenseBody {
   counterparty: string | null
   description: string | null
 }
+
+// --- Fase 3.5: conexión de pasarela por tenant ---
+
+export interface MpConnectionDTO {
+  connected: boolean
+  nickname: string | null
+  external_account_id: string | null
+  live_mode: boolean
+}
