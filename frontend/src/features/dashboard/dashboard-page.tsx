@@ -1,9 +1,22 @@
 import type { ComponentType } from "react"
-import { ArrowRight, ChefHat, CreditCard, Receipt, TrendingUp, UtensilsCrossed, Wallet } from "lucide-react"
+import {
+  ArrowRight,
+  ChefHat,
+  CreditCard,
+  Receipt,
+  TrendingUp,
+  UtensilsCrossed,
+  Wallet,
+} from "lucide-react"
 import { Link } from "react-router-dom"
 
-import { useAuth } from "@/auth/auth-context"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { GradientHeading } from "@/components/ui/gradient-heading"
+import {
+  TextureCard,
+  TextureCardContent,
+  TextureCardHeader,
+  TextureCardTitle,
+} from "@/components/ui/texture-card"
 
 interface Kpi {
   label: string
@@ -27,32 +40,33 @@ const SHORTCUTS = [
 ]
 
 export function DashboardPage() {
-  const { session } = useAuth()
-
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
+    <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-8">
       <header className="flex flex-col gap-1">
-        <h1 className="font-heading text-2xl font-semibold">Resumen</h1>
+        <GradientHeading size="lg" weight="bold">
+          Resumen
+        </GradientHeading>
         <p className="text-sm text-muted-foreground">
-          Tu local de un vistazo. Las métricas en vivo llegan con los reportes
-          {session ? "." : "."}
+          Tu local de un vistazo. Las métricas en vivo llegan con los reportes.
         </p>
       </header>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {KPIS.map((kpi) => (
-          <Card key={kpi.label}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+          <TextureCard key={kpi.label}>
+            <TextureCardHeader className="flex flex-row items-center justify-between px-5 pt-5">
+              <TextureCardTitle className="text-sm font-medium text-muted-foreground">
                 {kpi.label}
-              </CardTitle>
+              </TextureCardTitle>
               <kpi.icon className="size-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-semibold tabular-nums">{kpi.value}</div>
+            </TextureCardHeader>
+            <TextureCardContent className="px-5 pb-5 pt-1">
+              <div className="text-3xl font-semibold tabular-nums text-foreground">
+                {kpi.value}
+              </div>
               <p className="text-xs text-muted-foreground">{kpi.hint}</p>
-            </CardContent>
-          </Card>
+            </TextureCardContent>
+          </TextureCard>
         ))}
       </section>
 
@@ -63,13 +77,13 @@ export function DashboardPage() {
             <Link
               key={shortcut.to}
               to={shortcut.to}
-              className="flex items-center justify-between rounded-xl border border-border bg-card p-4 text-sm font-medium transition-colors hover:bg-accent"
+              className="group flex items-center justify-between rounded-2xl border border-border bg-card p-4 text-sm font-medium transition-colors hover:bg-accent"
             >
               <span className="flex items-center gap-2">
                 <shortcut.icon className="size-4 text-muted-foreground" />
                 {shortcut.label}
               </span>
-              <ArrowRight className="size-4 text-muted-foreground" />
+              <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
             </Link>
           ))}
         </div>
