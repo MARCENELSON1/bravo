@@ -27,6 +27,12 @@ from app.application.order.use_cases import (
     ListOrders,
     SendOrder,
 )
+from app.application.payment.connect_mercadopago import (
+    CompleteMercadoPagoConnection,
+    DisconnectMercadoPago,
+    GetMercadoPagoConnection,
+    StartMercadoPagoConnection,
+)
 from app.application.payment.use_cases import (
     ConfirmGatewayPayment,
     ListExpenses,
@@ -39,9 +45,14 @@ from app.application.table.use_cases import CreateTable, ListTables
 from app.config import Settings
 from app.infrastructure.email.console_sender import ConsoleEmailSender
 from app.infrastructure.email.smtp_sender import SmtpEmailSender
+from app.infrastructure.payments.credentials_resolver import DbPaymentCredentialsResolver
 from app.infrastructure.payments.manual_gateway import ManualPaymentGateway
 from app.infrastructure.payments.mercadopago_gateway import MercadoPagoGateway
+from app.infrastructure.payments.mercadopago_oauth import MercadoPagoOAuthClient
 from app.infrastructure.persistence.audit_repo import SqlAlchemyAuditRepository
+from app.infrastructure.persistence.credentials_repo import (
+    SqlAlchemyPaymentCredentialRepository,
+)
 from app.infrastructure.persistence.database import Database
 from app.infrastructure.persistence.invitation_repo import SqlAlchemyInvitationRepository
 from app.infrastructure.persistence.order_repo import SqlAlchemyOrderRepository
@@ -55,6 +66,7 @@ from app.infrastructure.persistence.user_repo import SqlAlchemyUserRepository
 from app.infrastructure.persistence.verification_token_repo import (
     SqlAlchemyVerificationTokenRepository,
 )
+from app.infrastructure.security.fernet_cipher import FernetTokenCipher
 from app.infrastructure.security.hasher import Argon2Hasher
 from app.infrastructure.security.tenant_context import ContextVarTenantContext
 from app.infrastructure.security.token_service import JwtTokenService
@@ -272,13 +284,62 @@ class Container(containers.DeclarativeContainer):
     payment_repository = providers.Factory(
         SqlAlchemyPaymentRepository, session_factory=db.provided.session
     )
-    # Online gateway (MercadoPago): also serves the inbound webhook regardless of
-    # which gateway is selected for charging, so notifications are always handled.
+    # --- Fase 3.5: conexión MP por tenant (OAuth) ---
+    token_cipher = providers.Singleton(
+        FernetTokenCipher, key=config.provided.credentials_encryption_key
+    )
+    payment_credential_repository = providers.Factory(
+        SqlAlchemyPaymentCredentialRepository, session_factory=db.provided.session
+    )
+    mercadopago_oauth = providers.Singleton(
+        MercadoPagoOAuthClient,
+        client_id=config.provided.mp_client_id,
+        client_secret=config.provided.mp_client_secret,
+    )
+    payment_credentials_resolver = providers.Singleton(
+        DbPaymentCredentialsResolver,
+        credentials=payment_credential_repository,
+        oauth=mercadopago_oauth,
+        cipher=token_cipher,
+        fallback_token=config.provided.mp_access_token,
+    )
+
+    # Online gateway (MercadoPago): resolves the tenant's OWN token per charge;
+    # also serves the inbound webhook regardless of the selected gateway.
     mercadopago_gateway = providers.Singleton(
         MercadoPagoGateway,
-        access_token=config.provided.mp_access_token,
+        credentials_resolver=payment_credentials_resolver,
         webhook_secret=config.provided.mp_webhook_secret,
         notification_url=config.provided.mp_notification_url,
+        access_token=config.provided.mp_access_token,
+        marketplace_fee=config.provided.mp_marketplace_fee,
+    )
+    start_mp_connection = providers.Factory(
+        StartMercadoPagoConnection,
+        oauth=mercadopago_oauth,
+        tenant_context=tenant_context,
+        state_secret=config.provided.jwt_secret,
+        redirect_uri=config.provided.mp_oauth_redirect_uri,
+    )
+    complete_mp_connection = providers.Factory(
+        CompleteMercadoPagoConnection,
+        oauth=mercadopago_oauth,
+        credentials=payment_credential_repository,
+        cipher=token_cipher,
+        tenant_context=tenant_context,
+        state_secret=config.provided.jwt_secret,
+        redirect_uri=config.provided.mp_oauth_redirect_uri,
+        state_ttl_min=config.provided.oauth_state_ttl_min,
+    )
+    disconnect_mp = providers.Factory(
+        DisconnectMercadoPago,
+        credentials=payment_credential_repository,
+        tenant_context=tenant_context,
+    )
+    get_mp_connection = providers.Factory(
+        GetMercadoPagoConnection,
+        credentials=payment_credential_repository,
+        tenant_context=tenant_context,
     )
     payment_gateway = providers.Selector(
         config.provided.payment_gateway,

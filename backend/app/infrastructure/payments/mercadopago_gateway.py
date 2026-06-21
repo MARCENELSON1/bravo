@@ -1,17 +1,17 @@
 """MercadoPago adapter: Checkout Pro link/QR for online charges + webhook.
 
 Implements two ports:
-  * ``PaymentGateway.charge`` — for online methods (MERCADOPAGO/QR) it creates a
-    Checkout Pro *preference* and returns the payment PENDING, carrying the
-    ``checkout_url`` (link, also usable as a QR). Already-collected money
-    (cash/card/transfer) and every egreso confirm immediately — MercadoPago does
-    not process those here.
+  * ``PaymentGateway.charge`` — for online methods (MERCADOPAGO/QR) it resolves
+    the *tenant's own* access token (Fase 3.5, multi-tenant) and creates a
+    Checkout Pro *preference*, returning the payment PENDING with the
+    ``checkout_url``. Already-collected money (cash/card/transfer) and every
+    egreso confirm immediately. If the tenant has not connected MercadoPago the
+    resolver raises ``PaymentGatewayNotConnected``.
   * ``PaymentNotificationGateway`` — validates the ``x-signature`` HMAC and asks
     the Payments API for the authoritative status (notifications aren't trusted).
 
 Money crosses the API boundary as a float in major units (pesos); inside the
-domain it is always an integer in minor units. ARS/USD/etc. use 2 decimals.
-Credentials come from the environment only and are never logged.
+domain it is always an integer in minor units. Credentials never get logged.
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ import httpx
 from app.domain.payment.entities import Payment
 from app.domain.payment.ports import (
     GatewayChargeStatus,
+    PaymentCredentialsResolver,
     PaymentGateway,
     PaymentNotificationGateway,
 )
@@ -47,23 +48,27 @@ _STATUS_MAP = {
 class MercadoPagoGateway(PaymentGateway, PaymentNotificationGateway):
     def __init__(
         self,
-        access_token: str,
+        credentials_resolver: PaymentCredentialsResolver,
         webhook_secret: str,
         notification_url: str = "",
+        access_token: str = "",
+        marketplace_fee: int = 0,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
-        self._access_token = access_token
+        self._resolver = credentials_resolver
         self._webhook_secret = webhook_secret
         self._notification_url = notification_url
-        # TEST credentials drive the sandbox checkout link.
-        self._sandbox = access_token.startswith("TEST-")
+        # App-level token used by the webhook's fetch_status (transition; the
+        # per-tenant webhook routing lands in the API/webhook tramo).
+        self._fetch_token = access_token
+        self._marketplace_fee = marketplace_fee
         self._transport = transport  # injectable for tests (httpx.MockTransport)
 
-    def _client(self) -> httpx.AsyncClient:
+    def _client(self, access_token: str) -> httpx.AsyncClient:
         return httpx.AsyncClient(
             base_url=_API_BASE,
             transport=self._transport,
-            headers={"Authorization": f"Bearer {self._access_token}"},
+            headers={"Authorization": f"Bearer {access_token}"},
             timeout=10.0,
         )
 
@@ -73,6 +78,7 @@ class MercadoPagoGateway(PaymentGateway, PaymentNotificationGateway):
             payment.confirm()
             return payment
 
+        creds = await self._resolver.for_tenant(payment.tenant_id)
         body: dict[str, object] = {
             "items": [
                 {
@@ -86,15 +92,17 @@ class MercadoPagoGateway(PaymentGateway, PaymentNotificationGateway):
         }
         if self._notification_url:
             body["notification_url"] = self._notification_url
+        if self._marketplace_fee > 0:
+            body["marketplace_fee"] = self._marketplace_fee / _MINOR_UNIT
 
-        async with self._client() as client:
+        async with self._client(creds.access_token) as client:
             resp = await client.post("/checkout/preferences", json=body)
             resp.raise_for_status()
             data = resp.json()
 
         pref_id = data.get("id")
         payment.external_ref = str(pref_id) if pref_id is not None else None
-        link = data.get("sandbox_init_point") if self._sandbox else data.get("init_point")
+        link = data.get("init_point") if creds.live_mode else data.get("sandbox_init_point")
         payment.checkout_url = link
         payment.qr_data = link
         return payment
@@ -124,7 +132,7 @@ class MercadoPagoGateway(PaymentGateway, PaymentNotificationGateway):
         return hmac.compare_digest(expected, received_hmac)
 
     async def fetch_status(self, *, gateway_payment_id: str) -> GatewayChargeStatus:
-        async with self._client() as client:
+        async with self._client(self._fetch_token) as client:
             resp = await client.get(f"/v1/payments/{gateway_payment_id}")
             resp.raise_for_status()
             data = resp.json()

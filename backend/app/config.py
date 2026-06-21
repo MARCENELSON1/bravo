@@ -80,6 +80,14 @@ class Settings(BaseSettings):
     # Fernet key (url-safe base64, 32 bytes) to encrypt tenants' gateway tokens
     # at rest — Fase 3.5 (MercadoPago OAuth por tenant). Env only.
     credentials_encryption_key: str = ""
+    # OAuth app (NÚCLEO's MercadoPago application) for the per-tenant connect flow.
+    mp_client_id: str = ""
+    mp_client_secret: str = ""
+    mp_oauth_redirect_uri: str = ""
+    # Optional marketplace fee retained by NÚCLEO per charge, in minor units (0 = off).
+    mp_marketplace_fee: int = 0
+    # TTL of the signed OAuth ``state`` (anti-CSRF), minutes.
+    oauth_state_ttl_min: int = 10
     # Public URL MercadoPago posts notifications to (a tunnel in dev, the API
     # host in prod). Empty → rely on the dashboard-configured webhook.
     mp_notification_url: str = ""
