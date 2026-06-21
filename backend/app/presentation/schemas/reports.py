@@ -12,3 +12,18 @@ class DashboardSummaryResponse(BaseModel):
     paid_orders: int
     avg_ticket: int
     payment_count: int
+
+
+class StaffReportRowResponse(BaseModel):
+    user_id: str
+    email: str
+    worked_minutes: int
+    overtime_minutes: int
+    tables_served: int
+    sales_amount: int  # minor units
+    currency: str
+
+
+class StaffReportResponse(BaseModel):
+    currency: str
+    rows: list[StaffReportRowResponse]

@@ -3,6 +3,7 @@ import { LogOut, Menu } from "lucide-react"
 import { NavLink, Outlet } from "react-router-dom"
 
 import { useAuth } from "@/auth/auth-context"
+import { ClockToggle } from "@/components/shell/clock-toggle"
 import { NAV_GROUPS } from "@/components/shell/nav-config"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
@@ -110,6 +111,7 @@ export function AppShell() {
             <Menu className="size-4" />
           </Button>
           <div className="flex-1" />
+          <ClockToggle />
           <ThemeToggle />
         </header>
         <main className="flex-1 overflow-auto">

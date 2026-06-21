@@ -1,6 +1,7 @@
 import type { ComponentType } from "react"
 import {
   ChefHat,
+  Clock,
   FileText,
   LayoutDashboard,
   Package,
@@ -72,6 +73,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Administración",
     items: [
+      { label: "Personal", to: "/app/staff", icon: Clock, roles: ["OWNER", "MANAGER"] },
       {
         label: "Integraciones",
         to: "/app/integrations",

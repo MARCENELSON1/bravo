@@ -36,6 +36,8 @@ from app.domain.product.entities import Product
 from app.domain.shared.money import Money
 from app.domain.table.entities import Table
 from app.domain.tenant.entities import Tenant
+from app.domain.timeclock.entities import Shift
+from app.domain.timeclock.value_objects import ShiftSource, ShiftStatus
 from app.domain.user.entities import User
 from app.domain.user.value_objects import Email, Role
 from app.infrastructure.persistence.models import (
@@ -50,6 +52,7 @@ from app.infrastructure.persistence.models import (
     PaymentORM,
     ProductORM,
     RefreshTokenORM,
+    ShiftORM,
     TableORM,
     TaxCredentialORM,
     TenantORM,
@@ -66,6 +69,7 @@ def tenant_to_domain(row: TenantORM) -> Tenant:
         name=row.name,
         country=row.country,
         currency=row.currency,
+        standard_workday_minutes=row.standard_workday_minutes,
         created_at=row.created_at,
     )
 
@@ -77,6 +81,7 @@ def tenant_to_orm(tenant: Tenant) -> TenantORM:
         name=tenant.name,
         country=tenant.country,
         currency=tenant.currency,
+        standard_workday_minutes=tenant.standard_workday_minutes,
     )
 
 
@@ -461,6 +466,38 @@ def invoice_to_orm(invoice: Invoice) -> InvoiceORM:
         cae_expiration=invoice.cae_expiration,
         rejection=invoice.rejection,
         order_id=invoice.order_id,
+    )
+
+
+# --- Shift (fichaje) ------------------------------------------------------
+
+
+def shift_to_domain(row: ShiftORM) -> Shift:
+    return Shift(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        user_id=row.user_id,
+        clock_in_at=row.clock_in_at,
+        clock_out_at=row.clock_out_at,
+        status=ShiftStatus(row.status),
+        source=ShiftSource(row.source),
+        note=row.note,
+        adjusted_by=row.adjusted_by,
+        created_at=row.created_at,
+    )
+
+
+def shift_to_orm(shift: Shift) -> ShiftORM:
+    return ShiftORM(
+        id=shift.id,
+        tenant_id=shift.tenant_id,
+        user_id=shift.user_id,
+        clock_in_at=shift.clock_in_at,
+        clock_out_at=shift.clock_out_at,
+        status=shift.status.value,
+        source=shift.source.value,
+        note=shift.note,
+        adjusted_by=shift.adjusted_by,
     )
 
 

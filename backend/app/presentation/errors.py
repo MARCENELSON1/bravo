@@ -38,6 +38,13 @@ from app.domain.shared.exceptions import (
 )
 from app.domain.table.exceptions import TableNotFound
 from app.domain.tenant.exceptions import TenantAlreadyExists, TenantNotFound
+from app.domain.timeclock.exceptions import (
+    InvalidShiftTime,
+    NoOpenShift,
+    ShiftAlreadyClosed,
+    ShiftAlreadyOpen,
+    ShiftNotFound,
+)
 from app.domain.user.exceptions import (
     EmailAlreadyRegistered,
     EmailNotVerified,
@@ -85,6 +92,12 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (InvoiceNotFound, 404),
     (OrderNotInvoiceable, 409),
     (TaxGatewayNotConnected, 409),
+    # Fase 5 — fichaje
+    (ShiftNotFound, 404),
+    (ShiftAlreadyOpen, 409),
+    (NoOpenShift, 409),
+    (ShiftAlreadyClosed, 409),
+    (InvalidShiftTime, 422),
 ]
 
 
