@@ -2,7 +2,6 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Link } from "react-router-dom"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
@@ -16,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { useCreateProduct, useProducts } from "@/hooks/use-products"
@@ -67,13 +67,13 @@ export function ProductsPage() {
   })
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-2xl flex-col gap-4 px-6 py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-medium">Productos</h1>
-        <Link to="/app" className="text-sm text-muted-foreground underline underline-offset-4">
-          Volver
-        </Link>
-      </div>
+    <div className="mx-auto flex max-w-3xl flex-col gap-5 px-6 py-8">
+      <header className="flex flex-col gap-1">
+        <GradientHeading size="md" weight="bold">
+          Productos
+        </GradientHeading>
+        <p className="text-sm text-muted-foreground">Tu catálogo y precios.</p>
+      </header>
 
       <Card>
         <CardHeader>

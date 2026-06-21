@@ -1,11 +1,12 @@
 import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
 import { useAuth } from "@/auth/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { useCreateOrder } from "@/hooks/use-orders"
@@ -48,13 +49,13 @@ export function FloorPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-2xl flex-col gap-4 px-6 py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-medium">Mesas</h1>
-        <Link to="/app" className="text-sm text-muted-foreground underline underline-offset-4">
-          Volver
-        </Link>
-      </div>
+    <div className="mx-auto flex max-w-3xl flex-col gap-5 px-6 py-8">
+      <header className="flex flex-col gap-1">
+        <GradientHeading size="md" weight="bold">
+          Mesas
+        </GradientHeading>
+        <p className="text-sm text-muted-foreground">Tocá una mesa para abrir su comanda.</p>
+      </header>
 
       {canManage ? (
         <div className="flex items-end gap-2">
