@@ -12,6 +12,8 @@ import { OnboardingPage } from "@/features/identity/onboarding-page"
 import { VerifyEmailPage } from "@/features/identity/verify-email-page"
 import { ExpensesPage } from "@/features/expenses/expenses-page"
 import { IntegrationsPage } from "@/features/integrations/integrations-page"
+import { StockPage } from "@/features/inventory/stock-page"
+import { SuppliersPage } from "@/features/inventory/suppliers-page"
 import { InvoicesPage } from "@/features/invoices/invoices-page"
 import { KdsPage } from "@/features/kds/kds-page"
 import { OrderPage } from "@/features/orders/order-page"
@@ -54,6 +56,8 @@ export const router = createBrowserRouter([
             children: [
               { path: "/app/invite", element: <InviteUserPage /> },
               { path: "/app/products", element: <ProductsPage /> },
+              { path: "/app/stock", element: <StockPage /> },
+              { path: "/app/suppliers", element: <SuppliersPage /> },
               { path: "/app/expenses", element: <ExpensesPage /> },
               { path: "/app/invoices", element: <InvoicesPage /> },
               { path: "/app/staff", element: <StaffPage /> },

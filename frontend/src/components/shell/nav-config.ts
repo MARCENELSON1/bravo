@@ -1,5 +1,6 @@
 import type { ComponentType } from "react"
 import {
+  Boxes,
   ChefHat,
   Clock,
   FileText,
@@ -8,6 +9,7 @@ import {
   Plug,
   QrCode,
   Receipt,
+  Truck,
   UtensilsCrossed,
   Users,
 } from "lucide-react"
@@ -63,6 +65,13 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Catálogo",
     items: [
       { label: "Productos", to: "/app/products", icon: Package, roles: ["OWNER", "MANAGER"] },
+    ],
+  },
+  {
+    label: "Stock",
+    items: [
+      { label: "Insumos", to: "/app/stock", icon: Boxes, roles: ["OWNER", "MANAGER"] },
+      { label: "Proveedores", to: "/app/suppliers", icon: Truck, roles: ["OWNER", "MANAGER"] },
     ],
   },
   {
