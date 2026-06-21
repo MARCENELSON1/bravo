@@ -18,6 +18,13 @@ from app.domain.identity.exceptions import (
     TokenAlreadyUsed,
 )
 from app.domain.order.exceptions import EmptyOrder, InvalidOrderTransition, OrderNotFound
+from app.domain.payment.exceptions import (
+    InvalidOAuthState,
+    InvalidPaymentAmount,
+    InvalidWebhookSignature,
+    PaymentGatewayNotConnected,
+    PaymentNotFound,
+)
 from app.domain.product.exceptions import InactiveProduct, ProductNotFound
 from app.domain.shared.exceptions import (
     CurrencyMismatch,
@@ -63,6 +70,12 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (UnsupportedCurrency, 422),
     (CurrencyMismatch, 422),
     (InvalidMoneyAmount, 422),
+    # Fase 3 — pagos
+    (PaymentNotFound, 404),
+    (InvalidPaymentAmount, 422),
+    (InvalidWebhookSignature, 401),
+    (PaymentGatewayNotConnected, 409),
+    (InvalidOAuthState, 400),
 ]
 
 

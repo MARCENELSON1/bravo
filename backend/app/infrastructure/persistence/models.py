@@ -224,3 +224,58 @@ class OrderItemORM(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+# --- Fase 3: pagos (ingresos/egresos, tenant-scoped) -----------------------
+
+
+class PaymentORM(Base):
+    __tablename__ = "payments"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    direction: Mapped[str] = mapped_column(String(10), index=True)
+    amount: Mapped[int] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(String(3))
+    method: Mapped[str] = mapped_column(String(20))
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    order_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True, index=True)
+    category: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    counterparty: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    description: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    external_ref: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class PaymentCredentialORM(Base):
+    __tablename__ = "payment_credentials"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "provider", name="uq_payment_credentials_tenant_provider"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    provider: Mapped[str] = mapped_column(String(20), index=True)
+    external_account_id: Mapped[str] = mapped_column(String(64), index=True)
+    # Tokens are stored encrypted (TEXT — no length cap).
+    access_token: Mapped[str] = mapped_column(String)
+    refresh_token: Mapped[str | None] = mapped_column(String, nullable=True)
+    public_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    nickname: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    live_mode: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )

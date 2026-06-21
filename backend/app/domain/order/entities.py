@@ -69,6 +69,11 @@ class Order:
             raise InvalidOrderTransition()
         self.status = OrderStatus.CANCELLED
 
+    def mark_paid(self) -> None:
+        if self.status in (OrderStatus.CANCELLED, OrderStatus.PAID):
+            raise InvalidOrderTransition()
+        self.status = OrderStatus.PAID
+
     def total(self) -> Money:
         total = Money.zero(self.currency)
         for item in self.items:
