@@ -46,7 +46,9 @@ class FakeOnlineGateway(PaymentGateway, PaymentNotificationGateway):
     def verify_signature(self, *, data_id, request_id, ts, received_hmac) -> bool:
         return self.valid_signature
 
-    async def fetch_status(self, *, gateway_payment_id: str) -> GatewayChargeStatus:
+    async def fetch_status(
+        self, *, gateway_payment_id: str, access_token: str | None = None
+    ) -> GatewayChargeStatus:
         return GatewayChargeStatus(
             gateway_payment_id=gateway_payment_id,
             external_reference=self.last_ref,

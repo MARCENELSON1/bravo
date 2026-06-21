@@ -8,7 +8,11 @@ from app.domain.order.repository import OrderRepository
 from app.domain.order.value_objects import OrderStatus
 from app.domain.payment.entities import Payment
 from app.domain.payment.exceptions import InvalidPaymentAmount, InvalidWebhookSignature
-from app.domain.payment.ports import PaymentGateway, PaymentNotificationGateway
+from app.domain.payment.ports import (
+    PaymentCredentialsResolver,
+    PaymentGateway,
+    PaymentNotificationGateway,
+)
 from app.domain.payment.repository import PaymentRepository
 from app.domain.payment.value_objects import PaymentDirection, PaymentMethod, PaymentStatus
 from app.domain.shared.money import Money
@@ -157,11 +161,13 @@ class ConfirmGatewayPayment:
         payments: PaymentRepository,
         orders: OrderRepository,
         notifications: PaymentNotificationGateway,
+        resolver: PaymentCredentialsResolver,
         tenant_context: TenantContext,
     ) -> None:
         self._payments = payments
         self._orders = orders
         self._notifications = notifications
+        self._resolver = resolver
         self._tenant_context = tenant_context
 
     async def execute(
@@ -171,6 +177,7 @@ class ConfirmGatewayPayment:
         request_id: str | None,
         ts: str | None,
         received_hmac: str,
+        account_id: str | None = None,
     ) -> None:
         if not self._notifications.verify_signature(
             data_id=data_id, request_id=request_id, ts=ts, received_hmac=received_hmac
@@ -178,7 +185,12 @@ class ConfirmGatewayPayment:
             raise InvalidWebhookSignature()
         if data_id is None:
             return
-        status = await self._notifications.fetch_status(gateway_payment_id=data_id)
+        # Resolve the seller's token (multi-tenant); falls back inside the gateway
+        # to the app-level token when the account can't be mapped.
+        access_token = await self._resolve_seller_token(account_id)
+        status = await self._notifications.fetch_status(
+            gateway_payment_id=data_id, access_token=access_token
+        )
         ref = status.external_reference
         if not ref or ":" not in ref:
             return  # not one of ours — ignore quietly
@@ -197,3 +209,16 @@ class ConfirmGatewayPayment:
             payment.fail()
             payment.external_ref = status.gateway_payment_id
             await self._payments.save(payment)
+
+    async def _resolve_seller_token(self, account_id: str | None) -> str | None:
+        """Map the provider seller id (from the notification) to the tenant's
+        token. Best-effort: on any miss the gateway uses its app-level token."""
+        if not account_id:
+            return None
+        try:
+            tenant_id = await self._resolver.tenant_for_account(account_id)
+            if tenant_id is None:
+                return None
+            return (await self._resolver.for_tenant(tenant_id)).access_token
+        except Exception:
+            return None

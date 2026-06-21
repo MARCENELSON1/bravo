@@ -50,7 +50,9 @@ class PaymentNotificationGateway(ABC):
     ) -> bool: ...
 
     @abstractmethod
-    async def fetch_status(self, *, gateway_payment_id: str) -> GatewayChargeStatus: ...
+    async def fetch_status(
+        self, *, gateway_payment_id: str, access_token: str | None = None
+    ) -> GatewayChargeStatus: ...
 
 
 @dataclass(frozen=True)

@@ -14,6 +14,7 @@ from app.container import Container
 from app.presentation.api.v1 import (
     auth,
     expenses,
+    integrations,
     kds,
     orders,
     payments,
@@ -62,6 +63,7 @@ def create_app() -> FastAPI:
     app.include_router(payments.router, prefix="/api/v1")
     app.include_router(expenses.router, prefix="/api/v1")
     app.include_router(webhooks.router, prefix="/api/v1")
+    app.include_router(integrations.router, prefix="/api/v1")
 
     @app.middleware("http")
     async def security_headers(

@@ -358,6 +358,7 @@ class Container(containers.DeclarativeContainer):
         payments=payment_repository,
         orders=order_repository,
         notifications=mercadopago_gateway,
+        resolver=payment_credentials_resolver,
         tenant_context=tenant_context,
     )
     register_expense = providers.Factory(

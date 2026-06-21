@@ -131,8 +131,12 @@ class MercadoPagoGateway(PaymentGateway, PaymentNotificationGateway):
         ).hexdigest()
         return hmac.compare_digest(expected, received_hmac)
 
-    async def fetch_status(self, *, gateway_payment_id: str) -> GatewayChargeStatus:
-        async with self._client(self._fetch_token) as client:
+    async def fetch_status(
+        self, *, gateway_payment_id: str, access_token: str | None = None
+    ) -> GatewayChargeStatus:
+        # The webhook passes the seller's token (per-tenant); fall back to the
+        # app-level token for single-account/transition mode.
+        async with self._client(access_token or self._fetch_token) as client:
             resp = await client.get(f"/v1/payments/{gateway_payment_id}")
             resp.raise_for_status()
             data = resp.json()
