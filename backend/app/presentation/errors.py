@@ -19,8 +19,10 @@ from app.domain.identity.exceptions import (
 )
 from app.domain.order.exceptions import EmptyOrder, InvalidOrderTransition, OrderNotFound
 from app.domain.payment.exceptions import (
+    InvalidOAuthState,
     InvalidPaymentAmount,
     InvalidWebhookSignature,
+    PaymentGatewayNotConnected,
     PaymentNotFound,
 )
 from app.domain.product.exceptions import InactiveProduct, ProductNotFound
@@ -72,6 +74,8 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (PaymentNotFound, 404),
     (InvalidPaymentAmount, 422),
     (InvalidWebhookSignature, 401),
+    (PaymentGatewayNotConnected, 409),
+    (InvalidOAuthState, 400),
 ]
 
 

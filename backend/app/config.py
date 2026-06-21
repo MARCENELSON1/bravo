@@ -77,6 +77,9 @@ class Settings(BaseSettings):
     payment_gateway: Literal["manual", "mercadopago"] = "manual"
     mp_access_token: str = ""
     mp_webhook_secret: str = ""
+    # Fernet key (url-safe base64, 32 bytes) to encrypt tenants' gateway tokens
+    # at rest — Fase 3.5 (MercadoPago OAuth por tenant). Env only.
+    credentials_encryption_key: str = ""
     # Public URL MercadoPago posts notifications to (a tunnel in dev, the API
     # host in prod). Empty → rely on the dashboard-configured webhook.
     mp_notification_url: str = ""

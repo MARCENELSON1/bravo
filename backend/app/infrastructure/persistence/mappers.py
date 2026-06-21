@@ -16,6 +16,11 @@ from app.domain.identity.tokens import (
 )
 from app.domain.order.entities import Order, OrderItem
 from app.domain.order.value_objects import OrderStatus
+from app.domain.payment.credentials import (
+    ConnectionStatus,
+    PaymentCredential,
+    PaymentProvider,
+)
 from app.domain.payment.entities import Payment
 from app.domain.payment.value_objects import PaymentDirection, PaymentMethod, PaymentStatus
 from app.domain.product.entities import Product
@@ -31,6 +36,7 @@ from app.infrastructure.persistence.models import (
     OrderItemORM,
     OrderORM,
     PasswordResetTokenORM,
+    PaymentCredentialORM,
     PaymentORM,
     ProductORM,
     RefreshTokenORM,
@@ -365,4 +371,41 @@ def payment_to_orm(payment: Payment) -> PaymentORM:
         counterparty=payment.counterparty,
         description=payment.description,
         external_ref=payment.external_ref,
+    )
+
+
+# --- Payment credential (gateway connection per tenant) -------------------
+
+
+def payment_credential_to_domain(row: PaymentCredentialORM) -> PaymentCredential:
+    return PaymentCredential(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        provider=PaymentProvider(row.provider),
+        external_account_id=row.external_account_id,
+        access_token=row.access_token,
+        refresh_token=row.refresh_token,
+        public_key=row.public_key,
+        nickname=row.nickname,
+        expires_at=row.expires_at,
+        live_mode=row.live_mode,
+        status=ConnectionStatus(row.status),
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+def payment_credential_to_orm(credential: PaymentCredential) -> PaymentCredentialORM:
+    return PaymentCredentialORM(
+        id=credential.id,
+        tenant_id=credential.tenant_id,
+        provider=credential.provider.value,
+        external_account_id=credential.external_account_id,
+        access_token=credential.access_token,
+        refresh_token=credential.refresh_token,
+        public_key=credential.public_key,
+        nickname=credential.nickname,
+        expires_at=credential.expires_at,
+        live_mode=credential.live_mode,
+        status=credential.status.value,
     )

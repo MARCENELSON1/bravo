@@ -16,3 +16,13 @@ class InvalidPaymentAmount(DomainError):
 class InvalidWebhookSignature(DomainError):
     code = "invalid_webhook_signature"
     message = "La firma de la notificación no es válida."
+
+
+class PaymentGatewayNotConnected(DomainError):
+    code = "payment_gateway_not_connected"
+    message = "El local no tiene MercadoPago conectado. Conectalo en Integraciones."
+
+
+class InvalidOAuthState(DomainError):
+    code = "invalid_oauth_state"
+    message = "El pedido de conexión no es válido o expiró."
