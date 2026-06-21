@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from dependency_injector import containers, providers
 
+from app.application.analytics.projection import ProjectOrderSales
+from app.application.analytics.rebuild import RebuildSalesFacts
 from app.application.identity.accept_invitation import AcceptInvitation
 from app.application.identity.authenticate import Authenticate
 from app.application.identity.change_password import ChangePassword
@@ -120,6 +122,7 @@ from app.infrastructure.persistence.reservation_repo import (
     SqlAlchemyReservationRepository,
 )
 from app.infrastructure.persistence.reset_token_repo import SqlAlchemyResetTokenRepository
+from app.infrastructure.persistence.sale_facts_repo import SqlAlchemySaleFactsRepository
 from app.infrastructure.persistence.shift_repo import SqlAlchemyShiftRepository
 from app.infrastructure.persistence.staff_report_repo import SqlAlchemyStaffReportReadModel
 from app.infrastructure.persistence.stock_movement_repo import (
@@ -375,6 +378,21 @@ class Container(containers.DeclarativeContainer):
         tenant_context=tenant_context,
     )
 
+    # --- Fase 8 (proyección): sale_facts + projector, antes de pagos ---
+    # El settle de pagos inyecta el SalesProjector como segundo hook post-PAID.
+    sale_facts_repository = providers.Factory(
+        SqlAlchemySaleFactsRepository, session_factory=db.provided.session
+    )
+    project_order_sales = providers.Factory(
+        ProjectOrderSales,
+        orders=order_repository,
+        products=product_repository,
+        recipes=recipe_repository,
+        ingredients=ingredient_repository,
+        sale_facts=sale_facts_repository,
+        tenant_context=tenant_context,
+    )
+
     # --- Fase 3: pagos (ingresos/egresos) ---
     payment_repository = providers.Factory(
         SqlAlchemyPaymentRepository, session_factory=db.provided.session
@@ -448,6 +466,7 @@ class Container(containers.DeclarativeContainer):
         gateway=payment_gateway,
         tenant_context=tenant_context,
         inventory=consume_recipes_for_order,
+        sales=project_order_sales,
     )
     confirm_gateway_payment = providers.Factory(
         ConfirmGatewayPayment,
@@ -457,6 +476,7 @@ class Container(containers.DeclarativeContainer):
         resolver=payment_credentials_resolver,
         tenant_context=tenant_context,
         inventory=consume_recipes_for_order,
+        sales=project_order_sales,
     )
     register_expense = providers.Factory(
         RegisterExpense,
@@ -672,5 +692,13 @@ class Container(containers.DeclarativeContainer):
         UpdateReservation,
         reservations=reservation_repository,
         tables=table_repository,
+        tenant_context=tenant_context,
+    )
+
+    # --- Fase 8: modelo canónico (analytics; repos/projector arriba, antes de pagos) ---
+    rebuild_sales_facts = providers.Factory(
+        RebuildSalesFacts,
+        orders=order_repository,
+        projector=project_order_sales,
         tenant_context=tenant_context,
     )
