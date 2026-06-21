@@ -38,6 +38,11 @@ from app.domain.payment.exceptions import (
     PaymentNotFound,
 )
 from app.domain.product.exceptions import InactiveProduct, ProductNotFound
+from app.domain.reservation.exceptions import (
+    InvalidPartySize,
+    InvalidReservationTransition,
+    ReservationNotFound,
+)
 from app.domain.shared.exceptions import (
     CurrencyMismatch,
     InvalidMoneyAmount,
@@ -122,6 +127,10 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (RecipeNotFound, 404),
     (InvalidQuantity, 422),
     (InvalidUnitCost, 422),
+    # Fase 7 — reservas
+    (ReservationNotFound, 404),
+    (InvalidReservationTransition, 409),
+    (InvalidPartySize, 422),
 ]
 
 
