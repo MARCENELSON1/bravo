@@ -380,3 +380,93 @@ class UsedPresenceTokenORM(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+# --- Fase 6: inventario (stock / food cost, tenant-scoped) ------------------
+
+
+class IngredientORM(Base):
+    __tablename__ = "ingredients"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    unit: Mapped[str] = mapped_column(String(10))
+    # Quantities are integers in milésimas of the base unit; stock may go negative.
+    stock_qty: Mapped[int] = mapped_column(BigInteger, default=0)
+    min_qty: Mapped[int] = mapped_column(BigInteger, default=0)
+    unit_cost_amount: Mapped[int] = mapped_column(BigInteger)
+    unit_cost_currency: Mapped[str] = mapped_column(String(3))
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class SupplierORM(Base):
+    __tablename__ = "suppliers"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    contact: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class RecipeORM(Base):
+    """A product's recipe (opt-in, 1:1 with a product). Keyed by ``product_id``."""
+
+    __tablename__ = "recipes"
+
+    product_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class RecipeItemORM(Base):
+    __tablename__ = "recipe_items"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    product_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False),
+        ForeignKey("recipes.product_id", ondelete="CASCADE"),
+        index=True,
+    )
+    ingredient_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
+    qty: Mapped[int] = mapped_column(BigInteger)
+
+
+class StockMovementORM(Base):
+    __tablename__ = "stock_movements"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    ingredient_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("ingredients.id", ondelete="CASCADE"), index=True
+    )
+    direction: Mapped[str] = mapped_column(String(10))
+    reason: Mapped[str] = mapped_column(String(20), index=True)
+    qty: Mapped[int] = mapped_column(BigInteger)
+    order_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True, index=True)
+    unit_cost_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    unit_cost_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

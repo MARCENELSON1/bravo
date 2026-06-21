@@ -18,6 +18,20 @@ from app.application.identity.refresh_token import RefreshAccessToken
 from app.application.identity.request_password_reset import RequestPasswordReset
 from app.application.identity.reset_password import ResetPassword
 from app.application.identity.verify_email import VerifyEmail
+from app.application.inventory.consume import ConsumeRecipesForOrder
+from app.application.inventory.food_cost import GetFoodCost
+from app.application.inventory.use_cases import (
+    CreateIngredient,
+    CreateSupplier,
+    GetRecipe,
+    ListIngredients,
+    ListLowStock,
+    ListSuppliers,
+    RegisterPurchase,
+    RegisterWaste,
+    SetRecipe,
+    UpdateIngredient,
+)
 from app.application.invoice.connect_afip import (
     ConnectAfip,
     DisconnectAfip,
@@ -79,6 +93,8 @@ from app.infrastructure.persistence.credentials_repo import (
 )
 from app.infrastructure.persistence.dashboard_repo import SqlAlchemyDashboardReadModel
 from app.infrastructure.persistence.database import Database
+from app.infrastructure.persistence.food_cost_repo import SqlAlchemyFoodCostReadModel
+from app.infrastructure.persistence.ingredient_repo import SqlAlchemyIngredientRepository
 from app.infrastructure.persistence.invitation_repo import SqlAlchemyInvitationRepository
 from app.infrastructure.persistence.invoice_repo import SqlAlchemyInvoiceRepository
 from app.infrastructure.persistence.order_repo import SqlAlchemyOrderRepository
@@ -87,10 +103,15 @@ from app.infrastructure.persistence.presence_store_repo import (
     SqlAlchemyPresenceUsageStore,
 )
 from app.infrastructure.persistence.product_repo import SqlAlchemyProductRepository
+from app.infrastructure.persistence.recipe_repo import SqlAlchemyRecipeRepository
 from app.infrastructure.persistence.refresh_token_repo import SqlAlchemyRefreshTokenRepository
 from app.infrastructure.persistence.reset_token_repo import SqlAlchemyResetTokenRepository
 from app.infrastructure.persistence.shift_repo import SqlAlchemyShiftRepository
 from app.infrastructure.persistence.staff_report_repo import SqlAlchemyStaffReportReadModel
+from app.infrastructure.persistence.stock_movement_repo import (
+    SqlAlchemyStockMovementRepository,
+)
+from app.infrastructure.persistence.supplier_repo import SqlAlchemySupplierRepository
 from app.infrastructure.persistence.table_repo import SqlAlchemyTableRepository
 from app.infrastructure.persistence.tax_credentials_repo import (
     SqlAlchemyTaxCredentialRepository,
@@ -316,6 +337,30 @@ class Container(containers.DeclarativeContainer):
         GetKdsOrders, orders=order_repository, tenant_context=tenant_context
     )
 
+    # --- Fase 6 (repos de inventario + consumo por venta) ---
+    # Definidos antes de pagos porque el settle inyecta el InventoryConsumer.
+    # El resto de los casos de uso de inventario está más abajo.
+    ingredient_repository = providers.Factory(
+        SqlAlchemyIngredientRepository, session_factory=db.provided.session
+    )
+    supplier_repository = providers.Factory(
+        SqlAlchemySupplierRepository, session_factory=db.provided.session
+    )
+    recipe_repository = providers.Factory(
+        SqlAlchemyRecipeRepository, session_factory=db.provided.session
+    )
+    stock_movement_repository = providers.Factory(
+        SqlAlchemyStockMovementRepository, session_factory=db.provided.session
+    )
+    consume_recipes_for_order = providers.Factory(
+        ConsumeRecipesForOrder,
+        orders=order_repository,
+        recipes=recipe_repository,
+        ingredients=ingredient_repository,
+        movements=stock_movement_repository,
+        tenant_context=tenant_context,
+    )
+
     # --- Fase 3: pagos (ingresos/egresos) ---
     payment_repository = providers.Factory(
         SqlAlchemyPaymentRepository, session_factory=db.provided.session
@@ -388,6 +433,7 @@ class Container(containers.DeclarativeContainer):
         orders=order_repository,
         gateway=payment_gateway,
         tenant_context=tenant_context,
+        inventory=consume_recipes_for_order,
     )
     confirm_gateway_payment = providers.Factory(
         ConfirmGatewayPayment,
@@ -396,6 +442,7 @@ class Container(containers.DeclarativeContainer):
         notifications=mercadopago_gateway,
         resolver=payment_credentials_resolver,
         tenant_context=tenant_context,
+        inventory=consume_recipes_for_order,
     )
     register_expense = providers.Factory(
         RegisterExpense,
@@ -521,4 +568,55 @@ class Container(containers.DeclarativeContainer):
         presence=presence_token,
         punch=punch,
         tenant_context=tenant_context,
+    )
+
+    # --- Fase 6: inventario (casos de uso; repos arriba, antes de pagos) ---
+    create_ingredient = providers.Factory(
+        CreateIngredient,
+        ingredients=ingredient_repository,
+        tenants=tenant_repository,
+        tenant_context=tenant_context,
+    )
+    list_ingredients = providers.Factory(
+        ListIngredients, ingredients=ingredient_repository, tenant_context=tenant_context
+    )
+    update_ingredient = providers.Factory(
+        UpdateIngredient, ingredients=ingredient_repository, tenant_context=tenant_context
+    )
+    register_purchase = providers.Factory(
+        RegisterPurchase,
+        ingredients=ingredient_repository,
+        movements=stock_movement_repository,
+        tenant_context=tenant_context,
+    )
+    register_waste = providers.Factory(
+        RegisterWaste,
+        ingredients=ingredient_repository,
+        movements=stock_movement_repository,
+        tenant_context=tenant_context,
+    )
+    list_low_stock = providers.Factory(
+        ListLowStock, ingredients=ingredient_repository, tenant_context=tenant_context
+    )
+    create_supplier = providers.Factory(
+        CreateSupplier, suppliers=supplier_repository, tenant_context=tenant_context
+    )
+    list_suppliers = providers.Factory(
+        ListSuppliers, suppliers=supplier_repository, tenant_context=tenant_context
+    )
+    set_recipe = providers.Factory(
+        SetRecipe,
+        recipes=recipe_repository,
+        products=product_repository,
+        ingredients=ingredient_repository,
+        tenant_context=tenant_context,
+    )
+    get_recipe = providers.Factory(
+        GetRecipe, recipes=recipe_repository, tenant_context=tenant_context
+    )
+    food_cost_read_model = providers.Factory(
+        SqlAlchemyFoodCostReadModel, session_factory=db.provided.session
+    )
+    get_food_cost = providers.Factory(
+        GetFoodCost, read_model=food_cost_read_model, tenant_context=tenant_context
     )

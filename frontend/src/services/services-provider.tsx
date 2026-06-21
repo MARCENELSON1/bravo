@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 import { AuthApi } from "@/api/auth-api"
 import { FetchHttpClient } from "@/api/http-client"
 import { IntegrationsApi } from "@/api/integrations-api"
+import { InventoryApi } from "@/api/inventory-api"
 import { InvoicesApi } from "@/api/invoices-api"
 import { OrdersApi } from "@/api/orders-api"
 import { PaymentsApi } from "@/api/payments-api"
@@ -28,6 +29,7 @@ export function ServicesProvider({
     return {
       authApi: new AuthApi(http),
       integrationsApi: new IntegrationsApi(http),
+      inventoryApi: new InventoryApi(http),
       invoicesApi: new InvoicesApi(http),
       ordersApi: new OrdersApi(http),
       paymentsApi: new PaymentsApi(http),

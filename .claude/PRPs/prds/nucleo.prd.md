@@ -168,7 +168,7 @@ Dueño al cierre ve en pesos cómo le fue + una acción para mañana
 | 3 | Cobro + Pagos | Port `PaymentGateway`; adapters `Manual` + `MercadoPago` real (link/QR) + webhook firmado; `Payment` (ingresos/egresos); conciliación → comanda `PAID` | **complete** | with 5,6 | 2 | `.claude/PRPs/plans/fase-3-cobro-pagos.plan.md` |
 | 4 | Facturación AFIP | Port `ElectronicInvoicing`, adapter AFIP (WSAA/WSFEv1), tipos A/B/C, CAE | pending | - | 3 | - |
 | 5 | Fichaje | `Shift`, horas/extras + mesas/ventas por mozo derivadas de la comanda | pending | with 3,6 | 2 | - |
-| 6 | Stock + Food cost | `Inventory`/`Recipe`/`Supplier`, descuento por venta (receta opt-in), alertas de quiebre | pending | with 3,5 | 2 | - |
+| 6 | Stock + Food cost | `Inventory`/`Recipe`/`Supplier`, descuento por venta (receta opt-in), alertas de quiebre | **complete** | with 3,5 | 2 | `.claude/PRPs/plans/completed/fase-6-stock-food-cost.plan.md` |
 | 7 | Reservas + No-shows | `Reservation`, agenda por mesa/turno, confirmaciones, no-show (más relevante para hotel) | pending | with 3,5,6 | 1 | - |
 | 8 | Modelo canónico + read models | Proyecciones desde la captura (ventas/gastos/productos/clientes/medios) + read models de KPIs (CQRS-lite, RLS) | pending | with 5,6,7 | 2,3 | - |
 | 9 | Asesor financiero + Dashboard | KPIs en pesos (margen, punto de equilibrio, food/labor/prime cost, mermas), insights proactivos (Actuá hoy/Esta semana/Lo que viene/Bien hecho), onboarding por rubro | pending | - | 8 | - |

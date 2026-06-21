@@ -15,6 +15,7 @@ from app.presentation.api.v1 import (
     auth,
     expenses,
     integrations,
+    inventory,
     invoices,
     kds,
     orders,
@@ -72,6 +73,7 @@ def create_app() -> FastAPI:
     app.include_router(invoices.router, prefix="/api/v1")
     app.include_router(tax.router, prefix="/api/v1")
     app.include_router(timeclock.router, prefix="/api/v1")
+    app.include_router(inventory.router, prefix="/api/v1")
 
     @app.middleware("http")
     async def security_headers(
