@@ -1,16 +1,9 @@
 import type { ReactNode } from "react"
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { GradientHeading } from "@/components/ui/gradient-heading"
 
 // Split-screen shell reused by every identity screen. The brand panel is hidden
-// on mobile; the form card is always centered.
+// on mobile; the form sits on the right. Changing this re-skins all auth pages.
 export function AuthLayout({
   title,
   description,
@@ -24,30 +17,46 @@ export function AuthLayout({
 }) {
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
-      <aside className="hidden flex-col justify-between bg-primary p-10 text-primary-foreground lg:flex">
-        <div className="font-heading text-sm font-medium tracking-wide">BRAVO</div>
-        <div>
-          <h2 className="font-heading text-3xl leading-tight font-medium">El cerebro del local</h2>
-          <p className="mt-3 max-w-sm text-sm text-primary-foreground/70">
-            Comandas, cobros y tu copiloto en español, en un solo lugar.
-          </p>
+      <aside className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-primary to-primary/80 p-10 text-primary-foreground lg:flex">
+        {/* soft decorative glow */}
+        <div className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-primary-foreground/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 -left-16 size-80 rounded-full bg-primary-foreground/5 blur-3xl" />
+
+        <div className="relative flex items-center gap-2">
+          <div className="size-7 rounded-md bg-primary-foreground/90" />
+          <span className="font-heading text-sm font-semibold tracking-wide">NÚCLEO</span>
         </div>
-        <div className="text-xs text-primary-foreground/50">© BRAVO</div>
+
+        <div className="relative">
+          <h2 className="font-heading text-4xl font-semibold leading-tight">
+            El cerebro del local
+          </h2>
+          <p className="mt-4 max-w-sm text-sm text-primary-foreground/70">
+            Comandas, cobros y tu copiloto en español — todo tu local en un solo lugar.
+          </p>
+          <ul className="mt-6 flex flex-col gap-2 text-sm text-primary-foreground/80">
+            <li>· Comandas y cocina (KDS)</li>
+            <li>· Cobros con MercadoPago</li>
+            <li>· Reportes y asesor en pesos</li>
+          </ul>
+        </div>
+
+        <div className="relative text-xs text-primary-foreground/50">© NÚCLEO</div>
       </aside>
 
       <main className="flex items-center justify-center bg-background p-6">
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">{title}</CardTitle>
-            {description ? <CardDescription>{description}</CardDescription> : null}
-          </CardHeader>
-          <CardContent>{children}</CardContent>
+        <div className="w-full max-w-sm">
+          <div className="mb-6 flex flex-col gap-1">
+            <GradientHeading size="sm" weight="bold">
+              {title}
+            </GradientHeading>
+            {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+          </div>
+          {children}
           {footer ? (
-            <CardFooter className="justify-center text-sm text-muted-foreground">
-              {footer}
-            </CardFooter>
+            <div className="mt-6 text-center text-sm text-muted-foreground">{footer}</div>
           ) : null}
-        </Card>
+        </div>
       </main>
     </div>
   )
