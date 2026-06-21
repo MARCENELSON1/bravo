@@ -18,6 +18,12 @@ from app.application.identity.refresh_token import RefreshAccessToken
 from app.application.identity.request_password_reset import RequestPasswordReset
 from app.application.identity.reset_password import ResetPassword
 from app.application.identity.verify_email import VerifyEmail
+from app.application.invoice.connect_afip import (
+    ConnectAfip,
+    DisconnectAfip,
+    GetAfipConnection,
+)
+from app.application.invoice.use_cases import GetOrderInvoice, IssueInvoice, ListInvoices
 from app.application.order.use_cases import (
     AddOrderItem,
     AdvanceOrder,
@@ -46,6 +52,9 @@ from app.application.table.use_cases import CreateTable, ListTables
 from app.config import Settings
 from app.infrastructure.email.console_sender import ConsoleEmailSender
 from app.infrastructure.email.smtp_sender import SmtpEmailSender
+from app.infrastructure.invoicing.afip_invoicing import AfipInvoicing
+from app.infrastructure.invoicing.credentials_resolver import DbTaxCredentialsResolver
+from app.infrastructure.invoicing.fake_invoicing import FakeInvoicing
 from app.infrastructure.payments.credentials_resolver import DbPaymentCredentialsResolver
 from app.infrastructure.payments.manual_gateway import ManualPaymentGateway
 from app.infrastructure.payments.mercadopago_gateway import MercadoPagoGateway
@@ -57,12 +66,16 @@ from app.infrastructure.persistence.credentials_repo import (
 from app.infrastructure.persistence.dashboard_repo import SqlAlchemyDashboardReadModel
 from app.infrastructure.persistence.database import Database
 from app.infrastructure.persistence.invitation_repo import SqlAlchemyInvitationRepository
+from app.infrastructure.persistence.invoice_repo import SqlAlchemyInvoiceRepository
 from app.infrastructure.persistence.order_repo import SqlAlchemyOrderRepository
 from app.infrastructure.persistence.payment_repo import SqlAlchemyPaymentRepository
 from app.infrastructure.persistence.product_repo import SqlAlchemyProductRepository
 from app.infrastructure.persistence.refresh_token_repo import SqlAlchemyRefreshTokenRepository
 from app.infrastructure.persistence.reset_token_repo import SqlAlchemyResetTokenRepository
 from app.infrastructure.persistence.table_repo import SqlAlchemyTableRepository
+from app.infrastructure.persistence.tax_credentials_repo import (
+    SqlAlchemyTaxCredentialRepository,
+)
 from app.infrastructure.persistence.tenant_repo import SqlAlchemyTenantRepository
 from app.infrastructure.persistence.user_repo import SqlAlchemyUserRepository
 from app.infrastructure.persistence.verification_token_repo import (
@@ -383,4 +396,50 @@ class Container(containers.DeclarativeContainer):
     )
     get_dashboard_summary = providers.Factory(
         GetDashboardSummary, read_model=dashboard_read_model, tenant_context=tenant_context
+    )
+
+    # --- Fase 4: facturación electrónica AFIP ---
+    invoice_repository = providers.Factory(
+        SqlAlchemyInvoiceRepository, session_factory=db.provided.session
+    )
+    tax_credential_repository = providers.Factory(
+        SqlAlchemyTaxCredentialRepository, session_factory=db.provided.session
+    )
+    tax_credentials_resolver = providers.Singleton(
+        DbTaxCredentialsResolver, credentials=tax_credential_repository, cipher=token_cipher
+    )
+    invoicing_provider = providers.Selector(
+        config.provided.invoicing_provider,
+        fake=providers.Singleton(FakeInvoicing),
+        afip=providers.Singleton(
+            AfipInvoicing,
+            resolver=tax_credentials_resolver,
+            afip_env=config.provided.afip_env,
+        ),
+    )
+    issue_invoice = providers.Factory(
+        IssueInvoice,
+        invoices=invoice_repository,
+        orders=order_repository,
+        tax_credentials=tax_credential_repository,
+        invoicing=invoicing_provider,
+        tenant_context=tenant_context,
+    )
+    list_invoices = providers.Factory(
+        ListInvoices, invoices=invoice_repository, tenant_context=tenant_context
+    )
+    get_order_invoice = providers.Factory(
+        GetOrderInvoice, invoices=invoice_repository, tenant_context=tenant_context
+    )
+    connect_afip = providers.Factory(
+        ConnectAfip,
+        credentials=tax_credential_repository,
+        cipher=token_cipher,
+        tenant_context=tenant_context,
+    )
+    get_afip_connection = providers.Factory(
+        GetAfipConnection, credentials=tax_credential_repository, tenant_context=tenant_context
+    )
+    disconnect_afip = providers.Factory(
+        DisconnectAfip, credentials=tax_credential_repository, tenant_context=tenant_context
     )

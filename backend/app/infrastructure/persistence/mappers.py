@@ -14,6 +14,15 @@ from app.domain.identity.tokens import (
     PasswordResetToken,
     RefreshToken,
 )
+from app.domain.invoice.credentials import TaxCredential
+from app.domain.invoice.entities import Invoice, VatItem
+from app.domain.invoice.value_objects import (
+    Concept,
+    DocType,
+    FiscalCondition,
+    InvoiceStatus,
+    InvoiceType,
+)
 from app.domain.order.entities import Order, OrderItem
 from app.domain.order.value_objects import OrderStatus
 from app.domain.payment.credentials import (
@@ -33,6 +42,7 @@ from app.infrastructure.persistence.models import (
     AuthAuditORM,
     EmailVerificationTokenORM,
     InvitationORM,
+    InvoiceORM,
     OrderItemORM,
     OrderORM,
     PasswordResetTokenORM,
@@ -41,6 +51,7 @@ from app.infrastructure.persistence.models import (
     ProductORM,
     RefreshTokenORM,
     TableORM,
+    TaxCredentialORM,
     TenantORM,
     UserORM,
 )
@@ -392,6 +403,92 @@ def payment_credential_to_domain(row: PaymentCredentialORM) -> PaymentCredential
         status=ConnectionStatus(row.status),
         created_at=row.created_at,
         updated_at=row.updated_at,
+    )
+
+
+def invoice_to_domain(row: InvoiceORM) -> Invoice:
+    currency = row.currency
+    return Invoice(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        type=InvoiceType(row.type),
+        point_of_sale=row.point_of_sale,
+        doc_type=DocType(row.doc_type),
+        doc_number=row.doc_number,
+        concept=Concept(row.concept),
+        net=Money(row.net_amount, currency),
+        vat=Money(row.vat_amount, currency),
+        total=Money(row.total_amount, currency),
+        vat_items=[
+            VatItem(
+                rate=item["rate"],
+                base=Money(item["base"], currency),
+                amount=Money(item["amount"], currency),
+            )
+            for item in row.vat_items
+        ],
+        status=InvoiceStatus(row.status),
+        order_id=row.order_id,
+        number=row.number,
+        cae=row.cae,
+        cae_expiration=row.cae_expiration,
+        rejection=row.rejection,
+        issued_at=row.issued_at,
+        created_at=row.created_at,
+    )
+
+
+def invoice_to_orm(invoice: Invoice) -> InvoiceORM:
+    return InvoiceORM(
+        id=invoice.id,
+        tenant_id=invoice.tenant_id,
+        type=invoice.type.value,
+        point_of_sale=invoice.point_of_sale,
+        number=invoice.number,
+        doc_type=invoice.doc_type.value,
+        doc_number=invoice.doc_number,
+        concept=invoice.concept.value,
+        net_amount=invoice.net.amount,
+        vat_amount=invoice.vat.amount,
+        total_amount=invoice.total.amount,
+        currency=invoice.total.currency,
+        vat_items=[
+            {"rate": v.rate, "base": v.base.amount, "amount": v.amount.amount}
+            for v in invoice.vat_items
+        ],
+        status=invoice.status.value,
+        cae=invoice.cae,
+        cae_expiration=invoice.cae_expiration,
+        rejection=invoice.rejection,
+        order_id=invoice.order_id,
+    )
+
+
+def tax_credential_to_domain(row: TaxCredentialORM) -> TaxCredential:
+    return TaxCredential(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        cuit=row.cuit,
+        certificate=row.certificate,
+        private_key=row.private_key,
+        point_of_sale=row.point_of_sale,
+        fiscal_condition=FiscalCondition(row.fiscal_condition),
+        live_mode=row.live_mode,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+def tax_credential_to_orm(credential: TaxCredential) -> TaxCredentialORM:
+    return TaxCredentialORM(
+        id=credential.id,
+        tenant_id=credential.tenant_id,
+        cuit=credential.cuit,
+        certificate=credential.certificate,
+        private_key=credential.private_key,
+        point_of_sale=credential.point_of_sale,
+        fiscal_condition=credential.fiscal_condition.value,
+        live_mode=credential.live_mode,
     )
 
 

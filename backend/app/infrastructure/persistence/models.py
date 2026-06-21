@@ -7,11 +7,13 @@ policies for the sensitive ones are created in the Alembic migration.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import (
+    JSON,
     BigInteger,
     Boolean,
+    Date,
     DateTime,
     ForeignKey,
     Integer,
@@ -273,6 +275,58 @@ class PaymentCredentialORM(Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     live_mode: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[str] = mapped_column(String(20), index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class InvoiceORM(Base):
+    __tablename__ = "invoices"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    type: Mapped[str] = mapped_column(String(30))
+    point_of_sale: Mapped[int] = mapped_column(Integer)
+    number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    doc_type: Mapped[str] = mapped_column(String(20))
+    doc_number: Mapped[str] = mapped_column(String(20))
+    concept: Mapped[str] = mapped_column(String(20))
+    net_amount: Mapped[int] = mapped_column(BigInteger)
+    vat_amount: Mapped[int] = mapped_column(BigInteger)
+    total_amount: Mapped[int] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(String(3))
+    vat_items: Mapped[list[dict[str, int]]] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    cae: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    cae_expiration: Mapped[date | None] = mapped_column(Date, nullable=True)
+    rejection: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    order_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True, index=True)
+    issued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class TaxCredentialORM(Base):
+    __tablename__ = "tax_credentials"
+    __table_args__ = (UniqueConstraint("tenant_id", name="uq_tax_credentials_tenant"),)
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    cuit: Mapped[str] = mapped_column(String(13))
+    # Certificate + key stored encrypted (TEXT).
+    certificate: Mapped[str] = mapped_column(String)
+    private_key: Mapped[str] = mapped_column(String)
+    point_of_sale: Mapped[int] = mapped_column(Integer)
+    fiscal_condition: Mapped[str] = mapped_column(String(30))
+    live_mode: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

@@ -17,6 +17,11 @@ from app.domain.identity.exceptions import (
     InvalidToken,
     TokenAlreadyUsed,
 )
+from app.domain.invoice.exceptions import (
+    InvoiceNotFound,
+    OrderNotInvoiceable,
+    TaxGatewayNotConnected,
+)
 from app.domain.order.exceptions import EmptyOrder, InvalidOrderTransition, OrderNotFound
 from app.domain.payment.exceptions import (
     InvalidOAuthState,
@@ -76,6 +81,10 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (InvalidWebhookSignature, 401),
     (PaymentGatewayNotConnected, 409),
     (InvalidOAuthState, 400),
+    # Fase 4 — facturación AFIP
+    (InvoiceNotFound, 404),
+    (OrderNotInvoiceable, 409),
+    (TaxGatewayNotConnected, 409),
 ]
 
 
