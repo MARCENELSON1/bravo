@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { Link, useSearchParams } from "react-router-dom"
+import { useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Spinner } from "@/components/ui/spinner"
 import { useDisconnectMp, useMpConnection } from "@/hooks/use-integrations"
 import { useServices } from "@/services/services-context"
@@ -42,13 +43,13 @@ export function IntegrationsPage() {
   const data = connection.data
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-xl flex-col gap-4 px-6 py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-medium">Integraciones</h1>
-        <Link to="/app" className="text-sm text-muted-foreground underline underline-offset-4">
-          Volver
-        </Link>
-      </div>
+    <div className="mx-auto flex max-w-2xl flex-col gap-5 px-6 py-8">
+      <header className="flex flex-col gap-1">
+        <GradientHeading size="md" weight="bold">
+          Integraciones
+        </GradientHeading>
+        <p className="text-sm text-muted-foreground">Conectá tus medios de cobro.</p>
+      </header>
 
       <Card>
         <CardHeader>
