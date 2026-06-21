@@ -494,3 +494,34 @@ class ReservationORM(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+# --- Fase 8: modelo canónico (silver) — sale_facts (tenant-scoped) ---------
+
+
+class SaleFactORM(Base):
+    """Canonical revenue fact: one line of a PAID order. Maintained by the sales
+    projection on the PAID transition. Tenant-scoped + RLS (datos de plata)."""
+
+    __tablename__ = "sale_facts"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    order_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
+    order_item_id: Mapped[str] = mapped_column(Uuid(as_uuid=False))
+    product_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
+    product_name: Mapped[str] = mapped_column(String(120))
+    category: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    quantity: Mapped[int] = mapped_column(Integer)
+    unit_price_amount: Mapped[int] = mapped_column(BigInteger)
+    line_amount: Mapped[int] = mapped_column(BigInteger)
+    food_cost_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    currency: Mapped[str] = mapped_column(String(3))
+    waiter_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
+    table_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

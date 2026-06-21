@@ -1,5 +1,6 @@
 import type { ComponentType } from "react"
 import {
+  BarChart3,
   Boxes,
   CalendarClock,
   ChefHat,
@@ -41,6 +42,12 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: LayoutDashboard,
         roles: ["OWNER", "MANAGER", "CASHIER"],
         end: true,
+      },
+      {
+        label: "Analítica",
+        to: "/app/analytics",
+        icon: BarChart3,
+        roles: ["OWNER", "MANAGER"],
       },
     ],
   },

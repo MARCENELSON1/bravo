@@ -8,6 +8,13 @@ from __future__ import annotations
 
 from dependency_injector import containers, providers
 
+from app.application.analytics.projection import ProjectOrderSales
+from app.application.analytics.rebuild import RebuildSalesFacts
+from app.application.analytics.use_cases import (
+    GetPaymentMix,
+    GetProductPerformance,
+    GetRevenueSummary,
+)
 from app.application.identity.accept_invitation import AcceptInvitation
 from app.application.identity.authenticate import Authenticate
 from app.application.identity.change_password import ChangePassword
@@ -98,6 +105,11 @@ from app.infrastructure.payments.credentials_resolver import DbPaymentCredential
 from app.infrastructure.payments.manual_gateway import ManualPaymentGateway
 from app.infrastructure.payments.mercadopago_gateway import MercadoPagoGateway
 from app.infrastructure.payments.mercadopago_oauth import MercadoPagoOAuthClient
+from app.infrastructure.persistence.analytics_repo import (
+    SqlAlchemyPaymentMixReadModel,
+    SqlAlchemyProductPerformanceReadModel,
+    SqlAlchemyRevenueReadModel,
+)
 from app.infrastructure.persistence.audit_repo import SqlAlchemyAuditRepository
 from app.infrastructure.persistence.credentials_repo import (
     SqlAlchemyPaymentCredentialRepository,
@@ -120,6 +132,7 @@ from app.infrastructure.persistence.reservation_repo import (
     SqlAlchemyReservationRepository,
 )
 from app.infrastructure.persistence.reset_token_repo import SqlAlchemyResetTokenRepository
+from app.infrastructure.persistence.sale_facts_repo import SqlAlchemySaleFactsRepository
 from app.infrastructure.persistence.shift_repo import SqlAlchemyShiftRepository
 from app.infrastructure.persistence.staff_report_repo import SqlAlchemyStaffReportReadModel
 from app.infrastructure.persistence.stock_movement_repo import (
@@ -375,6 +388,21 @@ class Container(containers.DeclarativeContainer):
         tenant_context=tenant_context,
     )
 
+    # --- Fase 8 (proyección): sale_facts + projector, antes de pagos ---
+    # El settle de pagos inyecta el SalesProjector como segundo hook post-PAID.
+    sale_facts_repository = providers.Factory(
+        SqlAlchemySaleFactsRepository, session_factory=db.provided.session
+    )
+    project_order_sales = providers.Factory(
+        ProjectOrderSales,
+        orders=order_repository,
+        products=product_repository,
+        recipes=recipe_repository,
+        ingredients=ingredient_repository,
+        sale_facts=sale_facts_repository,
+        tenant_context=tenant_context,
+    )
+
     # --- Fase 3: pagos (ingresos/egresos) ---
     payment_repository = providers.Factory(
         SqlAlchemyPaymentRepository, session_factory=db.provided.session
@@ -448,6 +476,7 @@ class Container(containers.DeclarativeContainer):
         gateway=payment_gateway,
         tenant_context=tenant_context,
         inventory=consume_recipes_for_order,
+        sales=project_order_sales,
     )
     confirm_gateway_payment = providers.Factory(
         ConfirmGatewayPayment,
@@ -457,6 +486,7 @@ class Container(containers.DeclarativeContainer):
         resolver=payment_credentials_resolver,
         tenant_context=tenant_context,
         inventory=consume_recipes_for_order,
+        sales=project_order_sales,
     )
     register_expense = providers.Factory(
         RegisterExpense,
@@ -672,5 +702,33 @@ class Container(containers.DeclarativeContainer):
         UpdateReservation,
         reservations=reservation_repository,
         tables=table_repository,
+        tenant_context=tenant_context,
+    )
+
+    # --- Fase 8: modelo canónico (analytics; repos/projector arriba, antes de pagos) ---
+    rebuild_sales_facts = providers.Factory(
+        RebuildSalesFacts,
+        orders=order_repository,
+        projector=project_order_sales,
+        tenant_context=tenant_context,
+    )
+    revenue_read_model = providers.Factory(
+        SqlAlchemyRevenueReadModel, session_factory=db.provided.session
+    )
+    payment_mix_read_model = providers.Factory(
+        SqlAlchemyPaymentMixReadModel, session_factory=db.provided.session
+    )
+    product_performance_read_model = providers.Factory(
+        SqlAlchemyProductPerformanceReadModel, session_factory=db.provided.session
+    )
+    get_revenue_summary = providers.Factory(
+        GetRevenueSummary, read_model=revenue_read_model, tenant_context=tenant_context
+    )
+    get_payment_mix = providers.Factory(
+        GetPaymentMix, read_model=payment_mix_read_model, tenant_context=tenant_context
+    )
+    get_product_performance = providers.Factory(
+        GetProductPerformance,
+        read_model=product_performance_read_model,
         tenant_context=tenant_context,
     )

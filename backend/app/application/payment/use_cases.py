@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+from app.application.analytics.ports import SalesProjector
 from app.application.inventory.ports import InventoryConsumer
 from app.domain.identity.ports import TenantContext
 from app.domain.order.exceptions import OrderNotFound
@@ -27,11 +28,13 @@ async def _settle_order(
     tenant_id: str,
     order_id: str,
     inventory: InventoryConsumer | None = None,
+    sales: SalesProjector | None = None,
 ) -> None:
     """Mark the order PAID once confirmed INFLOW payments cover its total.
 
-    On the PAID transition, discount the recipes' ingredients from stock via the
-    optional ``inventory`` consumer (idempotent; never blocks the cobro).
+    On the PAID transition, fire the optional post-paid collaborators (both
+    idempotent, both behind a port, neither blocks the cobro): discount the
+    recipe's stock (``inventory``) and project the canonical sale facts (``sales``).
     """
     order = await orders.get_by_id(tenant_id, order_id)
     if order is None:
@@ -47,6 +50,8 @@ async def _settle_order(
         await orders.save(order)
         if inventory is not None:
             await inventory.consume_for_order(tenant_id, order_id)
+        if sales is not None:
+            await sales.project_order(tenant_id, order_id)
 
 
 class RegisterPayment:
@@ -60,12 +65,14 @@ class RegisterPayment:
         gateway: PaymentGateway,
         tenant_context: TenantContext,
         inventory: InventoryConsumer | None = None,
+        sales: SalesProjector | None = None,
     ) -> None:
         self._payments = payments
         self._orders = orders
         self._gateway = gateway
         self._tenant_context = tenant_context
         self._inventory = inventory
+        self._sales = sales
 
     async def execute(
         self, *, tenant_id: str, order_id: str, method: str, amount: int
@@ -88,7 +95,7 @@ class RegisterPayment:
         payment = await self._gateway.charge(payment=payment)
         await self._payments.add(payment)
         await _settle_order(
-            self._payments, self._orders, tenant_id, order.id, self._inventory
+            self._payments, self._orders, tenant_id, order.id, self._inventory, self._sales
         )
         return payment
 
@@ -179,6 +186,7 @@ class ConfirmGatewayPayment:
         resolver: PaymentCredentialsResolver,
         tenant_context: TenantContext,
         inventory: InventoryConsumer | None = None,
+        sales: SalesProjector | None = None,
     ) -> None:
         self._payments = payments
         self._orders = orders
@@ -186,6 +194,7 @@ class ConfirmGatewayPayment:
         self._resolver = resolver
         self._tenant_context = tenant_context
         self._inventory = inventory
+        self._sales = sales
 
     async def execute(
         self,
@@ -227,6 +236,7 @@ class ConfirmGatewayPayment:
                     tenant_id,
                     payment.order_id,
                     self._inventory,
+                    self._sales,
                 )
         elif status.status is PaymentStatus.FAILED:
             payment.fail()
