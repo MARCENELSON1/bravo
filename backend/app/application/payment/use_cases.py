@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+from app.application.inventory.ports import InventoryConsumer
 from app.domain.identity.ports import TenantContext
 from app.domain.order.exceptions import OrderNotFound
 from app.domain.order.repository import OrderRepository
@@ -21,9 +22,17 @@ from app.domain.tenant.repository import TenantRepository
 
 
 async def _settle_order(
-    payments: PaymentRepository, orders: OrderRepository, tenant_id: str, order_id: str
+    payments: PaymentRepository,
+    orders: OrderRepository,
+    tenant_id: str,
+    order_id: str,
+    inventory: InventoryConsumer | None = None,
 ) -> None:
-    """Mark the order PAID once confirmed INFLOW payments cover its total."""
+    """Mark the order PAID once confirmed INFLOW payments cover its total.
+
+    On the PAID transition, discount the recipes' ingredients from stock via the
+    optional ``inventory`` consumer (idempotent; never blocks the cobro).
+    """
     order = await orders.get_by_id(tenant_id, order_id)
     if order is None:
         return
@@ -36,6 +45,8 @@ async def _settle_order(
     if paid >= order.total().amount and order.status is not OrderStatus.PAID:
         order.mark_paid()
         await orders.save(order)
+        if inventory is not None:
+            await inventory.consume_for_order(tenant_id, order_id)
 
 
 class RegisterPayment:
@@ -48,11 +59,13 @@ class RegisterPayment:
         orders: OrderRepository,
         gateway: PaymentGateway,
         tenant_context: TenantContext,
+        inventory: InventoryConsumer | None = None,
     ) -> None:
         self._payments = payments
         self._orders = orders
         self._gateway = gateway
         self._tenant_context = tenant_context
+        self._inventory = inventory
 
     async def execute(
         self, *, tenant_id: str, order_id: str, method: str, amount: int
@@ -74,7 +87,9 @@ class RegisterPayment:
         )
         payment = await self._gateway.charge(payment=payment)
         await self._payments.add(payment)
-        await _settle_order(self._payments, self._orders, tenant_id, order.id)
+        await _settle_order(
+            self._payments, self._orders, tenant_id, order.id, self._inventory
+        )
         return payment
 
 
@@ -163,12 +178,14 @@ class ConfirmGatewayPayment:
         notifications: PaymentNotificationGateway,
         resolver: PaymentCredentialsResolver,
         tenant_context: TenantContext,
+        inventory: InventoryConsumer | None = None,
     ) -> None:
         self._payments = payments
         self._orders = orders
         self._notifications = notifications
         self._resolver = resolver
         self._tenant_context = tenant_context
+        self._inventory = inventory
 
     async def execute(
         self,
@@ -204,7 +221,13 @@ class ConfirmGatewayPayment:
             payment.external_ref = status.gateway_payment_id
             await self._payments.save(payment)
             if payment.order_id is not None:
-                await _settle_order(self._payments, self._orders, tenant_id, payment.order_id)
+                await _settle_order(
+                    self._payments,
+                    self._orders,
+                    tenant_id,
+                    payment.order_id,
+                    self._inventory,
+                )
         elif status.status is PaymentStatus.FAILED:
             payment.fail()
             payment.external_ref = status.gateway_payment_id

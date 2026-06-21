@@ -3,6 +3,7 @@ from __future__ import annotations
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, status
 
+from app.application.inventory.food_cost import GetFoodCost
 from app.application.inventory.use_cases import (
     CreateIngredient,
     CreateSupplier,
@@ -23,6 +24,8 @@ from app.presentation.schemas.inventory import (
     CreateIngredientResponse,
     CreateSupplierRequest,
     CreateSupplierResponse,
+    FoodCostResponse,
+    FoodCostRowResponse,
     IngredientResponse,
     PurchaseRequest,
     SupplierResponse,
@@ -151,6 +154,30 @@ async def list_low_stock(
 ) -> list[IngredientResponse]:
     ingredients = await use_case.execute(tenant_id=identity.tenant_id)
     return [_ingredient_response(i) for i in ingredients]
+
+
+@router.get("/food-cost", response_model=FoodCostResponse)
+@inject
+async def get_food_cost(
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: GetFoodCost = Depends(Provide[Container.get_food_cost]),
+) -> FoodCostResponse:
+    report = await use_case.execute(tenant_id=identity.tenant_id)
+    return FoodCostResponse(
+        currency=report.currency,
+        rows=[
+            FoodCostRowResponse(
+                product_id=r.product_id,
+                product_name=r.product_name,
+                price_amount=r.price_amount,
+                food_cost_amount=r.food_cost_amount,
+                margin_amount=r.margin_amount,
+                food_cost_ratio_bps=r.food_cost_ratio_bps,
+                currency=r.currency,
+            )
+            for r in report.rows
+        ],
+    )
 
 
 # --- Suppliers ------------------------------------------------------------

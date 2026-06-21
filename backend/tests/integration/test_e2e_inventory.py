@@ -170,6 +170,74 @@ async def test_set_recipe_unknown_ingredient_rejected(client):
     assert bad.json()["code"] == "ingredient_not_found"
 
 
+async def test_update_ingredient_fields(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    iid = (await _new_ingredient(http, h))["ingredient_id"]
+
+    patched = await http.patch(
+        f"/api/v1/inventory/ingredients/{iid}",
+        json={"name": "Harina 0000", "min_qty": 2000, "active": False},
+        headers=h,
+    )
+    assert patched.status_code == 200, patched.text
+    body = patched.json()
+    assert body["name"] == "Harina 0000"
+    assert body["min_qty"] == 2000
+    assert body["active"] is False
+
+
+async def test_update_unknown_ingredient_404(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    missing = "00000000-0000-0000-0000-000000000000"
+    resp = await http.patch(
+        f"/api/v1/inventory/ingredients/{missing}", json={"name": "X"}, headers=h
+    )
+    assert resp.status_code == 404
+    assert resp.json()["code"] == "ingredient_not_found"
+
+
+async def test_purchase_unknown_ingredient_404(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    missing = "00000000-0000-0000-0000-000000000000"
+    resp = await http.post(
+        f"/api/v1/inventory/ingredients/{missing}/purchase",
+        json={"qty": 100, "unit_cost_amount": 100},
+        headers=h,
+    )
+    assert resp.status_code == 404
+    assert resp.json()["code"] == "ingredient_not_found"
+
+
+async def test_waste_unknown_ingredient_404(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    missing = "00000000-0000-0000-0000-000000000000"
+    resp = await http.post(
+        f"/api/v1/inventory/ingredients/{missing}/waste", json={"qty": 100}, headers=h
+    )
+    assert resp.status_code == 404
+    assert resp.json()["code"] == "ingredient_not_found"
+
+
+async def test_set_recipe_unknown_product_404(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    missing = "00000000-0000-0000-0000-000000000000"
+    resp = await http.put(
+        f"/api/v1/products/{missing}/recipe", json={"items": []}, headers=h
+    )
+    assert resp.status_code == 404
+    assert resp.json()["code"] == "product_not_found"
+
+
 async def test_inventory_rls_isolation(client):
     http, fake_email = client
     t1 = await _onboard_verify_login(http, fake_email, slug="uno", email="a@uno.com")

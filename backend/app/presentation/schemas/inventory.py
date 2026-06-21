@@ -77,3 +77,18 @@ class RecipeResponse(BaseModel):
     product_id: str
     has_recipe: bool
     items: list[RecipeItemSchema]
+
+
+class FoodCostRowResponse(BaseModel):
+    product_id: str
+    product_name: str
+    price_amount: int
+    food_cost_amount: int
+    margin_amount: int  # may be negative (sold below cost)
+    food_cost_ratio_bps: int
+    currency: str
+
+
+class FoodCostResponse(BaseModel):
+    currency: str
+    rows: list[FoodCostRowResponse]
