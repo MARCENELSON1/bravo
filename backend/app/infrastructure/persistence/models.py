@@ -470,3 +470,27 @@ class StockMovementORM(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+# --- Fase 7: reservas (tenant-scoped) --------------------------------------
+
+
+class ReservationORM(Base):
+    __tablename__ = "reservations"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    customer_name: Mapped[str] = mapped_column(String(120))
+    customer_phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    party_size: Mapped[int] = mapped_column(Integer)
+    reserved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    turn: Mapped[str] = mapped_column(String(10), index=True)
+    # Soft reference (no FK): a reservation survives a table being deactivated.
+    table_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

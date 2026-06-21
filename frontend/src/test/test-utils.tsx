@@ -43,6 +43,7 @@ export function renderWithProviders(
     paymentsApi: {} as unknown as Services["paymentsApi"],
     productsApi: {} as unknown as Services["productsApi"],
     reportsApi: {} as unknown as Services["reportsApi"],
+    reservationsApi: {} as unknown as Services["reservationsApi"],
     tablesApi: {} as unknown as Services["tablesApi"],
     timeClockApi: {} as unknown as Services["timeClockApi"],
   }

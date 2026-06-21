@@ -63,6 +63,17 @@ from app.application.payment.use_cases import (
 from app.application.product.use_cases import CreateProduct, ListProducts
 from app.application.reporting.dashboard import GetDashboardSummary
 from app.application.reporting.staff import GetStaffReport
+from app.application.reservation.use_cases import (
+    CancelReservation,
+    CompleteReservation,
+    ConfirmReservation,
+    CreateReservation,
+    GetReservation,
+    ListReservations,
+    MarkNoShow,
+    SeatReservation,
+    UpdateReservation,
+)
 from app.application.table.use_cases import CreateTable, ListTables
 from app.application.timeclock.presence import (
     GetPresenceChallenge,
@@ -105,6 +116,9 @@ from app.infrastructure.persistence.presence_store_repo import (
 from app.infrastructure.persistence.product_repo import SqlAlchemyProductRepository
 from app.infrastructure.persistence.recipe_repo import SqlAlchemyRecipeRepository
 from app.infrastructure.persistence.refresh_token_repo import SqlAlchemyRefreshTokenRepository
+from app.infrastructure.persistence.reservation_repo import (
+    SqlAlchemyReservationRepository,
+)
 from app.infrastructure.persistence.reset_token_repo import SqlAlchemyResetTokenRepository
 from app.infrastructure.persistence.shift_repo import SqlAlchemyShiftRepository
 from app.infrastructure.persistence.staff_report_repo import SqlAlchemyStaffReportReadModel
@@ -619,4 +633,44 @@ class Container(containers.DeclarativeContainer):
     )
     get_food_cost = providers.Factory(
         GetFoodCost, read_model=food_cost_read_model, tenant_context=tenant_context
+    )
+
+    # --- Fase 7: reservas ---
+    reservation_repository = providers.Factory(
+        SqlAlchemyReservationRepository, session_factory=db.provided.session
+    )
+    create_reservation = providers.Factory(
+        CreateReservation,
+        reservations=reservation_repository,
+        tables=table_repository,
+        tenant_context=tenant_context,
+    )
+    list_reservations = providers.Factory(
+        ListReservations, reservations=reservation_repository, tenant_context=tenant_context
+    )
+    get_reservation = providers.Factory(
+        GetReservation, reservations=reservation_repository, tenant_context=tenant_context
+    )
+    confirm_reservation = providers.Factory(
+        ConfirmReservation, reservations=reservation_repository, tenant_context=tenant_context
+    )
+    seat_reservation = providers.Factory(
+        SeatReservation, reservations=reservation_repository, tenant_context=tenant_context
+    )
+    complete_reservation = providers.Factory(
+        CompleteReservation,
+        reservations=reservation_repository,
+        tenant_context=tenant_context,
+    )
+    cancel_reservation = providers.Factory(
+        CancelReservation, reservations=reservation_repository, tenant_context=tenant_context
+    )
+    mark_no_show = providers.Factory(
+        MarkNoShow, reservations=reservation_repository, tenant_context=tenant_context
+    )
+    update_reservation = providers.Factory(
+        UpdateReservation,
+        reservations=reservation_repository,
+        tables=table_repository,
+        tenant_context=tenant_context,
     )

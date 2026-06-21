@@ -40,6 +40,8 @@ from app.domain.payment.credentials import (
 from app.domain.payment.entities import Payment
 from app.domain.payment.value_objects import PaymentDirection, PaymentMethod, PaymentStatus
 from app.domain.product.entities import Product
+from app.domain.reservation.entities import Reservation
+from app.domain.reservation.value_objects import ReservationStatus, ServiceTurn
 from app.domain.shared.money import Money
 from app.domain.table.entities import Table
 from app.domain.tenant.entities import Tenant
@@ -62,6 +64,7 @@ from app.infrastructure.persistence.models import (
     RecipeItemORM,
     RecipeORM,
     RefreshTokenORM,
+    ReservationORM,
     ShiftORM,
     StockMovementORM,
     SupplierORM,
@@ -665,4 +668,38 @@ def recipe_item_to_orm(item: RecipeItem, recipe: Recipe, item_id: str) -> Recipe
         product_id=recipe.product_id,
         ingredient_id=item.ingredient_id,
         qty=item.qty,
+    )
+
+
+# --- Reservation ----------------------------------------------------------
+
+
+def reservation_to_domain(row: ReservationORM) -> Reservation:
+    return Reservation(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        customer_name=row.customer_name,
+        party_size=row.party_size,
+        reserved_at=row.reserved_at,
+        turn=ServiceTurn(row.turn),
+        customer_phone=row.customer_phone,
+        table_id=row.table_id,
+        status=ReservationStatus(row.status),
+        note=row.note,
+        created_at=row.created_at,
+    )
+
+
+def reservation_to_orm(reservation: Reservation) -> ReservationORM:
+    return ReservationORM(
+        id=reservation.id,
+        tenant_id=reservation.tenant_id,
+        customer_name=reservation.customer_name,
+        customer_phone=reservation.customer_phone,
+        party_size=reservation.party_size,
+        reserved_at=reservation.reserved_at,
+        turn=reservation.turn.value,
+        table_id=reservation.table_id,
+        status=reservation.status.value,
+        note=reservation.note,
     )
