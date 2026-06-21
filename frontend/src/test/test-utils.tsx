@@ -40,6 +40,7 @@ export function renderWithProviders(
     ordersApi: {} as unknown as Services["ordersApi"],
     paymentsApi: {} as unknown as Services["paymentsApi"],
     productsApi: {} as unknown as Services["productsApi"],
+    reportsApi: {} as unknown as Services["reportsApi"],
     tablesApi: {} as unknown as Services["tablesApi"],
   }
   const queryClient = new QueryClient({

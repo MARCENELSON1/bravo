@@ -98,3 +98,16 @@ export interface MpConnectionDTO {
   external_account_id: string | null
   live_mode: boolean
 }
+
+// --- Reporting ---
+
+export interface DashboardSummaryDTO {
+  currency: string
+  sales: number // minor units
+  expenses: number
+  net: number
+  active_orders: number
+  paid_orders: number
+  avg_ticket: number
+  payment_count: number
+}

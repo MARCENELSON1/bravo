@@ -5,6 +5,7 @@ import type { IntegrationsApi } from "@/api/integrations-api"
 import type { OrdersApi } from "@/api/orders-api"
 import type { PaymentsApi } from "@/api/payments-api"
 import type { ProductsApi } from "@/api/products-api"
+import type { ReportsApi } from "@/api/reports-api"
 import type { TablesApi } from "@/api/tables-api"
 
 // DI for the data layer. The context + hook live here (no component) so the
@@ -16,6 +17,7 @@ export interface Services {
   ordersApi: OrdersApi
   paymentsApi: PaymentsApi
   productsApi: ProductsApi
+  reportsApi: ReportsApi
   tablesApi: TablesApi
 }
 

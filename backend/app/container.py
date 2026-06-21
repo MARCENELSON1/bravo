@@ -41,6 +41,7 @@ from app.application.payment.use_cases import (
     RegisterPayment,
 )
 from app.application.product.use_cases import CreateProduct, ListProducts
+from app.application.reporting.dashboard import GetDashboardSummary
 from app.application.table.use_cases import CreateTable, ListTables
 from app.config import Settings
 from app.infrastructure.email.console_sender import ConsoleEmailSender
@@ -53,6 +54,7 @@ from app.infrastructure.persistence.audit_repo import SqlAlchemyAuditRepository
 from app.infrastructure.persistence.credentials_repo import (
     SqlAlchemyPaymentCredentialRepository,
 )
+from app.infrastructure.persistence.dashboard_repo import SqlAlchemyDashboardReadModel
 from app.infrastructure.persistence.database import Database
 from app.infrastructure.persistence.invitation_repo import SqlAlchemyInvitationRepository
 from app.infrastructure.persistence.order_repo import SqlAlchemyOrderRepository
@@ -373,4 +375,12 @@ class Container(containers.DeclarativeContainer):
     )
     list_expenses = providers.Factory(
         ListExpenses, payments=payment_repository, tenant_context=tenant_context
+    )
+
+    # --- Reporting (read models) ---
+    dashboard_read_model = providers.Factory(
+        SqlAlchemyDashboardReadModel, session_factory=db.provided.session
+    )
+    get_dashboard_summary = providers.Factory(
+        GetDashboardSummary, read_model=dashboard_read_model, tenant_context=tenant_context
     )
