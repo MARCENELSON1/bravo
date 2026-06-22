@@ -5,6 +5,7 @@ import { RequireAuth } from "@/auth/require-auth"
 import { RequireRole } from "@/auth/require-role"
 import { AdvisorPage } from "@/features/advisor/advisor-page"
 import { AnalyticsPage } from "@/features/analytics/analytics-page"
+import { CopilotPage } from "@/features/copilot/copilot-page"
 import { DashboardPage } from "@/features/dashboard/dashboard-page"
 import { FloorPage } from "@/features/floor/floor-page"
 import { AcceptInvitationPage } from "@/features/identity/accept-invitation-page"
@@ -60,6 +61,7 @@ export const router = createBrowserRouter([
             children: [
               { path: "/app/invite", element: <InviteUserPage /> },
               { path: "/app/advisor", element: <AdvisorPage /> },
+              { path: "/app/copilot", element: <CopilotPage /> },
               { path: "/app/analytics", element: <AnalyticsPage /> },
               { path: "/app/products", element: <ProductsPage /> },
               { path: "/app/stock", element: <StockPage /> },
