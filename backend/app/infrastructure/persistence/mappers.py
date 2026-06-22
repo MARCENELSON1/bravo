@@ -6,6 +6,7 @@ clobbers the DB-managed timestamp and inserts use the column ``server_default``.
 
 from __future__ import annotations
 
+from app.domain.advisor.entities import AdvisorSettings
 from app.domain.identity.tokens import (
     AuthAuditEntry,
     AuthEvent,
@@ -50,6 +51,7 @@ from app.domain.timeclock.value_objects import ShiftSource, ShiftStatus
 from app.domain.user.entities import User
 from app.domain.user.value_objects import Email, Role
 from app.infrastructure.persistence.models import (
+    AdvisorSettingsORM,
     AuthAuditORM,
     EmailVerificationTokenORM,
     IngredientORM,
@@ -687,6 +689,27 @@ def reservation_to_domain(row: ReservationORM) -> Reservation:
         status=ReservationStatus(row.status),
         note=row.note,
         created_at=row.created_at,
+    )
+
+
+def advisor_settings_to_domain(row: AdvisorSettingsORM) -> AdvisorSettings:
+    return AdvisorSettings(
+        tenant_id=row.tenant_id,
+        monthly_labor_cost=Money(row.labor_cost_amount, row.currency),
+        monthly_other_fixed_costs=Money(row.other_fixed_amount, row.currency),
+        target_food_cost_bps=row.target_food_cost_bps,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+def advisor_settings_to_orm(settings: AdvisorSettings) -> AdvisorSettingsORM:
+    return AdvisorSettingsORM(
+        tenant_id=settings.tenant_id,
+        labor_cost_amount=settings.monthly_labor_cost.amount,
+        other_fixed_amount=settings.monthly_other_fixed_costs.amount,
+        currency=settings.currency,
+        target_food_cost_bps=settings.target_food_cost_bps,
     )
 
 
