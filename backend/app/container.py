@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from dependency_injector import containers, providers
 
+from app.application.advisor.report import GetAdvisorReport
+from app.application.advisor.use_cases import GetAdvisorSettings, UpdateAdvisorSettings
 from app.application.analytics.projection import ProjectOrderSales
 from app.application.analytics.rebuild import RebuildSalesFacts
 from app.application.analytics.use_cases import (
@@ -96,6 +98,8 @@ from app.application.timeclock.use_cases import (
     Punch,
 )
 from app.config import Settings
+from app.infrastructure.advisor.no_synthesis import NoSynthesis
+from app.infrastructure.advisor.template_narrator import TemplateNarrator
 from app.infrastructure.email.console_sender import ConsoleEmailSender
 from app.infrastructure.email.smtp_sender import SmtpEmailSender
 from app.infrastructure.invoicing.afip_invoicing import AfipInvoicing
@@ -105,6 +109,10 @@ from app.infrastructure.payments.credentials_resolver import DbPaymentCredential
 from app.infrastructure.payments.manual_gateway import ManualPaymentGateway
 from app.infrastructure.payments.mercadopago_gateway import MercadoPagoGateway
 from app.infrastructure.payments.mercadopago_oauth import MercadoPagoOAuthClient
+from app.infrastructure.persistence.advisor_repo import SqlAlchemyAdvisorReadModel
+from app.infrastructure.persistence.advisor_settings_repo import (
+    SqlAlchemyAdvisorSettingsRepository,
+)
 from app.infrastructure.persistence.analytics_repo import (
     SqlAlchemyPaymentMixReadModel,
     SqlAlchemyProductPerformanceReadModel,
@@ -730,5 +738,34 @@ class Container(containers.DeclarativeContainer):
     get_product_performance = providers.Factory(
         GetProductPerformance,
         read_model=product_performance_read_model,
+        tenant_context=tenant_context,
+    )
+
+    # --- Fase 9: asesor financiero (narrator/synthesizer deterministas; LLM en T4) ---
+    advisor_settings_repository = providers.Factory(
+        SqlAlchemyAdvisorSettingsRepository, session_factory=db.provided.session
+    )
+    advisor_read_model = providers.Factory(
+        SqlAlchemyAdvisorReadModel, session_factory=db.provided.session
+    )
+    insight_narrator = providers.Singleton(TemplateNarrator)
+    advisor_synthesizer = providers.Singleton(NoSynthesis)
+    get_advisor_report = providers.Factory(
+        GetAdvisorReport,
+        read_model=advisor_read_model,
+        settings=advisor_settings_repository,
+        narrator=insight_narrator,
+        synthesizer=advisor_synthesizer,
+        tenant_context=tenant_context,
+    )
+    get_advisor_settings = providers.Factory(
+        GetAdvisorSettings,
+        settings=advisor_settings_repository,
+        tenant_context=tenant_context,
+    )
+    update_advisor_settings = providers.Factory(
+        UpdateAdvisorSettings,
+        settings=advisor_settings_repository,
+        tenants=tenant_repository,
         tenant_context=tenant_context,
     )
