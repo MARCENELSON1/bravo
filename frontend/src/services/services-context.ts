@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react"
 
+import type { AdvisorApi } from "@/api/advisor-api"
 import type { AnalyticsApi } from "@/api/analytics-api"
 import type { AuthApi } from "@/api/auth-api"
 import type { IntegrationsApi } from "@/api/integrations-api"
@@ -17,6 +18,7 @@ import type { TimeClockApi } from "@/api/timeclock-api"
 // provider file can export only a component (Fast Refresh friendly). Tests pass
 // fakes via the provider's `value` — the equivalent of overriding a DI provider.
 export interface Services {
+  advisorApi: AdvisorApi
   analyticsApi: AnalyticsApi
   authApi: AuthApi
   integrationsApi: IntegrationsApi

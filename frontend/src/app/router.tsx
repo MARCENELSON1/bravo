@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom"
 import { AppShell } from "@/components/shell/app-shell"
 import { RequireAuth } from "@/auth/require-auth"
 import { RequireRole } from "@/auth/require-role"
+import { AdvisorPage } from "@/features/advisor/advisor-page"
 import { AnalyticsPage } from "@/features/analytics/analytics-page"
 import { DashboardPage } from "@/features/dashboard/dashboard-page"
 import { FloorPage } from "@/features/floor/floor-page"
@@ -58,6 +59,7 @@ export const router = createBrowserRouter([
             element: <RequireRole allow={["OWNER", "MANAGER"]} />,
             children: [
               { path: "/app/invite", element: <InviteUserPage /> },
+              { path: "/app/advisor", element: <AdvisorPage /> },
               { path: "/app/analytics", element: <AnalyticsPage /> },
               { path: "/app/products", element: <ProductsPage /> },
               { path: "/app/stock", element: <StockPage /> },

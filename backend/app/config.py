@@ -110,6 +110,17 @@ class Settings(BaseSettings):
         """Dedicated presence-signing secret, falling back to the JWT secret."""
         return self.presence_secret or self.jwt_secret
 
+    # Asesor financiero (Fase 9). Capa LLM grounded, APAGADA por default: "off" =
+    # narración determinística (plantillas); "claude" = Claude narra/sintetiza
+    # sobre los números ya calculados (nunca calcula). Prender sólo con evals.
+    advisor_llm_provider: Literal["off", "claude"] = "off"
+    anthropic_api_key: str = ""
+    advisor_llm_model: str = "claude-opus-4-8"
+
+    @property
+    def advisor_llm_enabled(self) -> bool:
+        return self.advisor_llm_provider != "off"
+
     @model_validator(mode="after")
     def _reject_insecure_production(self) -> "Settings":
         """Fail fast on insecure configuration outside of dev."""

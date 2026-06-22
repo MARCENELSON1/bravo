@@ -525,3 +525,28 @@ class SaleFactORM(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+# --- Fase 9: asesor financiero — advisor_settings (tenant-scoped, 1:1) ------
+
+
+class AdvisorSettingsORM(Base):
+    """Per-tenant cost profile (1:1, keyed by tenant_id). Datos de plata → RLS."""
+
+    __tablename__ = "advisor_settings"
+
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    labor_cost_amount: Mapped[int] = mapped_column(BigInteger, default=0)
+    other_fixed_amount: Mapped[int] = mapped_column(BigInteger, default=0)
+    currency: Mapped[str] = mapped_column(String(3))
+    target_food_cost_bps: Mapped[int] = mapped_column(Integer, server_default="3000")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )

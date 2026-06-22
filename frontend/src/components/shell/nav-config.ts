@@ -11,6 +11,7 @@ import {
   Plug,
   QrCode,
   Receipt,
+  Sparkles,
   Truck,
   UtensilsCrossed,
   Users,
@@ -42,6 +43,12 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: LayoutDashboard,
         roles: ["OWNER", "MANAGER", "CASHIER"],
         end: true,
+      },
+      {
+        label: "Asesor",
+        to: "/app/advisor",
+        icon: Sparkles,
+        roles: ["OWNER", "MANAGER"],
       },
       {
         label: "Analítica",

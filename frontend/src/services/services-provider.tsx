@@ -1,6 +1,7 @@
 import { useMemo } from "react"
 import type { ReactNode } from "react"
 
+import { AdvisorApi } from "@/api/advisor-api"
 import { AnalyticsApi } from "@/api/analytics-api"
 import { AuthApi } from "@/api/auth-api"
 import { FetchHttpClient } from "@/api/http-client"
@@ -29,6 +30,7 @@ export function ServicesProvider({
     if (value) return value
     const http = new FetchHttpClient(API_BASE_URL)
     return {
+      advisorApi: new AdvisorApi(http),
       analyticsApi: new AnalyticsApi(http),
       authApi: new AuthApi(http),
       integrationsApi: new IntegrationsApi(http),
