@@ -92,6 +92,11 @@ class GetAdvisorReport:
         previous = self._build_kpis(prev_metrics, settings, period_days)
 
         insights = detect_insights(kpis, target_food_cost_bps=target, previous=previous)
+        # TODO (PENDIENTE — Fase 9.1): cuando el narrator/synthesizer son LLM, esto
+        # hace ~N+1 llamadas a la API por request (sin caché). Cachear la salida por
+        # (tenant, fingerprint de insights+modelo+prompt) detrás de un port, idealmente
+        # tabla en Postgres con RLS. Con narrator=template (default) es instantáneo y
+        # no aplica. Ver reporte de Fase 9 / nota de diseño del caché.
         narrated = [await self._narrator.narrate(insight) for insight in insights]
         summary = await self._synthesizer.synthesize(kpis, narrated)
         return AdvisorReport(

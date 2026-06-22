@@ -79,9 +79,21 @@ anti-cifras-inventadas). Prioridad PRD: diferenciador. Depende de Fase 8.
 | `frontend/src/api/advisor-api.test.ts` | 3 | report query, sin período, update settings |
 | `frontend/src/lib/advisor.test.ts` | 3 | buckets, severidad→badge, formatPct |
 
+## Pendientes técnicos (deuda conocida)
+- [ ] **Caché de la narración LLM — PENDIENTE (Fase 9.1).** Hoy, con `advisor_llm_provider=claude`, cada
+  `GET /advisor/report` hace ~N+1 llamadas a la API (una por insight + síntesis), **sin caché**. A implementar:
+  cachear la salida del LLM por `(tenant, fingerprint de insights + modelo + versión de prompt)` detrás de un port,
+  idealmente una **tabla en Postgres con RLS** (migración 0012) + TTL. Los **KPIs siempre se recalculan frescos**;
+  sólo se cachea la redacción. Con `off` (default) no aplica. TODO marcado en `application/advisor/report.py`.
+- [ ] **Antes de prender `claude` en prod:** set de evals de alucinación + agregar dep `anthropic` a `pyproject`
+  (hoy import lazy; si falta, cae en silencio a plantillas) + `ANTHROPIC_API_KEY`. En dev/tests queda off.
+
+## Config (env vars, NO hardcodeadas)
+`ADVISOR_LLM_PROVIDER` (off|claude, default off), `ANTHROPIC_API_KEY`, `ADVISOR_LLM_MODEL` (default
+`claude-opus-4-8`). Documentadas en `backend/.env.example`. El literal en `config.py` es sólo el default overridable
+por entorno; el modelo y la key se cambian en Railway sin tocar código (reiniciar el servicio para tomarlas).
+
 ## Next Steps
 - [ ] Code review via `/code-review`
-- [ ] Merge a `main` (rama `feat/fase-9-asesor-financiero`)
-- [ ] **Antes de prender `advisor_llm_provider=claude` en prod:** set de evals de alucinación + agregar dep
-  `anthropic` + `ANTHROPIC_API_KEY` (open question del PRD). En dev/tests queda off.
+- [x] Merge a `main` — `origin/main` = `e313480`
 - [ ] **Fase 10 — Reportes (Excel/contador) + WhatsApp del lunes** (consume el reporte del asesor).
