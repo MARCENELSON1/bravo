@@ -1,6 +1,7 @@
 import type { ComponentType } from "react"
 import {
   BarChart3,
+  Bot,
   Boxes,
   CalendarClock,
   ChefHat,
@@ -48,6 +49,12 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Asesor",
         to: "/app/advisor",
         icon: Sparkles,
+        roles: ["OWNER", "MANAGER"],
+      },
+      {
+        label: "Copiloto",
+        to: "/app/copilot",
+        icon: Bot,
         roles: ["OWNER", "MANAGER"],
       },
       {

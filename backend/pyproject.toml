@@ -27,6 +27,7 @@ dependencies = [
     # SOAP client for AFIP WSAA + WSFEv1 (Fase 4). Sync; called via to_thread.
     "zeep>=4.3,<5.0",
     "anthropic (>=0.111.0,<0.112.0)",
+    "sqlglot (>=30.11.0,<31.0.0)",
 ]
 
 [tool.poetry]

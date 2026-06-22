@@ -173,7 +173,7 @@ Dueño al cierre ve en pesos cómo le fue + una acción para mañana
 | 8 | Modelo canónico + read models | Proyecciones desde la captura (ventas/gastos/productos/clientes/medios) + read models de KPIs (CQRS-lite, RLS) | **complete** | with 5,6,7 | 2,3 | `.claude/PRPs/plans/completed/fase-8-modelo-canonico-read-models.plan.md` |
 | 9 | Asesor financiero + Dashboard | KPIs en pesos (margen, punto de equilibrio, food/labor/prime cost, mermas), insights proactivos (Actuá hoy/Esta semana/Lo que viene/Bien hecho), onboarding por rubro | **complete** | - | 8 | `.claude/PRPs/plans/completed/fase-9-asesor-financiero.plan.md` |
 | 10 | Reportes + WhatsApp + Contador | Biblioteca de reportes por destinatario; reporte del lunes por WhatsApp; export para el contador (Excel + IVA discriminado) | pending | - | 9,4 | - |
-| 11 | Copiloto IA | Port `CopilotLLM` (Anthropic), text-to-SQL con guardrails (read-only, tenant forzado, schema acotado, fuente), evals | pending | with 12 | 8 | - |
+| 11 | Copiloto IA | Port `CopilotLLM` (Anthropic), text-to-SQL con guardrails (read-only, tenant forzado, schema acotado, fuente), evals | **complete** | with 12 | 8 | `.claude/PRPs/plans/completed/fase-11-copiloto.plan.md` |
 | 12 | CRM rubro-aware | Hotel=clientes identificados/LTV/en-riesgo/comisiones; restaurante=patrones | pending | with 11 | 8 | - |
 
 ### Phase Details

@@ -11,6 +11,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.domain.advisor.exceptions import InvalidAdvisorSettings
+from app.domain.copilot.exceptions import (
+    CopilotDisabled,
+    CopilotQueryError,
+    UnsafeQuery,
+)
 from app.domain.errors import DomainError
 from app.domain.identity.exceptions import (
     ExpiredToken,
@@ -134,6 +139,10 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (InvalidPartySize, 422),
     # Fase 9 — asesor financiero
     (InvalidAdvisorSettings, 422),
+    # Fase 11 — copiloto IA
+    (CopilotDisabled, 409),
+    (UnsafeQuery, 422),
+    (CopilotQueryError, 422),
 ]
 
 

@@ -121,6 +121,18 @@ class Settings(BaseSettings):
     def advisor_llm_enabled(self) -> bool:
         return self.advisor_llm_provider != "off"
 
+    # Copiloto IA (Fase 11). "off" (default) = deshabilitado. "claude" = NL→SQL
+    # con guardrails (validador + read-only + RLS). La aislación por tenant la da
+    # RLS, no el LLM. Prender SÓLO con el set de evals (open question PRD).
+    copilot_provider: Literal["off", "claude"] = "off"
+    copilot_model: str = "claude-opus-4-8"
+    copilot_row_limit: int = 200
+    copilot_statement_timeout_ms: int = 5000
+
+    @property
+    def copilot_enabled(self) -> bool:
+        return self.copilot_provider != "off"
+
     @model_validator(mode="after")
     def _reject_insecure_production(self) -> "Settings":
         """Fail fast on insecure configuration outside of dev."""
