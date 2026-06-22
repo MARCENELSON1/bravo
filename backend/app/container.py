@@ -17,6 +17,7 @@ from app.application.analytics.use_cases import (
     GetProductPerformance,
     GetRevenueSummary,
 )
+from app.application.copilot.ask import AskCopilot
 from app.application.identity.accept_invitation import AcceptInvitation
 from app.application.identity.authenticate import Authenticate
 from app.application.identity.change_password import ChangePassword
@@ -103,11 +104,15 @@ from app.infrastructure.advisor.claude_synthesizer import ClaudeSynthesizer
 from app.infrastructure.advisor.llm import AnthropicAdvisorLLM
 from app.infrastructure.advisor.no_synthesis import NoSynthesis
 from app.infrastructure.advisor.template_narrator import TemplateNarrator
+from app.infrastructure.copilot.anthropic_copilot import AnthropicCopilotLLM
+from app.infrastructure.copilot.no_copilot import NoCopilot
+from app.infrastructure.copilot.sql_runner import SqlAlchemyCopilotQueryRunner
 from app.infrastructure.email.console_sender import ConsoleEmailSender
 from app.infrastructure.email.smtp_sender import SmtpEmailSender
 from app.infrastructure.invoicing.afip_invoicing import AfipInvoicing
 from app.infrastructure.invoicing.credentials_resolver import DbTaxCredentialsResolver
 from app.infrastructure.invoicing.fake_invoicing import FakeInvoicing
+from app.infrastructure.llm.client import AnthropicClient
 from app.infrastructure.payments.credentials_resolver import DbPaymentCredentialsResolver
 from app.infrastructure.payments.manual_gateway import ManualPaymentGateway
 from app.infrastructure.payments.mercadopago_gateway import MercadoPagoGateway
@@ -789,4 +794,29 @@ class Container(containers.DeclarativeContainer):
         settings=advisor_settings_repository,
         tenants=tenant_repository,
         tenant_context=tenant_context,
+    )
+
+    # --- Fase 11: copiloto IA (text-to-SQL con guardrails; LLM off por default) ---
+    copilot_query_runner = providers.Factory(
+        SqlAlchemyCopilotQueryRunner,
+        session_factory=db.provided.session,
+        statement_timeout_ms=config.provided.copilot_statement_timeout_ms,
+    )
+    copilot_llm_client = providers.Singleton(
+        AnthropicClient,
+        api_key=config.provided.anthropic_api_key,
+        model=config.provided.copilot_model,
+    )
+    copilot_llm = providers.Selector(
+        config.provided.copilot_provider,
+        off=providers.Singleton(NoCopilot),
+        claude=providers.Singleton(AnthropicCopilotLLM, llm=copilot_llm_client),
+    )
+    ask_copilot = providers.Factory(
+        AskCopilot,
+        llm=copilot_llm,
+        runner=copilot_query_runner,
+        tenant_context=tenant_context,
+        max_rows=config.provided.copilot_row_limit,
+        enabled=config.provided.copilot_enabled,
     )
