@@ -35,6 +35,7 @@ export function renderWithProviders(
   { authApi, route = "/" }: { authApi?: Partial<AuthApi>; route?: string } = {}
 ) {
   const services: Services = {
+    advisorApi: {} as unknown as Services["advisorApi"],
     analyticsApi: {} as unknown as Services["analyticsApi"],
     authApi: makeFakeAuthApi(authApi),
     integrationsApi: {} as unknown as Services["integrationsApi"],
