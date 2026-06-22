@@ -171,7 +171,7 @@ Dueño al cierre ve en pesos cómo le fue + una acción para mañana
 | 6 | Stock + Food cost | `Inventory`/`Recipe`/`Supplier`, descuento por venta (receta opt-in), alertas de quiebre | **complete** | with 3,5 | 2 | `.claude/PRPs/plans/completed/fase-6-stock-food-cost.plan.md` |
 | 7 | Reservas + No-shows | `Reservation`, agenda por mesa/turno, confirmaciones, no-show (más relevante para hotel) | **complete** | with 3,5,6 | 1 | `.claude/PRPs/plans/completed/fase-7-reservas-noshows.plan.md` |
 | 8 | Modelo canónico + read models | Proyecciones desde la captura (ventas/gastos/productos/clientes/medios) + read models de KPIs (CQRS-lite, RLS) | **complete** | with 5,6,7 | 2,3 | `.claude/PRPs/plans/completed/fase-8-modelo-canonico-read-models.plan.md` |
-| 9 | Asesor financiero + Dashboard | KPIs en pesos (margen, punto de equilibrio, food/labor/prime cost, mermas), insights proactivos (Actuá hoy/Esta semana/Lo que viene/Bien hecho), onboarding por rubro | pending | - | 8 | - |
+| 9 | Asesor financiero + Dashboard | KPIs en pesos (margen, punto de equilibrio, food/labor/prime cost, mermas), insights proactivos (Actuá hoy/Esta semana/Lo que viene/Bien hecho), onboarding por rubro | **complete** | - | 8 | `.claude/PRPs/plans/completed/fase-9-asesor-financiero.plan.md` |
 | 10 | Reportes + WhatsApp + Contador | Biblioteca de reportes por destinatario; reporte del lunes por WhatsApp; export para el contador (Excel + IVA discriminado) | pending | - | 9,4 | - |
 | 11 | Copiloto IA | Port `CopilotLLM` (Anthropic), text-to-SQL con guardrails (read-only, tenant forzado, schema acotado, fuente), evals | pending | with 12 | 8 | - |
 | 12 | CRM rubro-aware | Hotel=clientes identificados/LTV/en-riesgo/comisiones; restaurante=patrones | pending | with 11 | 8 | - |
