@@ -98,6 +98,9 @@ from app.application.timeclock.use_cases import (
     Punch,
 )
 from app.config import Settings
+from app.infrastructure.advisor.claude_narrator import ClaudeNarrator
+from app.infrastructure.advisor.claude_synthesizer import ClaudeSynthesizer
+from app.infrastructure.advisor.llm import AnthropicAdvisorLLM
 from app.infrastructure.advisor.no_synthesis import NoSynthesis
 from app.infrastructure.advisor.template_narrator import TemplateNarrator
 from app.infrastructure.email.console_sender import ConsoleEmailSender
@@ -748,8 +751,25 @@ class Container(containers.DeclarativeContainer):
     advisor_read_model = providers.Factory(
         SqlAlchemyAdvisorReadModel, session_factory=db.provided.session
     )
-    insight_narrator = providers.Singleton(TemplateNarrator)
-    advisor_synthesizer = providers.Singleton(NoSynthesis)
+    # Capa LLM grounded, detrás de Selector y APAGADA por default (off=template).
+    template_narrator = providers.Singleton(TemplateNarrator)
+    advisor_llm = providers.Singleton(
+        AnthropicAdvisorLLM,
+        api_key=config.provided.anthropic_api_key,
+        model=config.provided.advisor_llm_model,
+    )
+    insight_narrator = providers.Selector(
+        config.provided.advisor_llm_provider,
+        off=template_narrator,
+        claude=providers.Singleton(
+            ClaudeNarrator, llm=advisor_llm, fallback=template_narrator
+        ),
+    )
+    advisor_synthesizer = providers.Selector(
+        config.provided.advisor_llm_provider,
+        off=providers.Singleton(NoSynthesis),
+        claude=providers.Singleton(ClaudeSynthesizer, llm=advisor_llm),
+    )
     get_advisor_report = providers.Factory(
         GetAdvisorReport,
         read_model=advisor_read_model,
@@ -757,6 +777,7 @@ class Container(containers.DeclarativeContainer):
         narrator=insight_narrator,
         synthesizer=advisor_synthesizer,
         tenant_context=tenant_context,
+        llm_enabled=config.provided.advisor_llm_enabled,
     )
     get_advisor_settings = providers.Factory(
         GetAdvisorSettings,
