@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from uuid import uuid4
+
 from tests.integration.test_e2e_auth import _onboard_verify_login
 
 
@@ -79,6 +81,91 @@ async def test_cannot_send_empty_order(client):
     sent = await http.post(f"/api/v1/orders/{order.json()['order_id']}/send", headers=h)
     assert sent.status_code == 422
     assert sent.json()["code"] == "empty_order"
+
+
+async def test_client_ids_make_create_and_add_idempotent(client):
+    """A retried create/add with the same client id is a no-op (no duplicates)."""
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="owner@resto.com")
+    h = _auth(tokens)
+
+    product_id = (
+        await http.post(
+            "/api/v1/products",
+            json={"name": "Milanesa", "price_amount": 150000, "category": "Platos"},
+            headers=h,
+        )
+    ).json()["product_id"]
+    table_id = (
+        await http.post("/api/v1/tables", json={"number": 5, "name": None}, headers=h)
+    ).json()["table_id"]
+
+    # Create with a client-supplied order id, twice → same order, created once.
+    order_id = str(uuid4())
+    first = await http.post(
+        "/api/v1/orders", json={"table_id": table_id, "id": order_id}, headers=h
+    )
+    again = await http.post(
+        "/api/v1/orders", json={"table_id": table_id, "id": order_id}, headers=h
+    )
+    assert first.json()["order_id"] == order_id
+    assert again.json()["order_id"] == order_id
+    assert len((await http.get("/api/v1/orders", headers=h)).json()) == 1
+
+    # Add the same item id twice → only one line.
+    item_id = str(uuid4())
+    payload = {"product_id": product_id, "quantity": 1, "id": item_id}
+    await http.post(f"/api/v1/orders/{order_id}/items", json=payload, headers=h)
+    replayed = await http.post(
+        f"/api/v1/orders/{order_id}/items", json=payload, headers=h
+    )
+    assert replayed.status_code == 200, replayed.text
+    assert len(replayed.json()["items"]) == 1
+
+
+async def test_batch_add_and_send_is_idempotent(client):
+    """Batch adds N items (+send) in one call; replaying the same ids is a no-op."""
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="owner@resto.com")
+    h = _auth(tokens)
+
+    product_id = (
+        await http.post(
+            "/api/v1/products",
+            json={"name": "Lomo", "price_amount": 200000, "category": None},
+            headers=h,
+        )
+    ).json()["product_id"]
+    table_id = (
+        await http.post("/api/v1/tables", json={"number": 2, "name": None}, headers=h)
+    ).json()["table_id"]
+    order_id = (
+        await http.post("/api/v1/orders", json={"table_id": table_id}, headers=h)
+    ).json()["order_id"]
+
+    items = [
+        {"product_id": product_id, "quantity": 1, "id": str(uuid4())},
+        {"product_id": product_id, "quantity": 2, "id": str(uuid4())},
+    ]
+    batch = await http.post(
+        f"/api/v1/orders/{order_id}/items/batch",
+        json={"items": items, "send": True},
+        headers=h,
+    )
+    assert batch.status_code == 200, batch.text
+    body = batch.json()
+    assert body["status"] == "SENT"
+    assert len(body["items"]) == 2
+    assert body["total_amount"] == 600000  # 1x200000 + 2x200000
+
+    # Replaying the same batch ids does not duplicate (order already SENT).
+    replay = await http.post(
+        f"/api/v1/orders/{order_id}/items/batch",
+        json={"items": items, "send": True},
+        headers=h,
+    )
+    assert replay.status_code == 200, replay.text
+    assert len(replay.json()["items"]) == 2
 
 
 async def test_tenant_isolation(client):

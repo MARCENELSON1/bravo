@@ -5,12 +5,30 @@ from pydantic import BaseModel, Field
 
 class CreateOrderRequest(BaseModel):
     table_id: str
+    # Optional client-generated id → idempotent create (a retry/replay is a no-op).
+    id: str | None = None
 
 
 class AddOrderItemRequest(BaseModel):
     product_id: str
     quantity: int = Field(ge=1)
     note: str | None = Field(default=None, max_length=255)
+    # Optional client-generated id → idempotent add (a retry/replay is a no-op).
+    id: str | None = None
+
+
+class BatchOrderItem(BaseModel):
+    product_id: str
+    quantity: int = Field(ge=1)
+    note: str | None = Field(default=None, max_length=255)
+    id: str | None = None
+
+
+class AddOrderItemsBatchRequest(BaseModel):
+    """Add several items (and optionally send) in one round-trip."""
+
+    items: list[BatchOrderItem] = Field(min_length=1)
+    send: bool = False
 
 
 class CreateOrderResponse(BaseModel):

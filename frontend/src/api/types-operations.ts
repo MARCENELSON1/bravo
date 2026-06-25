@@ -56,6 +56,13 @@ export interface CreateOrderResponse {
   order_id: string
 }
 
+export interface BatchOrderItemInput {
+  id?: string // client-generated → idempotent
+  product_id: string
+  quantity: number
+  note: string | null
+}
+
 // --- Fase 3: pagos (ingresos/egresos) ---
 
 export type PaymentMethod = "CASH" | "CARD" | "TRANSFER" | "MERCADOPAGO" | "QR"

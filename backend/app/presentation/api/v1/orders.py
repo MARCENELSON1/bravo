@@ -3,8 +3,10 @@ from __future__ import annotations
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, status
 
+from app.application.order.dtos import BatchOrderItemInput
 from app.application.order.use_cases import (
     AddOrderItem,
+    AddOrderItemsBatch,
     AdvanceOrder,
     CreateOrder,
     GetOrder,
@@ -19,6 +21,7 @@ from app.presentation.deps import current_identity
 from app.presentation.rbac import require_roles
 from app.presentation.schemas.orders import (
     AddOrderItemRequest,
+    AddOrderItemsBatchRequest,
     CreateOrderRequest,
     CreateOrderResponse,
     OrderItemResponse,
@@ -62,7 +65,10 @@ async def create_order(
     use_case: CreateOrder = Depends(Provide[Container.create_order]),
 ) -> CreateOrderResponse:
     result = await use_case.execute(
-        tenant_id=identity.tenant_id, waiter_id=identity.user_id, table_id=body.table_id
+        tenant_id=identity.tenant_id,
+        waiter_id=identity.user_id,
+        table_id=body.table_id,
+        order_id=body.id,
     )
     return CreateOrderResponse(order_id=result.order_id)
 
@@ -102,6 +108,32 @@ async def add_item(
         product_id=body.product_id,
         quantity=body.quantity,
         note=body.note,
+        item_id=body.id,
+    )
+    return order_to_response(order)
+
+
+@router.post("/{order_id}/items/batch", response_model=OrderResponse)
+@inject
+async def add_items_batch(
+    order_id: str,
+    body: AddOrderItemsBatchRequest,
+    identity: AccessClaims = Depends(require_roles(*_FLOOR_ROLES)),
+    use_case: AddOrderItemsBatch = Depends(Provide[Container.add_order_items_batch]),
+) -> OrderResponse:
+    order = await use_case.execute(
+        tenant_id=identity.tenant_id,
+        order_id=order_id,
+        items=[
+            BatchOrderItemInput(
+                product_id=i.product_id,
+                quantity=i.quantity,
+                note=i.note,
+                item_id=i.id,
+            )
+            for i in body.items
+        ],
+        send=body.send,
     )
     return order_to_response(order)
 
