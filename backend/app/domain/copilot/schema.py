@@ -16,7 +16,8 @@ class TableSpec:
 
 _SCHEMA: dict[str, TableSpec] = {
     "sale_facts": TableSpec(
-        "Una fila por línea de comanda PAGADA (ventas, canónico).",
+        "Una fila por línea de comanda PAGADA (ventas, canónico). "
+        "Fecha de la venta = occurred_at. Montos *_amount en minor units (centavos).",
         (
             "tenant_id", "order_id", "product_id", "product_name", "category",
             "quantity", "unit_price_amount", "line_amount", "food_cost_amount",
@@ -24,7 +25,10 @@ _SCHEMA: dict[str, TableSpec] = {
         ),
     ),
     "payments": TableSpec(
-        "Cobros (direction=INFLOW) y egresos (direction=OUTFLOW).",
+        "Cobros (direction='INFLOW') y egresos (direction='OUTFLOW'). "
+        "status: 'PENDING'/'CONFIRMED'/'FAILED'/'REFUNDED' — un pago efectivo es "
+        "'CONFIRMED' (NO 'APPROVED'). method: 'CASH'/'CARD'/'TRANSFER'/'MERCADOPAGO'/'QR'. "
+        "amount en minor units (centavos).",
         (
             "tenant_id", "direction", "amount", "currency", "method", "status",
             "order_id", "category", "counterparty", "created_at",
@@ -87,7 +91,12 @@ def allowed_columns(table: str) -> frozenset[str]:
 
 def schema_doc() -> str:
     """Human/LLM-readable description of the queryable schema (for the prompt)."""
-    lines: list[str] = []
+    lines: list[str] = [
+        "NOTAS: las columnas *_amount están en minor units (centavos) → dividí por 100 "
+        "para pesos. Un pago/cobro efectivo es payments.status='CONFIRMED' (NUNCA 'APPROVED'). "
+        "Para ingresos del negocio usá sale_facts (ventas) o payments con direction='INFLOW'.",
+        "",
+    ]
     for name, spec in _SCHEMA.items():
         lines.append(f"- {name} ({spec.description}): {', '.join(spec.columns)}")
     return "\n".join(lines)
