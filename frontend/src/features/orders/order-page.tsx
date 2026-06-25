@@ -30,6 +30,7 @@ import {
   invoiceNumber,
   invoiceTypeLabel,
 } from "@/lib/invoice-labels"
+import { presetAmounts, sumLineItems } from "@/lib/cobro"
 import { newId } from "@/lib/ids"
 import { formatMoney } from "@/lib/money"
 import { bumpUsage } from "@/lib/product-usage"
@@ -331,6 +332,8 @@ function CobroSection({
   const registerPayment = useRegisterPayment(order.id)
   const [method, setMethod] = useState<PaymentMethod>("CASH")
   const [amount, setAmount] = useState("")
+  const [splitMode, setSplitMode] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
 
   const list = payments.data ?? []
@@ -339,10 +342,27 @@ function CobroSection({
     .reduce((sum, p) => sum + p.amount, 0)
   const remaining = Math.max(order.total_amount - confirmed, 0)
   const isPaid = order.status === "PAID"
+  const splitAmount = sumLineItems(order.items, selected)
+
+  // What the cashier types is in pesos; the API works in minor units. In split
+  // mode the amount comes from the selected items instead.
+  const computeCharge = (): number => {
+    if (splitMode) return splitAmount
+    if (amount.trim()) return Math.round(Number(amount) * 100)
+    return remaining
+  }
+
+  const toggleItem = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   const cobrar = () => {
-    // The cashier types pesos; the API works in minor units.
-    const minor = amount.trim() ? Math.round(Number(amount) * 100) : remaining
+    const minor = computeCharge()
     if (!Number.isFinite(minor) || minor < 1) {
       toast.error("Ingresá un monto válido.")
       return
@@ -353,6 +373,8 @@ function CobroSection({
       {
         onSuccess: (payment) => {
           setAmount("")
+          setSelected(new Set())
+          setSplitMode(false)
           if (payment.status === "PENDING" && payment.checkout_url) {
             setCheckoutUrl(payment.checkout_url)
             onPendingOnline()
@@ -412,30 +434,81 @@ function CobroSection({
         ) : null}
 
         {!isPaid ? (
-          <div className="flex items-end gap-2">
-            <Select value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
-              <SelectTrigger className="flex-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PAYMENT_METHODS.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>
-                    {m.label}
-                  </SelectItem>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap gap-2">
+              {PAYMENT_METHODS.map((m) => (
+                <Button
+                  key={m.value}
+                  type="button"
+                  size="sm"
+                  variant={method === m.value ? "default" : "outline"}
+                  onClick={() => setMethod(m.value)}
+                >
+                  {m.label}
+                </Button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSplitMode((s) => !s)}
+              className="self-start text-xs text-muted-foreground underline underline-offset-4"
+            >
+              {splitMode ? "← Cobrar un monto" : "Dividir por ítem"}
+            </button>
+
+            {splitMode ? (
+              <div className="flex flex-col gap-1 rounded-md border p-2 text-sm">
+                {order.items.map((it) => (
+                  <label key={it.id} className="flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(it.id)}
+                        onChange={() => toggleItem(it.id)}
+                      />
+                      {it.quantity}× {it.name}
+                    </span>
+                    <span>{formatMoney(it.unit_price_amount * it.quantity, order.currency)}</span>
+                  </label>
                 ))}
-              </SelectContent>
-            </Select>
-            <Input
-              type="number"
-              min={0}
-              step="0.01"
-              placeholder={(remaining / 100).toFixed(2)}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="max-w-[8rem]"
-            />
-            <Button onClick={cobrar} disabled={registerPayment.isPending}>
-              {registerPayment.isPending ? "…" : "Cobrar"}
+                <div className="mt-1 flex justify-between border-t pt-1 font-medium">
+                  <span>Seleccionado</span>
+                  <span>{formatMoney(splitAmount, order.currency)}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder={(remaining / 100).toFixed(2)}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="max-w-[8rem]"
+                />
+                {presetAmounts(remaining).map((p) => (
+                  <Button
+                    key={p.label}
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setAmount((p.amount / 100).toFixed(2))}
+                  >
+                    {p.label}
+                  </Button>
+                ))}
+              </div>
+            )}
+
+            <Button
+              onClick={cobrar}
+              disabled={registerPayment.isPending || (splitMode && splitAmount < 1)}
+            >
+              {registerPayment.isPending
+                ? "…"
+                : `Cobrar ${formatMoney(computeCharge(), order.currency)}`}
             </Button>
           </div>
         ) : null}
