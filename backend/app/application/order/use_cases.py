@@ -26,11 +26,13 @@ class CreateOrder:
         tables: TableRepository,
         tenants: TenantRepository,
         tenant_context: TenantContext,
+        event_bus: EventBus,
     ) -> None:
         self._orders = orders
         self._tables = tables
         self._tenants = tenants
         self._tenant_context = tenant_context
+        self._event_bus = event_bus
 
     async def execute(
         self,
@@ -58,6 +60,7 @@ class CreateOrder:
             currency=tenant.currency,
         )
         await self._orders.add(order)
+        await self._event_bus.publish(_floor_changed(order))  # table → occupied
         return CreateOrderResult(order_id=order.id)
 
 
@@ -178,6 +181,7 @@ class AddOrderItemsBatch:
         if send and order.status is OrderStatus.OPEN:
             order.send_to_kitchen()
         await self._orders.save(order)
+        await self._event_bus.publish(_floor_changed(order))
         if send and order.status is OrderStatus.SENT:
             await self._event_bus.publish(_kds_changed(order))
         return order
@@ -189,6 +193,15 @@ def _kds_changed(order: Order) -> DomainEvent:
         type="kds.changed",
         tenant_id=order.tenant_id,
         payload={"order_id": order.id, "status": order.status.value},
+    )
+
+
+def _floor_changed(order: Order) -> DomainEvent:
+    """A 'refetch the floor' signal — a table's occupancy/total changed."""
+    return DomainEvent(
+        type="floor.changed",
+        tenant_id=order.tenant_id,
+        payload={"table_id": order.table_id},
     )
 
 
@@ -211,6 +224,7 @@ class SendOrder:
         order.send_to_kitchen()
         await self._orders.save(order)
         await self._event_bus.publish(_kds_changed(order))
+        await self._event_bus.publish(_floor_changed(order))
         return order
 
 
@@ -244,6 +258,7 @@ class AdvanceOrder:
             raise InvalidOrderTransition()
         await self._orders.save(order)
         await self._event_bus.publish(_kds_changed(order))
+        await self._event_bus.publish(_floor_changed(order))
         return order
 
 

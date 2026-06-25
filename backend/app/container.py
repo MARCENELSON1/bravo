@@ -18,6 +18,7 @@ from app.application.analytics.use_cases import (
     GetRevenueSummary,
 )
 from app.application.copilot.ask import AskCopilot
+from app.application.floor.use_cases import GetFloor
 from app.application.identity.accept_invitation import AcceptInvitation
 from app.application.identity.authenticate import Authenticate
 from app.application.identity.change_password import ChangePassword
@@ -361,6 +362,13 @@ class Container(containers.DeclarativeContainer):
         orders=order_repository,
         tables=table_repository,
         tenants=tenant_repository,
+        tenant_context=tenant_context,
+        event_bus=event_bus,
+    )
+    get_floor = providers.Factory(
+        GetFloor,
+        tables=table_repository,
+        orders=order_repository,
         tenant_context=tenant_context,
     )
     get_order = providers.Factory(

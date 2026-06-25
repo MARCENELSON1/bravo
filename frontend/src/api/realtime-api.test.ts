@@ -20,4 +20,9 @@ describe("RealtimeApi", () => {
     const api = new RealtimeApi({ request: vi.fn() } as unknown as HttpClient)
     expect(api.kdsStreamUrl("a b/c")).toBe("/api/v1/realtime/kds/stream?token=a%20b%2Fc")
   })
+
+  it("builds the floor stream URL with the token url-encoded", () => {
+    const api = new RealtimeApi({ request: vi.fn() } as unknown as HttpClient)
+    expect(api.floorStreamUrl("a b/c")).toBe("/api/v1/realtime/floor/stream?token=a%20b%2Fc")
+  })
 })

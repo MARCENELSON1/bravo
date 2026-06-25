@@ -23,4 +23,8 @@ export class RealtimeApi {
   kdsStreamUrl(token: string): string {
     return `${API_BASE_URL}/realtime/kds/stream?token=${encodeURIComponent(token)}`
   }
+
+  floorStreamUrl(token: string): string {
+    return `${API_BASE_URL}/realtime/floor/stream?token=${encodeURIComponent(token)}`
+  }
 }

@@ -1,28 +1,62 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
+import type { FloorTableDTO } from "@/api/types-operations"
 import { useAuth } from "@/auth/auth-context"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
+import { useFloor } from "@/hooks/use-floor"
 import { useCreateOrder } from "@/hooks/use-orders"
-import { useCreateTable, useTables } from "@/hooks/use-tables"
+import { useCreateTable } from "@/hooks/use-tables"
+import { kdsDelay } from "@/lib/kds"
+import { formatMoney } from "@/lib/money"
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  OPEN: "Abierta",
+  SENT: "En cocina",
+  PREPARING: "Preparando",
+  READY: "Lista",
+  SERVED: "Servida",
+}
+
+function cardClass(order: FloorTableDTO["active_order"]): string {
+  const base = "cursor-pointer transition-colors "
+  if (!order) return base + "hover:bg-muted/50"
+  if (order.status === "SERVED") return base + "border-emerald-500/60 bg-emerald-50/40"
+  return base + "border-primary/50 bg-muted/40"
+}
 
 export function FloorPage() {
-  const tables = useTables()
+  const floor = useFloor()
   const createOrder = useCreateOrder()
   const createTable = useCreateTable()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { session } = useAuth()
   const canManage = session?.role === "OWNER" || session?.role === "MANAGER"
   const [newNumber, setNewNumber] = useState("")
+  const [now, setNow] = useState(() => Date.now())
 
-  const openOrder = (tableId: string) => {
-    createOrder.mutate(tableId, {
+  // Tick so the per-table waiting timers stay current between refetches.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30000)
+    return () => clearInterval(id)
+  }, [])
+
+  const openTable = (table: FloorTableDTO) => {
+    // Occupied → open the existing order (never create a duplicate).
+    if (table.active_order) {
+      navigate(`/app/orders/${table.active_order.id}`)
+      return
+    }
+    createOrder.mutate(table.id, {
       onSuccess: (res) => navigate(`/app/orders/${res.order_id}`),
       onError: (error) =>
         toast.error(isApiError(error) ? error.message : "No pudimos abrir la comanda."),
@@ -41,6 +75,7 @@ export function FloorPage() {
         onSuccess: () => {
           toast.success("Mesa agregada.")
           setNewNumber("")
+          void queryClient.invalidateQueries({ queryKey: ["floor"] })
         },
         onError: (error) =>
           toast.error(isApiError(error) ? error.message : "No pudimos agregar la mesa."),
@@ -54,7 +89,9 @@ export function FloorPage() {
         <GradientHeading size="md" weight="bold">
           Mesas
         </GradientHeading>
-        <p className="text-sm text-muted-foreground">Tocá una mesa para abrir su comanda.</p>
+        <p className="text-sm text-muted-foreground">
+          En vivo: libre / ocupada / a cobrar. Tocá una mesa para abrir su comanda.
+        </p>
       </header>
 
       {canManage ? (
@@ -73,22 +110,40 @@ export function FloorPage() {
         </div>
       ) : null}
 
-      {tables.isPending ? (
+      {floor.isPending ? (
         <Spinner />
-      ) : tables.data && tables.data.length > 0 ? (
+      ) : floor.data && floor.data.length > 0 ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {tables.data.map((t) => (
-            <Card
-              key={t.id}
-              className="cursor-pointer transition-colors hover:bg-muted/50"
-              onClick={() => openOrder(t.id)}
-            >
-              <CardContent className="flex flex-col items-center justify-center gap-1 py-6">
-                <span className="font-heading text-2xl font-medium">{t.number}</span>
-                {t.name ? <span className="text-xs text-muted-foreground">{t.name}</span> : null}
-              </CardContent>
-            </Card>
-          ))}
+          {floor.data.map((t) => {
+            const order = t.active_order
+            const delay = order ? kdsDelay(order.created_at, now) : null
+            const serving = order?.status === "SERVED"
+            return (
+              <Card key={t.id} onClick={() => openTable(t)} className={cardClass(order)}>
+                <CardContent className="flex flex-col items-center justify-center gap-1 py-5">
+                  <span className="font-heading text-2xl font-medium">{t.number}</span>
+                  {t.name ? (
+                    <span className="text-xs text-muted-foreground">{t.name}</span>
+                  ) : null}
+                  {order ? (
+                    <>
+                      <Badge variant="secondary" className="mt-1">
+                        {serving ? "A cobrar" : (ORDER_STATUS_LABELS[order.status] ?? order.status)}
+                      </Badge>
+                      <span className="text-xs font-medium">
+                        {formatMoney(order.total_amount, order.currency)}
+                      </span>
+                      {delay ? (
+                        <span className="text-[11px] text-muted-foreground">{delay.minutes}′</span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Libre</span>
+                  )}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">

@@ -4,6 +4,7 @@ import type { AdvisorApi } from "@/api/advisor-api"
 import type { AnalyticsApi } from "@/api/analytics-api"
 import type { AuthApi } from "@/api/auth-api"
 import type { CopilotApi } from "@/api/copilot-api"
+import type { FloorApi } from "@/api/floor-api"
 import type { IntegrationsApi } from "@/api/integrations-api"
 import type { InventoryApi } from "@/api/inventory-api"
 import type { InvoicesApi } from "@/api/invoices-api"
@@ -24,6 +25,7 @@ export interface Services {
   analyticsApi: AnalyticsApi
   authApi: AuthApi
   copilotApi: CopilotApi
+  floorApi: FloorApi
   integrationsApi: IntegrationsApi
   inventoryApi: InventoryApi
   invoicesApi: InvoicesApi

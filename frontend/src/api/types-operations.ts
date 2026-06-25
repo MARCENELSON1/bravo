@@ -57,6 +57,14 @@ export interface CreateOrderResponse {
   order_id: string
 }
 
+export interface FloorTableDTO {
+  id: string
+  number: number
+  name: string | null
+  status: "FREE" | "OCCUPIED"
+  active_order: OrderDTO | null
+}
+
 export interface BatchOrderItemInput {
   id?: string // client-generated → idempotent
   product_id: string

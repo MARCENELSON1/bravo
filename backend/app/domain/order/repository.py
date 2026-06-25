@@ -21,6 +21,10 @@ class OrderRepository(ABC):
     async def list_kds(self, tenant_id: str) -> list[Order]: ...
 
     @abstractmethod
+    async def list_active(self, tenant_id: str) -> list[Order]:
+        """Orders that still occupy a table (everything but PAID/CANCELLED)."""
+
+    @abstractmethod
     async def add(self, order: Order) -> None: ...
 
     @abstractmethod
