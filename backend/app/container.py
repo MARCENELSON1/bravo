@@ -50,6 +50,7 @@ from app.application.invoice.connect_afip import (
 from app.application.invoice.use_cases import GetOrderInvoice, IssueInvoice, ListInvoices
 from app.application.order.use_cases import (
     AddOrderItem,
+    AddOrderItemsBatch,
     AdvanceOrder,
     CreateOrder,
     GetKdsOrders,
@@ -363,6 +364,12 @@ class Container(containers.DeclarativeContainer):
     )
     add_order_item = providers.Factory(
         AddOrderItem,
+        orders=order_repository,
+        products=product_repository,
+        tenant_context=tenant_context,
+    )
+    add_order_items_batch = providers.Factory(
+        AddOrderItemsBatch,
         orders=order_repository,
         products=product_repository,
         tenant_context=tenant_context,

@@ -4,7 +4,7 @@ import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
 import type { DocType } from "@/api/types-invoicing"
-import type { OrderDTO, PaymentMethod } from "@/api/types-operations"
+import type { OrderDTO, PaymentMethod, ProductDTO } from "@/api/types-operations"
 import { useAuth } from "@/auth/auth-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
+import { ProductGrid } from "@/features/orders/product-grid"
 import { useIssueInvoice, useOrderInvoice } from "@/hooks/use-invoices"
 import { useAddItem, useOrder, useSendOrder } from "@/hooks/use-orders"
 import { useOrderPayments, useRegisterPayment } from "@/hooks/use-payments"
@@ -29,7 +30,9 @@ import {
   invoiceNumber,
   invoiceTypeLabel,
 } from "@/lib/invoice-labels"
+import { newId } from "@/lib/ids"
 import { formatMoney } from "@/lib/money"
+import { bumpUsage } from "@/lib/product-usage"
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: "CASH", label: "Efectivo" },
@@ -64,8 +67,6 @@ export function OrderPage() {
   const addItem = useAddItem(orderId)
   const sendOrder = useSendOrder()
   const navigate = useNavigate()
-  const [productId, setProductId] = useState("")
-  const [quantity, setQuantity] = useState("1")
 
   const isPaid = order.data?.status === "PAID"
   useEffect(() => {
@@ -97,18 +98,17 @@ export function OrderPage() {
   const data = order.data
   const isOpen = data.status === "OPEN"
 
-  const add = () => {
-    if (!productId) {
-      toast.error("Elegí un producto.")
-      return
-    }
-    const q = Number(quantity)
-    if (!Number.isInteger(q) || q < 1) {
-      toast.error("Cantidad inválida.")
-      return
-    }
+  const handleAdd = (product: ProductDTO, quantity: number) => {
+    bumpUsage(product.id) // learn favorites for the grid ranking
     addItem.mutate(
-      { productId, quantity: q, note: null },
+      {
+        id: newId(),
+        productId: product.id,
+        name: product.name,
+        unitPriceAmount: product.price_amount,
+        quantity,
+        note: null,
+      },
       {
         onError: (error) =>
           toast.error(isApiError(error) ? error.message : "No pudimos agregar el ítem."),
@@ -146,31 +146,8 @@ export function OrderPage() {
           <CardHeader>
             <CardTitle>Agregar ítem</CardTitle>
           </CardHeader>
-          <CardContent className="flex items-end gap-2">
-            <Select value={productId} onValueChange={setProductId}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Elegí un producto" />
-              </SelectTrigger>
-              <SelectContent>
-                {(products.data ?? [])
-                  .filter((p) => p.active)
-                  .map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name} · {formatMoney(p.price_amount, p.currency)}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            <Input
-              type="number"
-              min={1}
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              className="max-w-[5rem]"
-            />
-            <Button variant="outline" onClick={add} disabled={addItem.isPending}>
-              Agregar
-            </Button>
+          <CardContent>
+            <ProductGrid products={products.data ?? []} onAdd={handleAdd} />
           </CardContent>
         </Card>
       ) : null}

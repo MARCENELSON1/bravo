@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from app.application.order.dtos import CreateOrderResult
+from app.application.order.dtos import BatchOrderItemInput, CreateOrderResult
 from app.domain.identity.ports import TenantContext
 from app.domain.order.entities import Order, OrderItem
 from app.domain.order.exceptions import InvalidOrderTransition, OrderNotFound
@@ -32,16 +32,25 @@ class CreateOrder:
         self._tenant_context = tenant_context
 
     async def execute(
-        self, *, tenant_id: str, waiter_id: str, table_id: str
+        self,
+        *,
+        tenant_id: str,
+        waiter_id: str,
+        table_id: str,
+        order_id: str | None = None,
     ) -> CreateOrderResult:
         self._tenant_context.set(tenant_id)
+        if order_id is not None:
+            existing = await self._orders.get_by_id(tenant_id, order_id)
+            if existing is not None:
+                return CreateOrderResult(order_id=existing.id)  # idempotent no-op
         if await self._tables.get_by_id(tenant_id, table_id) is None:
             raise TableNotFound()
         tenant = await self._tenants.get_by_id(tenant_id)
         if tenant is None:
             raise TenantNotFound()
         order = Order(
-            id=str(uuid4()),
+            id=order_id or str(uuid4()),
             tenant_id=tenant_id,
             table_id=table_id,
             waiter_id=waiter_id,
@@ -85,11 +94,14 @@ class AddOrderItem:
         product_id: str,
         quantity: int,
         note: str | None,
+        item_id: str | None = None,
     ) -> Order:
         self._tenant_context.set(tenant_id)
         order = await self._orders.get_by_id(tenant_id, order_id)
         if order is None:
             raise OrderNotFound()
+        if item_id is not None and any(it.id == item_id for it in order.items):
+            return order  # idempotent no-op (retry/replay of an item already added)
         product = await self._products.get_by_id(tenant_id, product_id)
         if product is None:
             raise ProductNotFound()
@@ -97,13 +109,71 @@ class AddOrderItem:
             raise InactiveProduct()
         order.add_item(
             OrderItem(
-                id=str(uuid4()),
+                id=item_id or str(uuid4()),
                 product_id=product.id,
                 name=product.name,
                 unit_price=product.price,
                 quantity=quantity,
+                note=note,
             )
         )
+        await self._orders.save(order)
+        return order
+
+
+class AddOrderItemsBatch:
+    """Add several line items (and optionally send) in a single transaction.
+
+    Each line carries an optional client-generated id, so a retry/replay is an
+    idempotent no-op. This is what lets the waiter assemble a whole comanda
+    (offline if needed) and persist it in one round-trip without duplicating.
+    """
+
+    def __init__(
+        self,
+        orders: OrderRepository,
+        products: ProductRepository,
+        tenant_context: TenantContext,
+    ) -> None:
+        self._orders = orders
+        self._products = products
+        self._tenant_context = tenant_context
+
+    async def execute(
+        self,
+        *,
+        tenant_id: str,
+        order_id: str,
+        items: list[BatchOrderItemInput],
+        send: bool = False,
+    ) -> Order:
+        self._tenant_context.set(tenant_id)
+        order = await self._orders.get_by_id(tenant_id, order_id)
+        if order is None:
+            raise OrderNotFound()
+        seen = {it.id for it in order.items}
+        for line in items:
+            if line.item_id is not None and line.item_id in seen:
+                continue  # idempotent no-op for this line
+            product = await self._products.get_by_id(tenant_id, line.product_id)
+            if product is None:
+                raise ProductNotFound()
+            if not product.active:
+                raise InactiveProduct()
+            new_id = line.item_id or str(uuid4())
+            order.add_item(
+                OrderItem(
+                    id=new_id,
+                    product_id=product.id,
+                    name=product.name,
+                    unit_price=product.price,
+                    quantity=line.quantity,
+                    note=line.note,
+                )
+            )
+            seen.add(new_id)
+        if send and order.status is OrderStatus.OPEN:
+            order.send_to_kitchen()
         await self._orders.save(order)
         return order
 
