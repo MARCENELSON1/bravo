@@ -10,6 +10,7 @@ from app.domain.order.repository import OrderRepository
 from app.domain.order.value_objects import OrderStatus
 from app.domain.product.exceptions import InactiveProduct, ProductNotFound
 from app.domain.product.repository import ProductRepository
+from app.domain.realtime.ports import DomainEvent, EventBus
 from app.domain.table.exceptions import TableNotFound
 from app.domain.table.repository import TableRepository
 from app.domain.tenant.exceptions import TenantNotFound
@@ -134,10 +135,12 @@ class AddOrderItemsBatch:
         orders: OrderRepository,
         products: ProductRepository,
         tenant_context: TenantContext,
+        event_bus: EventBus,
     ) -> None:
         self._orders = orders
         self._products = products
         self._tenant_context = tenant_context
+        self._event_bus = event_bus
 
     async def execute(
         self,
@@ -175,13 +178,30 @@ class AddOrderItemsBatch:
         if send and order.status is OrderStatus.OPEN:
             order.send_to_kitchen()
         await self._orders.save(order)
+        if send and order.status is OrderStatus.SENT:
+            await self._event_bus.publish(_kds_changed(order))
         return order
 
 
+def _kds_changed(order: Order) -> DomainEvent:
+    """A 'refetch the KDS board' signal — carries no data, just ids/status."""
+    return DomainEvent(
+        type="kds.changed",
+        tenant_id=order.tenant_id,
+        payload={"order_id": order.id, "status": order.status.value},
+    )
+
+
 class SendOrder:
-    def __init__(self, orders: OrderRepository, tenant_context: TenantContext) -> None:
+    def __init__(
+        self,
+        orders: OrderRepository,
+        tenant_context: TenantContext,
+        event_bus: EventBus,
+    ) -> None:
         self._orders = orders
         self._tenant_context = tenant_context
+        self._event_bus = event_bus
 
     async def execute(self, *, tenant_id: str, order_id: str) -> Order:
         self._tenant_context.set(tenant_id)
@@ -190,15 +210,22 @@ class SendOrder:
             raise OrderNotFound()
         order.send_to_kitchen()
         await self._orders.save(order)
+        await self._event_bus.publish(_kds_changed(order))
         return order
 
 
 class AdvanceOrder:
     """Advance an order's lifecycle (preparing/ready/served/cancel)."""
 
-    def __init__(self, orders: OrderRepository, tenant_context: TenantContext) -> None:
+    def __init__(
+        self,
+        orders: OrderRepository,
+        tenant_context: TenantContext,
+        event_bus: EventBus,
+    ) -> None:
         self._orders = orders
         self._tenant_context = tenant_context
+        self._event_bus = event_bus
 
     async def execute(self, *, tenant_id: str, order_id: str, action: str) -> Order:
         self._tenant_context.set(tenant_id)
@@ -216,6 +243,7 @@ class AdvanceOrder:
         else:
             raise InvalidOrderTransition()
         await self._orders.save(order)
+        await self._event_bus.publish(_kds_changed(order))
         return order
 
 

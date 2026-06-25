@@ -50,6 +50,7 @@ export interface OrderDTO {
   currency: string
   items: OrderItemDTO[]
   total_amount: number
+  created_at: string | null // ISO-8601; used by the KDS waiting timer
 }
 
 export interface CreateOrderResponse {

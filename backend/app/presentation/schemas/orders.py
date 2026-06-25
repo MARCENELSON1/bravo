@@ -52,3 +52,5 @@ class OrderResponse(BaseModel):
     currency: str
     items: list[OrderItemResponse]
     total_amount: int
+    # ISO-8601; lets the KDS show how long an order has been waiting.
+    created_at: str | None = None

@@ -65,6 +65,39 @@ class JwtTokenService(TokenService):
         except (KeyError, ValueError) as exc:
             raise InvalidToken() from exc
 
+    def create_stream_token(self, *, tenant_id: str, ttl_seconds: int) -> str:
+        now = datetime.now(UTC)
+        payload = {
+            "tenant_id": tenant_id,
+            "type": "stream",
+            "iss": self._ISSUER,
+            "aud": self._AUDIENCE,
+            "iat": int(now.timestamp()),
+            "exp": int((now + timedelta(seconds=ttl_seconds)).timestamp()),
+        }
+        return jwt.encode(payload, self._secret, algorithm=self._algorithm)
+
+    def decode_stream_token(self, token: str) -> str:
+        try:
+            payload = jwt.decode(
+                token,
+                self._secret,
+                algorithms=[self._algorithm],
+                audience=self._AUDIENCE,
+                issuer=self._ISSUER,
+                options={"require": ["exp", "iat", "type"]},
+            )
+        except jwt.ExpiredSignatureError as exc:
+            raise ExpiredToken() from exc
+        except jwt.InvalidTokenError as exc:
+            raise InvalidToken() from exc
+        if payload.get("type") != "stream":
+            raise InvalidToken()
+        tenant_id = payload.get("tenant_id")
+        if not isinstance(tenant_id, str) or not tenant_id:
+            raise InvalidToken()
+        return tenant_id
+
     def generate_opaque_token(self, tenant_id: str) -> str:
         return f"{tenant_id}.{secrets.token_urlsafe(32)}"
 

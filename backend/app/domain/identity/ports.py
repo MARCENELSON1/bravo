@@ -53,6 +53,18 @@ class TokenService(ABC):
     def decode_access_token(self, token: str) -> AccessClaims: ...
 
     @abstractmethod
+    def create_stream_token(self, *, tenant_id: str, ttl_seconds: int) -> str:
+        """Short-lived JWT for SSE (EventSource can't send Authorization headers).
+
+        Carries only the tenant, so the stream is tenant-scoped. RBAC is enforced
+        when the token is issued (a Bearer-authenticated endpoint).
+        """
+
+    @abstractmethod
+    def decode_stream_token(self, token: str) -> str:
+        """Validate a stream token and return its ``tenant_id``."""
+
+    @abstractmethod
     def generate_opaque_token(self, tenant_id: str) -> str: ...
 
     @abstractmethod

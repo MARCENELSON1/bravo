@@ -192,6 +192,15 @@ class FakeTokenService(TokenService):
             raise InvalidToken() from exc
         return AccessClaims(user_id=user_id, tenant_id=tenant_id, role=Role(role))
 
+    def create_stream_token(self, *, tenant_id: str, ttl_seconds: int) -> str:
+        return f"stream:{tenant_id}"
+
+    def decode_stream_token(self, token: str) -> str:
+        kind, _, tenant_id = token.partition(":")
+        if kind != "stream" or not tenant_id:
+            raise InvalidToken()
+        return tenant_id
+
     def generate_opaque_token(self, tenant_id: str) -> str:
         return f"{tenant_id}.{uuid4().hex}"
 
