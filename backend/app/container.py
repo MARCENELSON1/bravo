@@ -165,6 +165,7 @@ from app.infrastructure.persistence.user_repo import SqlAlchemyUserRepository
 from app.infrastructure.persistence.verification_token_repo import (
     SqlAlchemyVerificationTokenRepository,
 )
+from app.infrastructure.realtime.memory_bus import InMemoryEventBus
 from app.infrastructure.security.fernet_cipher import FernetTokenCipher
 from app.infrastructure.security.hasher import Argon2Hasher
 from app.infrastructure.security.tenant_context import ContextVarTenantContext
@@ -188,6 +189,9 @@ class Container(containers.DeclarativeContainer):
         access_token_ttl_min=config.provided.access_token_ttl_min,
     )
     tenant_context = providers.Singleton(ContextVarTenantContext)
+    # Realtime bus (Fase 13 T4): SINGLETON so publishers (order use cases) and
+    # SSE subscribers share the same in-process instance.
+    event_bus = providers.Singleton(InMemoryEventBus)
     email_sender = providers.Selector(
         config.provided.email_transport,
         console=providers.Singleton(ConsoleEmailSender),
@@ -373,12 +377,19 @@ class Container(containers.DeclarativeContainer):
         orders=order_repository,
         products=product_repository,
         tenant_context=tenant_context,
+        event_bus=event_bus,
     )
     send_order = providers.Factory(
-        SendOrder, orders=order_repository, tenant_context=tenant_context
+        SendOrder,
+        orders=order_repository,
+        tenant_context=tenant_context,
+        event_bus=event_bus,
     )
     advance_order = providers.Factory(
-        AdvanceOrder, orders=order_repository, tenant_context=tenant_context
+        AdvanceOrder,
+        orders=order_repository,
+        tenant_context=tenant_context,
+        event_bus=event_bus,
     )
     list_orders = providers.Factory(
         ListOrders, orders=order_repository, tenant_context=tenant_context

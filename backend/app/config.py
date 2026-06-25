@@ -133,6 +133,13 @@ class Settings(BaseSettings):
     def copilot_enabled(self) -> bool:
         return self.copilot_provider != "off"
 
+    # Realtime / SSE (Fase 13 T4). KDS y mesas en vivo. El bus es in-process
+    # (un worker); para multi-réplica en Railway, swap a un adapter Postgres
+    # LISTEN/NOTIFY detrás del port EventBus. El token de stream es un JWT corto
+    # porque EventSource no manda header Authorization.
+    realtime_token_ttl_s: int = 60
+    realtime_heartbeat_s: int = 15
+
     @model_validator(mode="after")
     def _reject_insecure_production(self) -> "Settings":
         """Fail fast on insecure configuration outside of dev."""
