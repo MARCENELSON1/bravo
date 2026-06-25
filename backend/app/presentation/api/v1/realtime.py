@@ -39,25 +39,16 @@ async def issue_stream_token(
     return {"token": token, "expires_in": config.realtime_token_ttl_s}
 
 
-@router.get("/kds/stream")
-@inject
-async def kds_stream(
-    token: str,
-    tokens: TokenService = Depends(Provide[Container.token_service]),
-    bus: EventBus = Depends(Provide[Container.event_bus]),
-    config: Settings = Depends(Provide[Container.config]),
-) -> StreamingResponse:
-    """SSE stream that pushes a ``kds.changed`` event whenever the tenant's KDS
-    board changes. The event carries no data — the client refetches ``/kds/orders``
-    (RLS-scoped), so tenant isolation never depends on the stream."""
-    tenant_id = tokens.decode_stream_token(token)  # InvalidToken/ExpiredToken → 401
-    heartbeat = config.realtime_heartbeat_s
+def _sse_response(bus: EventBus, tenant_id: str, heartbeat: int) -> StreamingResponse:
+    """One SSE response forwarding every event of the tenant. The client filters
+    by event name (``kds.changed`` / ``floor.changed``) and refetches the matching
+    RLS-scoped endpoint — the stream carries no data, so isolation stays in RLS.
+    The client loads initial data via its own query, so there is no initial nudge.
+    """
+    sub = bus.subscribe(tenant_id)
 
     async def gen() -> AsyncIterator[str]:
-        sub = bus.subscribe(tenant_id)
         try:
-            # Nudge the client to do its initial load on connect.
-            yield "event: kds.changed\ndata: {}\n\n"
             while True:
                 try:
                     event = await asyncio.wait_for(sub.get(), timeout=heartbeat)
@@ -73,3 +64,27 @@ async def kds_stream(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@router.get("/kds/stream")
+@inject
+async def kds_stream(
+    token: str,
+    tokens: TokenService = Depends(Provide[Container.token_service]),
+    bus: EventBus = Depends(Provide[Container.event_bus]),
+    config: Settings = Depends(Provide[Container.config]),
+) -> StreamingResponse:
+    tenant_id = tokens.decode_stream_token(token)  # InvalidToken/ExpiredToken → 401
+    return _sse_response(bus, tenant_id, config.realtime_heartbeat_s)
+
+
+@router.get("/floor/stream")
+@inject
+async def floor_stream(
+    token: str,
+    tokens: TokenService = Depends(Provide[Container.token_service]),
+    bus: EventBus = Depends(Provide[Container.event_bus]),
+    config: Settings = Depends(Provide[Container.config]),
+) -> StreamingResponse:
+    tenant_id = tokens.decode_stream_token(token)
+    return _sse_response(bus, tenant_id, config.realtime_heartbeat_s)

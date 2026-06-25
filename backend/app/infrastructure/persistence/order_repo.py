@@ -15,6 +15,13 @@ from app.infrastructure.persistence.mappers import (
 from app.infrastructure.persistence.models import OrderItemORM, OrderORM
 
 _KDS_STATUSES = (OrderStatus.SENT.value, OrderStatus.PREPARING.value)
+_ACTIVE_STATUSES = (
+    OrderStatus.OPEN.value,
+    OrderStatus.SENT.value,
+    OrderStatus.PREPARING.value,
+    OrderStatus.READY.value,
+    OrderStatus.SERVED.value,
+)
 
 
 class SqlAlchemyOrderRepository(OrderRepository):
@@ -60,6 +67,19 @@ class SqlAlchemyOrderRepository(OrderRepository):
             stmt = (
                 select(OrderORM)
                 .where(OrderORM.tenant_id == tenant_id, OrderORM.status.in_(_KDS_STATUSES))
+                .order_by(OrderORM.created_at.asc())
+            )
+            rows = (await session.execute(stmt)).scalars().all()
+            return [await self._load(session, row) for row in rows]
+
+    async def list_active(self, tenant_id: str) -> list[Order]:
+        async with self._session_factory() as session:
+            stmt = (
+                select(OrderORM)
+                .where(
+                    OrderORM.tenant_id == tenant_id,
+                    OrderORM.status.in_(_ACTIVE_STATUSES),
+                )
                 .order_by(OrderORM.created_at.asc())
             )
             rows = (await session.execute(stmt)).scalars().all()
