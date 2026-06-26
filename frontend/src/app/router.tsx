@@ -3,10 +3,10 @@ import { createBrowserRouter, Navigate } from "react-router-dom"
 import { AppShell } from "@/components/shell/app-shell"
 import { RequireAuth } from "@/auth/require-auth"
 import { RequireRole } from "@/auth/require-role"
+import { RoleLanding } from "@/auth/role-landing"
 import { AdvisorPage } from "@/features/advisor/advisor-page"
 import { AnalyticsPage } from "@/features/analytics/analytics-page"
 import { CopilotPage } from "@/features/copilot/copilot-page"
-import { DashboardPage } from "@/features/dashboard/dashboard-page"
 import { FloorPage } from "@/features/floor/floor-page"
 import { AcceptInvitationPage } from "@/features/identity/accept-invitation-page"
 import { InviteUserPage } from "@/features/identity/invite-user-page"
@@ -42,7 +42,7 @@ export const router = createBrowserRouter([
       {
         element: <AppShell />,
         children: [
-          { path: "/app", element: <DashboardPage /> },
+          { path: "/app", element: <RoleLanding /> },
           { path: "/app/fichar", element: <PunchPage /> },
           {
             element: <RequireRole allow={["WAITER", "CASHIER", "MANAGER", "OWNER"]} />,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
@@ -15,6 +15,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { useFloor } from "@/hooks/use-floor"
 import { useCreateOrder } from "@/hooks/use-orders"
 import { useCreateTable } from "@/hooks/use-tables"
+import { filterFloor } from "@/lib/floor-filter"
 import { kdsDelay } from "@/lib/kds"
 import { formatMoney } from "@/lib/money"
 
@@ -39,9 +40,12 @@ export function FloorPage() {
   const createTable = useCreateTable()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
   const { session } = useAuth()
   const canManage = session?.role === "OWNER" || session?.role === "MANAGER"
   const [newNumber, setNewNumber] = useState("")
+  const [search, setSearch] = useState("")
+  const [onlyToCharge, setOnlyToCharge] = useState(() => searchParams.get("cobrar") === "1")
   const [now, setNow] = useState(() => Date.now())
 
   // Tick so the per-table waiting timers stay current between refetches.
@@ -83,6 +87,9 @@ export function FloorPage() {
     )
   }
 
+  const tables = floor.data ?? []
+  const visible = filterFloor(tables, search, onlyToCharge)
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5 px-6 py-8">
       <header className="flex flex-col gap-1">
@@ -110,11 +117,34 @@ export function FloorPage() {
         </div>
       ) : null}
 
+      {tables.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            placeholder="Buscar mesa…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="max-w-[12rem]"
+          />
+          <Button
+            variant={onlyToCharge ? "default" : "outline"}
+            onClick={() => setOnlyToCharge((v) => !v)}
+          >
+            Solo a cobrar
+          </Button>
+        </div>
+      ) : null}
+
       {floor.isPending ? (
         <Spinner />
-      ) : floor.data && floor.data.length > 0 ? (
+      ) : tables.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No hay mesas todavía{canManage ? " — agregá una arriba." : "."}
+        </p>
+      ) : visible.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No hay mesas que coincidan.</p>
+      ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {floor.data.map((t) => {
+          {visible.map((t) => {
             const order = t.active_order
             const delay = order ? kdsDelay(order.created_at, now) : null
             const serving = order?.status === "SERVED"
@@ -145,10 +175,6 @@ export function FloorPage() {
             )
           })}
         </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          No hay mesas todavía{canManage ? " — agregá una arriba." : "."}
-        </p>
       )}
     </div>
   )

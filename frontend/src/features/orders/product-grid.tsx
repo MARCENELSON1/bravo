@@ -37,7 +37,7 @@ export function ProductGrid({
         <div className="flex items-center gap-1">
           <Button
             variant="outline"
-            className="h-9 w-9 p-0 text-lg"
+            className="h-11 w-11 p-0 text-lg"
             onClick={() => setQty((q) => Math.max(1, q - 1))}
             aria-label="Menos cantidad"
           >
@@ -46,7 +46,7 @@ export function ProductGrid({
           <span className="w-7 text-center text-sm font-medium tabular-nums">{qty}</span>
           <Button
             variant="outline"
-            className="h-9 w-9 p-0 text-lg"
+            className="h-11 w-11 p-0 text-lg"
             onClick={() => setQty((q) => q + 1)}
             aria-label="Más cantidad"
           >

@@ -120,14 +120,14 @@ export function KdsPage() {
                   </ul>
                   {o.status === "SENT" ? (
                     <Button
-                      size="sm"
                       variant="outline"
+                      className="h-11 w-full"
                       onClick={() => advanceTo(o.id, "preparing")}
                     >
                       Empezar a preparar
                     </Button>
                   ) : (
-                    <Button size="sm" onClick={() => advanceTo(o.id, "ready")}>
+                    <Button className="h-11 w-full" onClick={() => advanceTo(o.id, "ready")}>
                       Marcar listo
                     </Button>
                   )}
