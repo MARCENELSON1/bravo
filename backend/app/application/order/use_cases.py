@@ -125,6 +125,42 @@ class AddOrderItem:
         return order
 
 
+class RemoveOrderItem:
+    """Remove a line item from an order that is still OPEN."""
+
+    def __init__(self, orders: OrderRepository, tenant_context: TenantContext) -> None:
+        self._orders = orders
+        self._tenant_context = tenant_context
+
+    async def execute(self, *, tenant_id: str, order_id: str, item_id: str) -> Order:
+        self._tenant_context.set(tenant_id)
+        order = await self._orders.get_by_id(tenant_id, order_id)
+        if order is None:
+            raise OrderNotFound()
+        order.remove_item(item_id)
+        await self._orders.save(order)
+        return order
+
+
+class SetItemQuantity:
+    """Change a line item's quantity while the order is still OPEN."""
+
+    def __init__(self, orders: OrderRepository, tenant_context: TenantContext) -> None:
+        self._orders = orders
+        self._tenant_context = tenant_context
+
+    async def execute(
+        self, *, tenant_id: str, order_id: str, item_id: str, quantity: int
+    ) -> Order:
+        self._tenant_context.set(tenant_id)
+        order = await self._orders.get_by_id(tenant_id, order_id)
+        if order is None:
+            raise OrderNotFound()
+        order.set_item_quantity(item_id, quantity)
+        await self._orders.save(order)
+        return order
+
+
 class AddOrderItemsBatch:
     """Add several line items (and optionally send) in a single transaction.
 

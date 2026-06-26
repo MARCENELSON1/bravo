@@ -21,7 +21,13 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { ProductGrid } from "@/features/orders/product-grid"
 import { useIssueInvoice, useOrderInvoice } from "@/hooks/use-invoices"
-import { useAddItem, useOrder, useSendOrder } from "@/hooks/use-orders"
+import {
+  useAddItem,
+  useOrder,
+  useRemoveItem,
+  useSendOrder,
+  useSetItemQuantity,
+} from "@/hooks/use-orders"
 import { useOrderPayments, useRegisterPayment } from "@/hooks/use-payments"
 import { useProducts } from "@/hooks/use-products"
 import {
@@ -66,6 +72,8 @@ export function OrderPage() {
   })
   const products = useProducts()
   const addItem = useAddItem(orderId)
+  const removeItem = useRemoveItem(orderId)
+  const setItemQty = useSetItemQuantity(orderId)
   const sendOrder = useSendOrder()
   const navigate = useNavigate()
 
@@ -161,10 +169,54 @@ export function OrderPage() {
           {data.items.length > 0 ? (
             <ul className="flex flex-col divide-y divide-border">
               {data.items.map((it) => (
-                <li key={it.id} className="flex items-center justify-between py-2 text-sm">
-                  <span>
+                <li key={it.id} className="flex items-center justify-between gap-2 py-2 text-sm">
+                  <span className="flex-1">
                     {it.quantity}× {it.name}
+                    {it.note ? (
+                      <span className="text-muted-foreground"> ({it.note})</span>
+                    ) : null}
                   </span>
+                  {isOpen && canEdit ? (
+                    <span className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        className="h-8 w-8 p-0 text-base"
+                        onClick={() =>
+                          setItemQty.mutate({
+                            itemId: it.id,
+                            quantity: Math.max(1, it.quantity - 1),
+                          })
+                        }
+                      >
+                        −
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="h-8 w-8 p-0 text-base"
+                        onClick={() =>
+                          setItemQty.mutate({ itemId: it.id, quantity: it.quantity + 1 })
+                        }
+                      >
+                        +
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-destructive"
+                        onClick={() =>
+                          removeItem.mutate(it.id, {
+                            onError: (error) =>
+                              toast.error(
+                                isApiError(error)
+                                  ? error.message
+                                  : "No pudimos quitar el ítem."
+                              ),
+                          })
+                        }
+                      >
+                        ✕
+                      </Button>
+                    </span>
+                  ) : null}
                   <span className="font-medium">
                     {formatMoney(it.unit_price_amount * it.quantity, data.currency)}
                   </span>

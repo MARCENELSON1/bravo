@@ -76,6 +76,73 @@ export function useAddItem(orderId: string) {
   })
 }
 
+export function useRemoveItem(orderId: string) {
+  const { ordersApi } = useServices()
+  const queryClient = useQueryClient()
+  const key = ["order", orderId]
+  return useMutation<OrderDTO, Error, string, AddItemContext>({
+    mutationFn: (itemId) => ordersApi.removeItem(orderId, itemId),
+    onMutate: async (itemId) => {
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<OrderDTO>(key)
+      if (previous) {
+        const item = previous.items.find((i) => i.id === itemId)
+        queryClient.setQueryData<OrderDTO>(key, {
+          ...previous,
+          items: previous.items.filter((i) => i.id !== itemId),
+          total_amount:
+            previous.total_amount - (item ? item.unit_price_amount * item.quantity : 0),
+        })
+      }
+      return { previous }
+    },
+    onError: (_error, _itemId, context) => {
+      if (context?.previous) queryClient.setQueryData(key, context.previous)
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: key })
+    },
+  })
+}
+
+interface SetQtyVars {
+  itemId: string
+  quantity: number
+}
+
+export function useSetItemQuantity(orderId: string) {
+  const { ordersApi } = useServices()
+  const queryClient = useQueryClient()
+  const key = ["order", orderId]
+  return useMutation<OrderDTO, Error, SetQtyVars, AddItemContext>({
+    mutationFn: (vars) => ordersApi.setItemQuantity(orderId, vars.itemId, vars.quantity),
+    onMutate: async (vars) => {
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<OrderDTO>(key)
+      if (previous) {
+        let delta = 0
+        const items = previous.items.map((i) => {
+          if (i.id !== vars.itemId) return i
+          delta = (vars.quantity - i.quantity) * i.unit_price_amount
+          return { ...i, quantity: vars.quantity }
+        })
+        queryClient.setQueryData<OrderDTO>(key, {
+          ...previous,
+          items,
+          total_amount: previous.total_amount + delta,
+        })
+      }
+      return { previous }
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(key, context.previous)
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: key })
+    },
+  })
+}
+
 export function useSendOrder() {
   const { ordersApi } = useServices()
   const queryClient = useQueryClient()

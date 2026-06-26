@@ -35,7 +35,13 @@ from app.domain.invoice.exceptions import (
     OrderNotInvoiceable,
     TaxGatewayNotConnected,
 )
-from app.domain.order.exceptions import EmptyOrder, InvalidOrderTransition, OrderNotFound
+from app.domain.order.exceptions import (
+    EmptyOrder,
+    InvalidItemQuantity,
+    InvalidOrderTransition,
+    ItemNotFound,
+    OrderNotFound,
+)
 from app.domain.payment.exceptions import (
     InvalidOAuthState,
     InvalidPaymentAmount,
@@ -102,6 +108,8 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (InactiveProduct, 409),
     (InvalidOrderTransition, 409),
     (EmptyOrder, 422),
+    (ItemNotFound, 404),
+    (InvalidItemQuantity, 422),
     (UnsupportedCurrency, 422),
     (CurrencyMismatch, 422),
     (InvalidMoneyAmount, 422),

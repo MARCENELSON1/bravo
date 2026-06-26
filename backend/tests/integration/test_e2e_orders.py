@@ -168,6 +168,81 @@ async def test_batch_add_and_send_is_idempotent(client):
     assert len(replay.json()["items"]) == 2
 
 
+async def test_remove_and_edit_item_while_open(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="owner@resto.com")
+    h = _auth(tokens)
+    product_id = (
+        await http.post(
+            "/api/v1/products",
+            json={"name": "Milanesa", "price_amount": 150000, "category": None},
+            headers=h,
+        )
+    ).json()["product_id"]
+    table_id = (
+        await http.post("/api/v1/tables", json={"number": 9, "name": None}, headers=h)
+    ).json()["table_id"]
+    order_id = (
+        await http.post("/api/v1/orders", json={"table_id": table_id}, headers=h)
+    ).json()["order_id"]
+    item_id = (
+        await http.post(
+            f"/api/v1/orders/{order_id}/items",
+            json={"product_id": product_id, "quantity": 1},
+            headers=h,
+        )
+    ).json()["items"][0]["id"]
+
+    # Edit quantity → total reflects it.
+    patched = await http.patch(
+        f"/api/v1/orders/{order_id}/items/{item_id}", json={"quantity": 3}, headers=h
+    )
+    assert patched.status_code == 200, patched.text
+    assert patched.json()["items"][0]["quantity"] == 3
+    assert patched.json()["total_amount"] == 450000
+
+    # Remove → empty order.
+    removed = await http.delete(f"/api/v1/orders/{order_id}/items/{item_id}", headers=h)
+    assert removed.status_code == 200, removed.text
+    assert removed.json()["items"] == []
+
+    # Removing a non-existent item → 404.
+    missing = await http.delete(f"/api/v1/orders/{order_id}/items/{item_id}", headers=h)
+    assert missing.status_code == 404
+    assert missing.json()["code"] == "item_not_found"
+
+
+async def test_cannot_edit_item_after_sent(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="owner@resto.com")
+    h = _auth(tokens)
+    product_id = (
+        await http.post(
+            "/api/v1/products",
+            json={"name": "Lomo", "price_amount": 200000, "category": None},
+            headers=h,
+        )
+    ).json()["product_id"]
+    table_id = (
+        await http.post("/api/v1/tables", json={"number": 3, "name": None}, headers=h)
+    ).json()["table_id"]
+    order_id = (
+        await http.post("/api/v1/orders", json={"table_id": table_id}, headers=h)
+    ).json()["order_id"]
+    item_id = (
+        await http.post(
+            f"/api/v1/orders/{order_id}/items",
+            json={"product_id": product_id, "quantity": 1},
+            headers=h,
+        )
+    ).json()["items"][0]["id"]
+    await http.post(f"/api/v1/orders/{order_id}/send", headers=h)
+
+    res = await http.delete(f"/api/v1/orders/{order_id}/items/{item_id}", headers=h)
+    assert res.status_code == 409
+    assert res.json()["code"] == "invalid_order_transition"
+
+
 async def test_tenant_isolation(client):
     http, fake_email = client
     t1 = await _onboard_verify_login(http, fake_email, slug="uno", email="a@uno.com")

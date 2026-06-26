@@ -44,6 +44,30 @@ describe("OrdersApi", () => {
     expect(options).toMatchObject({ body: { items, send: true }, auth: true })
   })
 
+  it("removes an item", async () => {
+    const request = vi.fn().mockResolvedValue({})
+    const api = new OrdersApi({ request } as unknown as HttpClient)
+
+    await api.removeItem("o1", "it-7")
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("DELETE")
+    expect(path).toBe("/orders/o1/items/it-7")
+    expect(options).toMatchObject({ auth: true })
+  })
+
+  it("sets an item's quantity", async () => {
+    const request = vi.fn().mockResolvedValue({})
+    const api = new OrdersApi({ request } as unknown as HttpClient)
+
+    await api.setItemQuantity("o1", "it-7", 3)
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("PATCH")
+    expect(path).toBe("/orders/o1/items/it-7")
+    expect(options).toMatchObject({ body: { quantity: 3 }, auth: true })
+  })
+
   it("hits the KDS endpoint", async () => {
     const request = vi.fn().mockResolvedValue([])
     const api = new OrdersApi({ request } as unknown as HttpClient)

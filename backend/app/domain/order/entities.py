@@ -3,7 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from app.domain.order.exceptions import EmptyOrder, InvalidOrderTransition
+from app.domain.order.exceptions import (
+    EmptyOrder,
+    InvalidItemQuantity,
+    InvalidOrderTransition,
+    ItemNotFound,
+)
 from app.domain.order.value_objects import OrderStatus
 from app.domain.shared.exceptions import CurrencyMismatch
 from app.domain.shared.money import Money
@@ -47,6 +52,24 @@ class Order:
         if item.unit_price.currency != self.currency:
             raise CurrencyMismatch()
         self.items.append(item)
+
+    def remove_item(self, item_id: str) -> None:
+        if self.status is not OrderStatus.OPEN:
+            raise InvalidOrderTransition()
+        self.items.remove(self._find_item(item_id))
+
+    def set_item_quantity(self, item_id: str, quantity: int) -> None:
+        if self.status is not OrderStatus.OPEN:
+            raise InvalidOrderTransition()
+        if quantity < 1:
+            raise InvalidItemQuantity()
+        self._find_item(item_id).quantity = quantity
+
+    def _find_item(self, item_id: str) -> OrderItem:
+        for item in self.items:
+            if item.id == item_id:
+                return item
+        raise ItemNotFound()
 
     def send_to_kitchen(self) -> None:
         if self.status is not OrderStatus.OPEN:

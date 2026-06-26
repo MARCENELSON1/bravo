@@ -57,7 +57,9 @@ from app.application.order.use_cases import (
     GetKdsOrders,
     GetOrder,
     ListOrders,
+    RemoveOrderItem,
     SendOrder,
+    SetItemQuantity,
 )
 from app.application.payment.connect_mercadopago import (
     CompleteMercadoPagoConnection,
@@ -386,6 +388,12 @@ class Container(containers.DeclarativeContainer):
         products=product_repository,
         tenant_context=tenant_context,
         event_bus=event_bus,
+    )
+    remove_order_item = providers.Factory(
+        RemoveOrderItem, orders=order_repository, tenant_context=tenant_context
+    )
+    set_item_quantity = providers.Factory(
+        SetItemQuantity, orders=order_repository, tenant_context=tenant_context
     )
     send_order = providers.Factory(
         SendOrder,
