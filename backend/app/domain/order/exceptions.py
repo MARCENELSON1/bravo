@@ -16,3 +16,13 @@ class InvalidOrderTransition(DomainError):
 class EmptyOrder(DomainError):
     code = "empty_order"
     message = "No se puede enviar una comanda sin ítems."
+
+
+class ItemNotFound(DomainError):
+    code = "item_not_found"
+    message = "No encontramos el ítem en la comanda."
+
+
+class InvalidItemQuantity(DomainError):
+    code = "invalid_item_quantity"
+    message = "La cantidad del ítem no es válida."

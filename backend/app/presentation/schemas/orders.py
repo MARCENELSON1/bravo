@@ -31,6 +31,10 @@ class AddOrderItemsBatchRequest(BaseModel):
     send: bool = False
 
 
+class SetItemQuantityRequest(BaseModel):
+    quantity: int = Field(ge=1)
+
+
 class CreateOrderResponse(BaseModel):
     order_id: str
 

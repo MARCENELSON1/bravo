@@ -11,7 +11,9 @@ from app.application.order.use_cases import (
     CreateOrder,
     GetOrder,
     ListOrders,
+    RemoveOrderItem,
     SendOrder,
+    SetItemQuantity,
 )
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
@@ -26,6 +28,7 @@ from app.presentation.schemas.orders import (
     CreateOrderResponse,
     OrderItemResponse,
     OrderResponse,
+    SetItemQuantityRequest,
 )
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -135,6 +138,38 @@ async def add_items_batch(
             for i in body.items
         ],
         send=body.send,
+    )
+    return order_to_response(order)
+
+
+@router.delete("/{order_id}/items/{item_id}", response_model=OrderResponse)
+@inject
+async def remove_item(
+    order_id: str,
+    item_id: str,
+    identity: AccessClaims = Depends(require_roles(*_FLOOR_ROLES)),
+    use_case: RemoveOrderItem = Depends(Provide[Container.remove_order_item]),
+) -> OrderResponse:
+    order = await use_case.execute(
+        tenant_id=identity.tenant_id, order_id=order_id, item_id=item_id
+    )
+    return order_to_response(order)
+
+
+@router.patch("/{order_id}/items/{item_id}", response_model=OrderResponse)
+@inject
+async def set_item_quantity(
+    order_id: str,
+    item_id: str,
+    body: SetItemQuantityRequest,
+    identity: AccessClaims = Depends(require_roles(*_FLOOR_ROLES)),
+    use_case: SetItemQuantity = Depends(Provide[Container.set_item_quantity]),
+) -> OrderResponse:
+    order = await use_case.execute(
+        tenant_id=identity.tenant_id,
+        order_id=order_id,
+        item_id=item_id,
+        quantity=body.quantity,
     )
     return order_to_response(order)
 

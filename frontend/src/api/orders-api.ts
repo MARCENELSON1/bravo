@@ -42,6 +42,19 @@ export class OrdersApi {
     })
   }
 
+  removeItem(orderId: string, itemId: string): Promise<OrderDTO> {
+    return this.http.request<OrderDTO>("DELETE", `/orders/${orderId}/items/${itemId}`, {
+      auth: true,
+    })
+  }
+
+  setItemQuantity(orderId: string, itemId: string, quantity: number): Promise<OrderDTO> {
+    return this.http.request<OrderDTO>("PATCH", `/orders/${orderId}/items/${itemId}`, {
+      body: { quantity },
+      auth: true,
+    })
+  }
+
   // Add several items (and optionally send) in one round-trip. Each line carries
   // an optional client id so a replay is idempotent — used by the offline queue.
   addItemsBatch(
