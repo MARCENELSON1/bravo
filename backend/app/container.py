@@ -17,6 +17,11 @@ from app.application.analytics.use_cases import (
     GetProductPerformance,
     GetRevenueSummary,
 )
+from app.application.cashier.use_cases import (
+    CloseCashSession,
+    GetCurrentCashReport,
+    OpenCashSession,
+)
 from app.application.copilot.ask import AskCopilot
 from app.application.floor.use_cases import GetFloor
 from app.application.identity.accept_invitation import AcceptInvitation
@@ -134,6 +139,7 @@ from app.infrastructure.persistence.analytics_repo import (
     SqlAlchemyRevenueReadModel,
 )
 from app.infrastructure.persistence.audit_repo import SqlAlchemyAuditRepository
+from app.infrastructure.persistence.cash_repo import SqlAlchemyCashSessionRepository
 from app.infrastructure.persistence.credentials_repo import (
     SqlAlchemyPaymentCredentialRepository,
 )
@@ -478,6 +484,28 @@ class Container(containers.DeclarativeContainer):
     # --- Fase 3: pagos (ingresos/egresos) ---
     payment_repository = providers.Factory(
         SqlAlchemyPaymentRepository, session_factory=db.provided.session
+    )
+    # --- Fase 14: caja / arqueo Z ---
+    cash_session_repository = providers.Factory(
+        SqlAlchemyCashSessionRepository, session_factory=db.provided.session
+    )
+    open_cash_session = providers.Factory(
+        OpenCashSession,
+        cash=cash_session_repository,
+        tenants=tenant_repository,
+        tenant_context=tenant_context,
+    )
+    get_current_cash_report = providers.Factory(
+        GetCurrentCashReport,
+        cash=cash_session_repository,
+        payments=payment_repository,
+        tenant_context=tenant_context,
+    )
+    close_cash_session = providers.Factory(
+        CloseCashSession,
+        cash=cash_session_repository,
+        payments=payment_repository,
+        tenant_context=tenant_context,
     )
     # --- Fase 3.5: conexión MP por tenant (OAuth) ---
     token_cipher = providers.Singleton(

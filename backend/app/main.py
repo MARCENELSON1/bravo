@@ -15,6 +15,7 @@ from app.presentation.api.v1 import (
     advisor,
     analytics,
     auth,
+    cashier,
     copilot,
     expenses,
     floor,
@@ -74,6 +75,7 @@ def create_app() -> FastAPI:
     app.include_router(realtime.router, prefix="/api/v1")
     app.include_router(floor.router, prefix="/api/v1")
     app.include_router(payments.router, prefix="/api/v1")
+    app.include_router(cashier.router, prefix="/api/v1")
     app.include_router(expenses.router, prefix="/api/v1")
     app.include_router(webhooks.router, prefix="/api/v1")
     app.include_router(integrations.router, prefix="/api/v1")

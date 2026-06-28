@@ -536,6 +536,47 @@ class SaleFactORM(Base):
 # --- Fase 9: asesor financiero — advisor_settings (tenant-scoped, 1:1) ------
 
 
+class CashSessionORM(Base):
+    """A register turn (caja). Tenant-scoped + RLS (datos de plata)."""
+
+    __tablename__ = "cash_sessions"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    opened_by: Mapped[str] = mapped_column(Uuid(as_uuid=False))
+    opening_float_amount: Mapped[int] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(String(3))
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    closed_by: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True)
+    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class CashCountORM(Base):
+    """One arqueo line for a closed session: expected vs counted, per method."""
+
+    __tablename__ = "cash_counts"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    cash_session_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False),
+        ForeignKey("cash_sessions.id", ondelete="CASCADE"),
+        index=True,
+    )
+    method: Mapped[str] = mapped_column(String(20))
+    expected_amount: Mapped[int] = mapped_column(BigInteger)
+    counted_amount: Mapped[int] = mapped_column(BigInteger)
+
+
 class AdvisorSettingsORM(Base):
     """Per-tenant cost profile (1:1, keyed by tenant_id). Datos de plata → RLS."""
 

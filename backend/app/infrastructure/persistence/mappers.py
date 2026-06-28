@@ -7,6 +7,8 @@ clobbers the DB-managed timestamp and inserts use the column ``server_default``.
 from __future__ import annotations
 
 from app.domain.advisor.entities import AdvisorSettings
+from app.domain.cashier.entities import CashCount, CashSession
+from app.domain.cashier.value_objects import CashSessionStatus
 from app.domain.identity.tokens import (
     AuthAuditEntry,
     AuthEvent,
@@ -53,6 +55,8 @@ from app.domain.user.value_objects import Email, Role
 from app.infrastructure.persistence.models import (
     AdvisorSettingsORM,
     AuthAuditORM,
+    CashCountORM,
+    CashSessionORM,
     EmailVerificationTokenORM,
     IngredientORM,
     InvitationORM,
@@ -720,6 +724,60 @@ def advisor_settings_to_orm(settings: AdvisorSettings) -> AdvisorSettingsORM:
         other_fixed_amount=settings.monthly_other_fixed_costs.amount,
         currency=settings.currency,
         target_food_cost_bps=settings.target_food_cost_bps,
+    )
+
+
+def cash_session_to_domain(
+    row: CashSessionORM, count_rows: list[CashCountORM]
+) -> CashSession:
+    currency = row.currency
+    return CashSession(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        opened_by=row.opened_by,
+        opening_float=Money(row.opening_float_amount, currency),
+        currency=currency,
+        status=CashSessionStatus(row.status),
+        opened_at=row.opened_at,
+        closed_at=row.closed_at,
+        closed_by=row.closed_by,
+        note=row.note,
+        counts=[
+            CashCount(
+                method=PaymentMethod(c.method),
+                expected=Money(c.expected_amount, currency),
+                counted=Money(c.counted_amount, currency),
+            )
+            for c in count_rows
+        ],
+    )
+
+
+def cash_session_to_orm(session: CashSession) -> CashSessionORM:
+    return CashSessionORM(
+        id=session.id,
+        tenant_id=session.tenant_id,
+        opened_by=session.opened_by,
+        opening_float_amount=session.opening_float.amount,
+        currency=session.currency,
+        status=session.status.value,
+        opened_at=session.opened_at,
+        closed_at=session.closed_at,
+        closed_by=session.closed_by,
+        note=session.note,
+    )
+
+
+def cash_count_to_orm(
+    count: CashCount, session: CashSession, count_id: str
+) -> CashCountORM:
+    return CashCountORM(
+        id=count_id,
+        tenant_id=session.tenant_id,
+        cash_session_id=session.id,
+        method=count.method.value,
+        expected_amount=count.expected.amount,
+        counted_amount=count.counted.amount,
     )
 
 

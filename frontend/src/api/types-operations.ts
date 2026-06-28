@@ -136,6 +136,36 @@ export interface MpConnectionDTO {
   live_mode: boolean
 }
 
+// --- Fase 14: caja / arqueo Z ---
+
+export interface CashSessionDTO {
+  id: string
+  status: "OPEN" | "CLOSED"
+  currency: string
+  opening_float_amount: number
+  opened_at: string | null
+}
+
+export interface CashReportLineDTO {
+  method: PaymentMethod
+  expected: number // minor units
+  counted: number | null
+  difference: number | null
+}
+
+export interface CashReportDTO {
+  session_id: string
+  status: "OPEN" | "CLOSED"
+  currency: string
+  opening_float: number
+  opened_at: string | null
+  closed_at: string | null
+  lines: CashReportLineDTO[]
+  expected_total: number
+  counted_total: number | null
+  difference_total: number | null
+}
+
 // --- Reporting ---
 
 export interface DashboardSummaryDTO {
