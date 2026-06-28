@@ -3,9 +3,12 @@ import type {
   BatchOrderItemInput,
   CreateOrderResponse,
   OrderDTO,
+  Station,
 } from "@/api/types-operations"
 
 export type OrderAction = "preparing" | "ready" | "served" | "cancel"
+// Per-item bump/recall along the kitchen lifecycle.
+export type ItemAction = "preparing" | "ready" | "served" | "recall"
 
 export class OrdersApi {
   private http: HttpClient
@@ -76,7 +79,16 @@ export class OrdersApi {
     return this.http.request<OrderDTO>("POST", `/orders/${id}/${action}`, { auth: true })
   }
 
-  kds(): Promise<OrderDTO[]> {
-    return this.http.request<OrderDTO[]>("GET", "/kds/orders", { auth: true })
+  // Bump (or recall) a single item along its kitchen lifecycle — drives the
+  // per-station KDS board.
+  advanceItem(orderId: string, itemId: string, action: ItemAction): Promise<OrderDTO> {
+    return this.http.request<OrderDTO>("POST", `/orders/${orderId}/items/${itemId}/${action}`, {
+      auth: true,
+    })
+  }
+
+  kds(station?: Station): Promise<OrderDTO[]> {
+    const path = station ? `/kds/orders?station=${station}` : "/kds/orders"
+    return this.http.request<OrderDTO[]>("GET", path, { auth: true })
   }
 }

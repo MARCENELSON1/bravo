@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+from app.application.clock import utcnow
 from app.application.order.dtos import BatchOrderItemInput, CreateOrderResult
 from app.domain.identity.ports import TenantContext
 from app.domain.order.entities import Order, OrderItem
 from app.domain.order.exceptions import InvalidOrderTransition, OrderNotFound
 from app.domain.order.repository import OrderRepository
-from app.domain.order.value_objects import OrderStatus
+from app.domain.order.value_objects import ItemStatus, OrderStatus, Station
 from app.domain.product.exceptions import InactiveProduct, ProductNotFound
 from app.domain.product.repository import ProductRepository
 from app.domain.realtime.ports import DomainEvent, EventBus
@@ -119,6 +120,7 @@ class AddOrderItem:
                 unit_price=product.price,
                 quantity=quantity,
                 note=note,
+                station=product.station,
             )
         )
         await self._orders.save(order)
@@ -211,25 +213,33 @@ class AddOrderItemsBatch:
                     unit_price=product.price,
                     quantity=line.quantity,
                     note=line.note,
+                    station=product.station,
                 )
             )
             seen.add(new_id)
-        if send and order.status is OrderStatus.OPEN:
-            order.send_to_kitchen()
+        marched: list[OrderItem] = []
+        # Guard keeps the batch idempotent: a replay (no new PENDING items) must
+        # not raise EmptyOrder on the already-marched order.
+        if send and any(it.status is ItemStatus.PENDING for it in order.items):
+            marched = order.march(utcnow())
         await self._orders.save(order)
         await self._event_bus.publish(_floor_changed(order))
-        if send and order.status is OrderStatus.SENT:
-            await self._event_bus.publish(_kds_changed(order))
+        for event in _kds_changed(order, {it.station for it in marched}):
+            await self._event_bus.publish(event)
         return order
 
 
-def _kds_changed(order: Order) -> DomainEvent:
-    """A 'refetch the KDS board' signal — carries no data, just ids/status."""
-    return DomainEvent(
-        type="kds.changed",
-        tenant_id=order.tenant_id,
-        payload={"order_id": order.id, "status": order.status.value},
-    )
+def _kds_changed(order: Order, stations: set[Station]) -> list[DomainEvent]:
+    """'Refetch the KDS board' signals — one per affected station. Carries no
+    data, just ids/station, so tenant isolation never depends on the stream."""
+    return [
+        DomainEvent(
+            type="kds.changed",
+            tenant_id=order.tenant_id,
+            payload={"order_id": order.id, "station": station.value},
+        )
+        for station in stations
+    ]
 
 
 def _floor_changed(order: Order) -> DomainEvent:
@@ -257,15 +267,49 @@ class SendOrder:
         order = await self._orders.get_by_id(tenant_id, order_id)
         if order is None:
             raise OrderNotFound()
-        order.send_to_kitchen()
+        marched = order.march(utcnow())
         await self._orders.save(order)
-        await self._event_bus.publish(_kds_changed(order))
+        for event in _kds_changed(order, {it.station for it in marched}):
+            await self._event_bus.publish(event)
+        await self._event_bus.publish(_floor_changed(order))
+        return order
+
+
+class AdvanceItem:
+    """Bump (or recall) a single item along its kitchen lifecycle. This is what
+    the per-station KDS board uses to mark items ready one by one."""
+
+    def __init__(
+        self,
+        orders: OrderRepository,
+        tenant_context: TenantContext,
+        event_bus: EventBus,
+    ) -> None:
+        self._orders = orders
+        self._tenant_context = tenant_context
+        self._event_bus = event_bus
+
+    async def execute(
+        self, *, tenant_id: str, order_id: str, item_id: str, action: str
+    ) -> Order:
+        self._tenant_context.set(tenant_id)
+        order = await self._orders.get_by_id(tenant_id, order_id)
+        if order is None:
+            raise OrderNotFound()
+        item = order.advance_item(item_id, action, utcnow())
+        await self._orders.save(order)
+        for event in _kds_changed(order, {item.station}):
+            await self._event_bus.publish(event)
         await self._event_bus.publish(_floor_changed(order))
         return order
 
 
 class AdvanceOrder:
-    """Advance an order's lifecycle (preparing/ready/served/cancel)."""
+    """Advance a whole order's lifecycle (preparing/ready/served/cancel).
+
+    A convenience that moves every matching item at once; the per-item board uses
+    ``AdvanceItem`` instead.
+    """
 
     def __init__(
         self,
@@ -285,7 +329,7 @@ class AdvanceOrder:
         if action == "preparing":
             order.start_preparing()
         elif action == "ready":
-            order.mark_ready()
+            order.mark_ready(utcnow())
         elif action == "served":
             order.mark_served()
         elif action == "cancel":
@@ -293,7 +337,8 @@ class AdvanceOrder:
         else:
             raise InvalidOrderTransition()
         await self._orders.save(order)
-        await self._event_bus.publish(_kds_changed(order))
+        for event in _kds_changed(order, {it.station for it in order.items}):
+            await self._event_bus.publish(event)
         await self._event_bus.publish(_floor_changed(order))
         return order
 
@@ -315,6 +360,8 @@ class GetKdsOrders:
         self._orders = orders
         self._tenant_context = tenant_context
 
-    async def execute(self, *, tenant_id: str) -> list[Order]:
+    async def execute(
+        self, *, tenant_id: str, station: Station | None = None
+    ) -> list[Order]:
         self._tenant_context.set(tenant_id)
-        return await self._orders.list_kds(tenant_id)
+        return await self._orders.list_kds(tenant_id, station)

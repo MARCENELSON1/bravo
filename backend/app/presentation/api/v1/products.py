@@ -36,6 +36,7 @@ async def create_product(
         name=body.name,
         price_amount=body.price_amount,
         category=body.category,
+        station=body.station,
     )
     return CreateProductResponse(product_id=result.product_id)
 
@@ -54,6 +55,7 @@ async def list_products(
             price_amount=p.price.amount,
             currency=p.price.currency,
             category=p.category,
+            station=p.station.value,
             active=p.active,
         )
         for p in products

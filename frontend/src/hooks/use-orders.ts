@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { Query } from "@tanstack/react-query"
 
-import type { OrderAction } from "@/api/orders-api"
-import type { OrderDTO, OrderItemDTO } from "@/api/types-operations"
+import type { ItemAction, OrderAction } from "@/api/orders-api"
+import type { OrderDTO, OrderItemDTO, Station } from "@/api/types-operations"
 import { newId } from "@/lib/ids"
 import { useServices } from "@/services/services-context"
 
@@ -32,6 +32,7 @@ interface AddItemVars {
   unitPriceAmount: number
   quantity: number
   note: string | null
+  station: Station
 }
 
 interface AddItemContext {
@@ -58,6 +59,9 @@ export function useAddItem(orderId: string) {
           unit_price_amount: vars.unitPriceAmount,
           quantity: vars.quantity,
           note: vars.note,
+          status: "PENDING",
+          station: vars.station,
+          sent_at: null,
         }
         queryClient.setQueryData<OrderDTO>(key, {
           ...previous,
@@ -165,6 +169,26 @@ export function useAdvanceOrder() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (vars: AdvanceVars) => ordersApi.advance(vars.orderId, vars.action),
+    onSuccess: (order) => {
+      void queryClient.invalidateQueries({ queryKey: ["order", order.id] })
+      void queryClient.invalidateQueries({ queryKey: ["kds-orders"] })
+    },
+  })
+}
+
+interface AdvanceItemVars {
+  orderId: string
+  itemId: string
+  action: ItemAction
+}
+
+// Bump/recall a single item from the per-station KDS board.
+export function useAdvanceItem() {
+  const { ordersApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (vars: AdvanceItemVars) =>
+      ordersApi.advanceItem(vars.orderId, vars.itemId, vars.action),
     onSuccess: (order) => {
       void queryClient.invalidateQueries({ queryKey: ["order", order.id] })
       void queryClient.invalidateQueries({ queryKey: ["kds-orders"] })

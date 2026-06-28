@@ -105,7 +105,10 @@ export function OrderPage() {
   }
 
   const data = order.data
-  const isOpen = data.status === "OPEN"
+  // Rounds: items can be added/marched while the order is in service, not just
+  // when it's OPEN. Only a PAID/CANCELLED order is closed to new items.
+  const canAddRound = canEdit && !isPaid && data.status !== "CANCELLED"
+  const pendingCount = data.items.filter((it) => it.status === "PENDING").length
 
   const handleAdd = (product: ProductDTO, quantity: number) => {
     bumpUsage(product.id) // learn favorites for the grid ranking
@@ -117,6 +120,7 @@ export function OrderPage() {
         unitPriceAmount: product.price_amount,
         quantity,
         note: null,
+        station: product.station,
       },
       {
         onError: (error) =>
@@ -128,11 +132,11 @@ export function OrderPage() {
   const send = () => {
     sendOrder.mutate(orderId, {
       onSuccess: () => {
-        toast.success("Comanda enviada a cocina.")
+        toast.success("Ítems marchados a su estación.")
         navigate("/app/floor")
       },
       onError: (error) =>
-        toast.error(isApiError(error) ? error.message : "No pudimos enviar la comanda."),
+        toast.error(isApiError(error) ? error.message : "No pudimos marchar la comanda."),
     })
   }
 
@@ -150,10 +154,10 @@ export function OrderPage() {
         </Link>
       </header>
 
-      {isOpen && canEdit ? (
+      {canAddRound ? (
         <Card>
           <CardHeader>
-            <CardTitle>Agregar ítem</CardTitle>
+            <CardTitle>{data.status === "OPEN" ? "Agregar ítem" : "Agregar otra ronda"}</CardTitle>
           </CardHeader>
           <CardContent>
             <ProductGrid products={products.data ?? []} onAdd={handleAdd} />
@@ -175,8 +179,11 @@ export function OrderPage() {
                     {it.note ? (
                       <span className="text-muted-foreground"> ({it.note})</span>
                     ) : null}
+                    {it.status !== "PENDING" ? (
+                      <span className="ml-1 text-xs text-muted-foreground">· {it.status}</span>
+                    ) : null}
                   </span>
-                  {isOpen && canEdit ? (
+                  {it.status === "PENDING" && canEdit ? (
                     <span className="flex items-center gap-1">
                       <Button
                         variant="outline"
@@ -233,9 +240,9 @@ export function OrderPage() {
         </CardContent>
       </Card>
 
-      {isOpen && canEdit ? (
-        <Button onClick={send} disabled={sendOrder.isPending || data.items.length === 0}>
-          {sendOrder.isPending ? "Enviando…" : "Enviar a cocina"}
+      {canAddRound ? (
+        <Button onClick={send} disabled={sendOrder.isPending || pendingCount === 0}>
+          {sendOrder.isPending ? "Marchando…" : `Marchar${pendingCount > 0 ? ` (${pendingCount})` : ""}`}
         </Button>
       ) : null}
 

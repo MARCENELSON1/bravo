@@ -9,12 +9,23 @@ export type OrderStatus =
   | "PAID"
   | "CANCELLED"
 
+// Per-item kitchen lifecycle (Fase 14) + the station that prepares it.
+export type ItemStatus =
+  | "PENDING"
+  | "SENT"
+  | "PREPARING"
+  | "READY"
+  | "SERVED"
+  | "CANCELLED"
+export type Station = "KITCHEN" | "BAR"
+
 export interface ProductDTO {
   id: string
   name: string
   price_amount: number // minor units (e.g. centavos)
   currency: string
   category: string | null
+  station: Station
   active: boolean
 }
 
@@ -40,6 +51,16 @@ export interface OrderItemDTO {
   unit_price_amount: number
   quantity: number
   note: string | null
+  status: ItemStatus
+  station: Station
+  sent_at: string | null // ISO-8601; how long the item has waited on the KDS
+}
+
+// One item flattened with its order context — the unit the KDS board renders.
+export interface KdsTicket {
+  orderId: string
+  tableId: string
+  item: OrderItemDTO
 }
 
 export interface OrderDTO {

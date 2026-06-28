@@ -8,6 +8,7 @@ import { DashboardPage } from "@/features/dashboard/dashboard-page"
 const ROLE_HOME: Record<string, string> = {
   WAITER: "/app/floor",
   KITCHEN: "/app/kds",
+  BAR: "/app/bar",
   CASHIER: "/app/floor?cobrar=1", // floor pre-filtered to "a cobrar"
 }
 

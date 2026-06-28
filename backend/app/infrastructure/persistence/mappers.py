@@ -32,7 +32,7 @@ from app.domain.invoice.value_objects import (
     InvoiceType,
 )
 from app.domain.order.entities import Order, OrderItem
-from app.domain.order.value_objects import OrderStatus
+from app.domain.order.value_objects import ItemStatus, OrderStatus, Station
 from app.domain.payment.credentials import (
     ConnectionStatus,
     PaymentCredential,
@@ -302,6 +302,7 @@ def product_to_domain(row: ProductORM) -> Product:
         name=row.name,
         price=Money(row.price_amount, row.price_currency),
         category=row.category,
+        station=Station(row.station),
         active=row.active,
         created_at=row.created_at,
     )
@@ -315,6 +316,7 @@ def product_to_orm(product: Product) -> ProductORM:
         price_amount=product.price.amount,
         price_currency=product.price.currency,
         category=product.category,
+        station=product.station.value,
         active=product.active,
     )
 
@@ -338,6 +340,10 @@ def order_to_domain(row: OrderORM, item_rows: list[OrderItemORM]) -> Order:
                 unit_price=Money(item.unit_price_amount, row.currency),
                 quantity=item.quantity,
                 note=item.note,
+                station=Station(item.station),
+                status=ItemStatus(item.status),
+                sent_at=item.sent_at,
+                ready_at=item.ready_at,
             )
             for item in item_rows
         ],
@@ -366,6 +372,10 @@ def order_item_to_orm(item: OrderItem, order: Order, position: int) -> OrderItem
         unit_price_amount=item.unit_price.amount,
         quantity=item.quantity,
         note=item.note,
+        status=item.status.value,
+        station=item.station.value,
+        sent_at=item.sent_at,
+        ready_at=item.ready_at,
         position=position,
     )
 

@@ -238,9 +238,10 @@ async def test_cannot_edit_item_after_sent(client):
     ).json()["items"][0]["id"]
     await http.post(f"/api/v1/orders/{order_id}/send", headers=h)
 
+    # Once marched (SENT) the item is no longer PENDING → cannot be edited/removed.
     res = await http.delete(f"/api/v1/orders/{order_id}/items/{item_id}", headers=h)
     assert res.status_code == 409
-    assert res.json()["code"] == "invalid_order_transition"
+    assert res.json()["code"] == "item_not_pending"
 
 
 async def test_tenant_isolation(client):

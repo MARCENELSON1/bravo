@@ -26,3 +26,13 @@ class ItemNotFound(DomainError):
 class InvalidItemQuantity(DomainError):
     code = "invalid_item_quantity"
     message = "La cantidad del ítem no es válida."
+
+
+class ItemNotPending(DomainError):
+    code = "item_not_pending"
+    message = "Solo se puede modificar un ítem que todavía no fue marchado."
+
+
+class InvalidItemTransition(DomainError):
+    code = "invalid_item_transition"
+    message = "El ítem no puede cambiar a ese estado."

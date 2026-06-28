@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from app.domain.order.entities import Order
-from app.domain.order.value_objects import OrderStatus
+from app.domain.order.value_objects import OrderStatus, Station
 
 
 class OrderRepository(ABC):
@@ -18,7 +18,9 @@ class OrderRepository(ABC):
     ) -> list[Order]: ...
 
     @abstractmethod
-    async def list_kds(self, tenant_id: str) -> list[Order]: ...
+    async def list_kds(
+        self, tenant_id: str, station: Station | None = None
+    ) -> list[Order]: ...
 
     @abstractmethod
     async def list_active(self, tenant_id: str) -> list[Order]:
