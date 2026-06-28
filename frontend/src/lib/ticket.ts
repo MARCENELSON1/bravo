@@ -1,4 +1,5 @@
 import type { OrderDTO, OrderItemDTO, Station } from "@/api/types-operations"
+import { formatMoney } from "@/lib/money"
 
 // Browser-printed comanda ticket (MVP, no hardware): builds a narrow,
 // monospace ticket grouped by station so the kitchen and the bar each see their
@@ -51,6 +52,42 @@ export function ticketHtml(
   return `<div class="ticket"><div class="head">${escapeHtml(tableLabel)}</div><div class="meta">${escapeHtml(printedAt)}</div>${sections || '<div class="line">— sin ítems —</div>'}</div>`
 }
 
+export interface ReceiptPaymentLine {
+  label: string
+  amount: number // minor units
+}
+
+// Pure: a non-fiscal receipt (recibo) for the customer — items + total + how it
+// was paid. Not an AFIP comprobante; that's the invoice flow.
+export function receiptHtml(
+  order: OrderDTO,
+  tableLabel: string,
+  printedAt: string,
+  payments: ReceiptPaymentLine[]
+): string {
+  const lines = order.items
+    .map(
+      (it) =>
+        `<div class="line"><span class="qty">${it.quantity}×</span> ${escapeHtml(it.name)}` +
+        `<span class="amt">${formatMoney(it.unit_price_amount * it.quantity, order.currency)}</span></div>`
+    )
+    .join("")
+  const paid = payments
+    .map(
+      (p) =>
+        `<div class="line">${escapeHtml(p.label)}<span class="amt">${formatMoney(p.amount, order.currency)}</span></div>`
+    )
+    .join("")
+  return (
+    `<div class="ticket"><div class="head">${escapeHtml(tableLabel)}</div>` +
+    `<div class="meta">RECIBO NO FISCAL · ${escapeHtml(printedAt)}</div>` +
+    `${lines}` +
+    `<div class="station">TOTAL<span class="amt">${formatMoney(order.total_amount, order.currency)}</span></div>` +
+    `${paid}` +
+    `</div>`
+  )
+}
+
 export const TICKET_CSS = `
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: ui-monospace, "Courier New", monospace; }
@@ -58,7 +95,8 @@ export const TICKET_CSS = `
   .head { font-size: 20px; font-weight: 700; text-align: center; }
   .meta { font-size: 11px; text-align: center; margin-bottom: 8px; }
   .station { font-weight: 700; border-top: 1px dashed #000; border-bottom: 1px dashed #000; margin: 6px 0 4px; padding: 2px 0; }
-  .line { font-size: 14px; line-height: 1.4; }
+  .line { font-size: 14px; line-height: 1.4; overflow: hidden; }
+  .amt { float: right; font-variant-numeric: tabular-nums; }
   .qty { font-weight: 700; }
   .note { font-size: 12px; padding-left: 14px; font-style: italic; }
   @media print { @page { margin: 4mm; } }

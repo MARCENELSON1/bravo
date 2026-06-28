@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
+from app.domain.payment.exceptions import PaymentNotRefundable
 from app.domain.payment.value_objects import PaymentDirection, PaymentMethod, PaymentStatus
 from app.domain.shared.money import Money
 
@@ -39,3 +40,11 @@ class Payment:
 
     def fail(self) -> None:
         self.status = PaymentStatus.FAILED
+
+    def refund(self) -> None:
+        """Reverse a confirmed payment (anular/reembolsar). Money-only: the arqueo
+        excludes REFUNDED, so the collected total drops; the sale projection is
+        untouched (undoing the sale is the reopen flow, separate)."""
+        if self.status is not PaymentStatus.CONFIRMED:
+            raise PaymentNotRefundable()
+        self.status = PaymentStatus.REFUNDED

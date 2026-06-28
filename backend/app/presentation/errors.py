@@ -55,6 +55,7 @@ from app.domain.payment.exceptions import (
     InvalidWebhookSignature,
     PaymentGatewayNotConnected,
     PaymentNotFound,
+    PaymentNotRefundable,
 )
 from app.domain.product.exceptions import InactiveProduct, ProductNotFound
 from app.domain.reservation.exceptions import (
@@ -124,6 +125,7 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (InvalidMoneyAmount, 422),
     # Fase 3 — pagos
     (PaymentNotFound, 404),
+    (PaymentNotRefundable, 409),
     (InvalidPaymentAmount, 422),
     (InvalidWebhookSignature, 401),
     (PaymentGatewayNotConnected, 409),

@@ -45,4 +45,16 @@ describe("PaymentsApi", () => {
     expect(method).toBe("GET")
     expect(path).toBe("/orders/o1/payments")
   })
+
+  it("refunds a payment", async () => {
+    const request = vi.fn().mockResolvedValue({ id: "p1", status: "REFUNDED" })
+    const api = new PaymentsApi({ request } as unknown as HttpClient)
+
+    await api.refund("p1")
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("POST")
+    expect(path).toBe("/payments/p1/refund")
+    expect(options).toMatchObject({ auth: true })
+  })
 })

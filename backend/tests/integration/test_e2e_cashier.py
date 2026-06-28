@@ -85,6 +85,61 @@ async def test_cash_session_arqueo_flow(client):
     assert again.json()["status"] == "OPEN"
 
 
+async def test_refund_excludes_payment_from_arqueo(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="owner@resto.com")
+    h = _auth(tokens)
+    await http.post(
+        "/api/v1/cashier/session/open", json={"opening_float_amount": 10000}, headers=h
+    )
+    product_id = (
+        await http.post(
+            "/api/v1/products",
+            json={"name": "Lomo", "price_amount": 1000000, "category": None},
+            headers=h,
+        )
+    ).json()["product_id"]
+    table_id = (
+        await http.post("/api/v1/tables", json={"number": 1, "name": None}, headers=h)
+    ).json()["table_id"]
+    order_id = (
+        await http.post("/api/v1/orders", json={"table_id": table_id}, headers=h)
+    ).json()["order_id"]
+    await http.post(
+        f"/api/v1/orders/{order_id}/items",
+        json={"product_id": product_id, "quantity": 1},
+        headers=h,
+    )
+    payment_id = (
+        await http.post(
+            f"/api/v1/orders/{order_id}/payments",
+            json={"method": "CASH", "amount": 30000},
+            headers=h,
+        )
+    ).json()["id"]
+
+    # Before the refund: CASH expected = float(10000) + 30000 = 40000.
+    before = await http.get("/api/v1/cashier/session/current", headers=h)
+    cash_before = next(
+        ln for ln in before.json()["lines"] if ln["method"] == "CASH"
+    )["expected"]
+    assert cash_before == 40000
+
+    # Refund the payment → it no longer counts in the arqueo.
+    refunded = await http.post(f"/api/v1/payments/{payment_id}/refund", headers=h)
+    assert refunded.status_code == 200, refunded.text
+    assert refunded.json()["status"] == "REFUNDED"
+
+    after = await http.get("/api/v1/cashier/session/current", headers=h)
+    cash_after = next(ln for ln in after.json()["lines"] if ln["method"] == "CASH")["expected"]
+    assert cash_after == 10000  # only the float remains
+
+    # Refunding twice is rejected.
+    again = await http.post(f"/api/v1/payments/{payment_id}/refund", headers=h)
+    assert again.status_code == 409
+    assert again.json()["code"] == "payment_not_refundable"
+
+
 async def test_cannot_open_two_sessions_at_once(client):
     http, fake_email = client
     tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="owner@resto.com")

@@ -31,7 +31,7 @@ import {
   useSetItemQuantity,
   useTransferOrder,
 } from "@/hooks/use-orders"
-import { useOrderPayments, useRegisterPayment } from "@/hooks/use-payments"
+import { useOrderPayments, useRefundPayment, useRegisterPayment } from "@/hooks/use-payments"
 import { useProducts } from "@/hooks/use-products"
 import { useTables } from "@/hooks/use-tables"
 import {
@@ -44,7 +44,7 @@ import { presetAmounts, sumLineItems } from "@/lib/cobro"
 import { newId } from "@/lib/ids"
 import { formatMoney } from "@/lib/money"
 import { bumpUsage } from "@/lib/product-usage"
-import { printTicket, ticketHtml } from "@/lib/ticket"
+import { printTicket, receiptHtml, ticketHtml } from "@/lib/ticket"
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: "CASH", label: "Efectivo" },
@@ -115,6 +115,8 @@ export function OrderPage() {
   // when it's OPEN. Only a PAID/CANCELLED order is closed to new items.
   const canAddRound = canEdit && !isPaid && data.status !== "CANCELLED"
   const pendingCount = data.items.filter((it) => it.status === "PENDING").length
+  const tableNumber = tables.data?.find((t) => t.id === data.table_id)?.number
+  const tableLabel = tableNumber != null ? `Mesa ${tableNumber}` : "Comanda"
 
   const handleAdd = (product: ProductDTO, quantity: number) => {
     bumpUsage(product.id) // learn favorites for the grid ranking
@@ -147,15 +149,13 @@ export function OrderPage() {
   }
 
   const printComanda = () => {
-    const number = tables.data?.find((t) => t.id === data.table_id)?.number
-    const label = number != null ? `Mesa ${number}` : "Comanda"
     const printedAt = new Date().toLocaleString("es-AR", {
       day: "2-digit",
       month: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
     })
-    printTicket(ticketHtml(data, label, printedAt))
+    printTicket(ticketHtml(data, tableLabel, printedAt))
   }
 
   return (
@@ -274,7 +274,11 @@ export function OrderPage() {
       {canAddRound ? <TableMoveSection order={data} /> : null}
 
       {canCharge && data.status !== "CANCELLED" ? (
-        <CobroSection order={data} onPendingOnline={() => setAwaitingOnline(true)} />
+        <CobroSection
+          order={data}
+          tableLabel={tableLabel}
+          onPendingOnline={() => setAwaitingOnline(true)}
+        />
       ) : null}
 
       {canInvoice && data.status === "PAID" ? <FacturaSection order={data} /> : null}
@@ -503,13 +507,16 @@ function FacturaSection({ order }: { order: OrderDTO }) {
 
 function CobroSection({
   order,
+  tableLabel,
   onPendingOnline,
 }: {
   order: OrderDTO
+  tableLabel: string
   onPendingOnline: () => void
 }) {
   const payments = useOrderPayments(order.id)
   const registerPayment = useRegisterPayment(order.id)
+  const refundPayment = useRefundPayment(order.id)
   const [method, setMethod] = useState<PaymentMethod>("CASH")
   const [amount, setAmount] = useState("")
   const [splitMode, setSplitMode] = useState(false)
@@ -569,16 +576,51 @@ function CobroSection({
     )
   }
 
+  const doRefund = (paymentId: string) => {
+    refundPayment.mutate(paymentId, {
+      onSuccess: () => toast.success("Pago anulado."),
+      onError: (error) =>
+        toast.error(isApiError(error) ? error.message : "No pudimos anular el pago."),
+    })
+  }
+
+  const printReceipt = () => {
+    const printedAt = new Date().toLocaleString("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+    const paid = list
+      .filter((p) => p.direction === "INFLOW" && p.status === "CONFIRMED")
+      .map((p) => ({
+        label: PAYMENT_METHODS.find((m) => m.value === p.method)?.label ?? p.method,
+        amount: p.amount,
+      }))
+    printTicket(receiptHtml(order, tableLabel, printedAt, paid))
+  }
+
+  const hasConfirmed = list.some(
+    (p) => p.direction === "INFLOW" && p.status === "CONFIRMED"
+  )
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Cobrar</span>
-          {isPaid ? (
-            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-              Pagada
-            </span>
-          ) : null}
+          <span className="flex items-center gap-2">
+            {hasConfirmed ? (
+              <Button variant="outline" size="sm" onClick={printReceipt}>
+                Recibo
+              </Button>
+            ) : null}
+            {isPaid ? (
+              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                Pagada
+              </span>
+            ) : null}
+          </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -595,11 +637,28 @@ function CobroSection({
                     className={
                       p.status === "CONFIRMED"
                         ? "text-xs text-emerald-600"
-                        : "text-xs text-amber-600"
+                        : p.status === "REFUNDED"
+                          ? "text-xs text-muted-foreground line-through"
+                          : "text-xs text-amber-600"
                     }
                   >
-                    {p.status === "CONFIRMED" ? "confirmado" : "pendiente"}
+                    {p.status === "CONFIRMED"
+                      ? "confirmado"
+                      : p.status === "REFUNDED"
+                        ? "anulado"
+                        : "pendiente"}
                   </span>
+                  {p.direction === "INFLOW" && p.status === "CONFIRMED" ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-destructive"
+                      disabled={refundPayment.isPending}
+                      onClick={() => doRefund(p.id)}
+                    >
+                      Anular
+                    </Button>
+                  ) : null}
                 </span>
               </li>
             ))}

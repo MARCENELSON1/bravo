@@ -24,6 +24,11 @@ export class PaymentsApi {
     return this.http.request<PaymentDTO[]>("GET", `/orders/${orderId}/payments`, { auth: true })
   }
 
+  // Anular/reembolsar un cobro confirmado (money-only → pasa a REFUNDED).
+  refund(paymentId: string): Promise<PaymentDTO> {
+    return this.http.request<PaymentDTO>("POST", `/payments/${paymentId}/refund`, { auth: true })
+  }
+
   registerExpense(body: RegisterExpenseBody): Promise<PaymentDTO> {
     return this.http.request<PaymentDTO>("POST", "/expenses", { body, auth: true })
   }

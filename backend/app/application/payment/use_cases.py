@@ -9,7 +9,11 @@ from app.domain.order.exceptions import OrderNotFound
 from app.domain.order.repository import OrderRepository
 from app.domain.order.value_objects import OrderStatus
 from app.domain.payment.entities import Payment
-from app.domain.payment.exceptions import InvalidPaymentAmount, InvalidWebhookSignature
+from app.domain.payment.exceptions import (
+    InvalidPaymentAmount,
+    InvalidWebhookSignature,
+    PaymentNotFound,
+)
 from app.domain.payment.ports import (
     PaymentCredentialsResolver,
     PaymentGateway,
@@ -155,6 +159,25 @@ class ListOrderPayments:
     async def execute(self, *, tenant_id: str, order_id: str) -> list[Payment]:
         self._tenant_context.set(tenant_id)
         return await self._payments.list_by_order(tenant_id, order_id)
+
+
+class RefundPayment:
+    """Anular/reembolsar un cobro confirmado (money-only). El pago pasa a REFUNDED
+    y deja de contar en el arqueo; la proyección de venta no se toca (deshacer la
+    venta es el flujo de reabrir, aparte)."""
+
+    def __init__(self, payments: PaymentRepository, tenant_context: TenantContext) -> None:
+        self._payments = payments
+        self._tenant_context = tenant_context
+
+    async def execute(self, *, tenant_id: str, payment_id: str) -> Payment:
+        self._tenant_context.set(tenant_id)
+        payment = await self._payments.get_by_id(tenant_id, payment_id)
+        if payment is None:
+            raise PaymentNotFound()
+        payment.refund()
+        await self._payments.save(payment)
+        return payment
 
 
 class ListExpenses:

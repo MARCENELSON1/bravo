@@ -13,6 +13,11 @@ class InvalidPaymentAmount(DomainError):
     message = "El monto del pago debe ser mayor a cero."
 
 
+class PaymentNotRefundable(DomainError):
+    code = "payment_not_refundable"
+    message = "Solo se puede reembolsar un pago confirmado."
+
+
 class InvalidWebhookSignature(DomainError):
     code = "invalid_webhook_signature"
     message = "La firma de la notificación no es válida."
