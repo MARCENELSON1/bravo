@@ -156,6 +156,27 @@ class Order:
             raise InvalidOrderTransition()
         self.status = OrderStatus.CANCELLED
 
+    def transfer_to(self, table_id: str) -> None:
+        """Move this order to another table (e.g. the party changed seats)."""
+        if self.status in (OrderStatus.PAID, OrderStatus.CANCELLED):
+            raise InvalidOrderTransition()
+        self.table_id = table_id
+
+    def merge_from(self, other: Order) -> None:
+        """Absorb another order's items into this one and close the source, so two
+        tables that joined are billed together. Item state (status/station/timing)
+        is preserved on each moved item."""
+        if self.status in (OrderStatus.PAID, OrderStatus.CANCELLED):
+            raise InvalidOrderTransition()
+        if other.status in (OrderStatus.PAID, OrderStatus.CANCELLED):
+            raise InvalidOrderTransition()
+        if other.currency != self.currency:
+            raise CurrencyMismatch()
+        self.items.extend(other.items)
+        other.items = []
+        other.status = OrderStatus.CANCELLED  # source merged away → frees its table
+        self._recompute_status()
+
     def mark_paid(self) -> None:
         if self.status in (OrderStatus.CANCELLED, OrderStatus.PAID):
             raise InvalidOrderTransition()

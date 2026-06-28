@@ -80,6 +80,30 @@ describe("OrdersApi", () => {
     expect(options).toMatchObject({ auth: true })
   })
 
+  it("transfers an order to another table", async () => {
+    const request = vi.fn().mockResolvedValue({})
+    const api = new OrdersApi({ request } as unknown as HttpClient)
+
+    await api.transfer("o1", "tbl-3")
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("POST")
+    expect(path).toBe("/orders/o1/transfer")
+    expect(options).toMatchObject({ body: { table_id: "tbl-3" }, auth: true })
+  })
+
+  it("merges a source order into this one", async () => {
+    const request = vi.fn().mockResolvedValue({})
+    const api = new OrdersApi({ request } as unknown as HttpClient)
+
+    await api.merge("o1", "o2")
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("POST")
+    expect(path).toBe("/orders/o1/merge")
+    expect(options).toMatchObject({ body: { source_order_id: "o2" }, auth: true })
+  })
+
   it("hits the KDS endpoint", async () => {
     const request = vi.fn().mockResolvedValue([])
     const api = new OrdersApi({ request } as unknown as HttpClient)

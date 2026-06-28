@@ -200,3 +200,46 @@ def test_station_is_snapshotted_on_item() -> None:
     coffee = _item(500, 1, station=Station.BAR)
     order.add_item(coffee)
     assert order.items[0].station is Station.BAR
+
+
+def test_transfer_to_changes_table() -> None:
+    order = _order()
+    order.add_item(_item())
+    order.transfer_to("tb2")
+    assert order.table_id == "tb2"
+
+
+def test_cannot_transfer_paid_order() -> None:
+    order = _order()
+    order.add_item(_item())
+    order.mark_paid()
+    with pytest.raises(InvalidOrderTransition):
+        order.transfer_to("tb2")
+
+
+def test_merge_moves_items_and_closes_source() -> None:
+    dst = _order()
+    dst.add_item(_item(1000, 1))
+    src = _order()
+    src.table_id = "tb2"
+    src.add_item(_item(500, 2))
+    src.march(_NOW)  # source items already in service
+
+    dst.merge_from(src)
+
+    assert len(dst.items) == 2
+    assert dst.total().amount == 2000  # 1000 + 2x500
+    assert src.items == []
+    assert src.status is OrderStatus.CANCELLED
+    # The moved item kept its in-service status.
+    assert any(it.status is ItemStatus.SENT for it in dst.items)
+
+
+def test_cannot_merge_into_paid_destination() -> None:
+    dst = _order()
+    dst.add_item(_item())
+    dst.mark_paid()
+    src = _order()
+    src.add_item(_item())
+    with pytest.raises(InvalidOrderTransition):
+        dst.merge_from(src)

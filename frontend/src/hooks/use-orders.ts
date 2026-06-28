@@ -147,6 +147,30 @@ export function useSetItemQuantity(orderId: string) {
   })
 }
 
+export function useTransferOrder(orderId: string) {
+  const { ordersApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (tableId: string) => ordersApi.transfer(orderId, tableId),
+    onSuccess: (order) => {
+      void queryClient.invalidateQueries({ queryKey: ["order", order.id] })
+      void queryClient.invalidateQueries({ queryKey: ["floor"] })
+    },
+  })
+}
+
+export function useMergeOrders(orderId: string) {
+  const { ordersApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (sourceOrderId: string) => ordersApi.merge(orderId, sourceOrderId),
+    onSuccess: (order) => {
+      void queryClient.invalidateQueries({ queryKey: ["order", order.id] })
+      void queryClient.invalidateQueries({ queryKey: ["floor"] })
+    },
+  })
+}
+
 export function useSendOrder() {
   const { ordersApi } = useServices()
   const queryClient = useQueryClient()
