@@ -2,11 +2,19 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+from app.application.analytics.ports import SalesProjector
 from app.application.clock import utcnow
+from app.application.inventory.ports import InventoryConsumer
 from app.application.order.dtos import BatchOrderItemInput, CreateOrderResult
 from app.domain.identity.ports import TenantContext
+from app.domain.invoice.repository import InvoiceRepository
+from app.domain.invoice.value_objects import InvoiceStatus
 from app.domain.order.entities import Order, OrderItem
-from app.domain.order.exceptions import InvalidOrderTransition, OrderNotFound
+from app.domain.order.exceptions import (
+    InvalidOrderTransition,
+    OrderHasAuthorizedInvoice,
+    OrderNotFound,
+)
 from app.domain.order.repository import OrderRepository
 from app.domain.order.value_objects import ItemStatus, OrderStatus, Station
 from app.domain.product.exceptions import InactiveProduct, ProductNotFound
@@ -415,6 +423,51 @@ class MergeOrders:
         for event in _kds_changed(destination, stations):
             await self._event_bus.publish(event)
         return destination
+
+
+class ReopenOrder:
+    """Re-open a PAID order so the cashier can correct it, reversing the sale's
+    side-effects. Blocked when the comanda already has an AFIP-authorized
+    comprobante (a CAE can't be silently undone — that needs a nota de crédito).
+
+    The reversals run before the state flips and are each idempotent (drop the
+    sale_facts, credit the consumed stock back, drop the SALE movements), so a
+    retry — or the re-pay that follows — re-runs them cleanly. Money already
+    collected (the payments) is left untouched: refunding is the cashier's
+    separate call (anular/reembolsar)."""
+
+    def __init__(
+        self,
+        orders: OrderRepository,
+        invoices: InvoiceRepository,
+        inventory: InventoryConsumer,
+        sales: SalesProjector,
+        tenant_context: TenantContext,
+        event_bus: EventBus,
+    ) -> None:
+        self._orders = orders
+        self._invoices = invoices
+        self._inventory = inventory
+        self._sales = sales
+        self._tenant_context = tenant_context
+        self._event_bus = event_bus
+
+    async def execute(self, *, tenant_id: str, order_id: str) -> Order:
+        self._tenant_context.set(tenant_id)
+        order = await self._orders.get_by_id(tenant_id, order_id)
+        if order is None:
+            raise OrderNotFound()
+        if order.status is not OrderStatus.PAID:
+            return order  # idempotent no-op: only a PAID order reopens
+        invoice = await self._invoices.get_by_order(tenant_id, order_id)
+        if invoice is not None and invoice.status is InvoiceStatus.AUTHORIZED:
+            raise OrderHasAuthorizedInvoice()
+        await self._inventory.reverse_for_order(tenant_id, order_id)
+        await self._sales.reverse_order(tenant_id, order_id)
+        order.reopen()
+        await self._orders.save(order)
+        await self._event_bus.publish(_floor_changed(order))  # table re-occupied
+        return order
 
 
 class ListOrders:

@@ -47,6 +47,7 @@ from app.domain.order.exceptions import (
     InvalidOrderTransition,
     ItemNotFound,
     ItemNotPending,
+    OrderHasAuthorizedInvoice,
     OrderNotFound,
 )
 from app.domain.payment.exceptions import (
@@ -119,6 +120,7 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (ItemNotFound, 404),
     (ItemNotPending, 409),
     (InvalidItemTransition, 409),
+    (OrderHasAuthorizedInvoice, 409),
     (InvalidItemQuantity, 422),
     (UnsupportedCurrency, 422),
     (CurrencyMismatch, 422),

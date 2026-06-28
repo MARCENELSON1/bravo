@@ -14,6 +14,7 @@ from app.application.order.use_cases import (
     ListOrders,
     MergeOrders,
     RemoveOrderItem,
+    ReopenOrder,
     SendOrder,
     SetItemQuantity,
     TransferOrder,
@@ -41,6 +42,7 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 _FLOOR_ROLES = (Role.WAITER, Role.MANAGER, Role.OWNER)
 _KITCHEN_ROLES = (Role.KITCHEN, Role.BAR, Role.MANAGER, Role.OWNER)
 _MANAGER_ROLES = (Role.MANAGER, Role.OWNER)
+_CASHIER_ROLES = (Role.CASHIER, Role.MANAGER, Role.OWNER)
 _ITEM_ACTIONS = ("preparing", "ready", "served", "recall")
 
 
@@ -276,6 +278,18 @@ async def transfer_order(
     order = await use_case.execute(
         tenant_id=identity.tenant_id, order_id=order_id, table_id=body.table_id
     )
+    return order_to_response(order)
+
+
+@router.post("/{order_id}/reopen", response_model=OrderResponse)
+@inject
+async def reopen_order(
+    order_id: str,
+    identity: AccessClaims = Depends(require_roles(*_CASHIER_ROLES)),
+    use_case: ReopenOrder = Depends(Provide[Container.reopen_order]),
+) -> OrderResponse:
+    """Reabrir una comanda ya pagada (revierte venta/stock; bloquea si hay CAE)."""
+    order = await use_case.execute(tenant_id=identity.tenant_id, order_id=order_id)
     return order_to_response(order)
 
 

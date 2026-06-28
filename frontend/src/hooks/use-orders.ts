@@ -171,6 +171,22 @@ export function useMergeOrders(orderId: string) {
   })
 }
 
+// Reabrir una comanda pagada (revierte venta/stock). Refresca la comanda, sus
+// pagos, el plano y la caja (el arqueo cambia si después se anula un cobro).
+export function useReopenOrder(orderId: string) {
+  const { ordersApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => ordersApi.reopen(orderId),
+    onSuccess: (order) => {
+      void queryClient.invalidateQueries({ queryKey: ["order", order.id] })
+      void queryClient.invalidateQueries({ queryKey: ["order-payments", order.id] })
+      void queryClient.invalidateQueries({ queryKey: ["floor"] })
+      void queryClient.invalidateQueries({ queryKey: ["cash-session"] })
+    },
+  })
+}
+
 export function useSendOrder() {
   const { ordersApi } = useServices()
   const queryClient = useQueryClient()

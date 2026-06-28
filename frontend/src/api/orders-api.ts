@@ -91,6 +91,12 @@ export class OrdersApi {
     })
   }
 
+  // Reabrir una comanda pagada: revierte venta/stock; el backend bloquea si ya
+  // tiene un comprobante fiscal autorizado.
+  reopen(id: string): Promise<OrderDTO> {
+    return this.http.request<OrderDTO>("POST", `/orders/${id}/reopen`, { auth: true })
+  }
+
   advance(id: string, action: OrderAction): Promise<OrderDTO> {
     return this.http.request<OrderDTO>("POST", `/orders/${id}/${action}`, { auth: true })
   }

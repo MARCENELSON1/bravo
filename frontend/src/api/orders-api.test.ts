@@ -104,6 +104,18 @@ describe("OrdersApi", () => {
     expect(options).toMatchObject({ body: { source_order_id: "o2" }, auth: true })
   })
 
+  it("reopens a paid order", async () => {
+    const request = vi.fn().mockResolvedValue({ id: "o1", status: "OPEN" })
+    const api = new OrdersApi({ request } as unknown as HttpClient)
+
+    await api.reopen("o1")
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("POST")
+    expect(path).toBe("/orders/o1/reopen")
+    expect(options).toMatchObject({ auth: true })
+  })
+
   it("hits the KDS endpoint", async () => {
     const request = vi.fn().mockResolvedValue([])
     const api = new OrdersApi({ request } as unknown as HttpClient)

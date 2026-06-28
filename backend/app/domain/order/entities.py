@@ -182,6 +182,16 @@ class Order:
             raise InvalidOrderTransition()
         self.status = OrderStatus.PAID
 
+    def reopen(self) -> None:
+        """Re-open a settled order so a cashier can correct it (the inverse of
+        ``mark_paid``). Only a PAID order reopens; the status is then re-derived
+        from its items. The money/projection side-effects (refund, sale_facts,
+        stock) are reversed by the caller — the entity only flips the state."""
+        if self.status is not OrderStatus.PAID:
+            raise InvalidOrderTransition()
+        self.status = OrderStatus.SERVED  # leave the terminal state so recompute runs
+        self._recompute_status()
+
     def total(self) -> Money:
         total = Money.zero(self.currency)
         for item in self.items:

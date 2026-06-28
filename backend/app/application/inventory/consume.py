@@ -83,3 +83,30 @@ class ConsumeRecipesForOrder(InventoryConsumer):
             ingredient.apply(movement)
             await self._movements.add(movement)
             await self._ingredients.save(ingredient)
+
+    async def reverse_for_order(self, tenant_id: str, order_id: str) -> None:
+        """Add the order's consumed quantities back to stock and drop its SALE
+        movements, so a reopen returns inventory to its pre-sale level. Idempotent:
+        with no SALE movement for the order it's a no-op, and once reversed a
+        re-pay re-consumes from scratch (the idempotency guard resets)."""
+        self._tenant_context.set(tenant_id)
+        movements = await self._movements.list_sales_for_order(tenant_id, order_id)
+        for movement in movements:
+            ingredient = await self._ingredients.get_by_id(tenant_id, movement.ingredient_id)
+            if ingredient is None:
+                continue  # ingredient deleted after the sale — nothing to credit back
+            # Mirror the OUT with an in-memory IN to undo it; the restore movement
+            # itself is not persisted (deleting the SALE rows below resets the
+            # idempotency guard so the re-pay consumes again).
+            restore = StockMovement(
+                id=str(uuid4()),
+                tenant_id=tenant_id,
+                ingredient_id=movement.ingredient_id,
+                direction=MovementDirection.IN,
+                reason=MovementReason.SALE,
+                qty=movement.qty,
+                order_id=order_id,
+            )
+            ingredient.apply(restore)
+            await self._ingredients.save(ingredient)
+        await self._movements.delete_sales_for_order(tenant_id, order_id)

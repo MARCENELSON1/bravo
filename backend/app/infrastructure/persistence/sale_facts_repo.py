@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.application.analytics.facts import SaleFact
 from app.application.analytics.ports import SaleFactsRepository
@@ -77,3 +77,13 @@ class SqlAlchemySaleFactsRepository(SaleFactsRepository):
             )
             rows = (await session.execute(stmt)).scalars().all()
             return [_to_domain(row) for row in rows]
+
+    async def delete_for_order(self, tenant_id: str, order_id: str) -> None:
+        """Remove the order's facts on a reopen — the inverse of ``add_many``."""
+        async with self._session_factory() as session:
+            await session.execute(
+                delete(SaleFactORM).where(
+                    SaleFactORM.tenant_id == tenant_id,
+                    SaleFactORM.order_id == order_id,
+                )
+            )
