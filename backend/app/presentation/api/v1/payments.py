@@ -3,7 +3,11 @@ from __future__ import annotations
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, status
 
-from app.application.payment.use_cases import ListOrderPayments, RegisterPayment
+from app.application.payment.use_cases import (
+    ListOrderPayments,
+    RefundPayment,
+    RegisterPayment,
+)
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
 from app.domain.payment.entities import Payment
@@ -63,3 +67,14 @@ async def list_order_payments(
 ) -> list[PaymentResponse]:
     payments = await use_case.execute(tenant_id=identity.tenant_id, order_id=order_id)
     return [payment_to_response(p) for p in payments]
+
+
+@router.post("/payments/{payment_id}/refund", response_model=PaymentResponse)
+@inject
+async def refund_payment(
+    payment_id: str,
+    identity: AccessClaims = Depends(require_roles(*_COBRO_ROLES)),
+    use_case: RefundPayment = Depends(Provide[Container.refund_payment]),
+) -> PaymentResponse:
+    payment = await use_case.execute(tenant_id=identity.tenant_id, payment_id=payment_id)
+    return payment_to_response(payment)

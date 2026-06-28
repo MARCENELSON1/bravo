@@ -79,6 +79,7 @@ from app.application.payment.use_cases import (
     ConfirmGatewayPayment,
     ListExpenses,
     ListOrderPayments,
+    RefundPayment,
     RegisterExpense,
     RegisterPayment,
 )
@@ -597,6 +598,9 @@ class Container(containers.DeclarativeContainer):
     )
     list_order_payments = providers.Factory(
         ListOrderPayments, payments=payment_repository, tenant_context=tenant_context
+    )
+    refund_payment = providers.Factory(
+        RefundPayment, payments=payment_repository, tenant_context=tenant_context
     )
     list_expenses = providers.Factory(
         ListExpenses, payments=payment_repository, tenant_context=tenant_context
