@@ -7,6 +7,7 @@ from app.application.order.dtos import BatchOrderItemInput
 from app.application.order.use_cases import (
     AddOrderItem,
     AddOrderItemsBatch,
+    AdvanceItem,
     AdvanceOrder,
     CreateOrder,
     GetOrder,
@@ -34,8 +35,9 @@ from app.presentation.schemas.orders import (
 router = APIRouter(prefix="/orders", tags=["orders"])
 
 _FLOOR_ROLES = (Role.WAITER, Role.MANAGER, Role.OWNER)
-_KITCHEN_ROLES = (Role.KITCHEN, Role.MANAGER, Role.OWNER)
+_KITCHEN_ROLES = (Role.KITCHEN, Role.BAR, Role.MANAGER, Role.OWNER)
 _MANAGER_ROLES = (Role.MANAGER, Role.OWNER)
+_ITEM_ACTIONS = ("preparing", "ready", "served", "recall")
 
 
 def order_to_response(order: Order) -> OrderResponse:
@@ -53,6 +55,9 @@ def order_to_response(order: Order) -> OrderResponse:
                 unit_price_amount=item.unit_price.amount,
                 quantity=item.quantity,
                 note=item.note,
+                status=item.status.value,
+                station=item.station.value,
+                sent_at=item.sent_at.isoformat() if item.sent_at else None,
             )
             for item in order.items
         ],
@@ -170,6 +175,25 @@ async def set_item_quantity(
         order_id=order_id,
         item_id=item_id,
         quantity=body.quantity,
+    )
+    return order_to_response(order)
+
+
+@router.post("/{order_id}/items/{item_id}/{action}", response_model=OrderResponse)
+@inject
+async def advance_item(
+    order_id: str,
+    item_id: str,
+    action: str,
+    identity: AccessClaims = Depends(require_roles(*_KITCHEN_ROLES)),
+    use_case: AdvanceItem = Depends(Provide[Container.advance_item]),
+) -> OrderResponse:
+    """Bump (or recall) a single item: preparing/ready/served/recall."""
+    order = await use_case.execute(
+        tenant_id=identity.tenant_id,
+        order_id=order_id,
+        item_id=item_id,
+        action=action,
     )
     return order_to_response(order)
 

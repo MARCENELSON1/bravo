@@ -16,6 +16,7 @@ class Role(StrEnum):
     MANAGER = "MANAGER"
     WAITER = "WAITER"
     KITCHEN = "KITCHEN"
+    BAR = "BAR"
     CASHIER = "CASHIER"
 
 

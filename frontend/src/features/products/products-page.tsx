@@ -49,6 +49,8 @@ const schema = z.object({
     .min(1, "Ingresá un precio")
     .refine((v) => Number(v) > 0, "El precio debe ser mayor a 0"),
   category: z.string().max(60).optional(),
+  // Where it's prepared — routes the item to the kitchen or the bar board.
+  station: z.enum(["KITCHEN", "BAR"]),
 })
 
 type ProductValues = z.infer<typeof schema>
@@ -213,7 +215,7 @@ export function ProductsPage() {
     formState: { errors },
   } = useForm<ProductValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", price: "", category: "" },
+    defaultValues: { name: "", price: "", category: "", station: "KITCHEN" },
   })
 
   const onSubmit = handleSubmit((values) => {
@@ -223,6 +225,7 @@ export function ProductsPage() {
         name: values.name,
         priceAmount: Math.round(Number(values.price) * 100),
         category: values.category ? values.category : null,
+        station: values.station,
       },
       {
         onSuccess: () => {
@@ -277,6 +280,17 @@ export function ProductsPage() {
                   <FieldLabel htmlFor="category">Categoría (opcional)</FieldLabel>
                   <Input id="category" {...register("category")} />
                 </Field>
+                <Field>
+                  <FieldLabel htmlFor="station">Estación</FieldLabel>
+                  <select
+                    id="station"
+                    className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
+                    {...register("station")}
+                  >
+                    <option value="KITCHEN">Cocina</option>
+                    <option value="BAR">Barra</option>
+                  </select>
+                </Field>
               </FieldGroup>
               <FormError message={serverError} />
               <Button type="submit" disabled={createProduct.isPending}>
@@ -298,6 +312,7 @@ export function ProductsPage() {
               <TableRow>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Categoría</TableHead>
+                <TableHead>Estación</TableHead>
                 <TableHead className="text-right">Precio</TableHead>
                 <TableHead className="text-right">Estado</TableHead>
                 <TableHead className="text-right">Receta</TableHead>
@@ -308,6 +323,9 @@ export function ProductsPage() {
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell className="text-muted-foreground">{p.category ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {p.station === "BAR" ? "Barra" : "Cocina"}
+                  </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {formatMoney(p.price_amount, p.currency)}
                   </TableCell>

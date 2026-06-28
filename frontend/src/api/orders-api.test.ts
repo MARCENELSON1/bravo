@@ -68,6 +68,18 @@ describe("OrdersApi", () => {
     expect(options).toMatchObject({ body: { quantity: 3 }, auth: true })
   })
 
+  it("advances a single item along its lifecycle", async () => {
+    const request = vi.fn().mockResolvedValue({})
+    const api = new OrdersApi({ request } as unknown as HttpClient)
+
+    await api.advanceItem("o1", "it-7", "ready")
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("POST")
+    expect(path).toBe("/orders/o1/items/it-7/ready")
+    expect(options).toMatchObject({ auth: true })
+  })
+
   it("hits the KDS endpoint", async () => {
     const request = vi.fn().mockResolvedValue([])
     const api = new OrdersApi({ request } as unknown as HttpClient)
@@ -77,5 +89,16 @@ describe("OrdersApi", () => {
     const [method, path] = request.mock.calls[0]
     expect(method).toBe("GET")
     expect(path).toBe("/kds/orders")
+  })
+
+  it("filters the KDS by station when given one", async () => {
+    const request = vi.fn().mockResolvedValue([])
+    const api = new OrdersApi({ request } as unknown as HttpClient)
+
+    await api.kds("BAR")
+
+    const [method, path] = request.mock.calls[0]
+    expect(method).toBe("GET")
+    expect(path).toBe("/kds/orders?station=BAR")
   })
 })

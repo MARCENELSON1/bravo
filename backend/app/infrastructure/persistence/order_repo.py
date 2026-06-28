@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.order.entities import Order
 from app.domain.order.repository import OrderRepository
-from app.domain.order.value_objects import OrderStatus
+from app.domain.order.value_objects import ItemStatus, OrderStatus, Station
 from app.infrastructure.persistence.database import SessionFactory
 from app.infrastructure.persistence.mappers import (
     order_item_to_orm,
@@ -14,7 +14,8 @@ from app.infrastructure.persistence.mappers import (
 )
 from app.infrastructure.persistence.models import OrderItemORM, OrderORM
 
-_KDS_STATUSES = (OrderStatus.SENT.value, OrderStatus.PREPARING.value)
+# The KDS shows orders that have at least one item still being made.
+_KDS_ITEM_STATUSES = (ItemStatus.SENT.value, ItemStatus.PREPARING.value)
 _ACTIVE_STATUSES = (
     OrderStatus.OPEN.value,
     OrderStatus.SENT.value,
@@ -62,11 +63,21 @@ class SqlAlchemyOrderRepository(OrderRepository):
             rows = (await session.execute(stmt)).scalars().all()
             return [await self._load(session, row) for row in rows]
 
-    async def list_kds(self, tenant_id: str) -> list[Order]:
+    async def list_kds(
+        self, tenant_id: str, station: Station | None = None
+    ) -> list[Order]:
         async with self._session_factory() as session:
+            item_conds = [
+                OrderItemORM.order_id == OrderORM.id,
+                OrderItemORM.tenant_id == tenant_id,
+                OrderItemORM.status.in_(_KDS_ITEM_STATUSES),
+            ]
+            if station is not None:
+                item_conds.append(OrderItemORM.station == station.value)
+            has_active_item = select(OrderItemORM.id).where(*item_conds).exists()
             stmt = (
                 select(OrderORM)
-                .where(OrderORM.tenant_id == tenant_id, OrderORM.status.in_(_KDS_STATUSES))
+                .where(OrderORM.tenant_id == tenant_id, has_active_item)
                 .order_by(OrderORM.created_at.asc())
             )
             rows = (await session.execute(stmt)).scalars().all()

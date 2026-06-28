@@ -186,6 +186,7 @@ class ProductORM(Base):
     price_amount: Mapped[int] = mapped_column(BigInteger)
     price_currency: Mapped[str] = mapped_column(String(3))
     category: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    station: Mapped[str] = mapped_column(String(10), server_default="KITCHEN")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -223,6 +224,11 @@ class OrderItemORM(Base):
     unit_price_amount: Mapped[int] = mapped_column(BigInteger)
     quantity: Mapped[int] = mapped_column(Integer)
     note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Per-item kitchen lifecycle + routing (Fase 14): see ItemStatus / Station.
+    status: Mapped[str] = mapped_column(String(20), server_default="PENDING", index=True)
+    station: Mapped[str] = mapped_column(String(10), server_default="KITCHEN", index=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ready_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     position: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

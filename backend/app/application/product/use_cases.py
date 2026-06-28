@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from app.application.product.dtos import CreateProductResult
 from app.domain.identity.ports import TenantContext
+from app.domain.order.value_objects import Station
 from app.domain.product.entities import Product
 from app.domain.product.repository import ProductRepository
 from app.domain.shared.money import Money
@@ -25,7 +26,13 @@ class CreateProduct:
         self._tenant_context = tenant_context
 
     async def execute(
-        self, *, tenant_id: str, name: str, price_amount: int, category: str | None
+        self,
+        *,
+        tenant_id: str,
+        name: str,
+        price_amount: int,
+        category: str | None,
+        station: Station = Station.KITCHEN,
     ) -> CreateProductResult:
         self._tenant_context.set(tenant_id)
         tenant = await self._tenants.get_by_id(tenant_id)
@@ -37,6 +44,7 @@ class CreateProduct:
             name=name,
             price=Money(price_amount, tenant.currency),
             category=category,
+            station=station,
         )
         await self._products.add(product)
         return CreateProductResult(product_id=product.id)

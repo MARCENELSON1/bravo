@@ -9,6 +9,7 @@ const product = (id: string, name: string, extra: Partial<ProductDTO> = {}): Pro
   price_amount: 1000,
   currency: "ARS",
   category: null,
+  station: "KITCHEN",
   active: true,
   ...extra,
 })

@@ -10,6 +10,9 @@ const item = (id: string, price: number, qty: number): OrderItemDTO => ({
   unit_price_amount: price,
   quantity: qty,
   note: null,
+  status: "PENDING",
+  station: "KITCHEN",
+  sent_at: null,
 })
 
 describe("presetAmounts", () => {

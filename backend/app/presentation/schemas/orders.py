@@ -46,6 +46,11 @@ class OrderItemResponse(BaseModel):
     unit_price_amount: int
     quantity: int
     note: str | None
+    # Per-item kitchen lifecycle (Fase 14) — drives the per-station KDS board.
+    status: str
+    station: str
+    # ISO-8601; lets the KDS order items by how long they've been waiting.
+    sent_at: str | None = None
 
 
 class OrderResponse(BaseModel):

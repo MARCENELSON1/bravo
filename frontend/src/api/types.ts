@@ -1,9 +1,9 @@
 // DTOs mirror the backend contract exactly (English field names).
 
-export type Role = "OWNER" | "MANAGER" | "WAITER" | "KITCHEN" | "CASHIER"
+export type Role = "OWNER" | "MANAGER" | "WAITER" | "KITCHEN" | "BAR" | "CASHIER"
 
 // Roles an OWNER/MANAGER may grant via invitation (OWNER is never invitable).
-export const INVITABLE_ROLES: Role[] = ["MANAGER", "WAITER", "KITCHEN", "CASHIER"]
+export const INVITABLE_ROLES: Role[] = ["MANAGER", "WAITER", "KITCHEN", "BAR", "CASHIER"]
 
 export interface AccessTokenResponse {
   access_token: string

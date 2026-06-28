@@ -18,6 +18,7 @@ import { IntegrationsPage } from "@/features/integrations/integrations-page"
 import { StockPage } from "@/features/inventory/stock-page"
 import { SuppliersPage } from "@/features/inventory/suppliers-page"
 import { InvoicesPage } from "@/features/invoices/invoices-page"
+import { BarPage } from "@/features/kds/bar-page"
 import { KdsPage } from "@/features/kds/kds-page"
 import { OrderPage } from "@/features/orders/order-page"
 import { ProductsPage } from "@/features/products/products-page"
@@ -55,6 +56,10 @@ export const router = createBrowserRouter([
           {
             element: <RequireRole allow={["KITCHEN", "MANAGER", "OWNER"]} />,
             children: [{ path: "/app/kds", element: <KdsPage /> }],
+          },
+          {
+            element: <RequireRole allow={["BAR", "MANAGER", "OWNER"]} />,
+            children: [{ path: "/app/bar", element: <BarPage /> }],
           },
           {
             element: <RequireRole allow={["OWNER", "MANAGER"]} />,
