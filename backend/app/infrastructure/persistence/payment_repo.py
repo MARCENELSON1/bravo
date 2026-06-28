@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from datetime import datetime
+
+from sqlalchemy import func, select
 
 from app.domain.payment.entities import Payment
 from app.domain.payment.repository import PaymentRepository
-from app.domain.payment.value_objects import PaymentDirection
+from app.domain.payment.value_objects import PaymentDirection, PaymentStatus
 from app.infrastructure.persistence.database import SessionFactory
 from app.infrastructure.persistence.mappers import payment_to_domain, payment_to_orm
 from app.infrastructure.persistence.models import PaymentORM
@@ -41,6 +43,24 @@ class SqlAlchemyPaymentRepository(PaymentRepository):
             )
             rows = (await session.execute(stmt)).scalars().all()
             return [payment_to_domain(row) for row in rows]
+
+    async def confirmed_inflows_by_method(
+        self, tenant_id: str, since: datetime, until: datetime
+    ) -> dict[str, int]:
+        async with self._session_factory() as session:
+            stmt = (
+                select(PaymentORM.method, func.coalesce(func.sum(PaymentORM.amount), 0))
+                .where(
+                    PaymentORM.tenant_id == tenant_id,
+                    PaymentORM.direction == PaymentDirection.INFLOW.value,
+                    PaymentORM.status == PaymentStatus.CONFIRMED.value,
+                    PaymentORM.created_at >= since,
+                    PaymentORM.created_at < until,
+                )
+                .group_by(PaymentORM.method)
+            )
+            rows = (await session.execute(stmt)).all()
+            return {method: int(total) for method, total in rows}
 
     async def list_expenses(self, tenant_id: str) -> list[Payment]:
         async with self._session_factory() as session:

@@ -6,6 +6,7 @@ import { RequireRole } from "@/auth/require-role"
 import { RoleLanding } from "@/auth/role-landing"
 import { AdvisorPage } from "@/features/advisor/advisor-page"
 import { AnalyticsPage } from "@/features/analytics/analytics-page"
+import { CashSessionPage } from "@/features/cashier/cash-session-page"
 import { CopilotPage } from "@/features/copilot/copilot-page"
 import { FloorPage } from "@/features/floor/floor-page"
 import { AcceptInvitationPage } from "@/features/identity/accept-invitation-page"
@@ -60,6 +61,10 @@ export const router = createBrowserRouter([
           {
             element: <RequireRole allow={["BAR", "MANAGER", "OWNER"]} />,
             children: [{ path: "/app/bar", element: <BarPage /> }],
+          },
+          {
+            element: <RequireRole allow={["CASHIER", "MANAGER", "OWNER"]} />,
+            children: [{ path: "/app/caja", element: <CashSessionPage /> }],
           },
           {
             element: <RequireRole allow={["OWNER", "MANAGER"]} />,

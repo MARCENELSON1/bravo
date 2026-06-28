@@ -3,6 +3,7 @@ import {
   BarChart3,
   Bot,
   Boxes,
+  Calculator,
   CalendarClock,
   ChefHat,
   Clock,
@@ -77,6 +78,7 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       { label: "Cocina", to: "/app/kds", icon: ChefHat, roles: ["KITCHEN", "MANAGER", "OWNER"] },
       { label: "Barra", to: "/app/bar", icon: Coffee, roles: ["BAR", "MANAGER", "OWNER"] },
+      { label: "Caja", to: "/app/caja", icon: Calculator, roles: ["CASHIER", "MANAGER", "OWNER"] },
       {
         label: "Reservas",
         to: "/app/reservations",

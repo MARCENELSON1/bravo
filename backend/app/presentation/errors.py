@@ -11,6 +11,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.domain.advisor.exceptions import InvalidAdvisorSettings
+from app.domain.cashier.exceptions import (
+    CashSessionAlreadyClosed,
+    CashSessionAlreadyOpen,
+    CashSessionNotFound,
+)
 from app.domain.copilot.exceptions import (
     CopilotDisabled,
     CopilotQueryError,
@@ -151,6 +156,10 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (InvalidPartySize, 422),
     # Fase 9 — asesor financiero
     (InvalidAdvisorSettings, 422),
+    # Fase 14 — caja / arqueo Z
+    (CashSessionNotFound, 404),
+    (CashSessionAlreadyOpen, 409),
+    (CashSessionAlreadyClosed, 409),
     # Fase 11 — copiloto IA
     (CopilotDisabled, 409),
     (UnsafeQuery, 422),
