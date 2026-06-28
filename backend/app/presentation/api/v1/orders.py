@@ -12,9 +12,11 @@ from app.application.order.use_cases import (
     CreateOrder,
     GetOrder,
     ListOrders,
+    MergeOrders,
     RemoveOrderItem,
     SendOrder,
     SetItemQuantity,
+    TransferOrder,
 )
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
@@ -27,9 +29,11 @@ from app.presentation.schemas.orders import (
     AddOrderItemsBatchRequest,
     CreateOrderRequest,
     CreateOrderResponse,
+    MergeOrdersRequest,
     OrderItemResponse,
     OrderResponse,
     SetItemQuantityRequest,
+    TransferOrderRequest,
 )
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -257,5 +261,36 @@ async def cancel_order(
 ) -> OrderResponse:
     order = await use_case.execute(
         tenant_id=identity.tenant_id, order_id=order_id, action="cancel"
+    )
+    return order_to_response(order)
+
+
+@router.post("/{order_id}/transfer", response_model=OrderResponse)
+@inject
+async def transfer_order(
+    order_id: str,
+    body: TransferOrderRequest,
+    identity: AccessClaims = Depends(require_roles(*_FLOOR_ROLES)),
+    use_case: TransferOrder = Depends(Provide[Container.transfer_order]),
+) -> OrderResponse:
+    order = await use_case.execute(
+        tenant_id=identity.tenant_id, order_id=order_id, table_id=body.table_id
+    )
+    return order_to_response(order)
+
+
+@router.post("/{order_id}/merge", response_model=OrderResponse)
+@inject
+async def merge_orders(
+    order_id: str,
+    body: MergeOrdersRequest,
+    identity: AccessClaims = Depends(require_roles(*_FLOOR_ROLES)),
+    use_case: MergeOrders = Depends(Provide[Container.merge_orders]),
+) -> OrderResponse:
+    """Absorb ``source_order_id`` into this order (this one is the destination)."""
+    order = await use_case.execute(
+        tenant_id=identity.tenant_id,
+        destination_order_id=order_id,
+        source_order_id=body.source_order_id,
     )
     return order_to_response(order)

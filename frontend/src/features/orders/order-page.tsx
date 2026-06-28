@@ -20,13 +20,16 @@ import {
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { ProductGrid } from "@/features/orders/product-grid"
+import { useFloor } from "@/hooks/use-floor"
 import { useIssueInvoice, useOrderInvoice } from "@/hooks/use-invoices"
 import {
   useAddItem,
+  useMergeOrders,
   useOrder,
   useRemoveItem,
   useSendOrder,
   useSetItemQuantity,
+  useTransferOrder,
 } from "@/hooks/use-orders"
 import { useOrderPayments, useRegisterPayment } from "@/hooks/use-payments"
 import { useProducts } from "@/hooks/use-products"
@@ -246,12 +249,108 @@ export function OrderPage() {
         </Button>
       ) : null}
 
+      {canAddRound ? <TableMoveSection order={data} /> : null}
+
       {canCharge && data.status !== "CANCELLED" ? (
         <CobroSection order={data} onPendingOnline={() => setAwaitingOnline(true)} />
       ) : null}
 
       {canInvoice && data.status === "PAID" ? <FacturaSection order={data} /> : null}
     </div>
+  )
+}
+
+// Move this order to a free table, or join another occupied table into it. Both
+// read the live floor so the cashier/waiter picks a real target.
+function TableMoveSection({ order }: { order: OrderDTO }) {
+  const floor = useFloor()
+  const transfer = useTransferOrder(order.id)
+  const merge = useMergeOrders(order.id)
+  const [moveTo, setMoveTo] = useState("")
+  const [mergeFrom, setMergeFrom] = useState("")
+
+  const tables = floor.data ?? []
+  const freeTables = tables.filter((t) => !t.active_order && t.id !== order.table_id)
+  const otherOccupied = tables.filter(
+    (t) => t.active_order && t.active_order.id !== order.id
+  )
+
+  const doMove = () => {
+    if (!moveTo) return
+    transfer.mutate(moveTo, {
+      onSuccess: () => {
+        toast.success("Mesa cambiada.")
+        setMoveTo("")
+      },
+      onError: (error) =>
+        toast.error(isApiError(error) ? error.message : "No pudimos mover la mesa."),
+    })
+  }
+
+  const doMerge = () => {
+    if (!mergeFrom) return
+    merge.mutate(mergeFrom, {
+      onSuccess: () => {
+        toast.success("Mesas unidas.")
+        setMergeFrom("")
+      },
+      onError: (error) =>
+        toast.error(isApiError(error) ? error.message : "No pudimos unir las mesas."),
+    })
+  }
+
+  const selectClass =
+    "h-9 flex-1 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Mesa</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <select
+            className={selectClass}
+            value={moveTo}
+            onChange={(e) => setMoveTo(e.target.value)}
+            aria-label="Mover a mesa libre"
+          >
+            <option value="">Mover a mesa…</option>
+            {freeTables.map((t) => (
+              <option key={t.id} value={t.id}>
+                Mesa {t.number}
+                {t.name ? ` (${t.name})` : ""}
+              </option>
+            ))}
+          </select>
+          <Button variant="outline" onClick={doMove} disabled={!moveTo || transfer.isPending}>
+            Mover
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            className={selectClass}
+            value={mergeFrom}
+            onChange={(e) => setMergeFrom(e.target.value)}
+            aria-label="Unir otra mesa acá"
+          >
+            <option value="">Unir otra mesa acá…</option>
+            {otherOccupied.map((t) => (
+              <option key={t.id} value={t.active_order!.id}>
+                Mesa {t.number}
+                {t.name ? ` (${t.name})` : ""}
+              </option>
+            ))}
+          </select>
+          <Button variant="outline" onClick={doMerge} disabled={!mergeFrom || merge.isPending}>
+            Unir
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Unir trae los ítems de la otra mesa a esta y libera la de origen.
+        </p>
+      </CardContent>
+    </Card>
   )
 }
 

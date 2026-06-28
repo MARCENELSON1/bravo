@@ -75,6 +75,22 @@ export class OrdersApi {
     return this.http.request<OrderDTO>("POST", `/orders/${id}/send`, { auth: true })
   }
 
+  // Move this order to another table.
+  transfer(id: string, tableId: string): Promise<OrderDTO> {
+    return this.http.request<OrderDTO>("POST", `/orders/${id}/transfer`, {
+      body: { table_id: tableId },
+      auth: true,
+    })
+  }
+
+  // Absorb another order into this one (this order is the destination).
+  merge(id: string, sourceOrderId: string): Promise<OrderDTO> {
+    return this.http.request<OrderDTO>("POST", `/orders/${id}/merge`, {
+      body: { source_order_id: sourceOrderId },
+      auth: true,
+    })
+  }
+
   advance(id: string, action: OrderAction): Promise<OrderDTO> {
     return this.http.request<OrderDTO>("POST", `/orders/${id}/${action}`, { auth: true })
   }

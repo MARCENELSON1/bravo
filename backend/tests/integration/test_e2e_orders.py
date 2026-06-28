@@ -244,6 +244,61 @@ async def test_cannot_edit_item_after_sent(client):
     assert res.json()["code"] == "item_not_pending"
 
 
+async def test_transfer_and_merge_tables(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="owner@resto.com")
+    h = _auth(tokens)
+    product_id = (
+        await http.post(
+            "/api/v1/products",
+            json={"name": "Lomo", "price_amount": 200000, "category": None},
+            headers=h,
+        )
+    ).json()["product_id"]
+
+    async def make_table(number: int) -> str:
+        res = await http.post("/api/v1/tables", json={"number": number, "name": None}, headers=h)
+        return res.json()["table_id"]
+
+    async def open_with_item(table_id: str, qty: int) -> str:
+        order_id = (
+            await http.post("/api/v1/orders", json={"table_id": table_id}, headers=h)
+        ).json()["order_id"]
+        await http.post(
+            f"/api/v1/orders/{order_id}/items",
+            json={"product_id": product_id, "quantity": qty},
+            headers=h,
+        )
+        return order_id
+
+    t1, t2, t3 = await make_table(1), await make_table(2), await make_table(3)
+    o1 = await open_with_item(t1, 1)
+    o2 = await open_with_item(t2, 2)
+
+    # Transfer o1 from table 1 to the free table 3.
+    moved = await http.post(
+        f"/api/v1/orders/{o1}/transfer", json={"table_id": t3}, headers=h
+    )
+    assert moved.status_code == 200, moved.text
+    assert moved.json()["table_id"] == t3
+
+    # Merge o2 (source) into o1 (destination): o1 ends with both items, o2 is gone.
+    merged = await http.post(
+        f"/api/v1/orders/{o1}/merge", json={"source_order_id": o2}, headers=h
+    )
+    assert merged.status_code == 200, merged.text
+    assert len(merged.json()["items"]) == 2
+    assert merged.json()["total_amount"] == 600000  # 1x200000 + 2x200000
+
+    # The source order is closed (CANCELLED) and table 2 is free again.
+    src = await http.get(f"/api/v1/orders/{o2}", headers=h)
+    assert src.json()["status"] == "CANCELLED"
+    floor = await http.get("/api/v1/floor", headers=h)
+    by_table = {f["id"]: f for f in floor.json()}
+    assert by_table[t2]["active_order"] is None
+    assert by_table[t3]["active_order"]["id"] == o1
+
+
 async def test_tenant_isolation(client):
     http, fake_email = client
     t1 = await _onboard_verify_login(http, fake_email, slug="uno", email="a@uno.com")

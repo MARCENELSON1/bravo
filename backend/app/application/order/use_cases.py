@@ -244,10 +244,14 @@ def _kds_changed(order: Order, stations: set[Station]) -> list[DomainEvent]:
 
 def _floor_changed(order: Order) -> DomainEvent:
     """A 'refetch the floor' signal — a table's occupancy/total changed."""
+    return _floor_changed_table(order.tenant_id, order.table_id)
+
+
+def _floor_changed_table(tenant_id: str, table_id: str) -> DomainEvent:
     return DomainEvent(
         type="floor.changed",
-        tenant_id=order.tenant_id,
-        payload={"table_id": order.table_id},
+        tenant_id=tenant_id,
+        payload={"table_id": table_id},
     )
 
 
@@ -341,6 +345,76 @@ class AdvanceOrder:
             await self._event_bus.publish(event)
         await self._event_bus.publish(_floor_changed(order))
         return order
+
+
+class TransferOrder:
+    """Move an active order to another (existing) table."""
+
+    def __init__(
+        self,
+        orders: OrderRepository,
+        tables: TableRepository,
+        tenant_context: TenantContext,
+        event_bus: EventBus,
+    ) -> None:
+        self._orders = orders
+        self._tables = tables
+        self._tenant_context = tenant_context
+        self._event_bus = event_bus
+
+    async def execute(self, *, tenant_id: str, order_id: str, table_id: str) -> Order:
+        self._tenant_context.set(tenant_id)
+        order = await self._orders.get_by_id(tenant_id, order_id)
+        if order is None:
+            raise OrderNotFound()
+        if table_id == order.table_id:
+            return order  # already there — no-op
+        if await self._tables.get_by_id(tenant_id, table_id) is None:
+            raise TableNotFound()
+        old_table_id = order.table_id
+        order.transfer_to(table_id)
+        await self._orders.save(order)
+        await self._event_bus.publish(_floor_changed_table(tenant_id, old_table_id))
+        await self._event_bus.publish(_floor_changed(order))  # new table
+        return order
+
+
+class MergeOrders:
+    """Merge a source order into a destination order (two tables joined). The
+    source is emptied and closed; the destination is billed for everything."""
+
+    def __init__(
+        self,
+        orders: OrderRepository,
+        tenant_context: TenantContext,
+        event_bus: EventBus,
+    ) -> None:
+        self._orders = orders
+        self._tenant_context = tenant_context
+        self._event_bus = event_bus
+
+    async def execute(
+        self, *, tenant_id: str, destination_order_id: str, source_order_id: str
+    ) -> Order:
+        self._tenant_context.set(tenant_id)
+        if destination_order_id == source_order_id:
+            raise InvalidOrderTransition()
+        destination = await self._orders.get_by_id(tenant_id, destination_order_id)
+        source = await self._orders.get_by_id(tenant_id, source_order_id)
+        if destination is None or source is None:
+            raise OrderNotFound()
+        source_table_id = source.table_id
+        stations = {it.station for it in source.items}
+        destination.merge_from(source)
+        # Save the emptied source first so its item rows are gone before the same
+        # items are re-inserted under the destination (shared ids, no collision).
+        await self._orders.save(source)
+        await self._orders.save(destination)
+        await self._event_bus.publish(_floor_changed_table(tenant_id, source_table_id))
+        await self._event_bus.publish(_floor_changed(destination))
+        for event in _kds_changed(destination, stations):
+            await self._event_bus.publish(event)
+        return destination
 
 
 class ListOrders:

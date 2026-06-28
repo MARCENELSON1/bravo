@@ -35,6 +35,15 @@ class SetItemQuantityRequest(BaseModel):
     quantity: int = Field(ge=1)
 
 
+class TransferOrderRequest(BaseModel):
+    table_id: str
+
+
+class MergeOrdersRequest(BaseModel):
+    # The order to absorb into this one (this order is the destination).
+    source_order_id: str
+
+
 class CreateOrderResponse(BaseModel):
     order_id: str
 
