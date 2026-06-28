@@ -89,3 +89,9 @@ class ProjectOrderSales(SalesProjector):
                 )
             )
         await self._sale_facts.add_many(facts)
+
+    async def reverse_order(self, tenant_id: str, order_id: str) -> None:
+        """Drop the order's sale_facts so a reopen leaves no revenue behind.
+        Idempotent (delete-if-present); the facts re-project on the next PAID."""
+        self._tenant_context.set(tenant_id)
+        await self._sale_facts.delete_for_order(tenant_id, order_id)

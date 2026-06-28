@@ -27,6 +27,7 @@ import {
   useMergeOrders,
   useOrder,
   useRemoveItem,
+  useReopenOrder,
   useSendOrder,
   useSetItemQuantity,
   useTransferOrder,
@@ -517,6 +518,7 @@ function CobroSection({
   const payments = useOrderPayments(order.id)
   const registerPayment = useRegisterPayment(order.id)
   const refundPayment = useRefundPayment(order.id)
+  const reopenOrder = useReopenOrder(order.id)
   const [method, setMethod] = useState<PaymentMethod>("CASH")
   const [amount, setAmount] = useState("")
   const [splitMode, setSplitMode] = useState(false)
@@ -584,6 +586,17 @@ function CobroSection({
     })
   }
 
+  const doReopen = () => {
+    if (!window.confirm("¿Reabrir la comanda? Se revierte la venta y el stock consumido.")) {
+      return
+    }
+    reopenOrder.mutate(undefined, {
+      onSuccess: () => toast.success("Comanda reabierta. Acordate de anular los cobros."),
+      onError: (error) =>
+        toast.error(isApiError(error) ? error.message : "No pudimos reabrir la comanda."),
+    })
+  }
+
   const printReceipt = () => {
     const printedAt = new Date().toLocaleString("es-AR", {
       day: "2-digit",
@@ -613,6 +626,16 @@ function CobroSection({
             {hasConfirmed ? (
               <Button variant="outline" size="sm" onClick={printReceipt}>
                 Recibo
+              </Button>
+            ) : null}
+            {isPaid ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={doReopen}
+                disabled={reopenOrder.isPending}
+              >
+                Reabrir
               </Button>
             ) : null}
             {isPaid ? (

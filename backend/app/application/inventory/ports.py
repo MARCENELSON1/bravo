@@ -13,3 +13,9 @@ class InventoryConsumer(ABC):
 
     @abstractmethod
     async def consume_for_order(self, tenant_id: str, order_id: str) -> None: ...
+
+    @abstractmethod
+    async def reverse_for_order(self, tenant_id: str, order_id: str) -> None:
+        """Inverse of ``consume_for_order``: add the consumed quantities back to
+        stock (a reopen). Must be idempotent so a re-pay re-consumes cleanly."""
+        ...

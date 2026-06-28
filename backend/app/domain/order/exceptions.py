@@ -36,3 +36,11 @@ class ItemNotPending(DomainError):
 class InvalidItemTransition(DomainError):
     code = "invalid_item_transition"
     message = "El ítem no puede cambiar a ese estado."
+
+
+class OrderHasAuthorizedInvoice(DomainError):
+    code = "order_has_authorized_invoice"
+    message = (
+        "No se puede reabrir: la comanda ya tiene un comprobante fiscal autorizado. "
+        "Emití una nota de crédito."
+    )

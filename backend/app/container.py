@@ -65,6 +65,7 @@ from app.application.order.use_cases import (
     ListOrders,
     MergeOrders,
     RemoveOrderItem,
+    ReopenOrder,
     SendOrder,
     SetItemQuantity,
     TransferOrder,
@@ -652,6 +653,17 @@ class Container(containers.DeclarativeContainer):
     )
     get_order_invoice = providers.Factory(
         GetOrderInvoice, invoices=invoice_repository, tenant_context=tenant_context
+    )
+    # Reopen lives here (after the invoice repo): it reverses the sale's
+    # side-effects and guards on an authorized comprobante.
+    reopen_order = providers.Factory(
+        ReopenOrder,
+        orders=order_repository,
+        invoices=invoice_repository,
+        inventory=consume_recipes_for_order,
+        sales=project_order_sales,
+        tenant_context=tenant_context,
+        event_bus=event_bus,
     )
     connect_afip = providers.Factory(
         ConnectAfip,

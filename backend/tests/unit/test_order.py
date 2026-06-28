@@ -243,3 +243,44 @@ def test_cannot_merge_into_paid_destination() -> None:
     src.add_item(_item())
     with pytest.raises(InvalidOrderTransition):
         dst.merge_from(src)
+
+
+def test_reopen_paid_order_derives_status_from_items() -> None:
+    order = _order()
+    order.add_item(_item(1000, 1))
+    order.march(_NOW)
+    order.start_preparing()
+    order.mark_ready(_NOW)
+    order.mark_served()
+    order.mark_paid()
+    assert order.status is OrderStatus.PAID
+
+    order.reopen()
+    # No longer terminal: the status is re-derived from the (served) items.
+    assert order.status is OrderStatus.SERVED
+    # Reopened orders accept new items again.
+    order.add_item(_item(500, 1))
+    assert order.total().amount == 1500
+
+
+def test_reopen_lets_a_fresh_order_take_pending_items() -> None:
+    order = _order()
+    order.add_item(_item(1000, 1))  # never marched → PENDING
+    order.mark_paid()
+    order.reopen()
+    assert order.status is OrderStatus.OPEN  # all items PENDING
+
+
+def test_cannot_reopen_a_non_paid_order() -> None:
+    order = _order()
+    order.add_item(_item())
+    with pytest.raises(InvalidOrderTransition):
+        order.reopen()
+
+
+def test_cannot_reopen_a_cancelled_order() -> None:
+    order = _order()
+    order.add_item(_item())
+    order.cancel()
+    with pytest.raises(InvalidOrderTransition):
+        order.reopen()

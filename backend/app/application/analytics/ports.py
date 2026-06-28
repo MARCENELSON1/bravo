@@ -15,6 +15,12 @@ class SalesProjector(ABC):
     @abstractmethod
     async def project_order(self, tenant_id: str, order_id: str) -> None: ...
 
+    @abstractmethod
+    async def reverse_order(self, tenant_id: str, order_id: str) -> None:
+        """Inverse of ``project_order``: drop the order's facts (a reopen). Must
+        be idempotent so the facts re-project cleanly on a re-pay."""
+        ...
+
 
 class SaleFactsRepository(ABC):
     """Persistence port for the canonical sale_facts. Scoped by ``tenant_id``."""
@@ -27,3 +33,6 @@ class SaleFactsRepository(ABC):
 
     @abstractmethod
     async def list_for_order(self, tenant_id: str, order_id: str) -> list[SaleFact]: ...
+
+    @abstractmethod
+    async def delete_for_order(self, tenant_id: str, order_id: str) -> None: ...

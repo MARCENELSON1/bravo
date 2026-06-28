@@ -177,3 +177,25 @@ async def test_reissue_after_reject_keeps_single_invoice(rejecting_afip_client) 
     assert got.status_code == 200
     assert got.json()["status"] == "AUTHORIZED"
     assert len((await http.get("/api/v1/invoices", headers=h)).json()) == 1
+
+
+async def test_cannot_reopen_an_order_with_authorized_invoice(afip_client) -> None:
+    """An AFIP CAE can't be silently undone — reopen is blocked once the comanda
+    has an authorized comprobante (the cashier must issue a nota de crédito)."""
+    http, fake_email = afip_client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    await http.put("/api/v1/integrations/afip", json=_AFIP, headers=h)
+    order_id = await _paid_order(http, h)
+    inv = await http.post(
+        f"/api/v1/orders/{order_id}/invoice",
+        json={"doc_type": "CONSUMIDOR_FINAL", "doc_number": "0"},
+        headers=h,
+    )
+    assert inv.json()["status"] == "AUTHORIZED"
+
+    blocked = await http.post(f"/api/v1/orders/{order_id}/reopen", headers=h)
+    assert blocked.status_code == 409
+    assert blocked.json()["code"] == "order_has_authorized_invoice"
+    # The order stays PAID — nothing reversed.
+    assert (await http.get(f"/api/v1/orders/{order_id}", headers=h)).json()["status"] == "PAID"

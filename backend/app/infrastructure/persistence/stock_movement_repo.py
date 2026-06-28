@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.domain.inventory.entities import StockMovement
 from app.domain.inventory.repository import StockMovementRepository
@@ -37,6 +37,31 @@ class SqlAlchemyStockMovementRepository(StockMovementRepository):
                 .limit(1)
             )
             return (await session.execute(stmt)).first() is not None
+
+    async def list_sales_for_order(
+        self, tenant_id: str, order_id: str
+    ) -> list[StockMovement]:
+        """The SALE movements an order discounted — what a reopen credits back."""
+        async with self._session_factory() as session:
+            stmt = select(StockMovementORM).where(
+                StockMovementORM.tenant_id == tenant_id,
+                StockMovementORM.order_id == order_id,
+                StockMovementORM.reason == MovementReason.SALE.value,
+            )
+            rows = (await session.execute(stmt)).scalars().all()
+            return [stock_movement_to_domain(row) for row in rows]
+
+    async def delete_sales_for_order(self, tenant_id: str, order_id: str) -> None:
+        """Drop an order's SALE movements on a reopen, so the idempotency guard
+        resets and a re-pay re-consumes from scratch."""
+        async with self._session_factory() as session:
+            await session.execute(
+                delete(StockMovementORM).where(
+                    StockMovementORM.tenant_id == tenant_id,
+                    StockMovementORM.order_id == order_id,
+                    StockMovementORM.reason == MovementReason.SALE.value,
+                )
+            )
 
     async def list_for_ingredient(
         self, tenant_id: str, ingredient_id: str

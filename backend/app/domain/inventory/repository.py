@@ -66,6 +66,14 @@ class StockMovementRepository(ABC):
     async def exists_for_order(self, tenant_id: str, order_id: str) -> bool: ...
 
     @abstractmethod
+    async def list_sales_for_order(
+        self, tenant_id: str, order_id: str
+    ) -> list[StockMovement]: ...
+
+    @abstractmethod
+    async def delete_sales_for_order(self, tenant_id: str, order_id: str) -> None: ...
+
+    @abstractmethod
     async def list_for_ingredient(
         self, tenant_id: str, ingredient_id: str
     ) -> list[StockMovement]: ...
