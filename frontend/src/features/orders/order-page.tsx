@@ -33,6 +33,7 @@ import {
 } from "@/hooks/use-orders"
 import { useOrderPayments, useRegisterPayment } from "@/hooks/use-payments"
 import { useProducts } from "@/hooks/use-products"
+import { useTables } from "@/hooks/use-tables"
 import {
   DOC_TYPE_LABELS,
   INVOICE_STATUS_LABELS,
@@ -43,6 +44,7 @@ import { presetAmounts, sumLineItems } from "@/lib/cobro"
 import { newId } from "@/lib/ids"
 import { formatMoney } from "@/lib/money"
 import { bumpUsage } from "@/lib/product-usage"
+import { printTicket, ticketHtml } from "@/lib/ticket"
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: "CASH", label: "Efectivo" },
@@ -74,6 +76,7 @@ export function OrderPage() {
       : false,
   })
   const products = useProducts()
+  const tables = useTables()
   const addItem = useAddItem(orderId)
   const removeItem = useRemoveItem(orderId)
   const setItemQty = useSetItemQuantity(orderId)
@@ -143,6 +146,18 @@ export function OrderPage() {
     })
   }
 
+  const printComanda = () => {
+    const number = tables.data?.find((t) => t.id === data.table_id)?.number
+    const label = number != null ? `Mesa ${number}` : "Comanda"
+    const printedAt = new Date().toLocaleString("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+    printTicket(ticketHtml(data, label, printedAt))
+  }
+
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4 px-6 py-8">
       <header className="flex items-center justify-between gap-2">
@@ -170,7 +185,14 @@ export function OrderPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Ítems · {data.status}</CardTitle>
+          <CardTitle className="flex items-center justify-between gap-2">
+            <span>Ítems · {data.status}</span>
+            {canEdit && data.items.length > 0 ? (
+              <Button variant="outline" size="sm" onClick={printComanda}>
+                Imprimir
+              </Button>
+            ) : null}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {data.items.length > 0 ? (
