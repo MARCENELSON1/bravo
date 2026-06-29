@@ -44,3 +44,25 @@ class CashReportResponse(BaseModel):
     counted_total: int | None
     difference_total: int | None
     tips_total: int
+
+
+class TipsReportRowResponse(BaseModel):
+    waiter_id: str
+    waiter_email: str
+    earned: int  # propina ganada (minor units)
+    paid: int  # ya liquidado al mozo
+    pending: int  # earned - paid
+
+
+class TipsReportResponse(BaseModel):
+    currency: str
+    rows: list[TipsReportRowResponse]
+    earned_total: int
+    paid_total: int
+    pending_total: int
+
+
+class TipPayoutRequest(BaseModel):
+    waiter_id: str
+    amount: int = Field(ge=1)  # minor units
+    method: PaymentMethod = PaymentMethod.CASH

@@ -8,6 +8,7 @@ import {
   ChefHat,
   Clock,
   Coffee,
+  Coins,
   FileText,
   LayoutDashboard,
   Package,
@@ -79,6 +80,12 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Cocina", to: "/app/kds", icon: ChefHat, roles: ["KITCHEN", "MANAGER", "OWNER"] },
       { label: "Barra", to: "/app/bar", icon: Coffee, roles: ["BAR", "MANAGER", "OWNER"] },
       { label: "Caja", to: "/app/caja", icon: Calculator, roles: ["CASHIER", "MANAGER", "OWNER"] },
+      {
+        label: "Propinas",
+        to: "/app/propinas",
+        icon: Coins,
+        roles: ["CASHIER", "MANAGER", "OWNER"],
+      },
       {
         label: "Reservas",
         to: "/app/reservations",
