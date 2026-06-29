@@ -49,6 +49,7 @@ def _report_response(report: CashReport) -> CashReportResponse:
             CashReportLineResponse(
                 method=line.method,
                 expected=line.expected,
+                tips=line.tips,
                 counted=line.counted,
                 difference=line.difference,
             )
@@ -57,6 +58,7 @@ def _report_response(report: CashReport) -> CashReportResponse:
         expected_total=report.expected_total,
         counted_total=report.counted_total,
         difference_total=report.difference_total,
+        tips_total=report.tips_total,
     )
 
 

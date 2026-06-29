@@ -110,4 +110,11 @@ describe("receiptHtml", () => {
     expect(html).toContain("TOTAL")
     expect(html).toContain("Efectivo")
   })
+
+  it("shows a tip line when there's a tip, and omits it otherwise", () => {
+    const withTip = receiptHtml(order, "Mesa 5", "28/06 21:00", [], 5000)
+    expect(withTip).toContain("Propina")
+    const noTip = receiptHtml(order, "Mesa 5", "28/06 21:00", [])
+    expect(noTip).not.toContain("Propina")
+  })
 })

@@ -8,6 +8,7 @@ from app.domain.payment.value_objects import PaymentMethod
 class RegisterPaymentRequest(BaseModel):
     method: PaymentMethod
     amount: int = Field(ge=1)  # minor units
+    tip: int = Field(default=0, ge=0)  # propina encima de amount (minor units)
 
 
 class RegisterExpenseRequest(BaseModel):
@@ -24,6 +25,7 @@ class PaymentResponse(BaseModel):
     order_id: str | None
     method: str
     amount: int
+    tip_amount: int
     currency: str
     status: str
     category: str | None

@@ -168,6 +168,12 @@ function OpenSession({
           <span>Esperado total</span>
           <span>{formatMoney(report.expected_total, report.currency)}</span>
         </div>
+        {report.tips_total > 0 ? (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Propinas (incluidas; para repartir)</span>
+            <span>{formatMoney(report.tips_total, report.currency)}</span>
+          </div>
+        ) : null}
         <Button onClick={submit} disabled={close.isPending}>
           {close.isPending ? "Cerrando…" : "Cerrar caja"}
         </Button>
@@ -261,6 +267,12 @@ function ClosedArqueo({
             {signedMoney(report.difference_total ?? 0, report.currency)}
           </span>
         </div>
+        {report.tips_total > 0 ? (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Propinas (incluidas; para repartir)</span>
+            <span>{formatMoney(report.tips_total, report.currency)}</span>
+          </div>
+        ) : null}
         <Button variant="outline" onClick={onDone}>
           Listo
         </Button>

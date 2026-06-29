@@ -247,6 +247,9 @@ class PaymentORM(Base):
     )
     direction: Mapped[str] = mapped_column(String(10), index=True)
     amount: Mapped[int] = mapped_column(BigInteger)
+    # Propina cobrada encima del ``amount`` de la venta (0 si no hubo). No es
+    # ingreso del local: solo cuenta para el arqueo de caja.
+    tip_amount: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     currency: Mapped[str] = mapped_column(String(3))
     method: Mapped[str] = mapped_column(String(20))
     status: Mapped[str] = mapped_column(String(20), index=True)

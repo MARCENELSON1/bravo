@@ -19,23 +19,28 @@ from app.domain.tenant.exceptions import TenantNotFound
 from app.domain.tenant.repository import TenantRepository
 
 
-async def _expected_by_method(
+async def _arqueo_inputs(
     session: CashSession, payments: PaymentRepository
-) -> dict[str, int]:
-    """Sum of confirmed inflows per method during the session, with the opening
-    cash float added to CASH (it's physically in the drawer at count time)."""
+) -> tuple[dict[str, int], dict[str, int]]:
+    """``(expected_by_method, tips_by_method)`` for the session window.
+
+    ``expected`` is what the drawer/batch should hold per method: the confirmed
+    sale inflows + the propinas (a tip is collected money too) + the opening cash
+    float on CASH. ``tips`` is the propina component on its own (already inside
+    ``expected``) so the cashier can set it aside for the staff."""
     until = session.closed_at or utcnow()
-    expected = dict(
-        await payments.confirmed_inflows_by_method(
-            session.tenant_id, session.opened_at or until, until
-        )
-    )
+    since = session.opened_at or until
+    sales = await payments.confirmed_inflows_by_method(session.tenant_id, since, until)
+    tips = await payments.confirmed_tips_by_method(session.tenant_id, since, until)
+    expected = {m: sales.get(m, 0) + tips.get(m, 0) for m in set(sales) | set(tips)}
     cash = PaymentMethod.CASH.value
     expected[cash] = expected.get(cash, 0) + session.opening_float.amount
-    return expected
+    return expected, dict(tips)
 
 
-def _build_report(session: CashSession, expected: dict[str, int]) -> CashReport:
+def _build_report(
+    session: CashSession, expected: dict[str, int], tips: dict[str, int]
+) -> CashReport:
     counted = {c.method.value: c.counted.amount for c in session.counts}
     closed = session.status is CashSessionStatus.CLOSED
     methods = sorted(set(expected) | set(counted))
@@ -43,6 +48,7 @@ def _build_report(session: CashSession, expected: dict[str, int]) -> CashReport:
         CashReportLine(
             method=m,
             expected=expected.get(m, 0),
+            tips=tips.get(m, 0),
             counted=counted.get(m, 0) if closed else None,
             difference=(counted.get(m, 0) - expected.get(m, 0)) if closed else None,
         )
@@ -64,6 +70,7 @@ def _build_report(session: CashSession, expected: dict[str, int]) -> CashReport:
         expected_total=expected_total,
         counted_total=counted_total,
         difference_total=difference_total,
+        tips_total=sum(tips.values()),
     )
 
 
@@ -125,8 +132,8 @@ class GetCurrentCashReport:
         session = await self._cash.get_open(tenant_id)
         if session is None:
             return None
-        expected = await _expected_by_method(session, self._payments)
-        return _build_report(session, expected)
+        expected, tips = await _arqueo_inputs(session, self._payments)
+        return _build_report(session, expected, tips)
 
 
 class CloseCashSession:
@@ -156,7 +163,7 @@ class CloseCashSession:
         session = await self._cash.get_by_id(tenant_id, session_id)
         if session is None:
             raise CashSessionNotFound()
-        expected = await _expected_by_method(session, self._payments)
+        expected, tips = await _arqueo_inputs(session, self._payments)
         counts = [
             CashCount(
                 method=PaymentMethod(m),
@@ -167,4 +174,4 @@ class CloseCashSession:
         ]
         session.close(counts, utcnow(), closed_by, note)
         await self._cash.save(session)
-        return _build_report(session, expected)
+        return _build_report(session, expected, tips)

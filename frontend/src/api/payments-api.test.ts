@@ -16,6 +16,16 @@ describe("PaymentsApi", () => {
     expect(options).toMatchObject({ body: { method: "CASH", amount: 300000 }, auth: true })
   })
 
+  it("registers a cobro with a tip on top of the amount", async () => {
+    const request = vi.fn().mockResolvedValue({ id: "p1", status: "CONFIRMED" })
+    const api = new PaymentsApi({ request } as unknown as HttpClient)
+
+    await api.registerForOrder("o1", { method: "CASH", amount: 300000, tip: 5000 })
+
+    const [, , options] = request.mock.calls[0]
+    expect(options).toMatchObject({ body: { method: "CASH", amount: 300000, tip: 5000 } })
+  })
+
   it("registers an egreso against /expenses", async () => {
     const request = vi.fn().mockResolvedValue({ id: "e1", direction: "OUTFLOW" })
     const api = new PaymentsApi({ request } as unknown as HttpClient)

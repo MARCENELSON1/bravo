@@ -140,6 +140,55 @@ async def test_refund_excludes_payment_from_arqueo(client):
     assert again.json()["code"] == "payment_not_refundable"
 
 
+async def test_cash_tip_raises_expected_and_shows_in_arqueo(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="owner@resto.com")
+    h = _auth(tokens)
+    await http.post(
+        "/api/v1/cashier/session/open", json={"opening_float_amount": 10000}, headers=h
+    )
+    product_id = (
+        await http.post(
+            "/api/v1/products",
+            json={"name": "Lomo", "price_amount": 1000000, "category": None},
+            headers=h,
+        )
+    ).json()["product_id"]
+    table_id = (
+        await http.post("/api/v1/tables", json={"number": 1, "name": None}, headers=h)
+    ).json()["table_id"]
+    order_id = (
+        await http.post("/api/v1/orders", json={"table_id": table_id}, headers=h)
+    ).json()["order_id"]
+    await http.post(
+        f"/api/v1/orders/{order_id}/items",
+        json={"product_id": product_id, "quantity": 1},
+        headers=h,
+    )
+
+    # Cobro CASH 30000 + propina 5000.
+    paid = await http.post(
+        f"/api/v1/orders/{order_id}/payments",
+        json={"method": "CASH", "amount": 30000, "tip": 5000},
+        headers=h,
+    )
+    assert paid.status_code == 201, paid.text
+    assert paid.json()["tip_amount"] == 5000
+
+    # Arqueo: el efectivo esperado incluye fondo + venta + propina; la propina se
+    # ve aparte para repartir. La venta (amount) no cambia.
+    report = (await http.get("/api/v1/cashier/session/current", headers=h)).json()
+    cash = next(ln for ln in report["lines"] if ln["method"] == "CASH")
+    assert cash["expected"] == 10000 + 30000 + 5000
+    assert cash["tips"] == 5000
+    assert report["tips_total"] == 5000
+    assert report["expected_total"] == 45000
+
+    # La propina NO es ingreso: la venta proyectada queda en 30000.
+    revenue = (await http.get("/api/v1/analytics/revenue", headers=h)).json()
+    assert revenue["collected_amount"] == 30000
+
+
 async def test_cannot_open_two_sessions_at_once(client):
     http, fake_email = client
     tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="owner@resto.com")
