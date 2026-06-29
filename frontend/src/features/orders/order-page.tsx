@@ -521,6 +521,7 @@ function CobroSection({
   const reopenOrder = useReopenOrder(order.id)
   const [method, setMethod] = useState<PaymentMethod>("CASH")
   const [amount, setAmount] = useState("")
+  const [tip, setTip] = useState("")
   const [splitMode, setSplitMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
@@ -556,12 +557,18 @@ function CobroSection({
       toast.error("Ingresá un monto válido.")
       return
     }
+    const tipMinor = tip.trim() ? Math.round(Number(tip) * 100) : 0
+    if (!Number.isFinite(tipMinor) || tipMinor < 0) {
+      toast.error("La propina no es válida.")
+      return
+    }
     setCheckoutUrl(null)
     registerPayment.mutate(
-      { method, amount: minor },
+      { method, amount: minor, tip: tipMinor },
       {
         onSuccess: (payment) => {
           setAmount("")
+          setTip("")
           setSelected(new Set())
           setSplitMode(false)
           if (payment.status === "PENDING" && payment.checkout_url) {
@@ -604,13 +611,15 @@ function CobroSection({
       hour: "2-digit",
       minute: "2-digit",
     })
-    const paid = list
-      .filter((p) => p.direction === "INFLOW" && p.status === "CONFIRMED")
-      .map((p) => ({
-        label: PAYMENT_METHODS.find((m) => m.value === p.method)?.label ?? p.method,
-        amount: p.amount,
-      }))
-    printTicket(receiptHtml(order, tableLabel, printedAt, paid))
+    const confirmedInflows = list.filter(
+      (p) => p.direction === "INFLOW" && p.status === "CONFIRMED"
+    )
+    const paid = confirmedInflows.map((p) => ({
+      label: PAYMENT_METHODS.find((m) => m.value === p.method)?.label ?? p.method,
+      amount: p.amount,
+    }))
+    const tipTotal = confirmedInflows.reduce((sum, p) => sum + p.tip_amount, 0)
+    printTicket(receiptHtml(order, tableLabel, printedAt, paid, tipTotal))
   }
 
   const hasConfirmed = list.some(
@@ -763,6 +772,19 @@ function CobroSection({
                 ))}
               </div>
             )}
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Propina</span>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="0.00"
+                value={tip}
+                onChange={(e) => setTip(e.target.value)}
+                className="max-w-[8rem]"
+              />
+            </div>
 
             <Button
               onClick={cobrar}

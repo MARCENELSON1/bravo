@@ -7,10 +7,13 @@ from datetime import datetime
 @dataclass(frozen=True)
 class CashReportLine:
     """Arqueo line for one payment method (amounts in minor units). ``counted``
-    and ``difference`` are None while the session is still OPEN."""
+    and ``difference`` are None while the session is still OPEN. ``tips`` is the
+    propina component already included in ``expected`` (shown so it can be set
+    aside for the staff)."""
 
     method: str
     expected: int
+    tips: int
     counted: int | None
     difference: int | None
 
@@ -29,3 +32,4 @@ class CashReport:
     expected_total: int
     counted_total: int | None
     difference_total: int | None
+    tips_total: int

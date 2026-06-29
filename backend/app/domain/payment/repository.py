@@ -20,6 +20,14 @@ class PaymentRepository(ABC):
         (minor units). Feeds the arqueo Z 'esperado por medio'."""
 
     @abstractmethod
+    async def confirmed_tips_by_method(
+        self, tenant_id: str, since: datetime, until: datetime
+    ) -> dict[str, int]:
+        """Sum of CONFIRMED inflow tips grouped by method in ``[since, until)``
+        (minor units). Surfaced as the arqueo's 'propinas' and added to the
+        expected cash (a CASH tip is physically in the drawer)."""
+
+    @abstractmethod
     async def get_by_external_ref(self, tenant_id: str, external_ref: str) -> Payment | None: ...
 
     @abstractmethod

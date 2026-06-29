@@ -105,6 +105,7 @@ export interface PaymentDTO {
   order_id: string | null
   method: PaymentMethod
   amount: number // minor units (e.g. centavos)
+  tip_amount: number // propina cobrada encima del amount (minor units)
   currency: string
   status: PaymentStatus
   category: string | null
@@ -117,6 +118,7 @@ export interface PaymentDTO {
 export interface RegisterPaymentBody {
   method: PaymentMethod
   amount: number // minor units
+  tip?: number // propina encima del amount (minor units); 0 si no se manda
 }
 
 export interface RegisterExpenseBody {
@@ -149,6 +151,7 @@ export interface CashSessionDTO {
 export interface CashReportLineDTO {
   method: PaymentMethod
   expected: number // minor units
+  tips: number // propina incluida en expected (minor units)
   counted: number | null
   difference: number | null
 }
@@ -164,6 +167,7 @@ export interface CashReportDTO {
   expected_total: number
   counted_total: number | null
   difference_total: number | null
+  tips_total: number // total de propinas del turno (para repartir)
 }
 
 // --- Reporting ---

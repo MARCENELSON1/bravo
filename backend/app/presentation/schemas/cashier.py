@@ -27,6 +27,7 @@ class CashSessionResponse(BaseModel):
 class CashReportLineResponse(BaseModel):
     method: str
     expected: int
+    tips: int
     counted: int | None
     difference: int | None
 
@@ -42,3 +43,4 @@ class CashReportResponse(BaseModel):
     expected_total: int
     counted_total: int | None
     difference_total: int | None
+    tips_total: int

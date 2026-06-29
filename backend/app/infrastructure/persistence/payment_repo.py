@@ -62,6 +62,25 @@ class SqlAlchemyPaymentRepository(PaymentRepository):
             rows = (await session.execute(stmt)).all()
             return {method: int(total) for method, total in rows}
 
+    async def confirmed_tips_by_method(
+        self, tenant_id: str, since: datetime, until: datetime
+    ) -> dict[str, int]:
+        async with self._session_factory() as session:
+            stmt = (
+                select(PaymentORM.method, func.coalesce(func.sum(PaymentORM.tip_amount), 0))
+                .where(
+                    PaymentORM.tenant_id == tenant_id,
+                    PaymentORM.direction == PaymentDirection.INFLOW.value,
+                    PaymentORM.status == PaymentStatus.CONFIRMED.value,
+                    PaymentORM.tip_amount > 0,
+                    PaymentORM.created_at >= since,
+                    PaymentORM.created_at < until,
+                )
+                .group_by(PaymentORM.method)
+            )
+            rows = (await session.execute(stmt)).all()
+            return {method: int(total) for method, total in rows}
+
     async def list_expenses(self, tenant_id: str) -> list[Payment]:
         async with self._session_factory() as session:
             stmt = (

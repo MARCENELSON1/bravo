@@ -24,6 +24,9 @@ class Payment:
     method: PaymentMethod
     status: PaymentStatus = PaymentStatus.CONFIRMED
     order_id: str | None = None
+    # Propina cobrada encima del ``amount`` (minor units, misma moneda). No es
+    # ingreso del local: no entra en sale_facts, solo en el arqueo de caja.
+    tip_amount: int = 0
     category: str | None = None
     counterparty: str | None = None
     description: str | None = None

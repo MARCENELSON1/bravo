@@ -79,14 +79,16 @@ class RegisterPayment:
         self._sales = sales
 
     async def execute(
-        self, *, tenant_id: str, order_id: str, method: str, amount: int
+        self, *, tenant_id: str, order_id: str, method: str, amount: int, tip: int = 0
     ) -> Payment:
         self._tenant_context.set(tenant_id)
-        if amount <= 0:
+        if amount <= 0 or tip < 0:
             raise InvalidPaymentAmount()
         order = await self._orders.get_by_id(tenant_id, order_id)
         if order is None:
             raise OrderNotFound()
+        # The tip rides on top of the sale ``amount`` — it does NOT count toward
+        # covering the order total (settle only looks at ``amount``).
         payment = Payment(
             id=str(uuid4()),
             tenant_id=tenant_id,
@@ -95,6 +97,7 @@ class RegisterPayment:
             method=PaymentMethod(method),
             status=PaymentStatus.PENDING,
             order_id=order_id,
+            tip_amount=tip,
         )
         payment = await self._gateway.charge(payment=payment)
         await self._payments.add(payment)

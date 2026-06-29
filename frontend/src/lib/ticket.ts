@@ -63,7 +63,8 @@ export function receiptHtml(
   order: OrderDTO,
   tableLabel: string,
   printedAt: string,
-  payments: ReceiptPaymentLine[]
+  payments: ReceiptPaymentLine[],
+  tipAmount = 0
 ): string {
   const lines = order.items
     .map(
@@ -78,11 +79,17 @@ export function receiptHtml(
         `<div class="line">${escapeHtml(p.label)}<span class="amt">${formatMoney(p.amount, order.currency)}</span></div>`
     )
     .join("")
+  // La propina va aparte del total de la venta (no es ingreso del local).
+  const tip =
+    tipAmount > 0
+      ? `<div class="line">Propina<span class="amt">${formatMoney(tipAmount, order.currency)}</span></div>`
+      : ""
   return (
     `<div class="ticket"><div class="head">${escapeHtml(tableLabel)}</div>` +
     `<div class="meta">RECIBO NO FISCAL · ${escapeHtml(printedAt)}</div>` +
     `${lines}` +
     `<div class="station">TOTAL<span class="amt">${formatMoney(order.total_amount, order.currency)}</span></div>` +
+    `${tip}` +
     `${paid}` +
     `</div>`
   )
