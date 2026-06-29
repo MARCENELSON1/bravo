@@ -12,3 +12,13 @@ export function useFinanceOverview(query: FinanceQuery) {
     queryFn: () => financeApi.overview(query),
   })
 }
+
+// Drill-down de un producto. `enabled` para cargar solo cuando se expande la fila.
+export function useProductDetail(productId: string | null, query: FinanceQuery) {
+  const { financeApi } = useServices()
+  return useQuery({
+    queryKey: ["finance-product", productId, query.from ?? null, query.to ?? null],
+    queryFn: () => financeApi.productDetail(productId as string, query),
+    enabled: Boolean(productId),
+  })
+}

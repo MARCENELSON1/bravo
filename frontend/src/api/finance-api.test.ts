@@ -26,4 +26,17 @@ describe("FinanceApi", () => {
     expect(path).toContain("from=")
     expect(path).toContain("to=")
   })
+
+  it("drills down into a product's sale lines", async () => {
+    const request = vi.fn().mockResolvedValue({ lines: [] })
+    const api = new FinanceApi({ request } as unknown as HttpClient)
+
+    await api.productDetail("p1", { from: "2026-06-01T00:00:00Z" })
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("GET")
+    expect(path).toContain("/finance/products/p1")
+    expect(path).toContain("from=")
+    expect(options).toMatchObject({ auth: true })
+  })
 })

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from app.application.finance.use_cases import _build_finance_kpis
+from datetime import UTC, datetime
+
+from app.application.finance.use_cases import _build_finance_kpis, _project_month_end
 from app.domain.advisor.kpis import AdvisorKpis
 
 
@@ -68,3 +70,28 @@ def test_net_margin_negative_is_alert() -> None:
     cur = _kpis(sales=100_000, food=80_000, labor=80_000)
     net = _by_key(_build_finance_kpis(cur, None))["net_margin"]
     assert net.value < 0 and net.status == "alert"
+
+
+def test_projection_scales_to_month_end() -> None:
+    # Mes de 30 días, 15 transcurridos → factor 2; ventas 100000 → 200000.
+    cur = _kpis(sales=100_000, food=30_000, labor=20_000)
+    since = datetime(2026, 6, 1, tzinfo=UTC)
+    until = datetime(2026, 6, 15, 12, 0, tzinfo=UTC)
+    proj = _project_month_end(cur, since, until)
+    assert proj is not None
+    assert proj.month_days == 30 and proj.elapsed_days == 15
+    assert proj.sales_amount == 200_000
+
+
+def test_no_projection_when_window_is_not_current_month() -> None:
+    cur = _kpis(sales=100_000, food=30_000, labor=20_000)
+    since = datetime(2026, 6, 10, tzinfo=UTC)
+    until = datetime(2026, 6, 15, tzinfo=UTC)
+    assert _project_month_end(cur, since, until) is None
+
+
+def test_no_projection_on_last_day_of_month() -> None:
+    cur = _kpis(sales=100_000, food=30_000, labor=20_000)
+    since = datetime(2026, 6, 1, tzinfo=UTC)
+    until = datetime(2026, 6, 30, 23, 0, tzinfo=UTC)
+    assert _project_month_end(cur, since, until) is None

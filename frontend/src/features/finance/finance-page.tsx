@@ -1,12 +1,17 @@
-import { Fragment, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 
 import type { FinanceKpiDTO, FinanceOverviewDTO } from "@/api/types-operations"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Spinner } from "@/components/ui/spinner"
-import { useFinanceOverview } from "@/hooks/use-finance"
-import { FINANCE_RANGES, rangeWindow, type FinanceRange } from "@/lib/finance-range"
+import { useFinanceOverview, useProductDetail } from "@/hooks/use-finance"
+import {
+  FINANCE_RANGES,
+  rangeWindow,
+  type FinanceRange,
+  type RangeWindow,
+} from "@/lib/finance-range"
 import { formatMoney } from "@/lib/money"
 
 const KPI_LABELS: Record<string, string> = {
@@ -74,7 +79,7 @@ export function FinancePage() {
       {overview.isLoading ? (
         <Spinner />
       ) : overview.data ? (
-        <FinanceBody data={overview.data} />
+        <FinanceBody data={overview.data} window={window} />
       ) : (
         <p className="text-sm text-muted-foreground">No pudimos cargar las finanzas.</p>
       )}
@@ -82,9 +87,21 @@ export function FinancePage() {
   )
 }
 
-function FinanceBody({ data }: { data: FinanceOverviewDTO }) {
+function FinanceBody({ data, window }: { data: FinanceOverviewDTO; window: RangeWindow }) {
   return (
     <>
+      {data.projection ? (
+        <p className="rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm">
+          Proyección de cierre del mes:{" "}
+          <span className="font-semibold">
+            si seguís así, cerrás en {formatMoney(data.projection.sales_amount, data.currency)}
+          </span>{" "}
+          <span className="text-muted-foreground">
+            ({data.projection.elapsed_days}/{data.projection.month_days} días)
+          </span>
+        </p>
+      ) : null}
+
       {!data.configured ? (
         <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-300">
           Cargá tus costos fijos (personal y otros) en el Asesor para que el margen neto y el
@@ -137,24 +154,80 @@ function FinanceBody({ data }: { data: FinanceOverviewDTO }) {
           <CardHeader>
             <CardTitle>Margen de contribución por producto</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-3 gap-y-1 text-sm">
-              <span className="text-xs font-medium text-muted-foreground">Producto</span>
-              <span className="text-right text-xs font-medium text-muted-foreground">Unidades</span>
-              <span className="text-right text-xs font-medium text-muted-foreground">Margen</span>
-              {data.product_margins.map((p) => (
-                <Fragment key={p.product_id}>
-                  <span className="truncate">{p.product_name}</span>
-                  <span className="text-right tabular-nums text-muted-foreground">{p.units_sold}</span>
-                  <span className="text-right tabular-nums font-medium">
-                    {formatMoney(p.margin_amount, data.currency)}
-                  </span>
-                </Fragment>
-              ))}
+          <CardContent className="flex flex-col">
+            <div className="flex items-center justify-between border-b pb-1 text-xs font-medium text-muted-foreground">
+              <span>Producto</span>
+              <span>Unidades · Margen</span>
             </div>
+            {data.product_margins.map((p) => (
+              <ProductRow
+                key={p.product_id}
+                productId={p.product_id}
+                name={p.product_name}
+                units={p.units_sold}
+                margin={p.margin_amount}
+                currency={data.currency}
+                window={window}
+              />
+            ))}
           </CardContent>
         </Card>
       ) : null}
     </>
+  )
+}
+
+function ProductRow({
+  productId,
+  name,
+  units,
+  margin,
+  currency,
+  window,
+}: {
+  productId: string
+  name: string
+  units: number
+  margin: number
+  currency: string
+  window: RangeWindow
+}) {
+  const [open, setOpen] = useState(false)
+  const detail = useProductDetail(open ? productId : null, window)
+
+  return (
+    <div className="border-b last:border-b-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between py-2 text-left text-sm hover:bg-muted/40"
+      >
+        <span className="truncate">
+          {open ? "▾ " : "▸ "}
+          {name}
+        </span>
+        <span className="tabular-nums">
+          {units} · <span className="font-medium">{formatMoney(margin, currency)}</span>
+        </span>
+      </button>
+      {open ? (
+        <div className="pb-2 pl-4 text-xs text-muted-foreground">
+          {detail.isLoading ? (
+            <span>Cargando…</span>
+          ) : detail.data && detail.data.lines.length > 0 ? (
+            detail.data.lines.map((line) => (
+              <div key={line.order_id} className="flex items-center justify-between py-0.5">
+                <span>{new Date(line.occurred_at).toLocaleDateString("es-AR")}</span>
+                <span className="tabular-nums">
+                  {line.quantity}× · {formatMoney(line.margin_amount, currency)}
+                </span>
+              </div>
+            ))
+          ) : (
+            <span>Sin líneas en el período.</span>
+          )}
+        </div>
+      ) : null}
+    </div>
   )
 }
