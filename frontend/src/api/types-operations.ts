@@ -186,6 +186,48 @@ export interface TipsReportDTO {
   pending_total: number
 }
 
+// --- Pantalla Finanzas ---
+
+export type FinanceKpiStatus = "healthy" | "warn" | "alert" | "neutral"
+
+export interface FinanceKpiDTO {
+  key: string
+  kind: "ratio" | "money" // ratio = bps sobre ventas; money = unidad mínima
+  value: number
+  previous: number
+  delta: number
+  healthy_low: number | null
+  healthy_high: number | null
+  status: FinanceKpiStatus
+}
+
+export interface FinanceDiagnosticDTO {
+  code: string
+  severity: string
+  bucket: string
+  title: string
+  body: string
+  action: string
+}
+
+export interface ProductMarginDTO {
+  product_id: string
+  product_name: string
+  units_sold: number
+  sales_amount: number
+  margin_amount: number
+}
+
+export interface FinanceOverviewDTO {
+  currency: string
+  period_days: number
+  configured: boolean
+  kpis: FinanceKpiDTO[]
+  diagnostics: FinanceDiagnosticDTO[]
+  product_margins: ProductMarginDTO[]
+  summary: string | null
+}
+
 // --- Reporting ---
 
 export interface DashboardSummaryDTO {

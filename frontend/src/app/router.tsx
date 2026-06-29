@@ -9,6 +9,7 @@ import { AnalyticsPage } from "@/features/analytics/analytics-page"
 import { CashSessionPage } from "@/features/cashier/cash-session-page"
 import { TipsPage } from "@/features/cashier/tips-page"
 import { CopilotPage } from "@/features/copilot/copilot-page"
+import { FinancePage } from "@/features/finance/finance-page"
 import { FloorPage } from "@/features/floor/floor-page"
 import { AcceptInvitationPage } from "@/features/identity/accept-invitation-page"
 import { InviteUserPage } from "@/features/identity/invite-user-page"
@@ -74,6 +75,7 @@ export const router = createBrowserRouter([
             element: <RequireRole allow={["OWNER", "MANAGER"]} />,
             children: [
               { path: "/app/invite", element: <InviteUserPage /> },
+              { path: "/app/finanzas", element: <FinancePage /> },
               { path: "/app/advisor", element: <AdvisorPage /> },
               { path: "/app/copilot", element: <CopilotPage /> },
               { path: "/app/analytics", element: <AnalyticsPage /> },

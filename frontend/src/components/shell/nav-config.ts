@@ -19,6 +19,7 @@ import {
   Truck,
   UtensilsCrossed,
   Users,
+  Wallet,
 } from "lucide-react"
 
 import type { Role } from "@/api/types"
@@ -47,6 +48,12 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: LayoutDashboard,
         roles: ["OWNER", "MANAGER", "CASHIER"],
         end: true,
+      },
+      {
+        label: "Finanzas",
+        to: "/app/finanzas",
+        icon: Wallet,
+        roles: ["OWNER", "MANAGER"],
       },
       {
         label: "Asesor",

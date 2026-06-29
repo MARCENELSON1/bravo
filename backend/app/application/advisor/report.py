@@ -45,6 +45,8 @@ class AdvisorReport:
     insights: list[NarratedInsight]
     summary: str | None
     llm_enabled: bool
+    # KPIs del período inmediatamente anterior (misma duración) para comparativos.
+    previous: AdvisorKpis | None = None
 
 
 def _start_of_month(at: datetime) -> datetime:
@@ -100,7 +102,11 @@ class GetAdvisorReport:
         narrated = [await self._narrator.narrate(insight) for insight in insights]
         summary = await self._synthesizer.synthesize(kpis, narrated)
         return AdvisorReport(
-            kpis=kpis, insights=narrated, summary=summary, llm_enabled=self._llm_enabled
+            kpis=kpis,
+            insights=narrated,
+            summary=summary,
+            llm_enabled=self._llm_enabled,
+            previous=previous,
         )
 
     @staticmethod
