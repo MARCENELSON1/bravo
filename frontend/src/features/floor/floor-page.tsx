@@ -30,7 +30,7 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
 function cardClass(order: FloorTableDTO["active_order"]): string {
   const base = "cursor-pointer transition-colors "
   if (!order) return base + "hover:bg-muted/50"
-  if (order.status === "SERVED") return base + "border-emerald-500/60 bg-emerald-500/10"
+  if (order.status === "SERVED") return base + "border-emerald-500/60 bg-emerald-50/40 dark:bg-emerald-500/10"
   return base + "border-primary/50 bg-muted/40"
 }
 
