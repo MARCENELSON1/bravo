@@ -18,6 +18,7 @@ from app.presentation.api.v1 import (
     cashier,
     copilot,
     expenses,
+    finance,
     floor,
     integrations,
     inventory,
@@ -87,6 +88,7 @@ def create_app() -> FastAPI:
     app.include_router(reservations.router, prefix="/api/v1")
     app.include_router(analytics.router, prefix="/api/v1")
     app.include_router(advisor.router, prefix="/api/v1")
+    app.include_router(finance.router, prefix="/api/v1")
     app.include_router(copilot.router, prefix="/api/v1")
 
     @app.middleware("http")

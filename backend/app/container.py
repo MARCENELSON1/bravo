@@ -24,6 +24,7 @@ from app.application.cashier.use_cases import (
     OpenCashSession,
 )
 from app.application.copilot.ask import AskCopilot
+from app.application.finance.use_cases import GetFinanceOverview
 from app.application.floor.use_cases import GetFloor
 from app.application.identity.accept_invitation import AcceptInvitation
 from app.application.identity.authenticate import Authenticate
@@ -898,6 +899,13 @@ class Container(containers.DeclarativeContainer):
         synthesizer=advisor_synthesizer,
         tenant_context=tenant_context,
         llm_enabled=config.provided.advisor_llm_enabled,
+    )
+    # --- Pantalla Finanzas (compone advisor + product performance) ---
+    get_finance_overview = providers.Factory(
+        GetFinanceOverview,
+        advisor=get_advisor_report,
+        products=get_product_performance,
+        tenant_context=tenant_context,
     )
     get_advisor_settings = providers.Factory(
         GetAdvisorSettings,

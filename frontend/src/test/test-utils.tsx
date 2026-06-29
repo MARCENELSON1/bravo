@@ -39,6 +39,7 @@ export function renderWithProviders(
     analyticsApi: {} as unknown as Services["analyticsApi"],
     authApi: makeFakeAuthApi(authApi),
     cashApi: {} as unknown as Services["cashApi"],
+    financeApi: {} as unknown as Services["financeApi"],
     copilotApi: {} as unknown as Services["copilotApi"],
     floorApi: {} as unknown as Services["floorApi"],
     integrationsApi: {} as unknown as Services["integrationsApi"],
