@@ -7,14 +7,19 @@ snapshots (tanda F), el swap es a nivel del read model del Asesor."""
 
 from __future__ import annotations
 
+import calendar
+from abc import ABC, abstractmethod
 from datetime import datetime
 
 from app.application.advisor.report import GetAdvisorReport
 from app.application.analytics.use_cases import GetProductPerformance
+from app.application.clock import utcnow
 from app.application.finance.dtos import (
     FinanceDiagnostic,
     FinanceKpi,
     FinanceOverview,
+    FinanceProjection,
+    ProductDetail,
     ProductMargin,
 )
 from app.domain.advisor.kpis import AdvisorKpis
@@ -79,6 +84,42 @@ def _money_kpi(
         healthy_high=None,
         status=status,
     )
+
+
+def _project_month_end(
+    kpis: AdvisorKpis, since: datetime | None, until: datetime | None
+) -> FinanceProjection | None:
+    """Proyección lineal del cierre del mes en curso. Solo cuando la ventana es el
+    mes actual a la fecha (since = día 1 del mes corriente); None en otro caso."""
+    now = until or utcnow()
+    if since is None or since.year != now.year or since.month != now.month or since.day != 1:
+        return None
+    month_days = calendar.monthrange(now.year, now.month)[1]
+    elapsed = (now.date() - since.date()).days + 1
+    if elapsed < 1 or elapsed >= month_days:
+        return None  # mes cerrado / último día → la proyección sería el acumulado
+    factor = month_days / elapsed
+    return FinanceProjection(
+        sales_amount=round(kpis.sales_amount * factor),
+        net_margin_amount=round(kpis.net_margin_amount * factor),
+        month_days=month_days,
+        elapsed_days=elapsed,
+    )
+
+
+class FinanceProductDetailReadModel(ABC):
+    """Líneas de venta de un producto en una ventana (drill-down). Scopeado por
+    ``tenant_id`` (RLS + filtro explícito)."""
+
+    @abstractmethod
+    async def detail(
+        self,
+        tenant_id: str,
+        product_id: str,
+        *,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> ProductDetail: ...
 
 
 def _build_finance_kpis(cur: AdvisorKpis, prev: AdvisorKpis | None) -> list[FinanceKpi]:
@@ -176,4 +217,27 @@ class GetFinanceOverview:
                 for r in rows
             ],
             summary=report.summary,
+            projection=_project_month_end(report.kpis, since, until),
         )
+
+
+class GetProductDetail:
+    """Drill-down: las líneas de venta de un producto en la ventana (≤3 clics
+    desde la Pantalla Finanzas)."""
+
+    def __init__(
+        self, read_model: FinanceProductDetailReadModel, tenant_context: TenantContext
+    ) -> None:
+        self._read_model = read_model
+        self._tenant_context = tenant_context
+
+    async def execute(
+        self,
+        *,
+        tenant_id: str,
+        product_id: str,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> ProductDetail:
+        self._tenant_context.set(tenant_id)
+        return await self._read_model.detail(tenant_id, product_id, since=since, until=until)

@@ -87,3 +87,38 @@ async def test_finance_overview_requires_auth(client):
     # El endpoint exige OWNER/MANAGER; sin token → 401/403.
     nope = await http.get("/api/v1/finance/overview")
     assert nope.status_code in (401, 403)
+
+
+async def test_product_drill_down_lists_sale_lines(client):
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    pid = (
+        await http.post(
+            "/api/v1/products", json={"name": "Lomo", "price_amount": 100000}, headers=h
+        )
+    ).json()["product_id"]
+    table_id = (
+        await http.post("/api/v1/tables", json={"number": 1, "name": None}, headers=h)
+    ).json()["table_id"]
+    order_id = (
+        await http.post("/api/v1/orders", json={"table_id": table_id}, headers=h)
+    ).json()["order_id"]
+    await http.post(
+        f"/api/v1/orders/{order_id}/items",
+        json={"product_id": pid, "quantity": 3},
+        headers=h,
+    )
+    await http.post(
+        f"/api/v1/orders/{order_id}/payments",
+        json={"method": "CASH", "amount": 300000},
+        headers=h,
+    )
+
+    detail = await http.get(f"/api/v1/finance/products/{pid}", headers=h)
+    assert detail.status_code == 200, detail.text
+    body = detail.json()
+    assert body["units_sold"] == 3
+    assert body["sales_amount"] == 300000
+    assert body["margin_amount"] == 300000  # sin receta → food cost 0
+    assert len(body["lines"]) == 1
+    assert body["lines"][0]["order_id"] == order_id

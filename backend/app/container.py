@@ -24,7 +24,7 @@ from app.application.cashier.use_cases import (
     OpenCashSession,
 )
 from app.application.copilot.ask import AskCopilot
-from app.application.finance.use_cases import GetFinanceOverview
+from app.application.finance.use_cases import GetFinanceOverview, GetProductDetail
 from app.application.floor.use_cases import GetFloor
 from app.application.identity.accept_invitation import AcceptInvitation
 from app.application.identity.authenticate import Authenticate
@@ -149,6 +149,9 @@ from app.infrastructure.persistence.credentials_repo import (
 )
 from app.infrastructure.persistence.dashboard_repo import SqlAlchemyDashboardReadModel
 from app.infrastructure.persistence.database import Database
+from app.infrastructure.persistence.finance_repo import (
+    SqlAlchemyFinanceProductDetailReadModel,
+)
 from app.infrastructure.persistence.food_cost_repo import SqlAlchemyFoodCostReadModel
 from app.infrastructure.persistence.ingredient_repo import SqlAlchemyIngredientRepository
 from app.infrastructure.persistence.invitation_repo import SqlAlchemyInvitationRepository
@@ -905,6 +908,14 @@ class Container(containers.DeclarativeContainer):
         GetFinanceOverview,
         advisor=get_advisor_report,
         products=get_product_performance,
+        tenant_context=tenant_context,
+    )
+    finance_product_detail_read_model = providers.Factory(
+        SqlAlchemyFinanceProductDetailReadModel, session_factory=db.provided.session
+    )
+    get_product_detail = providers.Factory(
+        GetProductDetail,
+        read_model=finance_product_detail_read_model,
         tenant_context=tenant_context,
     )
     get_advisor_settings = providers.Factory(

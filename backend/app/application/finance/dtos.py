@@ -48,6 +48,17 @@ class ProductMargin:
 
 
 @dataclass(frozen=True)
+class FinanceProjection:
+    """Proyección de cierre del mes en curso ('si seguís así, cerrás en X'):
+    run-rate lineal del acumulado mes-a-la-fecha sobre los días transcurridos."""
+
+    sales_amount: int
+    net_margin_amount: int
+    month_days: int
+    elapsed_days: int
+
+
+@dataclass(frozen=True)
 class FinanceOverview:
     currency: str
     period_days: int
@@ -56,3 +67,27 @@ class FinanceOverview:
     diagnostics: list[FinanceDiagnostic]
     product_margins: list[ProductMargin]
     summary: str | None
+    projection: FinanceProjection | None = None  # solo en el mes en curso
+
+
+@dataclass(frozen=True)
+class ProductSaleLine:
+    """Una línea de venta de un producto (drill-down): cuándo, cuánto, qué dejó."""
+
+    order_id: str
+    occurred_at: str  # ISO
+    quantity: int
+    line_amount: int
+    food_cost_amount: int | None
+    margin_amount: int  # line_amount − food_cost (0 si no hay receta)
+
+
+@dataclass(frozen=True)
+class ProductDetail:
+    product_id: str
+    currency: str
+    units_sold: int
+    sales_amount: int
+    food_cost_amount: int
+    margin_amount: int
+    lines: list[ProductSaleLine]

@@ -218,6 +218,13 @@ export interface ProductMarginDTO {
   margin_amount: number
 }
 
+export interface FinanceProjectionDTO {
+  sales_amount: number
+  net_margin_amount: number
+  month_days: number
+  elapsed_days: number
+}
+
 export interface FinanceOverviewDTO {
   currency: string
   period_days: number
@@ -226,6 +233,26 @@ export interface FinanceOverviewDTO {
   diagnostics: FinanceDiagnosticDTO[]
   product_margins: ProductMarginDTO[]
   summary: string | null
+  projection: FinanceProjectionDTO | null
+}
+
+export interface ProductSaleLineDTO {
+  order_id: string
+  occurred_at: string
+  quantity: number
+  line_amount: number
+  food_cost_amount: number | null
+  margin_amount: number
+}
+
+export interface ProductDetailDTO {
+  product_id: string
+  currency: string
+  units_sold: number
+  sales_amount: number
+  food_cost_amount: number
+  margin_amount: number
+  lines: ProductSaleLineDTO[]
 }
 
 // --- Reporting ---
