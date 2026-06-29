@@ -41,3 +41,26 @@ export function useCloseCashSession() {
     },
   })
 }
+
+// Propinas ganadas vs liquidadas por mozo. Sin ventana = histórico completo.
+export function useTipsReport(from?: string, to?: string) {
+  const { cashApi } = useServices()
+  return useQuery({
+    queryKey: ["tips-report", from ?? null, to ?? null],
+    queryFn: () => cashApi.tipsReport(from, to),
+  })
+}
+
+export function usePayTip() {
+  const { cashApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (vars: { waiterId: string; amount: number }) =>
+      cashApi.payTip(vars.waiterId, vars.amount),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["tips-report"] })
+      void queryClient.invalidateQueries({ queryKey: ["expenses"] })
+      void queryClient.invalidateQueries({ queryKey: ["cash-session"] })
+    },
+  })
+}

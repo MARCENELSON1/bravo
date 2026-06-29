@@ -17,6 +17,7 @@ from app.application.analytics.use_cases import (
     GetProductPerformance,
     GetRevenueSummary,
 )
+from app.application.cashier.tips import GetTipsReport, PayTips
 from app.application.cashier.use_cases import (
     CloseCashSession,
     GetCurrentCashReport,
@@ -175,6 +176,7 @@ from app.infrastructure.persistence.tax_credentials_repo import (
     SqlAlchemyTaxCredentialRepository,
 )
 from app.infrastructure.persistence.tenant_repo import SqlAlchemyTenantRepository
+from app.infrastructure.persistence.tips_repo import SqlAlchemyTipsReadModel
 from app.infrastructure.persistence.user_repo import SqlAlchemyUserRepository
 from app.infrastructure.persistence.verification_token_repo import (
     SqlAlchemyVerificationTokenRepository,
@@ -619,6 +621,19 @@ class Container(containers.DeclarativeContainer):
     )
     get_staff_report = providers.Factory(
         GetStaffReport, read_model=staff_report_read_model, tenant_context=tenant_context
+    )
+    # --- Fase 14: propinas por mozo (reporte + liquidación como egreso) ---
+    tips_read_model = providers.Factory(
+        SqlAlchemyTipsReadModel, session_factory=db.provided.session
+    )
+    get_tips_report = providers.Factory(
+        GetTipsReport, read_model=tips_read_model, tenant_context=tenant_context
+    )
+    pay_tips = providers.Factory(
+        PayTips,
+        register_expense=register_expense,
+        users=user_repository,
+        tenant_context=tenant_context,
     )
 
     # --- Fase 4: facturación electrónica AFIP ---

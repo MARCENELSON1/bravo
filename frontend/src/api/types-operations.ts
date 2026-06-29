@@ -170,6 +170,22 @@ export interface CashReportDTO {
   tips_total: number // total de propinas del turno (para repartir)
 }
 
+export interface TipsReportRowDTO {
+  waiter_id: string
+  waiter_email: string
+  earned: number // propina ganada (minor units)
+  paid: number // ya liquidado al mozo
+  pending: number // earned - paid
+}
+
+export interface TipsReportDTO {
+  currency: string
+  rows: TipsReportRowDTO[]
+  earned_total: number
+  paid_total: number
+  pending_total: number
+}
+
 // --- Reporting ---
 
 export interface DashboardSummaryDTO {

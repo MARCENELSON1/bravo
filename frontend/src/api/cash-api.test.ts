@@ -44,4 +44,28 @@ describe("CashApi", () => {
       auth: true,
     })
   })
+
+  it("fetches the tips report with an optional window", async () => {
+    const request = vi.fn().mockResolvedValue({ rows: [] })
+    const api = new CashApi({ request } as unknown as HttpClient)
+
+    await api.tipsReport()
+    expect(request.mock.calls[0][1]).toBe("/cashier/tips/report")
+
+    await api.tipsReport("2026-06-01T00:00:00Z", "2026-06-30T00:00:00Z")
+    expect(request.mock.calls[1][1]).toContain("from=")
+    expect(request.mock.calls[1][1]).toContain("to=")
+  })
+
+  it("pays out a tip to a waiter", async () => {
+    const request = vi.fn().mockResolvedValue({ id: "e1", direction: "OUTFLOW" })
+    const api = new CashApi({ request } as unknown as HttpClient)
+
+    await api.payTip("w1", 5000)
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("POST")
+    expect(path).toBe("/cashier/tips/payout")
+    expect(options).toMatchObject({ body: { waiter_id: "w1", amount: 5000 }, auth: true })
+  })
 })
