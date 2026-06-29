@@ -83,38 +83,42 @@
     --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* Paleta de marca BRAVO — Verdes + Grises (identidad sobria, tecnológica, premium).
+   Negro Polar #05090A · Verde Abisal #0D2B27 · Verde Aurora #147B63 (identidad)
+   Verde Agua #1B6F68 (acento) · Gris Pizarra #2C3133 · Gris Grafito #5A6366
+   Gris Acero #879194 · Gris Humo #D2D8D7. */
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
+    --background: #05090A; /* Negro Polar — fondo profundo */
+    --foreground: #D2D8D7; /* Gris Humo — texto principal */
+    --card: #0D2B27; /* Verde Abisal — superficies elevadas */
+    --card-foreground: #D2D8D7;
+    --popover: #0D2B27;
+    --popover-foreground: #D2D8D7;
+    --primary: #147B63; /* Verde Aurora — color principal de identidad */
+    --primary-foreground: #D2D8D7; /* Gris Humo */
+    --secondary: #2C3133; /* Gris Pizarra — superficies/botones secundarios */
+    --secondary-foreground: #D2D8D7;
+    --muted: #2C3133;
+    --muted-foreground: #879194; /* Gris Acero — texto secundario */
+    --accent: #2C3133; /* Gris Pizarra — hover/activos sobrios */
+    --accent-foreground: #D2D8D7;
     --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --border: rgb(135 145 148 / 14%); /* Gris Acero al 14% — separadores sutiles */
+    --input: rgb(135 145 148 / 22%);
+    --ring: #1B6F68; /* Verde Agua — foco */
+    --chart-1: #147B63;
+    --chart-2: #1B6F68;
+    --chart-3: #879194;
+    --chart-4: #5A6366;
+    --chart-5: #D2D8D7;
+    --sidebar: #0D2B27; /* Verde Abisal — rail de navegación */
+    --sidebar-foreground: #D2D8D7;
+    --sidebar-primary: #147B63; /* Verde Aurora — ítem activo */
+    --sidebar-primary-foreground: #D2D8D7; /* Gris Humo */
+    --sidebar-accent: #2C3133; /* Gris Pizarra */
+    --sidebar-accent-foreground: #D2D8D7;
+    --sidebar-border: rgb(135 145 148 / 12%);
+    --sidebar-ring: #1B6F68;
 }
 
 @layer base {
