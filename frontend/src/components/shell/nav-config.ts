@@ -1,22 +1,5 @@
 import type { ComponentType } from "react"
-import {
-  BarChart3,
-  Bot,
-  Boxes,
-  CalendarClock,
-  ChefHat,
-  Clock,
-  FileText,
-  LayoutDashboard,
-  Package,
-  Plug,
-  QrCode,
-  Receipt,
-  Sparkles,
-  Truck,
-  UtensilsCrossed,
-  Users,
-} from "lucide-react"
+import { FileText, Home, Lightbulb, LineChart, Package, Users } from "lucide-react"
 
 import type { Role } from "@/api/types"
 
@@ -28,103 +11,25 @@ export interface NavItem {
   end?: boolean
 }
 
-export interface NavGroup {
-  label: string
-  items: NavItem[]
-}
-
-// Sidebar groups. Each item is gated by role (in addition to the route guards).
-export const NAV_GROUPS: NavGroup[] = [
+// Flat sidebar nav (Wellnod dashboard IA). Each item is gated by role in addition
+// to the route guards. Labels are the customer-facing ES names; routes reuse the
+// existing feature pages.
+export const NAV_ITEMS: NavItem[] = [
   {
-    label: "Resumen",
-    items: [
-      {
-        label: "Dashboard",
-        to: "/app",
-        icon: LayoutDashboard,
-        roles: ["OWNER", "MANAGER", "CASHIER"],
-        end: true,
-      },
-      {
-        label: "Asesor",
-        to: "/app/advisor",
-        icon: Sparkles,
-        roles: ["OWNER", "MANAGER"],
-      },
-      {
-        label: "Copiloto",
-        to: "/app/copilot",
-        icon: Bot,
-        roles: ["OWNER", "MANAGER"],
-      },
-      {
-        label: "Analítica",
-        to: "/app/analytics",
-        icon: BarChart3,
-        roles: ["OWNER", "MANAGER"],
-      },
-    ],
+    label: "Inicio",
+    to: "/app",
+    icon: Home,
+    roles: ["OWNER", "MANAGER", "CASHIER", "WAITER", "KITCHEN"],
+    end: true,
   },
+  { label: "Finanzas", to: "/app/expenses", icon: LineChart, roles: ["OWNER", "MANAGER"] },
   {
-    label: "Operación",
-    items: [
-      {
-        label: "Mesas",
-        to: "/app/floor",
-        icon: UtensilsCrossed,
-        roles: ["WAITER", "CASHIER", "MANAGER", "OWNER"],
-      },
-      { label: "Cocina", to: "/app/kds", icon: ChefHat, roles: ["KITCHEN", "MANAGER", "OWNER"] },
-      {
-        label: "Reservas",
-        to: "/app/reservations",
-        icon: CalendarClock,
-        roles: ["WAITER", "CASHIER", "MANAGER", "OWNER"],
-      },
-      {
-        label: "Fichar",
-        to: "/app/fichar",
-        icon: QrCode,
-        roles: ["OWNER", "MANAGER", "WAITER", "KITCHEN", "CASHIER"],
-      },
-    ],
+    label: "Clientes",
+    to: "/app/reservations",
+    icon: Users,
+    roles: ["OWNER", "MANAGER", "CASHIER", "WAITER"],
   },
-  {
-    label: "Catálogo",
-    items: [
-      { label: "Productos", to: "/app/products", icon: Package, roles: ["OWNER", "MANAGER"] },
-    ],
-  },
-  {
-    label: "Stock",
-    items: [
-      { label: "Insumos", to: "/app/stock", icon: Boxes, roles: ["OWNER", "MANAGER"] },
-      { label: "Proveedores", to: "/app/suppliers", icon: Truck, roles: ["OWNER", "MANAGER"] },
-    ],
-  },
-  {
-    label: "Finanzas",
-    items: [
-      { label: "Egresos", to: "/app/expenses", icon: Receipt, roles: ["OWNER", "MANAGER"] },
-      {
-        label: "Comprobantes",
-        to: "/app/invoices",
-        icon: FileText,
-        roles: ["OWNER", "MANAGER"],
-      },
-    ],
-  },
-  {
-    label: "Administración",
-    items: [
-      { label: "Personal", to: "/app/staff", icon: Clock, roles: ["OWNER", "MANAGER"] },
-      {
-        label: "Integraciones",
-        to: "/app/integrations",
-        icon: Plug,
-        roles: ["OWNER", "MANAGER"],
-      },
-      { label: "Equipo", to: "/app/invite", icon: Users, roles: ["OWNER", "MANAGER"] },
-    ],
-  },
+  { label: "Productos", to: "/app/products", icon: Package, roles: ["OWNER", "MANAGER"] },
+  { label: "IA Insights", to: "/app/copilot", icon: Lightbulb, roles: ["OWNER", "MANAGER"] },
+  { label: "Reportes", to: "/app/analytics", icon: FileText, roles: ["OWNER", "MANAGER"] },
 ]
