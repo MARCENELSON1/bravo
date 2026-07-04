@@ -2,7 +2,7 @@ import { useMemo, useState } from "react"
 
 import type { FinanceKpiDTO, FinanceOverviewDTO } from "@/api/types-operations"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { GlassCard } from "@/components/ui/glass-card"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Spinner } from "@/components/ui/spinner"
 import { useFinanceOverview, useProductDetail } from "@/hooks/use-finance"
@@ -59,7 +59,7 @@ export function FinancePage() {
   const overview = useFinanceOverview(window)
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-6 py-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <GradientHeading>Finanzas</GradientHeading>
         <div className="flex flex-wrap gap-1">
@@ -110,34 +110,28 @@ function FinanceBody({ data, window }: { data: FinanceOverviewDTO; window: Range
       ) : null}
 
       {data.summary ? (
-        <Card>
-          <CardContent className="pt-4 text-sm text-muted-foreground">{data.summary}</CardContent>
-        </Card>
+        <GlassCard className="p-5 text-sm text-muted-foreground">{data.summary}</GlassCard>
       ) : null}
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {data.kpis.map((k) => (
-          <Card key={k.key}>
-            <CardContent className="flex flex-col gap-1 pt-4">
-              <span className="text-xs text-muted-foreground">{KPI_LABELS[k.key] ?? k.key}</span>
-              <span className={`text-2xl font-semibold tabular-nums ${STATUS_STYLE[k.status] ?? ""}`}>
-                {kpiValue(k, data.currency)}
-              </span>
-              <span className="flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>{kpiDelta(k, data.currency) ?? "—"}</span>
-                <span>{healthyHint(k) ?? ""}</span>
-              </span>
-            </CardContent>
-          </Card>
+          <GlassCard key={k.key} className="flex flex-col gap-1 p-5">
+            <span className="text-sm text-muted-foreground">{KPI_LABELS[k.key] ?? k.key}</span>
+            <span className={`text-2xl font-bold tabular-nums ${STATUS_STYLE[k.status] ?? ""}`}>
+              {kpiValue(k, data.currency)}
+            </span>
+            <span className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{kpiDelta(k, data.currency) ?? "—"}</span>
+              <span>{healthyHint(k) ?? ""}</span>
+            </span>
+          </GlassCard>
         ))}
       </section>
 
       {data.diagnostics.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Diagnósticos</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
+        <GlassCard className="p-6">
+          <h2 className="mb-4 text-base font-semibold text-foreground">Diagnósticos</h2>
+          <div className="flex flex-col gap-3">
             {data.diagnostics.map((d) => (
               <div key={d.code} className="border-l-2 border-primary/60 pl-3">
                 <p className="text-sm font-medium">{d.title}</p>
@@ -145,16 +139,16 @@ function FinanceBody({ data, window }: { data: FinanceOverviewDTO; window: Range
                 {d.action ? <p className="text-xs text-primary">→ {d.action}</p> : null}
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </GlassCard>
       ) : null}
 
       {data.product_margins.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Margen de contribución por producto</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col">
+        <GlassCard className="p-6">
+          <h2 className="mb-4 text-base font-semibold text-foreground">
+            Margen de contribución por producto
+          </h2>
+          <div className="flex flex-col">
             <div className="flex items-center justify-between border-b pb-1 text-xs font-medium text-muted-foreground">
               <span>Producto</span>
               <span>Unidades · Margen</span>
@@ -170,8 +164,8 @@ function FinanceBody({ data, window }: { data: FinanceOverviewDTO; window: Range
                 window={window}
               />
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </GlassCard>
       ) : null}
     </>
   )

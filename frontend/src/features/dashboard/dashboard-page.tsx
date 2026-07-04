@@ -1,10 +1,10 @@
-import type { ReactNode } from "react"
 import { ArrowRight, Plus } from "lucide-react"
 import { Link } from "react-router-dom"
 
 import type { FinanceDiagnosticDTO } from "@/api/types-operations"
 import { useAuth } from "@/auth/auth-context"
 import { AnimatedNumber } from "@/components/ui/animated-number"
+import { GlassCard } from "@/components/ui/glass-card"
 import { useDashboard } from "@/hooks/use-dashboard"
 import { usePaymentMix, useRevenueDaily } from "@/hooks/use-analytics"
 import { useFinanceOverview } from "@/hooks/use-finance"
@@ -100,7 +100,7 @@ export function DashboardPage() {
       {/* KPIs */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {kpis.map((kpi) => (
-          <Card key={kpi.label} className="p-5">
+          <GlassCard key={kpi.label} className="p-5">
             <p className="text-sm text-muted-foreground">{kpi.label}</p>
             <div className="mt-1 text-2xl font-bold tabular-nums text-foreground">
               {summary.isPending || kpi.value === undefined ? (
@@ -110,13 +110,13 @@ export function DashboardPage() {
               )}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">{kpi.hint}</p>
-          </Card>
+          </GlassCard>
         ))}
       </section>
 
       {/* Chart + AI recommendations */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="p-6 lg:col-span-2">
+        <GlassCard className="p-6 lg:col-span-2">
           <div className="mb-6">
             <h2 className="text-base font-semibold text-foreground">Facturación últimos 7 días</h2>
             <p className="text-sm text-muted-foreground">
@@ -126,9 +126,9 @@ export function DashboardPage() {
             </p>
           </div>
           <RevenueChart points={daily.data ?? []} pending={daily.isPending} currency={currency} />
-        </Card>
+        </GlassCard>
 
-        <Card className="p-6">
+        <GlassCard className="p-6">
           <h2 className="mb-4 text-base font-semibold text-foreground">Recomendaciones IA</h2>
           <div className="flex flex-col gap-3">
             {overview.isPending ? (
@@ -150,12 +150,12 @@ export function DashboardPage() {
             Ver Finanzas
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
-        </Card>
+        </GlassCard>
       </section>
 
       {/* Payment methods + month-end projection */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card className="p-6">
+        <GlassCard className="p-6">
           <h2 className="mb-4 text-base font-semibold text-foreground">Medios de pago hoy</h2>
           {inflows.length === 0 ? (
             <p className="text-sm text-muted-foreground">
@@ -181,9 +181,9 @@ export function DashboardPage() {
               })}
             </div>
           )}
-        </Card>
+        </GlassCard>
 
-        <Card className="p-6">
+        <GlassCard className="p-6">
           <h2 className="text-base font-semibold text-foreground">Proyección de cierre del mes</h2>
           {projection ? (
             <>
@@ -219,7 +219,7 @@ export function DashboardPage() {
                 : "Sin datos suficientes este mes para proyectar."}
             </p>
           )}
-        </Card>
+        </GlassCard>
       </section>
 
       {/* Floating quick action */}
@@ -236,17 +236,6 @@ export function DashboardPage() {
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-
-// Frosted-glass card, light and dark variants (the shell backdrop shows through).
-function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div
-      className={`rounded-2xl border border-black/10 bg-white/55 shadow-xl shadow-black/5 backdrop-blur-2xl dark:border-white/10 dark:bg-white/[0.045] dark:shadow-black/20 ${className ?? ""}`}
-    >
-      {children}
-    </div>
-  )
-}
 
 function ProgressBar({ value }: { value: number }) {
   return (
