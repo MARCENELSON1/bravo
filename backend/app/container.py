@@ -9,7 +9,11 @@ from __future__ import annotations
 from dependency_injector import containers, providers
 
 from app.application.advisor.report import GetAdvisorReport
-from app.application.advisor.use_cases import GetAdvisorSettings, UpdateAdvisorSettings
+from app.application.advisor.use_cases import (
+    GetAdvisorSettings,
+    RebuildAdvisorDiagnostics,
+    UpdateAdvisorSettings,
+)
 from app.application.analytics.projection import ProjectOrderSales
 from app.application.analytics.rebuild import RebuildSalesFacts
 from app.application.analytics.use_cases import (
@@ -133,6 +137,9 @@ from app.infrastructure.payments.credentials_resolver import DbPaymentCredential
 from app.infrastructure.payments.manual_gateway import ManualPaymentGateway
 from app.infrastructure.payments.mercadopago_gateway import MercadoPagoGateway
 from app.infrastructure.payments.mercadopago_oauth import MercadoPagoOAuthClient
+from app.infrastructure.persistence.advisor_diagnostics_repo import (
+    SqlAlchemyAdvisorDiagnosticsCache,
+)
 from app.infrastructure.persistence.advisor_repo import SqlAlchemyAdvisorReadModel
 from app.infrastructure.persistence.advisor_settings_repo import (
     SqlAlchemyAdvisorSettingsRepository,
@@ -875,6 +882,9 @@ class Container(containers.DeclarativeContainer):
     advisor_read_model = providers.Factory(
         SqlAlchemyAdvisorReadModel, session_factory=db.provided.session
     )
+    advisor_diagnostics_cache = providers.Factory(
+        SqlAlchemyAdvisorDiagnosticsCache, session_factory=db.provided.session
+    )
     # Capa LLM grounded, detrás de Selector y APAGADA por default (off=template).
     template_narrator = providers.Singleton(TemplateNarrator)
     advisor_llm = providers.Singleton(
@@ -902,6 +912,7 @@ class Container(containers.DeclarativeContainer):
         synthesizer=advisor_synthesizer,
         tenant_context=tenant_context,
         llm_enabled=config.provided.advisor_llm_enabled,
+        cache=advisor_diagnostics_cache,
     )
     # --- Pantalla Finanzas (compone advisor + product performance) ---
     get_finance_overview = providers.Factory(
@@ -927,6 +938,11 @@ class Container(containers.DeclarativeContainer):
         UpdateAdvisorSettings,
         settings=advisor_settings_repository,
         tenants=tenant_repository,
+        tenant_context=tenant_context,
+    )
+    rebuild_advisor_diagnostics = providers.Factory(
+        RebuildAdvisorDiagnostics,
+        cache=advisor_diagnostics_cache,
         tenant_context=tenant_context,
     )
 

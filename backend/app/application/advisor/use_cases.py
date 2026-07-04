@@ -3,11 +3,25 @@
 from __future__ import annotations
 
 from app.domain.advisor.entities import AdvisorSettings
-from app.domain.advisor.repository import AdvisorSettingsRepository
+from app.domain.advisor.repository import AdvisorDiagnosticsCache, AdvisorSettingsRepository
 from app.domain.identity.ports import TenantContext
 from app.domain.shared.money import Money
 from app.domain.tenant.exceptions import TenantNotFound
 from app.domain.tenant.repository import TenantRepository
+
+
+class RebuildAdvisorDiagnostics:
+    """Rebuild manual del caché de diagnósticos: purga lo cacheado del tenant;
+    el próximo request regenera (narrator/synthesizer). La invalidación normal es
+    automática (el fingerprint cambia con la data) — esto es el botón de escape."""
+
+    def __init__(self, cache: AdvisorDiagnosticsCache, tenant_context: TenantContext) -> None:
+        self._cache = cache
+        self._tenant_context = tenant_context
+
+    async def execute(self, *, tenant_id: str) -> int:
+        self._tenant_context.set(tenant_id)
+        return await self._cache.purge(tenant_id)
 
 
 class GetAdvisorSettings:

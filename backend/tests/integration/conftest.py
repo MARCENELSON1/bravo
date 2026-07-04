@@ -28,6 +28,7 @@ load_dotenv()
 _TABLES = [
     "cash_counts",
     "cash_sessions",
+    "advisor_diagnostics",
     "advisor_settings",
     "sale_facts",
     "reservations",

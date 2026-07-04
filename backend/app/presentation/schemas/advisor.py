@@ -49,6 +49,10 @@ class AdvisorSettingsResponse(BaseModel):
     configured: bool
 
 
+class AdvisorRebuildResponse(BaseModel):
+    purged: int
+
+
 class UpdateAdvisorSettingsRequest(BaseModel):
     monthly_labor_cost: int = Field(ge=0)
     monthly_other_fixed_costs: int = Field(ge=0)

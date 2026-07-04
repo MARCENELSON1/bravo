@@ -600,3 +600,26 @@ class AdvisorSettingsORM(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+class AdvisorDiagnosticsORM(Base):
+    """Caché de diagnósticos narrados (Fase 9.1): un payload JSON por
+    (tenant, fingerprint de insights+proveedor). Datos de plata → RLS."""
+
+    __tablename__ = "advisor_diagnostics"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "fingerprint", name="uq_advisor_diagnostics_tenant_fingerprint"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    fingerprint: Mapped[str] = mapped_column(String(64), index=True)
+    payload: Mapped[str] = mapped_column(String)  # JSON: {insights:[...], summary}
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
