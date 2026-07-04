@@ -12,6 +12,12 @@ export interface RevenueSummaryDTO {
   average_ticket_amount: number
 }
 
+export interface RevenueDailyPointDTO {
+  day: string // ISO date (YYYY-MM-DD); días sin ventas no vienen
+  sales_amount: number
+  orders_count: number
+}
+
 export interface PaymentMixRowDTO {
   method: string
   direction: string

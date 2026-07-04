@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 
 
 @dataclass(frozen=True)
@@ -39,6 +39,16 @@ class ProductPerformanceRow:
     currency: str
 
 
+@dataclass(frozen=True)
+class RevenueDailyPoint:
+    """Un día de facturación (accrual). Días sin ventas NO vienen — el consumidor
+    rellena con ceros. El corte de día es en UTC (MVP; ver plan Identidad Wellnod)."""
+
+    day: date
+    sales_amount: int  # Σ sale_facts.line_amount del día
+    orders_count: int  # comandas distintas proyectadas ese día
+
+
 class RevenueReadModel(ABC):
     @abstractmethod
     async def summary(
@@ -48,6 +58,17 @@ class RevenueReadModel(ABC):
         since: datetime | None = None,
         until: datetime | None = None,
     ) -> RevenueSummary: ...
+
+
+class RevenueDailyReadModel(ABC):
+    @abstractmethod
+    async def daily(
+        self,
+        tenant_id: str,
+        *,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> list[RevenueDailyPoint]: ...
 
 
 class PaymentMixReadModel(ABC):

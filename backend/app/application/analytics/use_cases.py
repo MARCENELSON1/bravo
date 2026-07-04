@@ -9,6 +9,8 @@ from app.application.analytics.read_models import (
     PaymentMixRow,
     ProductPerformanceReadModel,
     ProductPerformanceRow,
+    RevenueDailyPoint,
+    RevenueDailyReadModel,
     RevenueReadModel,
     RevenueSummary,
 )
@@ -31,6 +33,24 @@ class GetRevenueSummary:
     ) -> RevenueSummary:
         self._tenant_context.set(tenant_id)
         return await self._read_model.summary(tenant_id, since=since, until=until)
+
+
+class GetRevenueDaily:
+    def __init__(
+        self, read_model: RevenueDailyReadModel, tenant_context: TenantContext
+    ) -> None:
+        self._read_model = read_model
+        self._tenant_context = tenant_context
+
+    async def execute(
+        self,
+        *,
+        tenant_id: str,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> list[RevenueDailyPoint]:
+        self._tenant_context.set(tenant_id)
+        return await self._read_model.daily(tenant_id, since=since, until=until)
 
 
 class GetPaymentMix:

@@ -19,6 +19,7 @@ from app.application.analytics.rebuild import RebuildSalesFacts
 from app.application.analytics.use_cases import (
     GetPaymentMix,
     GetProductPerformance,
+    GetRevenueDaily,
     GetRevenueSummary,
 )
 from app.application.cashier.tips import GetTipsReport, PayTips
@@ -148,6 +149,7 @@ from app.infrastructure.persistence.advisor_settings_repo import (
 from app.infrastructure.persistence.analytics_repo import (
     SqlAlchemyPaymentMixReadModel,
     SqlAlchemyProductPerformanceReadModel,
+    SqlAlchemyRevenueDailyReadModel,
     SqlAlchemyRevenueReadModel,
 )
 from app.infrastructure.persistence.audit_repo import SqlAlchemyAuditRepository
@@ -872,6 +874,12 @@ class Container(containers.DeclarativeContainer):
     )
     get_revenue_summary = providers.Factory(
         GetRevenueSummary, read_model=revenue_read_model, tenant_context=tenant_context
+    )
+    revenue_daily_read_model = providers.Factory(
+        SqlAlchemyRevenueDailyReadModel, session_factory=db.provided.session
+    )
+    get_revenue_daily = providers.Factory(
+        GetRevenueDaily, read_model=revenue_daily_read_model, tenant_context=tenant_context
     )
     get_payment_mix = providers.Factory(
         GetPaymentMix, read_model=payment_mix_read_model, tenant_context=tenant_context

@@ -13,6 +13,8 @@ from app.application.analytics.read_models import (
     PaymentMixRow,
     ProductPerformanceReadModel,
     ProductPerformanceRow,
+    RevenueDailyPoint,
+    RevenueDailyReadModel,
     RevenueReadModel,
     RevenueSummary,
 )
@@ -26,6 +28,47 @@ async def _tenant_currency(session, tenant_id: str) -> str:
         await session.execute(select(TenantORM.currency).where(TenantORM.id == tenant_id))
     ).scalar_one_or_none()
     return currency if currency is not None else "ARS"
+
+
+class SqlAlchemyRevenueDailyReadModel(RevenueDailyReadModel):
+    """Serie diaria de facturación (accrual) para el gráfico del dashboard.
+    Trunca ``occurred_at`` por día en UTC; los días sin ventas no se emiten."""
+
+    def __init__(self, session_factory: SessionFactory) -> None:
+        self._session_factory = session_factory
+
+    async def daily(
+        self,
+        tenant_id: str,
+        *,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> list[RevenueDailyPoint]:
+        async with self._session_factory() as session:
+            day = func.date_trunc("day", SaleFactORM.occurred_at)
+            stmt = (
+                select(
+                    day,
+                    func.coalesce(func.sum(SaleFactORM.line_amount), 0),
+                    func.count(func.distinct(SaleFactORM.order_id)),
+                )
+                .where(SaleFactORM.tenant_id == tenant_id)
+                .group_by(day)
+                .order_by(day)
+            )
+            if since is not None:
+                stmt = stmt.where(SaleFactORM.occurred_at >= since)
+            if until is not None:
+                stmt = stmt.where(SaleFactORM.occurred_at <= until)
+            rows = (await session.execute(stmt)).all()
+            return [
+                RevenueDailyPoint(
+                    day=bucket.date(),
+                    sales_amount=int(sales),
+                    orders_count=int(orders),
+                )
+                for bucket, sales, orders in rows
+            ]
 
 
 class SqlAlchemyRevenueReadModel(RevenueReadModel):

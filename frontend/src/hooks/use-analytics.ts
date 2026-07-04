@@ -11,6 +11,14 @@ export function useRevenue(query: AnalyticsQuery) {
   })
 }
 
+export function useRevenueDaily(query: AnalyticsQuery) {
+  const { analyticsApi } = useServices()
+  return useQuery({
+    queryKey: ["analytics-revenue-daily", query],
+    queryFn: () => analyticsApi.revenueDaily(query),
+  })
+}
+
 export function usePaymentMix(query: AnalyticsQuery) {
   const { analyticsApi } = useServices()
   return useQuery({
