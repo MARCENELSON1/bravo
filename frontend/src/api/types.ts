@@ -14,11 +14,14 @@ export interface MessageResponse {
   message: string
 }
 
-// GET /api/v1/ping — the "whoami". Note it does NOT include the email.
+// GET /api/v1/me — the "whoami" with human-facing names (user + tenant).
 export interface MeResponse {
   tenant_id: string
   user_id: string
   role: Role
+  email: string
+  name: string | null
+  tenant_name: string
 }
 
 export interface OnboardingPayload {
@@ -26,6 +29,7 @@ export interface OnboardingPayload {
   tenant_slug: string
   owner_email: string
   owner_password: string
+  owner_name?: string
 }
 
 export interface OnboardingResponse {

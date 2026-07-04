@@ -33,6 +33,7 @@ from app.application.floor.use_cases import GetFloor
 from app.application.identity.accept_invitation import AcceptInvitation
 from app.application.identity.authenticate import Authenticate
 from app.application.identity.change_password import ChangePassword
+from app.application.identity.get_my_profile import GetMyProfile
 from app.application.identity.invite_user import InviteUser
 from app.application.identity.logout import Logout
 from app.application.identity.onboard_tenant import OnboardTenant
@@ -344,6 +345,12 @@ class Container(containers.DeclarativeContainer):
         tenant_context=tenant_context,
         verification_token_ttl_hours=config.provided.verification_token_ttl_hours,
         app_base_url=config.provided.app_base_url,
+    )
+    get_my_profile = providers.Factory(
+        GetMyProfile,
+        users=user_repository,
+        tenants=tenant_repository,
+        tenant_context=tenant_context,
     )
     invite_user = providers.Factory(
         InviteUser,

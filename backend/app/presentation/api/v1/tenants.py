@@ -27,6 +27,7 @@ async def onboarding(
             tenant_slug=body.tenant_slug,
             owner_email=body.owner_email,
             owner_password=body.owner_password,
+            owner_name=body.owner_name,
         )
     )
     return OnboardingResponse(

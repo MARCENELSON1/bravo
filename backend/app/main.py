@@ -24,6 +24,7 @@ from app.presentation.api.v1 import (
     inventory,
     invoices,
     kds,
+    me,
     orders,
     payments,
     ping,
@@ -69,6 +70,7 @@ def create_app() -> FastAPI:
     app.include_router(tenants.router, prefix="/api/v1")
     app.include_router(users.router, prefix="/api/v1")
     app.include_router(ping.router, prefix="/api/v1")
+    app.include_router(me.router, prefix="/api/v1")
     app.include_router(tables.router, prefix="/api/v1")
     app.include_router(products.router, prefix="/api/v1")
     app.include_router(orders.router, prefix="/api/v1")

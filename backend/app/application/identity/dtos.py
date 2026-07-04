@@ -20,6 +20,7 @@ class OnboardTenantInput:
     tenant_slug: str
     owner_email: str
     owner_password: str
+    owner_name: str | None = None
 
 
 @dataclass(frozen=True)

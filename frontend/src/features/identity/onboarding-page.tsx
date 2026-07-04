@@ -21,6 +21,7 @@ const schema = z.object({
     .regex(/^[a-z0-9-]+$/, "Solo minúsculas, números y guiones"),
   ownerEmail: z.email("Email inválido"),
   ownerPassword: z.string().min(8, "Mínimo 8 caracteres").max(128, "Máximo 128 caracteres"),
+  ownerName: z.string().max(120, "Máximo 120 caracteres").optional(),
 })
 
 type OnboardingValues = z.infer<typeof schema>
@@ -37,7 +38,13 @@ export function OnboardingPage() {
     formState: { errors },
   } = useForm<OnboardingValues>({
     resolver: zodResolver(schema),
-    defaultValues: { tenantName: "", tenantSlug: "", ownerEmail: "", ownerPassword: "" },
+    defaultValues: {
+      tenantName: "",
+      tenantSlug: "",
+      ownerEmail: "",
+      ownerPassword: "",
+      ownerName: "",
+    },
   })
 
   const onSubmit = handleSubmit((values) => {
@@ -48,6 +55,7 @@ export function OnboardingPage() {
         tenant_slug: values.tenantSlug,
         owner_email: values.ownerEmail,
         owner_password: values.ownerPassword,
+        owner_name: values.ownerName?.trim() ? values.ownerName.trim() : undefined,
       },
       {
         onSuccess: () => setDone(true),
@@ -120,6 +128,19 @@ export function OnboardingPage() {
             />
             <FieldDescription>Lo usás para iniciar sesión. Solo minúsculas, números y guiones.</FieldDescription>
             <FieldError>{errors.tenantSlug?.message}</FieldError>
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="ownerName">Tu nombre</FieldLabel>
+            <Input
+              id="ownerName"
+              placeholder="Juan Pérez"
+              autoComplete="name"
+              aria-invalid={!!errors.ownerName}
+              {...register("ownerName")}
+            />
+            <FieldDescription>Opcional. Lo usamos para saludarte en el panel.</FieldDescription>
+            <FieldError>{errors.ownerName?.message}</FieldError>
           </Field>
 
           <Field>

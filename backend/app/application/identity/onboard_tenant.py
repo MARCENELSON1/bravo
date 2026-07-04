@@ -63,6 +63,7 @@ class OnboardTenant:
             tenant_id=tenant.id,
             email=email,
             role=Role.OWNER,
+            name=data.owner_name.strip() if data.owner_name else None,
             password_hash=self._hasher.hash(data.owner_password),
             email_verified=False,
             active=True,

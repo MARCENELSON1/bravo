@@ -1,25 +1,23 @@
 import type { ComponentType } from "react"
 import {
-  BarChart3,
-  Bot,
   Boxes,
   Calculator,
-  CalendarClock,
   ChefHat,
   Clock,
   Coffee,
   Coins,
   FileText,
-  LayoutDashboard,
+  Home,
+  Lightbulb,
+  LineChart,
   Package,
   Plug,
   QrCode,
   Receipt,
   Sparkles,
   Truck,
-  UtensilsCrossed,
   Users,
-  Wallet,
+  UtensilsCrossed,
 } from "lucide-react"
 
 import type { Role } from "@/api/types"
@@ -37,44 +35,30 @@ export interface NavGroup {
   items: NavItem[]
 }
 
-// Sidebar groups. Each item is gated by role (in addition to the route guards).
-export const NAV_GROUPS: NavGroup[] = [
+// Nav híbrida (identidad Wellnod): los destinos principales planos arriba +
+// grupos "Operación" y "Gestión" debajo. Cada ítem sigue gateado por rol
+// (además de los route guards) — misma cobertura de rutas que la nav previa.
+export const NAV_ITEMS: NavItem[] = [
   {
-    label: "Resumen",
-    items: [
-      {
-        label: "Dashboard",
-        to: "/app",
-        icon: LayoutDashboard,
-        roles: ["OWNER", "MANAGER", "CASHIER"],
-        end: true,
-      },
-      {
-        label: "Finanzas",
-        to: "/app/finanzas",
-        icon: Wallet,
-        roles: ["OWNER", "MANAGER"],
-      },
-      {
-        label: "Asesor",
-        to: "/app/advisor",
-        icon: Sparkles,
-        roles: ["OWNER", "MANAGER"],
-      },
-      {
-        label: "Copiloto",
-        to: "/app/copilot",
-        icon: Bot,
-        roles: ["OWNER", "MANAGER"],
-      },
-      {
-        label: "Analítica",
-        to: "/app/analytics",
-        icon: BarChart3,
-        roles: ["OWNER", "MANAGER"],
-      },
-    ],
+    label: "Inicio",
+    to: "/app",
+    icon: Home,
+    roles: ["OWNER", "MANAGER", "WAITER", "KITCHEN", "BAR", "CASHIER"],
+    end: true,
   },
+  { label: "Finanzas", to: "/app/finanzas", icon: LineChart, roles: ["OWNER", "MANAGER"] },
+  {
+    label: "Clientes",
+    to: "/app/reservations",
+    icon: Users,
+    roles: ["OWNER", "MANAGER", "WAITER", "CASHIER"],
+  },
+  { label: "Productos", to: "/app/products", icon: Package, roles: ["OWNER", "MANAGER"] },
+  { label: "IA Insights", to: "/app/copilot", icon: Lightbulb, roles: ["OWNER", "MANAGER"] },
+  { label: "Reportes", to: "/app/analytics", icon: FileText, roles: ["OWNER", "MANAGER"] },
+]
+
+export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Operación",
     items: [
@@ -86,18 +70,17 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       { label: "Cocina", to: "/app/kds", icon: ChefHat, roles: ["KITCHEN", "MANAGER", "OWNER"] },
       { label: "Barra", to: "/app/bar", icon: Coffee, roles: ["BAR", "MANAGER", "OWNER"] },
-      { label: "Caja", to: "/app/caja", icon: Calculator, roles: ["CASHIER", "MANAGER", "OWNER"] },
+      {
+        label: "Caja",
+        to: "/app/caja",
+        icon: Calculator,
+        roles: ["CASHIER", "MANAGER", "OWNER"],
+      },
       {
         label: "Propinas",
         to: "/app/propinas",
         icon: Coins,
         roles: ["CASHIER", "MANAGER", "OWNER"],
-      },
-      {
-        label: "Reservas",
-        to: "/app/reservations",
-        icon: CalendarClock,
-        roles: ["WAITER", "CASHIER", "MANAGER", "OWNER"],
       },
       {
         label: "Fichar",
@@ -108,21 +91,9 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Catálogo",
+    label: "Gestión",
     items: [
-      { label: "Productos", to: "/app/products", icon: Package, roles: ["OWNER", "MANAGER"] },
-    ],
-  },
-  {
-    label: "Stock",
-    items: [
-      { label: "Insumos", to: "/app/stock", icon: Boxes, roles: ["OWNER", "MANAGER"] },
-      { label: "Proveedores", to: "/app/suppliers", icon: Truck, roles: ["OWNER", "MANAGER"] },
-    ],
-  },
-  {
-    label: "Finanzas",
-    items: [
+      { label: "Asesor", to: "/app/advisor", icon: Sparkles, roles: ["OWNER", "MANAGER"] },
       { label: "Egresos", to: "/app/expenses", icon: Receipt, roles: ["OWNER", "MANAGER"] },
       {
         label: "Comprobantes",
@@ -130,11 +101,8 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: FileText,
         roles: ["OWNER", "MANAGER"],
       },
-    ],
-  },
-  {
-    label: "Administración",
-    items: [
+      { label: "Insumos", to: "/app/stock", icon: Boxes, roles: ["OWNER", "MANAGER"] },
+      { label: "Proveedores", to: "/app/suppliers", icon: Truck, roles: ["OWNER", "MANAGER"] },
       { label: "Personal", to: "/app/staff", icon: Clock, roles: ["OWNER", "MANAGER"] },
       {
         label: "Integraciones",

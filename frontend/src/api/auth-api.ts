@@ -43,9 +43,9 @@ export class AuthApi {
     }
   }
 
-  // "Whoami" from the access token claims (tenant/user/role; no email).
+  // "Whoami" with human-facing names (user + tenant) — feeds the app shell.
   async me(): Promise<MeResponse> {
-    return this.http.request<MeResponse>("GET", "/ping", { auth: true })
+    return this.http.request<MeResponse>("GET", "/me", { auth: true })
   }
 
   async onboard(payload: OnboardingPayload): Promise<OnboardingResponse> {
