@@ -45,3 +45,8 @@ venv/
 
 # Claude Code (config local de la máquina)
 .claude/settings.local.json
+
+# Material local del usuario (specs/borradores/descargas, no son parte del repo)
+Pantalla Finanzas .md
+WhatsApp Image*.jpeg
+drive-download-*/
