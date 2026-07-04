@@ -6,7 +6,11 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
 from app.application.advisor.report import AdvisorReport, GetAdvisorReport
-from app.application.advisor.use_cases import GetAdvisorSettings, UpdateAdvisorSettings
+from app.application.advisor.use_cases import (
+    GetAdvisorSettings,
+    RebuildAdvisorDiagnostics,
+    UpdateAdvisorSettings,
+)
 from app.container import Container
 from app.domain.advisor.entities import AdvisorSettings
 from app.domain.identity.tokens import AccessClaims
@@ -14,6 +18,7 @@ from app.domain.user.value_objects import Role
 from app.presentation.rbac import require_roles
 from app.presentation.schemas.advisor import (
     AdvisorKpisResponse,
+    AdvisorRebuildResponse,
     AdvisorReportResponse,
     AdvisorSettingsResponse,
     NarratedInsightResponse,
@@ -89,6 +94,18 @@ async def get_report(
 ) -> AdvisorReportResponse:
     report = await use_case.execute(tenant_id=identity.tenant_id, since=since, until=until)
     return _report_response(report)
+
+
+@router.post("/diagnostics/rebuild", response_model=AdvisorRebuildResponse)
+@inject
+async def rebuild_diagnostics(
+    identity: AccessClaims = Depends(require_roles(Role.OWNER)),
+    use_case: RebuildAdvisorDiagnostics = Depends(
+        Provide[Container.rebuild_advisor_diagnostics]
+    ),
+) -> AdvisorRebuildResponse:
+    purged = await use_case.execute(tenant_id=identity.tenant_id)
+    return AdvisorRebuildResponse(purged=purged)
 
 
 @router.get("/settings", response_model=AdvisorSettingsResponse)
