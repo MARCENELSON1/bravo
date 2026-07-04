@@ -19,6 +19,7 @@ class User:
     tenant_id: str
     email: Email
     role: Role
+    name: str | None = None
     password_hash: str | None = None
     email_verified: bool = False
     active: bool = True

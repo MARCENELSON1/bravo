@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 
+import { WellnodMark } from "@/components/brand/wellnod-mark"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 
 // Split-screen shell reused by every identity screen. The brand panel is hidden
@@ -23,8 +24,11 @@ export function AuthLayout({
         <div className="pointer-events-none absolute -bottom-32 -left-16 size-80 rounded-full bg-primary-foreground/5 blur-3xl" />
 
         <div className="relative flex items-center gap-2">
-          <div className="size-7 rounded-md bg-primary-foreground/90" />
-          <span className="font-heading text-sm font-semibold tracking-wide">NÚCLEO</span>
+          <WellnodMark className="h-8 w-auto text-primary-foreground/90" />
+          <span className="font-heading text-lg tracking-tight">
+            <span className="font-bold">Well</span>
+            <span className="font-light text-primary-foreground/70">nod</span>
+          </span>
         </div>
 
         <div className="relative">
@@ -41,7 +45,7 @@ export function AuthLayout({
           </ul>
         </div>
 
-        <div className="relative text-xs text-primary-foreground/50">© NÚCLEO</div>
+        <div className="relative text-xs text-primary-foreground/50">© Wellnod</div>
       </aside>
 
       <main className="flex items-center justify-center bg-background p-6">

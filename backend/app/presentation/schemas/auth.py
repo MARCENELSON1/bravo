@@ -46,3 +46,12 @@ class PingResponse(BaseModel):
     tenant_id: str
     user_id: str
     role: str
+
+
+class MeResponse(BaseModel):
+    tenant_id: str
+    user_id: str
+    role: str
+    email: str
+    name: str | None
+    tenant_name: str

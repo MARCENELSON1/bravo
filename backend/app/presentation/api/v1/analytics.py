@@ -9,6 +9,7 @@ from app.application.analytics.rebuild import RebuildSalesFacts
 from app.application.analytics.use_cases import (
     GetPaymentMix,
     GetProductPerformance,
+    GetRevenueDaily,
     GetRevenueSummary,
 )
 from app.container import Container
@@ -19,10 +20,28 @@ from app.presentation.schemas.analytics import (
     PaymentMixRowResponse,
     ProductPerformanceRowResponse,
     RebuildResponse,
+    RevenueDailyPointResponse,
     RevenueSummaryResponse,
 )
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
+
+
+@router.get("/revenue/daily", response_model=list[RevenueDailyPointResponse])
+@inject
+async def get_revenue_daily(
+    since: datetime | None = Query(default=None, alias="from"),
+    until: datetime | None = Query(default=None, alias="to"),
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: GetRevenueDaily = Depends(Provide[Container.get_revenue_daily]),
+) -> list[RevenueDailyPointResponse]:
+    points = await use_case.execute(tenant_id=identity.tenant_id, since=since, until=until)
+    return [
+        RevenueDailyPointResponse(
+            day=p.day, sales_amount=p.sales_amount, orders_count=p.orders_count
+        )
+        for p in points
+    ]
 
 
 @router.get("/revenue", response_model=RevenueSummaryResponse)

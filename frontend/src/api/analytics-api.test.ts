@@ -26,6 +26,19 @@ describe("AnalyticsApi", () => {
     expect(request.mock.calls[0][1]).toBe("/analytics/revenue")
   })
 
+  it("requests the daily revenue series with the period", async () => {
+    const request = vi.fn().mockResolvedValue([])
+    const api = new AnalyticsApi({ request } as unknown as HttpClient)
+
+    await api.revenueDaily({ from: "2026-06-28T00:00:00.000Z" })
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("GET")
+    expect(path).toContain("/analytics/revenue/daily?")
+    expect(path).toContain("from=2026-06-28")
+    expect(options).toMatchObject({ auth: true })
+  })
+
   it("passes the limit to product performance", async () => {
     const request = vi.fn().mockResolvedValue([])
     const api = new AnalyticsApi({ request } as unknown as HttpClient)

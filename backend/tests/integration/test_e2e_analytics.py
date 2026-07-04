@@ -223,3 +223,40 @@ async def test_analytics_rls_isolation(client):
     summary = (await http.get("/api/v1/analytics/revenue", headers=_auth(t2))).json()
     assert summary["sales_amount"] == 0
     assert summary["orders_count"] == 0
+
+
+async def test_revenue_daily_buckets_by_day(client):
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    pid = await _product(http, h, "Milanesa", 150000)
+    oid = await _order_with(http, h, pid, 2)
+    await _pay(http, h, oid, 300000)
+
+    resp = await http.get("/api/v1/analytics/revenue/daily", headers=h)
+    assert resp.status_code == 200, resp.text
+    points = resp.json()
+    assert len(points) == 1  # una sola venta hoy → un único bucket
+    assert points[0]["sales_amount"] == 300000
+    assert points[0]["orders_count"] == 1
+    assert points[0]["day"]  # ISO date
+
+    # El filtro de rango excluye el bucket si el rango no lo cubre.
+    empty = (
+        await http.get(
+            "/api/v1/analytics/revenue/daily?to=2000-01-01T00:00:00Z", headers=h
+        )
+    ).json()
+    assert empty == []
+
+
+async def test_revenue_daily_rls_isolation(client):
+    http, fake_email = client
+    t1 = await _onboard_verify_login(http, fake_email, slug="uno", email="a@uno.com")
+    pid = await _product(http, _auth(t1), "Milanesa", 150000)
+    oid = await _order_with(http, _auth(t1), pid, 1)
+    await _pay(http, _auth(t1), oid, 150000)
+
+    t2 = await _onboard_verify_login(http, fake_email, slug="dos", email="b@dos.com")
+    assert (
+        await http.get("/api/v1/analytics/revenue/daily", headers=_auth(t2))
+    ).json() == []

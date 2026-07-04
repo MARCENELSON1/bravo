@@ -56,6 +56,7 @@ class UserORM(Base):
         index=True,
     )
     email: Mapped[str] = mapped_column(String(254))
+    name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     role: Mapped[str] = mapped_column(String(20))
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)

@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-_SIGNATURE = "— El equipo de BRAVO"
+_SIGNATURE = "— El equipo de Wellnod"
 
 
 def verification_email(link: str) -> tuple[str, str]:
-    subject = "Verificá tu email — BRAVO"
+    subject = "Verificá tu email — Wellnod"
     body = (
         "¡Hola!\n\n"
-        "Gracias por crear tu cuenta en BRAVO. Para activarla, verificá tu email "
+        "Gracias por crear tu cuenta en Wellnod. Para activarla, verificá tu email "
         "haciendo clic en el siguiente enlace:\n\n"
         f"{link}\n\n"
         "Si no fuiste vos, podés ignorar este mensaje.\n\n"
@@ -19,7 +19,7 @@ def verification_email(link: str) -> tuple[str, str]:
 
 
 def password_reset_email(link: str) -> tuple[str, str]:
-    subject = "Restablecé tu contraseña — BRAVO"
+    subject = "Restablecé tu contraseña — Wellnod"
     body = (
         "Recibimos un pedido para restablecer tu contraseña.\n\n"
         "Creá una nueva contraseña desde este enlace "
@@ -32,9 +32,9 @@ def password_reset_email(link: str) -> tuple[str, str]:
 
 
 def invitation_email(link: str, tenant_name: str) -> tuple[str, str]:
-    subject = f"Te invitaron a {tenant_name} en BRAVO"
+    subject = f"Te invitaron a {tenant_name} en Wellnod"
     body = (
-        f"Te sumaron al equipo de {tenant_name} en BRAVO.\n\n"
+        f"Te sumaron al equipo de {tenant_name} en Wellnod.\n\n"
         "Aceptá la invitación y definí tu contraseña desde este enlace:\n\n"
         f"{link}\n\n"
         "Si no esperabas esta invitación, podés ignorar este mensaje.\n\n"

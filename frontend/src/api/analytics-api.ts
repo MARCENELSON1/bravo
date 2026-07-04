@@ -3,6 +3,7 @@ import type {
   AnalyticsQuery,
   PaymentMixRowDTO,
   ProductPerformanceRowDTO,
+  RevenueDailyPointDTO,
   RevenueSummaryDTO,
 } from "@/api/types-analytics"
 
@@ -26,6 +27,14 @@ export class AnalyticsApi {
     return this.http.request<RevenueSummaryDTO>("GET", `/analytics/revenue${this.period(query)}`, {
       auth: true,
     })
+  }
+
+  revenueDaily(query: AnalyticsQuery = {}): Promise<RevenueDailyPointDTO[]> {
+    return this.http.request<RevenueDailyPointDTO[]>(
+      "GET",
+      `/analytics/revenue/daily${this.period(query)}`,
+      { auth: true }
+    )
   }
 
   paymentMix(query: AnalyticsQuery = {}): Promise<PaymentMixRowDTO[]> {

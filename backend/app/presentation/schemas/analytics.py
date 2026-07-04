@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 from pydantic import BaseModel
 
 # All amounts are integer minor units (centavos) in the tenant's currency.
@@ -14,6 +16,12 @@ class RevenueSummaryResponse(BaseModel):
     gross_margin_amount: int
     orders_count: int
     average_ticket_amount: int
+
+
+class RevenueDailyPointResponse(BaseModel):
+    day: date
+    sales_amount: int
+    orders_count: int
 
 
 class PaymentMixRowResponse(BaseModel):
