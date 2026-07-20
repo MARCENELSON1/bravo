@@ -57,6 +57,9 @@ class UserORM(Base):
     )
     email: Mapped[str] = mapped_column(String(254))
     name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    # Valor/hora en unidad mínima (Tanda D Finanzas): opcional; sin rate el
+    # labor cae al costo mensual configurado en el Asesor.
+    hourly_rate_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     role: Mapped[str] = mapped_column(String(20))
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)

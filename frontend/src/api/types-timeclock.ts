@@ -36,6 +36,7 @@ export interface StaffReportRowDTO {
   overtime_minutes: number
   tables_served: number
   sales_amount: number
+  hourly_rate_amount: number | null // valor/hora en minor units; null → sin cargar
   currency: string
 }
 

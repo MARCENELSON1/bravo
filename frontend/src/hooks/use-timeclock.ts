@@ -53,6 +53,18 @@ export function useStaffReport(query: { from?: string; to?: string } = {}) {
   })
 }
 
+export function useSetHourlyRate() {
+  const { timeClockApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ userId, amount }: { userId: string; amount: number | null }) =>
+      timeClockApi.setHourlyRate(userId, amount),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["staff-report"] })
+    },
+  })
+}
+
 export function useRegisterPresenceDevice() {
   const { timeClockApi } = useServices()
   return useMutation({ mutationFn: () => timeClockApi.registerPresenceDevice() })

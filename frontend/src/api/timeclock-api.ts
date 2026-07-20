@@ -51,6 +51,17 @@ export class TimeClockApi {
     return this.http.request<StaffReportDTO>("GET", `/reports/staff${suffix}`, { auth: true })
   }
 
+  // Valor/hora del empleado (Tanda D Finanzas): null borra el rate.
+  setHourlyRate(
+    userId: string,
+    hourlyRateAmount: number | null
+  ): Promise<{ user_id: string; hourly_rate_amount: number | null }> {
+    return this.http.request("PUT", `/users/${userId}/hourly-rate`, {
+      body: { hourly_rate_amount: hourlyRateAmount },
+      auth: true,
+    })
+  }
+
   // --- Presence layer (Fase 5.5) ---
 
   // OWNER/MANAGER provisions a local display, getting its device token.

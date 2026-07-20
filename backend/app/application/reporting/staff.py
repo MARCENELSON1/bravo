@@ -19,6 +19,7 @@ class StaffReportRow:
     overtime_minutes: int  # Σ daily_overtime over the period, vs the tenant standard
     tables_served: int  # distinct tables of the worker's PAID orders
     sales_amount: int  # total of the worker's PAID orders (minor units)
+    hourly_rate_amount: int | None  # valor/hora (minor units); None → sin cargar
     currency: str
 
 

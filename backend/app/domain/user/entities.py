@@ -20,6 +20,7 @@ class User:
     email: Email
     role: Role
     name: str | None = None
+    hourly_rate_amount: int | None = None  # minor units; None → sin rate cargado
     password_hash: str | None = None
     email_verified: bool = False
     active: bool = True
