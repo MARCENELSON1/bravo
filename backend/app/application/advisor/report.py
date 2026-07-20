@@ -56,6 +56,17 @@ class AdvisorReadModel(ABC):
     ) -> AdvisorMetrics: ...
 
 
+class LaborCostReadModel(ABC):
+    """Labor real del período (Tanda D Finanzas): Σ minutos fichados × valor/hora
+    de cada empleado con rate cargado. Devuelve 0 si nadie tiene rate o no hubo
+    turnos cerrados — en ese caso el labor cae al mensual prorrateado."""
+
+    @abstractmethod
+    async def total(
+        self, tenant_id: str, since: datetime, until: datetime
+    ) -> int: ...
+
+
 @dataclass(frozen=True)
 class AdvisorReport:
     kpis: AdvisorKpis
@@ -80,6 +91,7 @@ class GetAdvisorReport:
         tenant_context: TenantContext,
         llm_enabled: bool = False,
         cache: AdvisorDiagnosticsCache | None = None,
+        labor: LaborCostReadModel | None = None,
     ) -> None:
         self._read_model = read_model
         self._settings = settings
@@ -88,6 +100,7 @@ class GetAdvisorReport:
         self._tenant_context = tenant_context
         self._llm_enabled = llm_enabled
         self._cache = cache
+        self._labor = labor
 
     async def execute(
         self,
@@ -105,12 +118,21 @@ class GetAdvisorReport:
         target = settings.target_food_cost_bps if settings else _DEFAULT_TARGET_FOOD_COST_BPS
 
         metrics = await self._read_model.metrics(tenant_id, since, until)
-        kpis = self._build_kpis(metrics, settings, period_days)
-
-        prev_metrics = await self._read_model.metrics(
-            tenant_id, since - timedelta(days=period_days), since
+        labor_real = (
+            await self._labor.total(tenant_id, since, until) if self._labor else 0
         )
-        previous = self._build_kpis(prev_metrics, settings, period_days)
+        kpis = self._build_kpis(
+            metrics, settings, period_days, labor_override=labor_real or None
+        )
+
+        prev_since = since - timedelta(days=period_days)
+        prev_metrics = await self._read_model.metrics(tenant_id, prev_since, since)
+        prev_labor = (
+            await self._labor.total(tenant_id, prev_since, since) if self._labor else 0
+        )
+        previous = self._build_kpis(
+            prev_metrics, settings, period_days, labor_override=prev_labor or None
+        )
 
         insights = detect_insights(kpis, target_food_cost_bps=target, previous=previous)
         # Fase 9.1 — caché de diagnostics (capa 3 del doc): con narrador/synthesizer
@@ -149,13 +171,21 @@ class GetAdvisorReport:
 
     @staticmethod
     def _build_kpis(
-        metrics: AdvisorMetrics, settings: AdvisorSettings | None, period_days: int
+        metrics: AdvisorMetrics,
+        settings: AdvisorSettings | None,
+        period_days: int,
+        labor_override: int | None = None,
     ) -> AdvisorKpis:
-        labor = (
-            prorate_monthly(settings.monthly_labor_cost.amount, period_days)
-            if settings
-            else 0
-        )
+        # Tanda D: con horas fichadas × valor/hora se usa el labor REAL; si no hay
+        # rates/turnos en el período, cae al mensual configurado prorrateado.
+        if labor_override is not None:
+            labor = labor_override
+        else:
+            labor = (
+                prorate_monthly(settings.monthly_labor_cost.amount, period_days)
+                if settings
+                else 0
+            )
         other = (
             prorate_monthly(settings.monthly_other_fixed_costs.amount, period_days)
             if settings

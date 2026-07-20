@@ -36,6 +36,7 @@ from app.application.identity.authenticate import Authenticate
 from app.application.identity.change_password import ChangePassword
 from app.application.identity.get_my_profile import GetMyProfile
 from app.application.identity.invite_user import InviteUser
+from app.application.identity.set_hourly_rate import SetUserHourlyRate
 from app.application.identity.logout import Logout
 from app.application.identity.onboard_tenant import OnboardTenant
 from app.application.identity.refresh_token import RefreshAccessToken
@@ -166,6 +167,7 @@ from app.infrastructure.persistence.food_cost_repo import SqlAlchemyFoodCostRead
 from app.infrastructure.persistence.ingredient_repo import SqlAlchemyIngredientRepository
 from app.infrastructure.persistence.invitation_repo import SqlAlchemyInvitationRepository
 from app.infrastructure.persistence.invoice_repo import SqlAlchemyInvoiceRepository
+from app.infrastructure.persistence.labor_cost_repo import SqlAlchemyLaborCostReadModel
 from app.infrastructure.persistence.order_repo import SqlAlchemyOrderRepository
 from app.infrastructure.persistence.payment_repo import SqlAlchemyPaymentRepository
 from app.infrastructure.persistence.presence_store_repo import (
@@ -900,6 +902,9 @@ class Container(containers.DeclarativeContainer):
     advisor_diagnostics_cache = providers.Factory(
         SqlAlchemyAdvisorDiagnosticsCache, session_factory=db.provided.session
     )
+    labor_cost_read_model = providers.Factory(
+        SqlAlchemyLaborCostReadModel, session_factory=db.provided.session
+    )
     # Capa LLM grounded, detrás de Selector y APAGADA por default (off=template).
     template_narrator = providers.Singleton(TemplateNarrator)
     advisor_llm = providers.Singleton(
@@ -928,6 +933,7 @@ class Container(containers.DeclarativeContainer):
         tenant_context=tenant_context,
         llm_enabled=config.provided.advisor_llm_enabled,
         cache=advisor_diagnostics_cache,
+        labor=labor_cost_read_model,
     )
     # --- Pantalla Finanzas (compone advisor + product performance) ---
     get_finance_overview = providers.Factory(
@@ -958,6 +964,11 @@ class Container(containers.DeclarativeContainer):
     rebuild_advisor_diagnostics = providers.Factory(
         RebuildAdvisorDiagnostics,
         cache=advisor_diagnostics_cache,
+        tenant_context=tenant_context,
+    )
+    set_user_hourly_rate = providers.Factory(
+        SetUserHourlyRate,
+        users=user_repository,
         tenant_context=tenant_context,
     )
 

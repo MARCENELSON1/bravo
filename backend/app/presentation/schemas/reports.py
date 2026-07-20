@@ -21,6 +21,7 @@ class StaffReportRowResponse(BaseModel):
     overtime_minutes: int
     tables_served: int
     sales_amount: int  # minor units
+    hourly_rate_amount: int | None  # valor/hora en minor units; null → sin cargar
     currency: str
 
 

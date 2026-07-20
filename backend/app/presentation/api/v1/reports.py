@@ -63,6 +63,7 @@ async def staff_report(
                 overtime_minutes=r.overtime_minutes,
                 tables_served=r.tables_served,
                 sales_amount=r.sales_amount,
+                hourly_rate_amount=r.hourly_rate_amount,
                 currency=r.currency,
             )
             for r in report.rows

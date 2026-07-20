@@ -102,4 +102,19 @@ describe("TimeClockApi", () => {
     expect(path).toBe("/timeclock/presence/punch")
     expect(options).toMatchObject({ body: { presented: "ABCDEF" }, auth: true })
   })
+
+  it("sets the hourly rate (null clears it)", async () => {
+    const request = vi.fn().mockResolvedValue({ user_id: "u1", hourly_rate_amount: 200000 })
+    const api = new TimeClockApi({ request } as unknown as HttpClient)
+
+    await api.setHourlyRate("u1", 200000)
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("PUT")
+    expect(path).toBe("/users/u1/hourly-rate")
+    expect(options).toMatchObject({ body: { hourly_rate_amount: 200000 }, auth: true })
+
+    await api.setHourlyRate("u1", null)
+    expect(request.mock.calls[1][2]).toMatchObject({ body: { hourly_rate_amount: null } })
+  })
 })

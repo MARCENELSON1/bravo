@@ -112,11 +112,13 @@ class SqlAlchemyStaffReportReadModel(StaffReportReadModel):
             if not user_ids:
                 return StaffReport(currency=currency, rows=[])
 
-            emails = {
-                uid: email
-                for uid, email in (
+            users = {
+                uid: (email, rate)
+                for uid, email, rate in (
                     await session.execute(
-                        select(UserORM.id, UserORM.email).where(
+                        select(
+                            UserORM.id, UserORM.email, UserORM.hourly_rate_amount
+                        ).where(
                             UserORM.tenant_id == tenant_id, UserORM.id.in_(user_ids)
                         )
                     )
@@ -126,7 +128,7 @@ class SqlAlchemyStaffReportReadModel(StaffReportReadModel):
             rows = [
                 StaffReportRow(
                     user_id=uid,
-                    email=emails.get(uid, ""),
+                    email=users.get(uid, ("", None))[0],
                     worked_minutes=sum(per_user_day.get(uid, {}).values()),
                     overtime_minutes=sum(
                         daily_overtime(m, standard)
@@ -134,6 +136,7 @@ class SqlAlchemyStaffReportReadModel(StaffReportReadModel):
                     ),
                     tables_served=tables_by_user.get(uid, 0),
                     sales_amount=sales_by_user.get(uid, 0),
+                    hourly_rate_amount=users.get(uid, ("", None))[1],
                     currency=currency,
                 )
                 for uid in user_ids

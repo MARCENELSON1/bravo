@@ -20,3 +20,13 @@ class InviteRequest(BaseModel):
 class AcceptInvitationRequest(BaseModel):
     token: str
     password: str = Field(min_length=8, max_length=128)
+
+
+class SetHourlyRateRequest(BaseModel):
+    # Minor units en la moneda del tenant; null borra el rate (vuelve al fallback).
+    hourly_rate_amount: int | None = Field(default=None, ge=0)
+
+
+class HourlyRateResponse(BaseModel):
+    user_id: str
+    hourly_rate_amount: int | None

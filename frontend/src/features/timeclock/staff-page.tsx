@@ -28,6 +28,7 @@ import {
 import {
   useAdjustShift,
   useRegisterPresenceDevice,
+  useSetHourlyRate,
   useShifts,
   useStaffReport,
 } from "@/hooks/use-timeclock"
@@ -230,6 +231,7 @@ export function StaffPage() {
                   <TableHead className="text-right">Extras</TableHead>
                   <TableHead className="text-right">Mesas</TableHead>
                   <TableHead className="text-right">Ventas</TableHead>
+                  <TableHead className="text-right">Valor hora</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -245,6 +247,9 @@ export function StaffPage() {
                     <TableCell className="text-right tabular-nums">{r.tables_served}</TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatMoney(r.sales_amount, r.currency)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <HourlyRateCell userId={r.user_id} rate={r.hourly_rate_amount} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -321,5 +326,49 @@ export function StaffPage() {
         </div>
       </section>
     </div>
+  )
+}
+
+// Valor/hora editable (Tanda D Finanzas): alimenta el labor cost real del
+// Asesor. Se edita en pesos y se guarda en minor units; vacío borra el rate.
+function HourlyRateCell({ userId, rate }: { userId: string; rate: number | null }) {
+  const setRate = useSetHourlyRate()
+  const [value, setValue] = useState(rate != null ? String(rate / 100) : "")
+
+  const save = () => {
+    const trimmed = value.trim()
+    const amount = trimmed === "" ? null : Math.round(Number(trimmed) * 100)
+    if (trimmed !== "" && (!Number.isFinite(amount) || (amount as number) < 0)) {
+      toast.error("Valor/hora inválido.")
+      setValue(rate != null ? String(rate / 100) : "")
+      return
+    }
+    if (amount === rate) return
+    setRate.mutate(
+      { userId, amount },
+      {
+        onError: (error) =>
+          toast.error(isApiError(error) ? error.message : "No pudimos guardar el valor/hora."),
+      }
+    )
+  }
+
+  return (
+    <Input
+      type="number"
+      min="0"
+      step="0.01"
+      inputMode="decimal"
+      placeholder="—"
+      aria-label="Valor hora"
+      className="ml-auto h-8 w-28 text-right tabular-nums"
+      value={value}
+      disabled={setRate.isPending}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={save}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur()
+      }}
+    />
   )
 }
