@@ -718,6 +718,8 @@ def advisor_settings_to_domain(row: AdvisorSettingsORM) -> AdvisorSettings:
         monthly_labor_cost=Money(row.labor_cost_amount, row.currency),
         monthly_other_fixed_costs=Money(row.other_fixed_amount, row.currency),
         target_food_cost_bps=row.target_food_cost_bps,
+        seats=row.seats,
+        daily_open_minutes=row.daily_open_minutes,
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
@@ -730,6 +732,8 @@ def advisor_settings_to_orm(settings: AdvisorSettings) -> AdvisorSettingsORM:
         other_fixed_amount=settings.monthly_other_fixed_costs.amount,
         currency=settings.currency,
         target_food_cost_bps=settings.target_food_cost_bps,
+        seats=settings.seats,
+        daily_open_minutes=settings.daily_open_minutes,
     )
 
 

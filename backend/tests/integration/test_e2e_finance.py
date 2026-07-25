@@ -73,6 +73,41 @@ async def test_finance_overview_returns_vital_kpis(client):
     assert isinstance(body["diagnostics"], list)
 
 
+async def test_finance_overview_revpash_and_turnover(client):
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    # Cargar asientos + horario (RevPASH) por la config del Asesor.
+    settings = await http.put(
+        "/api/v1/advisor/settings",
+        json={
+            "monthly_labor_cost": 0, "monthly_other_fixed_costs": 0,
+            "target_food_cost_bps": 3000, "seats": 40, "daily_open_minutes": 480,
+        },
+        headers=h,
+    )
+    assert settings.status_code == 200, settings.text
+    assert settings.json()["seats"] == 40
+
+    await _sell_with_recipe(http, h, price=150000, qty=2, cost_per_kg=80000)
+
+    kpis = {k["key"]: k for k in (await http.get("/api/v1/finance/overview", headers=h)).json()["kpis"]}
+    # RevPASH: ventas 300000 / (40 asientos × 8h × días) > 0, en $ por asiento-hora.
+    assert kpis["revpash"]["kind"] == "money"
+    assert kpis["revpash"]["value"] > 0
+    # Rotación presente y no negativa (con 100kg en stock vs 0,4kg vendidos redondea
+    # a 0 en el período — el cálculo exacto está en el unit test).
+    assert kpis["inventory_turnover"]["kind"] == "turnover"
+    assert kpis["inventory_turnover"]["value"] >= 0
+
+
+async def test_finance_overview_revpash_zero_without_seats(client):
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="bar", email="o@bar.com"))
+    await _sell_with_recipe(http, h, price=100000, qty=1, cost_per_kg=50000)
+    kpis = {k["key"]: k for k in (await http.get("/api/v1/finance/overview", headers=h)).json()["kpis"]}
+    assert kpis["revpash"]["value"] == 0  # sin asientos/horario cargados → 0, no crashea
+
+
 async def test_finance_overview_empty_tenant_is_zeroed(client):
     http, fake_email = client
     h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))

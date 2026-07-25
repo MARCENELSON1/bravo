@@ -162,6 +162,7 @@ from app.infrastructure.persistence.dashboard_repo import SqlAlchemyDashboardRea
 from app.infrastructure.persistence.database import Database
 from app.infrastructure.persistence.finance_repo import (
     SqlAlchemyFinanceProductDetailReadModel,
+    SqlAlchemyInventoryValueReadModel,
 )
 from app.infrastructure.persistence.food_cost_repo import SqlAlchemyFoodCostReadModel
 from app.infrastructure.persistence.ingredient_repo import SqlAlchemyIngredientRepository
@@ -936,10 +937,15 @@ class Container(containers.DeclarativeContainer):
         labor=labor_cost_read_model,
     )
     # --- Pantalla Finanzas (compone advisor + product performance) ---
+    inventory_value_read_model = providers.Factory(
+        SqlAlchemyInventoryValueReadModel, session_factory=db.provided.session
+    )
     get_finance_overview = providers.Factory(
         GetFinanceOverview,
         advisor=get_advisor_report,
         products=get_product_performance,
+        settings=advisor_settings_repository,
+        inventory=inventory_value_read_model,
         tenant_context=tenant_context,
     )
     finance_product_detail_read_model = providers.Factory(

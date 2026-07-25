@@ -34,6 +34,8 @@ describe("AdvisorApi", () => {
       monthly_labor_cost: 9_000_000,
       monthly_other_fixed_costs: 6_000_000,
       target_food_cost_bps: 3000,
+      seats: 40,
+      daily_open_minutes: 480,
     })
 
     const [method, path, options] = request.mock.calls[0]

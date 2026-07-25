@@ -22,6 +22,8 @@ const KPI_LABELS: Record<string, string> = {
   net_margin: "Margen neto",
   gross_margin: "Margen bruto",
   break_even: "Punto de equilibrio",
+  revpash: "RevPASH",
+  inventory_turnover: "Rotación de inventario",
 }
 
 const STATUS_STYLE: Record<string, string> = {
@@ -36,7 +38,9 @@ function pct(bps: number): string {
 }
 
 function kpiValue(k: FinanceKpiDTO, currency: string): string {
-  return k.kind === "ratio" ? pct(k.value) : formatMoney(k.value, currency)
+  if (k.kind === "ratio") return pct(k.value)
+  if (k.kind === "turnover") return `${(k.value / 100).toLocaleString("es-AR", { maximumFractionDigits: 1 })}×`
+  return formatMoney(k.value, currency)
 }
 
 function kpiDelta(k: FinanceKpiDTO, currency: string): string | null {
