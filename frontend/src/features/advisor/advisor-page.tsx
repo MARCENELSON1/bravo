@@ -60,11 +60,17 @@ function SettingsForm({
   const [labor, setLabor] = useState(() => String(initial.monthly_labor_cost / 100))
   const [other, setOther] = useState(() => String(initial.monthly_other_fixed_costs / 100))
   const [target, setTarget] = useState(() => String(initial.target_food_cost_bps / 100))
+  const [seats, setSeats] = useState(() => String(initial.seats || ""))
+  const [openHours, setOpenHours] = useState(() =>
+    initial.daily_open_minutes ? String(initial.daily_open_minutes / 60) : ""
+  )
 
   const submit = () => {
     const laborMinor = Math.round(Number(labor) * 100)
     const otherMinor = Math.round(Number(other) * 100)
     const targetBps = Math.round(Number(target) * 100)
+    const seatsN = seats.trim() === "" ? 0 : Math.round(Number(seats))
+    const openMin = openHours.trim() === "" ? 0 : Math.round(Number(openHours) * 60)
     if (
       !Number.isFinite(laborMinor) ||
       laborMinor < 0 ||
@@ -77,11 +83,17 @@ function SettingsForm({
       toast.error("Revisá los montos y el objetivo de food cost.")
       return
     }
+    if (!Number.isFinite(seatsN) || seatsN < 0 || !Number.isFinite(openMin) || openMin < 0 || openMin > 1440) {
+      toast.error("Revisá los asientos y las horas de apertura.")
+      return
+    }
     update.mutate(
       {
         monthly_labor_cost: laborMinor,
         monthly_other_fixed_costs: otherMinor,
         target_food_cost_bps: targetBps,
+        seats: seatsN,
+        daily_open_minutes: openMin,
       },
       {
         onSuccess: () => {
@@ -125,6 +137,29 @@ function SettingsForm({
           step="0.1"
           value={target}
           onChange={(e) => setTarget(e.target.value)}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        Asientos del local (para RevPASH)
+        <Input
+          type="number"
+          min={0}
+          step="1"
+          placeholder="Ej. 40"
+          value={seats}
+          onChange={(e) => setSeats(e.target.value)}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        Horas abiertas por día (para RevPASH)
+        <Input
+          type="number"
+          min={0}
+          max={24}
+          step="0.5"
+          placeholder="Ej. 8"
+          value={openHours}
+          onChange={(e) => setOpenHours(e.target.value)}
         />
       </label>
       <Button onClick={submit} disabled={update.isPending}>

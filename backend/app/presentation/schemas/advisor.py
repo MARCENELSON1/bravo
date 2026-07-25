@@ -45,6 +45,8 @@ class AdvisorSettingsResponse(BaseModel):
     monthly_labor_cost: int
     monthly_other_fixed_costs: int
     target_food_cost_bps: int
+    seats: int
+    daily_open_minutes: int
     currency: str
     configured: bool
 
@@ -57,3 +59,5 @@ class UpdateAdvisorSettingsRequest(BaseModel):
     monthly_labor_cost: int = Field(ge=0)
     monthly_other_fixed_costs: int = Field(ge=0)
     target_food_cost_bps: int = Field(ge=0, le=10000)
+    seats: int = Field(default=0, ge=0)
+    daily_open_minutes: int = Field(default=0, ge=0, le=1440)

@@ -598,6 +598,9 @@ class AdvisorSettingsORM(Base):
     other_fixed_amount: Mapped[int] = mapped_column(BigInteger, default=0)
     currency: Mapped[str] = mapped_column(String(3))
     target_food_cost_bps: Mapped[int] = mapped_column(Integer, server_default="3000")
+    # Tanda E Finanzas: inputs de RevPASH (capacidad total + minutos abiertos/día).
+    seats: Mapped[int] = mapped_column(Integer, server_default="0")
+    daily_open_minutes: Mapped[int] = mapped_column(Integer, server_default="0")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

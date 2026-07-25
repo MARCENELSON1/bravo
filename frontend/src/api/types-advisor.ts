@@ -40,6 +40,8 @@ export interface AdvisorSettingsDTO {
   monthly_labor_cost: number
   monthly_other_fixed_costs: number
   target_food_cost_bps: number
+  seats: number
+  daily_open_minutes: number
   currency: string
   configured: boolean
 }
@@ -48,6 +50,8 @@ export interface UpdateAdvisorSettingsBody {
   monthly_labor_cost: number
   monthly_other_fixed_costs: number
   target_food_cost_bps: number
+  seats: number
+  daily_open_minutes: number
 }
 
 export interface AdvisorQuery {

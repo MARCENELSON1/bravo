@@ -192,7 +192,7 @@ export type FinanceKpiStatus = "healthy" | "warn" | "alert" | "neutral"
 
 export interface FinanceKpiDTO {
   key: string
-  kind: "ratio" | "money" // ratio = bps sobre ventas; money = unidad mínima
+  kind: "ratio" | "money" | "turnover" // ratio=bps · money=unidad mínima · turnover=centésimas de veces
   value: number
   previous: number
   delta: number

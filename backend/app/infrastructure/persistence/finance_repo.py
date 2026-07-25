@@ -2,12 +2,46 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.application.finance.dtos import ProductDetail, ProductSaleLine
-from app.application.finance.use_cases import FinanceProductDetailReadModel
+from app.application.finance.use_cases import (
+    FinanceProductDetailReadModel,
+    InventoryValueReadModel,
+)
 from app.infrastructure.persistence.database import SessionFactory
-from app.infrastructure.persistence.models import SaleFactORM
+from app.infrastructure.persistence.models import IngredientORM, SaleFactORM
+
+# Las cantidades de insumo se guardan en milésimas de la unidad base.
+_QUANTITY_SCALE = 1000
+
+
+class SqlAlchemyInventoryValueReadModel(InventoryValueReadModel):
+    """Valor del inventario a mano: Σ (stock_qty × unit_cost) / 1000 sobre insumos
+    activos (misma técnica que la valuación de mermas). Tenant-scoped; solo lectura."""
+
+    def __init__(self, session_factory: SessionFactory) -> None:
+        self._session_factory = session_factory
+
+    async def total_value(self, tenant_id: str) -> int:
+        async with self._session_factory() as session:
+            raw = (
+                await session.execute(
+                    select(
+                        func.coalesce(
+                            func.sum(
+                                IngredientORM.stock_qty * IngredientORM.unit_cost_amount
+                            ),
+                            0,
+                        )
+                    ).where(
+                        IngredientORM.tenant_id == tenant_id,
+                        IngredientORM.active.is_(True),
+                        IngredientORM.stock_qty > 0,
+                    )
+                )
+            ).scalar_one()
+            return int(raw) // _QUANTITY_SCALE
 
 
 class SqlAlchemyFinanceProductDetailReadModel(FinanceProductDetailReadModel):

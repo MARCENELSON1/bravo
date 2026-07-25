@@ -22,7 +22,9 @@ from app.application.finance.dtos import (
     ProductDetail,
     ProductMargin,
 )
+from app.domain.advisor.entities import AdvisorSettings
 from app.domain.advisor.kpis import AdvisorKpis
+from app.domain.advisor.repository import AdvisorSettingsRepository
 from app.domain.identity.ports import TenantContext
 
 # Rangos sanos en bps sobre ventas (del doc "KPIs gastronómicos vitales").
@@ -107,6 +109,44 @@ def _project_month_end(
     )
 
 
+class InventoryValueReadModel(ABC):
+    """Valor del inventario a mano (Σ stock × costo unitario), en unidad mínima.
+    Scopeado por ``tenant_id`` (RLS + filtro explícito)."""
+
+    @abstractmethod
+    async def total_value(self, tenant_id: str) -> int: ...
+
+
+def _revpash_kpi(
+    cur: AdvisorKpis, prev: AdvisorKpis | None, settings: AdvisorSettings | None
+) -> FinanceKpi:
+    """RevPASH = ventas / (asientos × horas abiertas × días). $ por asiento-hora."""
+    seats = settings.seats if settings else 0
+    open_min = settings.daily_open_minutes if settings else 0
+
+    def revpash(sales: int, days: int) -> int:
+        seat_hours = seats * (open_min / 60) * max(days, 1)
+        return round(sales / seat_hours) if seat_hours > 0 else 0
+
+    value = revpash(cur.sales_amount, cur.period_days)
+    previous = revpash(prev.sales_amount, prev.period_days) if prev else 0
+    return FinanceKpi(
+        key="revpash", kind="money", value=value, previous=previous,
+        delta=value - previous, healthy_low=None, healthy_high=None, status="neutral",
+    )
+
+
+def _turnover_kpi(cur: AdvisorKpis, inventory_value: int) -> FinanceKpi:
+    """Rotación de inventario = COGS del período / valor de inventario. En
+    centésimas de 'veces' (250 = 2,5×). Sin histórico de inventario aún → sin
+    comparativo (delta 0)."""
+    value = round(cur.food_cost_amount * 100 / inventory_value) if inventory_value > 0 else 0
+    return FinanceKpi(
+        key="inventory_turnover", kind="turnover", value=value, previous=value,
+        delta=0, healthy_low=None, healthy_high=None, status="neutral",
+    )
+
+
 class FinanceProductDetailReadModel(ABC):
     """Líneas de venta de un producto en una ventana (drill-down). Scopeado por
     ``tenant_id`` (RLS + filtro explícito)."""
@@ -172,10 +212,14 @@ class GetFinanceOverview:
         self,
         advisor: GetAdvisorReport,
         products: GetProductPerformance,
+        settings: AdvisorSettingsRepository,
+        inventory: InventoryValueReadModel,
         tenant_context: TenantContext,
     ) -> None:
         self._advisor = advisor
         self._products = products
+        self._settings = settings
+        self._inventory = inventory
         self._tenant_context = tenant_context
 
     async def execute(
@@ -190,11 +234,16 @@ class GetFinanceOverview:
         rows = await self._products.execute(
             tenant_id=tenant_id, since=since, until=until, limit=10
         )
+        settings = await self._settings.get(tenant_id)
+        inventory_value = await self._inventory.total_value(tenant_id)
+        kpis = _build_finance_kpis(report.kpis, report.previous)
+        kpis.append(_revpash_kpi(report.kpis, report.previous, settings))
+        kpis.append(_turnover_kpi(report.kpis, inventory_value))
         return FinanceOverview(
             currency=report.kpis.currency,
             period_days=report.kpis.period_days,
             configured=report.kpis.configured,
-            kpis=_build_finance_kpis(report.kpis, report.previous),
+            kpis=kpis,
             diagnostics=[
                 FinanceDiagnostic(
                     code=i.code,
