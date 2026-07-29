@@ -29,6 +29,7 @@ from app.application.cashier.use_cases import (
     OpenCashSession,
 )
 from app.application.copilot.ask import AskCopilot
+from app.application.finance.snapshots import RebuildFinanceSnapshots
 from app.application.finance.use_cases import GetFinanceOverview, GetProductDetail
 from app.application.floor.use_cases import GetFloor
 from app.application.identity.accept_invitation import AcceptInvitation
@@ -143,7 +144,13 @@ from app.infrastructure.payments.mercadopago_oauth import MercadoPagoOAuthClient
 from app.infrastructure.persistence.advisor_diagnostics_repo import (
     SqlAlchemyAdvisorDiagnosticsCache,
 )
-from app.infrastructure.persistence.advisor_repo import SqlAlchemyAdvisorReadModel
+from app.infrastructure.persistence.advisor_repo import (
+    SqlAlchemyAdvisorReadModel,
+    SqlAlchemyAdvisorSnapshotReadModel,
+)
+from app.infrastructure.persistence.finance_snapshot_repo import (
+    SqlAlchemyFinanceSnapshotRepository,
+)
 from app.infrastructure.persistence.advisor_settings_repo import (
     SqlAlchemyAdvisorSettingsRepository,
 )
@@ -498,6 +505,9 @@ class Container(containers.DeclarativeContainer):
     sale_facts_repository = providers.Factory(
         SqlAlchemySaleFactsRepository, session_factory=db.provided.session
     )
+    finance_snapshot_repository = providers.Factory(
+        SqlAlchemyFinanceSnapshotRepository, session_factory=db.provided.session
+    )
     project_order_sales = providers.Factory(
         ProjectOrderSales,
         orders=order_repository,
@@ -505,6 +515,7 @@ class Container(containers.DeclarativeContainer):
         recipes=recipe_repository,
         ingredients=ingredient_repository,
         sale_facts=sale_facts_repository,
+        snapshots=finance_snapshot_repository,
         tenant_context=tenant_context,
     )
 
@@ -897,8 +908,20 @@ class Container(containers.DeclarativeContainer):
     advisor_settings_repository = providers.Factory(
         SqlAlchemyAdvisorSettingsRepository, session_factory=db.provided.session
     )
-    advisor_read_model = providers.Factory(
-        SqlAlchemyAdvisorReadModel, session_factory=db.provided.session
+    # Tanda F: selector live/snapshot del read model del Asesor (default live).
+    advisor_read_model = providers.Selector(
+        config.provided.finance_snapshots_read,
+        live=providers.Factory(
+            SqlAlchemyAdvisorReadModel, session_factory=db.provided.session
+        ),
+        snapshot=providers.Factory(
+            SqlAlchemyAdvisorSnapshotReadModel, session_factory=db.provided.session
+        ),
+    )
+    rebuild_finance_snapshots = providers.Factory(
+        RebuildFinanceSnapshots,
+        rebuilder=finance_snapshot_repository,
+        tenant_context=tenant_context,
     )
     advisor_diagnostics_cache = providers.Factory(
         SqlAlchemyAdvisorDiagnosticsCache, session_factory=db.provided.session

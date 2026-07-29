@@ -66,3 +66,7 @@ class ProductDetailResponse(BaseModel):
     food_cost_amount: int
     margin_amount: int
     lines: list[ProductSaleLineResponse]
+
+
+class FinanceSnapshotRebuildResponse(BaseModel):
+    days: int

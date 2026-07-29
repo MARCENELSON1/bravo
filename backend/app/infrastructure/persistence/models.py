@@ -630,3 +630,22 @@ class AdvisorDiagnosticsORM(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+class FinanceDailySnapshotORM(Base):
+    """Capa 2 (Tanda F): totales diarios pre-agregados de ventas para servir la
+    Pantalla Finanzas sin escanear todo el historial de sale_facts. Se mantiene
+    incremental en el projector y se puede reconstruir. Datos de plata → RLS."""
+
+    __tablename__ = "finance_daily_snapshots"
+
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    day: Mapped[date] = mapped_column(Date, primary_key=True)
+    sales_amount: Mapped[int] = mapped_column(BigInteger, default=0)
+    food_cost_amount: Mapped[int] = mapped_column(BigInteger, default=0)
+    orders_count: Mapped[int] = mapped_column(Integer, default=0)
+    units_sold: Mapped[int] = mapped_column(BigInteger, default=0)

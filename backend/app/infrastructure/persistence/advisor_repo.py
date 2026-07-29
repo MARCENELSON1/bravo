@@ -1,6 +1,11 @@
 """Advisor read model: raw canonical metrics for a period (sales/food cost from
 sale_facts, mermas from stock_movements×ingredients, no-show rate from
-reservations). Tenant-scoped (RLS + filter); read-only."""
+reservations). Tenant-scoped (RLS + filter); read-only.
+
+Dos implementaciones: ``SqlAlchemyAdvisorReadModel`` (live, escanea sale_facts) y
+``SqlAlchemyAdvisorSnapshotReadModel`` (Tanda F: ventas/food/órdenes desde los
+snapshots diarios pre-agregados; merma/no-show siguen live porque son tablas
+chicas). Comparten las queries de merma/no-show y moneda."""
 
 from __future__ import annotations
 
@@ -14,6 +19,7 @@ from app.domain.inventory.value_objects import MovementReason
 from app.domain.reservation.value_objects import ReservationStatus
 from app.infrastructure.persistence.database import SessionFactory
 from app.infrastructure.persistence.models import (
+    FinanceDailySnapshotORM,
     IngredientORM,
     ReservationORM,
     SaleFactORM,
@@ -24,7 +30,63 @@ from app.infrastructure.persistence.models import (
 _QUANTITY_SCALE = 1000
 
 
+async def _currency(session, tenant_id: str) -> str:
+    return (
+        await session.execute(select(TenantORM.currency).where(TenantORM.id == tenant_id))
+    ).scalar_one_or_none() or "ARS"
+
+
+async def _waste_amount(session, tenant_id: str, since: datetime, until: datetime) -> int:
+    """Mermas valorizadas: qty (milésimas) × unit_cost / 1000."""
+    raw = (
+        await session.execute(
+            select(
+                func.coalesce(
+                    func.sum(StockMovementORM.qty * IngredientORM.unit_cost_amount), 0
+                )
+            )
+            .select_from(StockMovementORM)
+            .join(IngredientORM, IngredientORM.id == StockMovementORM.ingredient_id)
+            .where(
+                StockMovementORM.tenant_id == tenant_id,
+                StockMovementORM.reason == MovementReason.WASTE.value,
+                StockMovementORM.created_at >= since,
+                StockMovementORM.created_at <= until,
+            )
+        )
+    ).scalar_one()
+    return int(raw) // _QUANTITY_SCALE
+
+
+async def _no_show_rate_bps(
+    session, tenant_id: str, since: datetime, until: datetime
+) -> int:
+    counts = {
+        status: int(count)
+        for status, count in (
+            await session.execute(
+                select(ReservationORM.status, func.count())
+                .where(
+                    ReservationORM.tenant_id == tenant_id,
+                    ReservationORM.reserved_at >= since,
+                    ReservationORM.reserved_at <= until,
+                )
+                .group_by(ReservationORM.status)
+            )
+        ).all()
+    }
+    no_shows = counts.get(ReservationStatus.NO_SHOW.value, 0)
+    shows = (
+        no_shows
+        + counts.get(ReservationStatus.COMPLETED.value, 0)
+        + counts.get(ReservationStatus.SEATED.value, 0)
+    )
+    return ratio_bps(no_shows, shows)
+
+
 class SqlAlchemyAdvisorReadModel(AdvisorReadModel):
+    """Live: agrega directamente sobre sale_facts (escanea el historial)."""
+
     def __init__(self, session_factory: SessionFactory) -> None:
         self._session_factory = session_factory
 
@@ -32,12 +94,6 @@ class SqlAlchemyAdvisorReadModel(AdvisorReadModel):
         self, tenant_id: str, since: datetime, until: datetime
     ) -> AdvisorMetrics:
         async with self._session_factory() as session:
-            currency = (
-                await session.execute(
-                    select(TenantORM.currency).where(TenantORM.id == tenant_id)
-                )
-            ).scalar_one_or_none() or "ARS"
-
             sales, food_cost, orders = (
                 await session.execute(
                     select(
@@ -51,54 +107,49 @@ class SqlAlchemyAdvisorReadModel(AdvisorReadModel):
                     )
                 )
             ).one()
-
-            # Mermas valorizadas: qty (milésimas) × unit_cost / 1000.
-            waste_raw = (
-                await session.execute(
-                    select(
-                        func.coalesce(
-                            func.sum(StockMovementORM.qty * IngredientORM.unit_cost_amount),
-                            0,
-                        )
-                    )
-                    .select_from(StockMovementORM)
-                    .join(IngredientORM, IngredientORM.id == StockMovementORM.ingredient_id)
-                    .where(
-                        StockMovementORM.tenant_id == tenant_id,
-                        StockMovementORM.reason == MovementReason.WASTE.value,
-                        StockMovementORM.created_at >= since,
-                        StockMovementORM.created_at <= until,
-                    )
-                )
-            ).scalar_one()
-            waste_amount = int(waste_raw) // _QUANTITY_SCALE
-
-            counts = {
-                status: int(count)
-                for status, count in (
-                    await session.execute(
-                        select(ReservationORM.status, func.count())
-                        .where(
-                            ReservationORM.tenant_id == tenant_id,
-                            ReservationORM.reserved_at >= since,
-                            ReservationORM.reserved_at <= until,
-                        )
-                        .group_by(ReservationORM.status)
-                    )
-                ).all()
-            }
-            no_shows = counts.get(ReservationStatus.NO_SHOW.value, 0)
-            shows = (
-                no_shows
-                + counts.get(ReservationStatus.COMPLETED.value, 0)
-                + counts.get(ReservationStatus.SEATED.value, 0)
-            )
-
             return AdvisorMetrics(
-                currency=currency,
+                currency=await _currency(session, tenant_id),
                 sales_amount=int(sales),
                 food_cost_amount=int(food_cost),
                 orders_count=int(orders),
-                waste_amount=waste_amount,
-                no_show_rate_bps=ratio_bps(no_shows, shows),
+                waste_amount=await _waste_amount(session, tenant_id, since, until),
+                no_show_rate_bps=await _no_show_rate_bps(session, tenant_id, since, until),
+            )
+
+
+class SqlAlchemyAdvisorSnapshotReadModel(AdvisorReadModel):
+    """Tanda F: ventas/food/órdenes desde ``finance_daily_snapshots`` (suma de días
+    del rango, sin escanear sale_facts). Merma y no-show siguen live (tablas chicas
+    que no crecen con cada venta). Las ventanas de Finanzas son día-alineadas, así
+    que sumar por día da paridad con el cálculo live."""
+
+    def __init__(self, session_factory: SessionFactory) -> None:
+        self._session_factory = session_factory
+
+    async def metrics(
+        self, tenant_id: str, since: datetime, until: datetime
+    ) -> AdvisorMetrics:
+        async with self._session_factory() as session:
+            sales, food_cost, orders = (
+                await session.execute(
+                    select(
+                        func.coalesce(func.sum(FinanceDailySnapshotORM.sales_amount), 0),
+                        func.coalesce(
+                            func.sum(FinanceDailySnapshotORM.food_cost_amount), 0
+                        ),
+                        func.coalesce(func.sum(FinanceDailySnapshotORM.orders_count), 0),
+                    ).where(
+                        FinanceDailySnapshotORM.tenant_id == tenant_id,
+                        FinanceDailySnapshotORM.day >= since.date(),
+                        FinanceDailySnapshotORM.day <= until.date(),
+                    )
+                )
+            ).one()
+            return AdvisorMetrics(
+                currency=await _currency(session, tenant_id),
+                sales_amount=int(sales),
+                food_cost_amount=int(food_cost),
+                orders_count=int(orders),
+                waste_amount=await _waste_amount(session, tenant_id, since, until),
+                no_show_rate_bps=await _no_show_rate_bps(session, tenant_id, since, until),
             )

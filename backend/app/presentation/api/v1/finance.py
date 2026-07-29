@@ -6,6 +6,7 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
 from app.application.finance.dtos import FinanceOverview, ProductDetail
+from app.application.finance.snapshots import RebuildFinanceSnapshots
 from app.application.finance.use_cases import GetFinanceOverview, GetProductDetail
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
@@ -16,6 +17,7 @@ from app.presentation.schemas.finance import (
     FinanceKpiResponse,
     FinanceOverviewResponse,
     FinanceProjectionResponse,
+    FinanceSnapshotRebuildResponse,
     ProductDetailResponse,
     ProductMarginResponse,
     ProductSaleLineResponse,
@@ -113,6 +115,20 @@ async def get_overview(
     por producto, en ``[from, to)`` (default: mes en curso)."""
     overview = await use_case.execute(tenant_id=identity.tenant_id, since=since, until=until)
     return _overview_response(overview)
+
+
+@router.post("/snapshots/rebuild", response_model=FinanceSnapshotRebuildResponse)
+@inject
+async def rebuild_snapshots(
+    identity: AccessClaims = Depends(require_roles(Role.OWNER)),
+    use_case: RebuildFinanceSnapshots = Depends(
+        Provide[Container.rebuild_finance_snapshots]
+    ),
+) -> FinanceSnapshotRebuildResponse:
+    """Reconstruye los snapshots diarios desde sale_facts (backfill / paridad).
+    Correr antes de prender el modo snapshot para un tenant."""
+    days = await use_case.execute(tenant_id=identity.tenant_id)
+    return FinanceSnapshotRebuildResponse(days=days)
 
 
 @router.get("/products/{product_id}", response_model=ProductDetailResponse)

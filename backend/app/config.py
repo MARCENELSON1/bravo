@@ -121,6 +121,11 @@ class Settings(BaseSettings):
     def advisor_llm_enabled(self) -> bool:
         return self.advisor_llm_provider != "off"
 
+    # Pantalla Finanzas capa 2 (Tanda F). "live" (default) = agrega sobre
+    # sale_facts; "snapshot" = lee los totales diarios pre-agregados (más rápido a
+    # escala). Prender sólo tras un rebuild de snapshots del tenant.
+    finance_snapshots_read: Literal["live", "snapshot"] = "live"
+
     # Copiloto IA (Fase 11). "off" (default) = deshabilitado. "claude" = NL→SQL
     # con guardrails (validador + read-only + RLS). La aislación por tenant la da
     # RLS, no el LLM. Prender SÓLO con el set de evals (open question PRD).
