@@ -6,7 +6,11 @@ from __future__ import annotations
 from uuid import uuid4
 
 from app.application.analytics.facts import SaleFact
-from app.application.analytics.ports import SaleFactsRepository, SalesProjector
+from app.application.analytics.ports import (
+    FinanceSnapshotWriter,
+    SaleFactsRepository,
+    SalesProjector,
+)
 from app.application.clock import utcnow
 from app.domain.identity.ports import TenantContext
 from app.domain.inventory.costing import food_cost as compute_food_cost
@@ -31,6 +35,7 @@ class ProjectOrderSales(SalesProjector):
         recipes: RecipeRepository,
         ingredients: IngredientRepository,
         sale_facts: SaleFactsRepository,
+        snapshots: FinanceSnapshotWriter,
         tenant_context: TenantContext,
     ) -> None:
         self._orders = orders
@@ -38,6 +43,7 @@ class ProjectOrderSales(SalesProjector):
         self._recipes = recipes
         self._ingredients = ingredients
         self._sale_facts = sale_facts
+        self._snapshots = snapshots
         self._tenant_context = tenant_context
 
     async def project_order(self, tenant_id: str, order_id: str) -> None:
@@ -89,9 +95,30 @@ class ProjectOrderSales(SalesProjector):
                 )
             )
         await self._sale_facts.add_many(facts)
+        # Tanda F: mantener el snapshot diario incremental (co-locado con la
+        # escritura de sale_facts). Una orden proyecta en un solo instante → un día.
+        await self._snapshots.add(
+            tenant_id,
+            occurred_at.date(),
+            sales_amount=sum(f.line_amount for f in facts),
+            food_cost_amount=sum(f.food_cost_amount or 0 for f in facts),
+            orders_count=1,
+            units_sold=sum(f.quantity for f in facts),
+        )
 
     async def reverse_order(self, tenant_id: str, order_id: str) -> None:
         """Drop the order's sale_facts so a reopen leaves no revenue behind.
         Idempotent (delete-if-present); the facts re-project on the next PAID."""
         self._tenant_context.set(tenant_id)
+        facts = await self._sale_facts.list_for_order(tenant_id, order_id)
+        if facts:
+            # Decrementar el snapshot del día antes de borrar los facts.
+            await self._snapshots.add(
+                tenant_id,
+                facts[0].occurred_at.date(),
+                sales_amount=-sum(f.line_amount for f in facts),
+                food_cost_amount=-sum(f.food_cost_amount or 0 for f in facts),
+                orders_count=-1,
+                units_sold=-sum(f.quantity for f in facts),
+            )
         await self._sale_facts.delete_for_order(tenant_id, order_id)
