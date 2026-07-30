@@ -39,4 +39,29 @@ describe("FinanceApi", () => {
     expect(path).toContain("from=")
     expect(options).toMatchObject({ auth: true })
   })
+
+  it("fetches the expense breakdown with the window", async () => {
+    const request = vi.fn().mockResolvedValue({ rows: [], total: 0 })
+    const api = new FinanceApi({ request } as unknown as HttpClient)
+
+    await api.expenseBreakdown({ from: "2026-06-01T00:00:00Z" })
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("GET")
+    expect(path).toContain("/finance/expenses/breakdown?")
+    expect(path).toContain("from=")
+    expect(options).toMatchObject({ auth: true })
+  })
+
+  it("fetches recent movements", async () => {
+    const request = vi.fn().mockResolvedValue([])
+    const api = new FinanceApi({ request } as unknown as HttpClient)
+
+    await api.recentMovements({ from: "2026-06-01T00:00:00Z" })
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("GET")
+    expect(path).toContain("/finance/movements")
+    expect(options).toMatchObject({ auth: true })
+  })
 })

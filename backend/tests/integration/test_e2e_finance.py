@@ -157,3 +157,48 @@ async def test_product_drill_down_lists_sale_lines(client):
     assert body["margin_amount"] == 300000  # sin receta → food cost 0
     assert len(body["lines"]) == 1
     assert body["lines"][0]["order_id"] == order_id
+
+
+async def _expense(http, h, *, category: str, amount: int) -> None:
+    resp = await http.post(
+        "/api/v1/expenses",
+        json={"method": "CASH", "category": category, "amount": amount},
+        headers=h,
+    )
+    assert resp.status_code == 201, resp.text
+
+
+async def test_expense_breakdown_groups_by_category(client):
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    await _expense(http, h, category="Proveedores", amount=50000)
+    await _expense(http, h, category="Proveedores", amount=30000)
+    await _expense(http, h, category="Servicios", amount=18000)
+
+    body = (await http.get("/api/v1/finance/expenses/breakdown", headers=h)).json()
+    rows = {r["category"]: r for r in body["rows"]}
+    assert rows["Proveedores"]["amount"] == 80000  # se suman las dos
+    assert rows["Servicios"]["amount"] == 18000
+    assert body["total"] == 98000
+    assert body["rows"][0]["category"] == "Proveedores"  # ordenado por amount desc
+
+
+async def test_recent_movements_lists_cobros_and_egresos(client):
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    await _sell_with_recipe(http, h, price=150000, qty=1, cost_per_kg=50000)  # cobro (IN)
+    await _expense(http, h, category="Proveedores", amount=40000)  # egreso (OUT)
+
+    movs = (await http.get("/api/v1/finance/movements", headers=h)).json()
+    kinds = {m["kind"] for m in movs}
+    assert "IN" in kinds and "OUT" in kinds
+    assert any(m["amount"] == 40000 and m["kind"] == "OUT" for m in movs)
+
+
+async def test_finance_v2_endpoints_rls_isolated(client):
+    http, fake_email = client
+    t1 = await _onboard_verify_login(http, fake_email, slug="uno", email="a@uno.com")
+    await _expense(http, _auth(t1), category="Proveedores", amount=99000)
+    t2 = await _onboard_verify_login(http, fake_email, slug="dos", email="b@dos.com")
+    body = (await http.get("/api/v1/finance/expenses/breakdown", headers=_auth(t2))).json()
+    assert body["total"] == 0 and body["rows"] == []

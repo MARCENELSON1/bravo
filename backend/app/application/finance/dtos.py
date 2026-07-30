@@ -91,3 +91,34 @@ class ProductDetail:
     food_cost_amount: int
     margin_amount: int
     lines: list[ProductSaleLine]
+
+
+@dataclass(frozen=True)
+class ExpenseCategoryRow:
+    """Egresos de una categoría en la ventana + su comparativo con el período
+    previo (mismo largo). ``delta = amount - previous`` (positivo = subió)."""
+
+    category: str
+    amount: int  # minor units
+    previous: int
+    delta: int
+
+
+@dataclass(frozen=True)
+class ExpenseBreakdown:
+    currency: str
+    total: int
+    rows: list[ExpenseCategoryRow]  # ordenadas por amount desc
+
+
+@dataclass(frozen=True)
+class MovementRow:
+    """Un movimiento reciente (cobro o egreso) para el bloque 'últimos movimientos'."""
+
+    occurred_at: str  # ISO
+    kind: str  # "IN" (cobro) | "OUT" (egreso)
+    amount: int
+    method: str
+    category: str | None
+    description: str | None
+    currency: str

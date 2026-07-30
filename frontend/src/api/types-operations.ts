@@ -236,6 +236,29 @@ export interface FinanceOverviewDTO {
   projection: FinanceProjectionDTO | null
 }
 
+export interface ExpenseCategoryRowDTO {
+  category: string
+  amount: number // minor units
+  previous: number
+  delta: number
+}
+
+export interface ExpenseBreakdownDTO {
+  currency: string
+  total: number
+  rows: ExpenseCategoryRowDTO[] // ordenadas por amount desc
+}
+
+export interface MovementDTO {
+  occurred_at: string // ISO
+  kind: "IN" | "OUT"
+  amount: number
+  method: string
+  category: string | null
+  description: string | null
+  currency: string
+}
+
 export interface ProductSaleLineDTO {
   order_id: string
   occurred_at: string

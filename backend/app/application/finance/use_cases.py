@@ -15,10 +15,12 @@ from app.application.advisor.report import GetAdvisorReport
 from app.application.analytics.use_cases import GetProductPerformance
 from app.application.clock import utcnow
 from app.application.finance.dtos import (
+    ExpenseBreakdown,
     FinanceDiagnostic,
     FinanceKpi,
     FinanceOverview,
     FinanceProjection,
+    MovementRow,
     ProductDetail,
     ProductMargin,
 )
@@ -290,3 +292,60 @@ class GetProductDetail:
     ) -> ProductDetail:
         self._tenant_context.set(tenant_id)
         return await self._read_model.detail(tenant_id, product_id, since=since, until=until)
+
+
+class ExpenseBreakdownReadModel(ABC):
+    """Egresos agrupados por categoría en la ventana + comparativo con el período
+    previo. Scopeado por ``tenant_id`` (RLS + filtro explícito)."""
+
+    @abstractmethod
+    async def breakdown(
+        self, tenant_id: str, *, since: datetime | None = None, until: datetime | None = None
+    ) -> ExpenseBreakdown: ...
+
+
+class RecentMovementsReadModel(ABC):
+    """Últimos movimientos (cobros + egresos) en la ventana. Scopeado por tenant."""
+
+    @abstractmethod
+    async def recent(
+        self,
+        tenant_id: str,
+        *,
+        since: datetime | None = None,
+        until: datetime | None = None,
+        limit: int = 20,
+    ) -> list[MovementRow]: ...
+
+
+class GetExpenseBreakdown:
+    def __init__(
+        self, read_model: ExpenseBreakdownReadModel, tenant_context: TenantContext
+    ) -> None:
+        self._read_model = read_model
+        self._tenant_context = tenant_context
+
+    async def execute(
+        self, *, tenant_id: str, since: datetime | None = None, until: datetime | None = None
+    ) -> ExpenseBreakdown:
+        self._tenant_context.set(tenant_id)
+        return await self._read_model.breakdown(tenant_id, since=since, until=until)
+
+
+class GetRecentMovements:
+    def __init__(
+        self, read_model: RecentMovementsReadModel, tenant_context: TenantContext
+    ) -> None:
+        self._read_model = read_model
+        self._tenant_context = tenant_context
+
+    async def execute(
+        self,
+        *,
+        tenant_id: str,
+        since: datetime | None = None,
+        until: datetime | None = None,
+        limit: int = 20,
+    ) -> list[MovementRow]:
+        self._tenant_context.set(tenant_id)
+        return await self._read_model.recent(tenant_id, since=since, until=until, limit=limit)
