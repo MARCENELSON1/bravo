@@ -5,19 +5,27 @@ from datetime import datetime
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
-from app.application.finance.dtos import FinanceOverview, ProductDetail
+from app.application.finance.dtos import ExpenseBreakdown, FinanceOverview, ProductDetail
 from app.application.finance.snapshots import RebuildFinanceSnapshots
-from app.application.finance.use_cases import GetFinanceOverview, GetProductDetail
+from app.application.finance.use_cases import (
+    GetExpenseBreakdown,
+    GetFinanceOverview,
+    GetProductDetail,
+    GetRecentMovements,
+)
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
 from app.domain.user.value_objects import Role
 from app.presentation.rbac import require_roles
 from app.presentation.schemas.finance import (
+    ExpenseBreakdownResponse,
+    ExpenseCategoryRowResponse,
     FinanceDiagnosticResponse,
     FinanceKpiResponse,
     FinanceOverviewResponse,
     FinanceProjectionResponse,
     FinanceSnapshotRebuildResponse,
+    MovementResponse,
     ProductDetailResponse,
     ProductMarginResponse,
     ProductSaleLineResponse,
@@ -145,3 +153,54 @@ async def get_product_detail(
         tenant_id=identity.tenant_id, product_id=product_id, since=since, until=until
     )
     return _detail_response(detail)
+
+
+@router.get("/expenses/breakdown", response_model=ExpenseBreakdownResponse)
+@inject
+async def get_expense_breakdown(
+    since: datetime | None = Query(default=None, alias="from"),
+    until: datetime | None = Query(default=None, alias="to"),
+    identity: AccessClaims = Depends(require_roles(*_FINANCE_ROLES)),
+    use_case: GetExpenseBreakdown = Depends(Provide[Container.get_expense_breakdown]),
+) -> ExpenseBreakdownResponse:
+    """Egresos por categoría en ``[from, to)`` + comparativo con el período previo."""
+    b: ExpenseBreakdown = await use_case.execute(
+        tenant_id=identity.tenant_id, since=since, until=until
+    )
+    return ExpenseBreakdownResponse(
+        currency=b.currency,
+        total=b.total,
+        rows=[
+            ExpenseCategoryRowResponse(
+                category=r.category, amount=r.amount, previous=r.previous, delta=r.delta
+            )
+            for r in b.rows
+        ],
+    )
+
+
+@router.get("/movements", response_model=list[MovementResponse])
+@inject
+async def get_movements(
+    since: datetime | None = Query(default=None, alias="from"),
+    until: datetime | None = Query(default=None, alias="to"),
+    limit: int = Query(default=20, ge=1, le=100),
+    identity: AccessClaims = Depends(require_roles(*_FINANCE_ROLES)),
+    use_case: GetRecentMovements = Depends(Provide[Container.get_recent_movements]),
+) -> list[MovementResponse]:
+    """Últimos movimientos (cobros + egresos) en ``[from, to)`` (para modo Hoy/Semana)."""
+    rows = await use_case.execute(
+        tenant_id=identity.tenant_id, since=since, until=until, limit=limit
+    )
+    return [
+        MovementResponse(
+            occurred_at=m.occurred_at,
+            kind=m.kind,
+            amount=m.amount,
+            method=m.method,
+            category=m.category,
+            description=m.description,
+            currency=m.currency,
+        )
+        for m in rows
+    ]

@@ -1,5 +1,10 @@
 import type { HttpClient } from "@/api/http-client"
-import type { FinanceOverviewDTO, ProductDetailDTO } from "@/api/types-operations"
+import type {
+  ExpenseBreakdownDTO,
+  FinanceOverviewDTO,
+  MovementDTO,
+  ProductDetailDTO,
+} from "@/api/types-operations"
 
 export interface FinanceQuery {
   from?: string // ISO
@@ -28,6 +33,24 @@ export class FinanceApi {
     return this.http.request<ProductDetailDTO>(
       "GET",
       `/finance/products/${productId}${this.qs(query)}`,
+      { auth: true }
+    )
+  }
+
+  // Egresos por categoría en la ventana + comparativo con el período previo.
+  expenseBreakdown(query: FinanceQuery = {}): Promise<ExpenseBreakdownDTO> {
+    return this.http.request<ExpenseBreakdownDTO>(
+      "GET",
+      `/finance/expenses/breakdown${this.qs(query)}`,
+      { auth: true }
+    )
+  }
+
+  // Últimos movimientos (cobros + egresos) en la ventana.
+  recentMovements(query: FinanceQuery = {}): Promise<MovementDTO[]> {
+    return this.http.request<MovementDTO[]>(
+      "GET",
+      `/finance/movements${this.qs(query)}`,
       { auth: true }
     )
   }

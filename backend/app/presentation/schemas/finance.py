@@ -70,3 +70,26 @@ class ProductDetailResponse(BaseModel):
 
 class FinanceSnapshotRebuildResponse(BaseModel):
     days: int
+
+
+class ExpenseCategoryRowResponse(BaseModel):
+    category: str
+    amount: int
+    previous: int
+    delta: int
+
+
+class ExpenseBreakdownResponse(BaseModel):
+    currency: str
+    total: int
+    rows: list[ExpenseCategoryRowResponse]
+
+
+class MovementResponse(BaseModel):
+    occurred_at: str
+    kind: str  # IN | OUT
+    amount: int
+    method: str
+    category: str | None
+    description: str | None
+    currency: str

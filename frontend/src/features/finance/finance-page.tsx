@@ -5,7 +5,15 @@ import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/ui/glass-card"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Spinner } from "@/components/ui/spinner"
-import { useFinanceOverview, useProductDetail } from "@/hooks/use-finance"
+import { ExpenseChanges } from "@/features/finance/expense-changes"
+import { ExpenseDonut } from "@/features/finance/expense-donut"
+import { RecentMovements } from "@/features/finance/recent-movements"
+import {
+  useExpenseBreakdown,
+  useFinanceOverview,
+  useProductDetail,
+  useRecentMovements,
+} from "@/hooks/use-finance"
 import {
   FINANCE_RANGES,
   rangeWindow,
@@ -32,6 +40,18 @@ const STATUS_STYLE: Record<string, string> = {
   alert: "text-red-500",
   neutral: "text-muted-foreground",
 }
+const STATUS_DOT: Record<string, string> = {
+  healthy: "bg-emerald-500",
+  warn: "bg-amber-500",
+  alert: "bg-red-500",
+  neutral: "bg-muted-foreground",
+}
+const STATUS_ACTION: Record<string, string> = {
+  healthy: "Mantener",
+  warn: "Revisar",
+  alert: "Actuar",
+  neutral: "—",
+}
 
 function pct(bps: number): string {
   return `${(bps / 100).toFixed(1)}%`
@@ -39,14 +59,18 @@ function pct(bps: number): string {
 
 function kpiValue(k: FinanceKpiDTO, currency: string): string {
   if (k.kind === "ratio") return pct(k.value)
-  if (k.kind === "turnover") return `${(k.value / 100).toLocaleString("es-AR", { maximumFractionDigits: 1 })}×`
+  if (k.kind === "turnover")
+    return `${(k.value / 100).toLocaleString("es-AR", { maximumFractionDigits: 1 })}×`
   return formatMoney(k.value, currency)
 }
 
 function kpiDelta(k: FinanceKpiDTO, currency: string): string | null {
   if (k.delta === 0) return null
   const up = k.delta > 0
-  const mag = k.kind === "ratio" ? `${Math.abs(k.delta / 100).toFixed(1)}pts` : formatMoney(Math.abs(k.delta), currency)
+  const mag =
+    k.kind === "ratio"
+      ? `${Math.abs(k.delta / 100).toFixed(1)}pts`
+      : formatMoney(Math.abs(k.delta), currency)
   return `${up ? "▲" : "▼"} ${mag}`
 }
 
@@ -83,7 +107,7 @@ export function FinancePage() {
       {overview.isLoading ? (
         <Spinner />
       ) : overview.data ? (
-        <FinanceBody data={overview.data} window={window} />
+        <FinanceBody data={overview.data} window={window} range={range} />
       ) : (
         <p className="text-sm text-muted-foreground">No pudimos cargar las finanzas.</p>
       )}
@@ -91,20 +115,50 @@ export function FinancePage() {
   )
 }
 
-function FinanceBody({ data, window }: { data: FinanceOverviewDTO; window: RangeWindow }) {
+function FinanceBody({
+  data,
+  window,
+  range,
+}: {
+  data: FinanceOverviewDTO
+  window: RangeWindow
+  range: FinanceRange
+}) {
+  const [category, setCategory] = useState<string | null>(null)
+  const breakdown = useExpenseBreakdown(window)
+  const showMovements = range === "today" || range === "week"
+  const movements = useRecentMovements(window, showMovements)
+
+  const kpiByKey = new Map(data.kpis.map((k) => [k.key, k]))
+  const net = kpiByKey.get("net_margin")
+
   return (
     <>
-      {data.projection ? (
-        <p className="rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm">
-          Proyección de cierre del mes:{" "}
-          <span className="font-semibold">
-            si seguís así, cerrás en {formatMoney(data.projection.sales_amount, data.currency)}
-          </span>{" "}
-          <span className="text-muted-foreground">
-            ({data.projection.elapsed_days}/{data.projection.month_days} días)
-          </span>
+      {/* HERO — ganancia neta del período */}
+      <GlassCard className="p-6">
+        <p className="text-sm text-muted-foreground">Tu ganancia neta del período</p>
+        <p
+          className={`mt-1 text-4xl font-bold tabular-nums ${net && net.value < 0 ? "text-red-500" : "text-foreground"}`}
+        >
+          {net ? formatMoney(net.value, data.currency) : "—"}
         </p>
-      ) : null}
+        <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
+          {net && kpiDelta(net, data.currency) ? (
+            <span className={net.delta > 0 ? "text-primary" : "text-destructive"}>
+              {kpiDelta(net, data.currency)} vs período anterior
+            </span>
+          ) : null}
+          {data.projection ? (
+            <span className="text-muted-foreground">
+              Si seguís así, cerrás en{" "}
+              <span className="font-semibold text-foreground">
+                {formatMoney(data.projection.sales_amount, data.currency)}
+              </span>{" "}
+              ({data.projection.elapsed_days}/{data.projection.month_days} días)
+            </span>
+          ) : null}
+        </div>
+      </GlassCard>
 
       {!data.configured ? (
         <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-300">
@@ -113,11 +167,44 @@ function FinanceBody({ data, window }: { data: FinanceOverviewDTO; window: Range
         </p>
       ) : null}
 
+      {/* NIVEL 2 — áreas de salud con acción sugerida */}
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {(["net_margin", "food_cost", "labor_cost", "waste"] as const).map((key) => {
+          const k = kpiByKey.get(key)
+          if (!k) return null
+          return (
+            <GlassCard key={key} className="flex flex-col gap-1 p-4">
+              <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className={`size-2 rounded-full ${STATUS_DOT[k.status] ?? ""}`} />
+                {KPI_LABELS[key]}
+              </span>
+              <span className={`text-xl font-bold tabular-nums ${STATUS_STYLE[k.status] ?? ""}`}>
+                {kpiValue(k, data.currency)}
+              </span>
+              <span className="text-xs text-muted-foreground">{STATUS_ACTION[k.status] ?? "—"}</span>
+            </GlassCard>
+          )
+        })}
+      </section>
+
+      {/* NIVEL 3 + 4b — gastos que cambiaron + donut de distribución */}
+      <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <ExpenseChanges rows={breakdown.data?.rows ?? []} currency={data.currency} />
+        <ExpenseDonut
+          rows={breakdown.data?.rows ?? []}
+          total={breakdown.data?.total ?? 0}
+          currency={data.currency}
+          selected={category}
+          onSelect={setCategory}
+        />
+      </section>
+
       {data.summary ? (
         <GlassCard className="p-5 text-sm text-muted-foreground">{data.summary}</GlassCard>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {/* NIVEL 5 — KPIs del rubro (los 7) */}
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
         {data.kpis.map((k) => (
           <GlassCard key={k.key} className="flex flex-col gap-1 p-5">
             <span className="text-sm text-muted-foreground">{KPI_LABELS[k.key] ?? k.key}</span>
@@ -170,6 +257,15 @@ function FinanceBody({ data, window }: { data: FinanceOverviewDTO; window: Range
             ))}
           </div>
         </GlassCard>
+      ) : null}
+
+      {/* NIVEL 6 — últimos movimientos (solo Hoy/Semana) */}
+      {showMovements ? (
+        <RecentMovements
+          movements={movements.data ?? []}
+          currency={data.currency}
+          pending={movements.isPending}
+        />
       ) : null}
     </>
   )

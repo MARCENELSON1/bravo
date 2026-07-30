@@ -30,7 +30,12 @@ from app.application.cashier.use_cases import (
 )
 from app.application.copilot.ask import AskCopilot
 from app.application.finance.snapshots import RebuildFinanceSnapshots
-from app.application.finance.use_cases import GetFinanceOverview, GetProductDetail
+from app.application.finance.use_cases import (
+    GetExpenseBreakdown,
+    GetFinanceOverview,
+    GetProductDetail,
+    GetRecentMovements,
+)
 from app.application.floor.use_cases import GetFloor
 from app.application.identity.accept_invitation import AcceptInvitation
 from app.application.identity.authenticate import Authenticate
@@ -168,8 +173,10 @@ from app.infrastructure.persistence.credentials_repo import (
 from app.infrastructure.persistence.dashboard_repo import SqlAlchemyDashboardReadModel
 from app.infrastructure.persistence.database import Database
 from app.infrastructure.persistence.finance_repo import (
+    SqlAlchemyExpenseBreakdownReadModel,
     SqlAlchemyFinanceProductDetailReadModel,
     SqlAlchemyInventoryValueReadModel,
+    SqlAlchemyRecentMovementsReadModel,
 )
 from app.infrastructure.persistence.food_cost_repo import SqlAlchemyFoodCostReadModel
 from app.infrastructure.persistence.ingredient_repo import SqlAlchemyIngredientRepository
@@ -977,6 +984,22 @@ class Container(containers.DeclarativeContainer):
     get_product_detail = providers.Factory(
         GetProductDetail,
         read_model=finance_product_detail_read_model,
+        tenant_context=tenant_context,
+    )
+    expense_breakdown_read_model = providers.Factory(
+        SqlAlchemyExpenseBreakdownReadModel, session_factory=db.provided.session
+    )
+    get_expense_breakdown = providers.Factory(
+        GetExpenseBreakdown,
+        read_model=expense_breakdown_read_model,
+        tenant_context=tenant_context,
+    )
+    recent_movements_read_model = providers.Factory(
+        SqlAlchemyRecentMovementsReadModel, session_factory=db.provided.session
+    )
+    get_recent_movements = providers.Factory(
+        GetRecentMovements,
+        read_model=recent_movements_read_model,
         tenant_context=tenant_context,
     )
     get_advisor_settings = providers.Factory(
