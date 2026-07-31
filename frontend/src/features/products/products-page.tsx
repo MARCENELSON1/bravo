@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { GradientHeading } from "@/components/ui/gradient-heading"
+import { MenuEngineering } from "@/features/products/menu-engineering-view"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -240,7 +241,7 @@ export function ProductsPage() {
   })
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-5 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-6 py-8">
       <header className="flex items-end justify-between gap-2">
         <div className="flex flex-col gap-1">
           <GradientHeading size="md" weight="bold">
@@ -301,6 +302,10 @@ export function ProductsPage() {
         </Sheet>
       </header>
 
+      {/* Menu engineering (Productos v2 Tanda A): la carta clasificada. */}
+      <MenuEngineering />
+
+      <h2 className="text-sm font-semibold text-foreground">Catálogo</h2>
       <div className="overflow-hidden rounded-xl border border-border">
         {products.isPending ? (
           <div className="flex justify-center p-10">
