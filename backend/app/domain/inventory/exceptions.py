@@ -26,3 +26,17 @@ class InvalidQuantity(DomainError):
 class InvalidUnitCost(DomainError):
     code = "invalid_unit_cost"
     message = "El costo del insumo debe ser mayor que cero."
+
+
+class InvalidRecipeComponent(DomainError):
+    """Un ítem de receta apunta a un insumo O a una preparación, exactamente uno."""
+
+    code = "invalid_recipe_component"
+    message = "Cada ítem debe ser un insumo o una preparación, no ambos."
+
+
+class RecipeCycle(DomainError):
+    """Una preparación no puede depender de sí misma (directa o indirectamente)."""
+
+    code = "recipe_cycle"
+    message = "Las preparaciones no pueden formar un ciclo."

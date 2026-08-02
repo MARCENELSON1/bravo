@@ -3,7 +3,8 @@ cost ratio. Integer minor units throughout (same no-float rule as Money)."""
 
 from __future__ import annotations
 
-from app.domain.inventory.recipe import RecipeItem
+from app.domain.inventory.exceptions import RecipeCycle
+from app.domain.inventory.recipe import Preparation, RecipeItem
 from app.domain.inventory.value_objects import QUANTITY_SCALE
 from app.domain.shared.exceptions import CurrencyMismatch
 from app.domain.shared.money import Money
@@ -13,24 +14,82 @@ def food_cost(
     items: list[RecipeItem],
     cost_by_ingredient: dict[str, Money],
     currency: str,
+    *,
+    cost_by_preparation: dict[str, Money] | None = None,
 ) -> Money:
-    """Cost of one sold unit = Σ(recipe_qty × ingredient unit_cost).
+    """Cost of one sold unit = Σ(recipe_qty × component unit_cost).
 
-    ``recipe_qty`` is in milésimas of the base unit and ``unit_cost`` is Money
-    per *one* base unit, so each line is ``unit_cost.amount × qty / 1000``
+    Each item points to an ingredient **or** a preparation (receta madre).
+    ``recipe_qty`` is in milésimas of the component's base unit and ``unit_cost``
+    is Money per *one* base unit, so each line is ``unit_cost.amount × qty / 1000``
     (rounded to the minor unit). ``currency`` is required because Money always
-    needs one — even for an empty recipe or when a cost is missing. An ingredient
-    absent from ``cost_by_ingredient`` contributes zero (treated as unknown).
+    needs one — even for an empty recipe or when a cost is missing. A component
+    absent from its cost map contributes zero (treated as unknown). Backward
+    compatible: with only ingredient items and no ``cost_by_preparation`` it
+    behaves exactly as the flat (one-level) recipe cost.
     """
+    prep_costs = cost_by_preparation or {}
     total = 0
     for item in items:
-        cost = cost_by_ingredient.get(item.ingredient_id)
+        if item.preparation_id is not None:
+            cost = prep_costs.get(item.preparation_id)
+        else:
+            cost = cost_by_ingredient.get(item.ingredient_id)
         if cost is None:
             continue
         if cost.currency != currency:
             raise CurrencyMismatch()
         total += round(cost.amount * item.qty / QUANTITY_SCALE)
     return Money(total, currency)
+
+
+def resolve_preparation_costs(
+    preparations: dict[str, Preparation],
+    cost_by_ingredient: dict[str, Money],
+    currency: str,
+) -> dict[str, Money]:
+    """Cost of *one base unit* of each preparation, resolved multi-level.
+
+    A preparation's batch cost is the same Σ(qty × component unit_cost) as a
+    recipe, where a component may be an ingredient or a nested preparation; the
+    unit cost is that batch prorated by the yield: ``batch × SCALE / yield_qty``.
+    Nested preparations are resolved recursively with an anti-cycle guard
+    (raises :class:`RecipeCycle` on A→…→A). Missing components contribute zero.
+    """
+    resolved: dict[str, Money] = {}
+    in_progress: set[str] = set()
+
+    def resolve(prep_id: str) -> Money:
+        if prep_id in resolved:
+            return resolved[prep_id]
+        prep = preparations.get(prep_id)
+        if prep is None:
+            return Money(0, currency)  # preparación faltante → desconocida (0)
+        if prep_id in in_progress:
+            raise RecipeCycle()
+        in_progress.add(prep_id)
+        batch_total = 0
+        for item in prep.items:
+            if item.preparation_id is not None:
+                cost = resolve(item.preparation_id)
+            else:
+                found = cost_by_ingredient.get(item.ingredient_id)
+                cost = found if found is not None else Money(0, currency)
+            if cost.currency != currency:
+                raise CurrencyMismatch()
+            batch_total += round(cost.amount * item.qty / QUANTITY_SCALE)
+        in_progress.discard(prep_id)
+        unit = (
+            round(batch_total * QUANTITY_SCALE / prep.yield_qty)
+            if prep.yield_qty > 0
+            else 0
+        )
+        resolved[prep_id] = Money(unit, currency)
+        return resolved[prep_id]
+
+    for prep_id in preparations:
+        resolve(prep_id)
+    return resolved
 
 
 def margin(price: Money, food_cost: Money) -> int:
