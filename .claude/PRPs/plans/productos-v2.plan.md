@@ -35,8 +35,9 @@ Como dueño, quiero ver mi carta clasificada (qué platos funcionan, cuáles me 
 - **Frontend:** en `products-page.tsx` (o pantalla nueva) — hero con plata en juego, las 5 categorías (cards por grupo), tabla detalle (Precio/Costo/Te deja/Vendidos/Estado), top 3 que más dejan, asesinos de margen. Reusar `GlassCard`, `formatMoney`.
 - **Tests:** unit de la clasificación (cada categoría); e2e del endpoint de performance.
 
-## TANDA B — Precios vs inflación + simulador + rotación (migración 0020)
+## TANDA B — Precios vs inflación + simulador + rotación (migración 0020) — ✅ HECHA (`ec3b983`, 2026-08-02)
 **Entrega:** "tus precios subieron X% vs inflación Y%", platos rezagados, simulador basado en histórico real, rotación por día de semana.
+> Implementada. Inflación = un solo campo `advisor_settings.monthly_inflation_bps` (lo más liviano, no tabla de serie). Reporte: `reports/productos-v2-tanda-b-report.md`. Migración **0020** aplicada a dev. Solo queda **Tanda C**.
 - **Backend:**
   - Tabla **`product_price_changes`** (tenant_id, product_id, old_price, new_price, changed_at) con **RLS** (migr. 0020). Registrar un cambio cada vez que se actualiza `price_amount` de un producto (hook en el use case de update de producto).
   - **Inflación:** tabla/config **`inflation_monthly`** (period, pct) cargable por el tenant o seed (INDEC) — o un campo simple en settings. Evaluar lo más liviano.
