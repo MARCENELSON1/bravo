@@ -60,6 +60,10 @@ class ConsumeRecipesForOrder(InventoryConsumer):
             if recipe is None:
                 continue
             for recipe_item in recipe.items:
+                # Los ítems de preparación (receta madre) no descuentan stock en
+                # esta tanda — el consumo de insumos anidados queda diferido.
+                if recipe_item.ingredient_id is None:
+                    continue
                 consumption[recipe_item.ingredient_id] = (
                     consumption.get(recipe_item.ingredient_id, 0)
                     + item.quantity * recipe_item.qty

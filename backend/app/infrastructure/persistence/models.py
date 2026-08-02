@@ -481,7 +481,53 @@ class RecipeItemORM(Base):
         ForeignKey("recipes.product_id", ondelete="CASCADE"),
         index=True,
     )
-    ingredient_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
+    # Un ítem apunta a un insumo O a una preparación (receta madre), no ambos.
+    ingredient_id: Mapped[str | None] = mapped_column(
+        Uuid(as_uuid=False), index=True, nullable=True
+    )
+    preparation_id: Mapped[str | None] = mapped_column(
+        Uuid(as_uuid=False), index=True, nullable=True
+    )
+    qty: Mapped[int] = mapped_column(BigInteger)
+
+
+class PreparationORM(Base):
+    """Preparación base reutilizable (receta madre, Productos v2 Tanda C). NO es
+    un producto vendible. Datos del tenant → RLS."""
+
+    __tablename__ = "preparations"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    yield_qty: Mapped[int] = mapped_column(BigInteger)  # rendimiento en milésimas
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class PreparationItemORM(Base):
+    """Componente de una preparación: un insumo O una sub-preparación (multinivel)."""
+
+    __tablename__ = "preparation_items"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    preparation_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False),
+        ForeignKey("preparations.id", ondelete="CASCADE"),
+        index=True,
+    )
+    ingredient_id: Mapped[str | None] = mapped_column(
+        Uuid(as_uuid=False), index=True, nullable=True
+    )
+    sub_preparation_id: Mapped[str | None] = mapped_column(
+        Uuid(as_uuid=False), index=True, nullable=True
+    )
     qty: Mapped[int] = mapped_column(BigInteger)
 
 

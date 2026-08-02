@@ -14,7 +14,13 @@ from app.application.analytics.ports import (
 from app.application.clock import utcnow
 from app.domain.identity.ports import TenantContext
 from app.domain.inventory.costing import food_cost as compute_food_cost
-from app.domain.inventory.repository import IngredientRepository, RecipeRepository
+from app.domain.inventory.costing import resolve_preparation_costs
+from app.domain.inventory.exceptions import RecipeCycle
+from app.domain.inventory.repository import (
+    IngredientRepository,
+    PreparationRepository,
+    RecipeRepository,
+)
 from app.domain.order.repository import OrderRepository
 from app.domain.order.value_objects import OrderStatus
 from app.domain.product.repository import ProductRepository
@@ -34,6 +40,7 @@ class ProjectOrderSales(SalesProjector):
         products: ProductRepository,
         recipes: RecipeRepository,
         ingredients: IngredientRepository,
+        preparations: PreparationRepository,
         sale_facts: SaleFactsRepository,
         snapshots: FinanceSnapshotWriter,
         tenant_context: TenantContext,
@@ -42,6 +49,7 @@ class ProjectOrderSales(SalesProjector):
         self._products = products
         self._recipes = recipes
         self._ingredients = ingredients
+        self._preparations = preparations
         self._sale_facts = sale_facts
         self._snapshots = snapshots
         self._tenant_context = tenant_context
@@ -66,6 +74,18 @@ class ProjectOrderSales(SalesProjector):
             if recipes
             else {}
         )
+        # Costo por unidad de cada preparación (receta madre), multinivel. Un ciclo
+        # no debe romper el cobro → se degrada a "sin preparaciones" (0).
+        cost_by_preparation: dict = {}
+        if recipes:
+            preparations = {p.id: p for p in await self._preparations.list(tenant_id)}
+            if preparations:
+                try:
+                    cost_by_preparation = resolve_preparation_costs(
+                        preparations, cost_by_ingredient, order.currency
+                    )
+                except RecipeCycle:
+                    cost_by_preparation = {}
         occurred_at = utcnow()
 
         facts: list[SaleFact] = []
@@ -73,7 +93,12 @@ class ProjectOrderSales(SalesProjector):
             recipe = recipes.get(item.product_id)
             food_cost_amount: int | None = None
             if recipe is not None:
-                per_unit = compute_food_cost(recipe.items, cost_by_ingredient, order.currency)
+                per_unit = compute_food_cost(
+                    recipe.items,
+                    cost_by_ingredient,
+                    order.currency,
+                    cost_by_preparation=cost_by_preparation,
+                )
                 food_cost_amount = per_unit.amount * item.quantity
             facts.append(
                 SaleFact(

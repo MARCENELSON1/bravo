@@ -18,7 +18,7 @@ from app.domain.identity.tokens import (
     RefreshToken,
 )
 from app.domain.inventory.entities import Ingredient, StockMovement, Supplier
-from app.domain.inventory.recipe import Recipe, RecipeItem
+from app.domain.inventory.recipe import Preparation, Recipe, RecipeItem
 from app.domain.inventory.value_objects import (
     MovementDirection,
     MovementReason,
@@ -66,6 +66,8 @@ from app.infrastructure.persistence.models import (
     PasswordResetTokenORM,
     PaymentCredentialORM,
     PaymentORM,
+    PreparationItemORM,
+    PreparationORM,
     ProductORM,
     RecipeItemORM,
     RecipeORM,
@@ -669,13 +671,17 @@ def stock_movement_to_orm(movement: StockMovement) -> StockMovementORM:
     )
 
 
+def _recipe_item_to_domain(item: RecipeItemORM) -> RecipeItem:
+    if item.preparation_id is not None:
+        return RecipeItem(preparation_id=item.preparation_id, qty=item.qty)
+    return RecipeItem(ingredient_id=item.ingredient_id, qty=item.qty)
+
+
 def recipe_to_domain(row: RecipeORM, item_rows: list[RecipeItemORM]) -> Recipe:
     return Recipe(
         product_id=row.product_id,
         tenant_id=row.tenant_id,
-        items=[
-            RecipeItem(ingredient_id=item.ingredient_id, qty=item.qty) for item in item_rows
-        ],
+        items=[_recipe_item_to_domain(item) for item in item_rows],
     )
 
 
@@ -689,6 +695,52 @@ def recipe_item_to_orm(item: RecipeItem, recipe: Recipe, item_id: str) -> Recipe
         tenant_id=recipe.tenant_id,
         product_id=recipe.product_id,
         ingredient_id=item.ingredient_id,
+        preparation_id=item.preparation_id,
+        qty=item.qty,
+    )
+
+
+# --- Preparation (receta madre; sus ítems reusan RecipeItem) ----------------
+
+
+def _preparation_item_to_domain(item: PreparationItemORM) -> RecipeItem:
+    if item.sub_preparation_id is not None:
+        return RecipeItem(preparation_id=item.sub_preparation_id, qty=item.qty)
+    return RecipeItem(ingredient_id=item.ingredient_id, qty=item.qty)
+
+
+def preparation_to_domain(
+    row: PreparationORM, item_rows: list[PreparationItemORM]
+) -> Preparation:
+    return Preparation(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        name=row.name,
+        yield_qty=row.yield_qty,
+        items=[_preparation_item_to_domain(item) for item in item_rows],
+    )
+
+
+def preparation_to_orm(prep: Preparation) -> PreparationORM:
+    return PreparationORM(
+        id=prep.id,
+        tenant_id=prep.tenant_id,
+        name=prep.name,
+        yield_qty=prep.yield_qty,
+    )
+
+
+def preparation_item_to_orm(
+    item: RecipeItem, prep: Preparation, item_id: str
+) -> PreparationItemORM:
+    # En el dominio, un ítem de preparación que apunta a otra prep usa
+    # ``preparation_id``; en el ORM eso es ``sub_preparation_id``.
+    return PreparationItemORM(
+        id=item_id,
+        tenant_id=prep.tenant_id,
+        preparation_id=prep.id,
+        ingredient_id=item.ingredient_id,
+        sub_preparation_id=item.preparation_id,
         qty=item.qty,
     )
 
