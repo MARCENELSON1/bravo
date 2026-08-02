@@ -64,6 +64,9 @@ function SettingsForm({
   const [openHours, setOpenHours] = useState(() =>
     initial.daily_open_minutes ? String(initial.daily_open_minutes / 60) : ""
   )
+  const [inflation, setInflation] = useState(() =>
+    initial.monthly_inflation_bps ? String(initial.monthly_inflation_bps / 100) : ""
+  )
 
   const submit = () => {
     const laborMinor = Math.round(Number(labor) * 100)
@@ -71,6 +74,7 @@ function SettingsForm({
     const targetBps = Math.round(Number(target) * 100)
     const seatsN = seats.trim() === "" ? 0 : Math.round(Number(seats))
     const openMin = openHours.trim() === "" ? 0 : Math.round(Number(openHours) * 60)
+    const inflationBps = inflation.trim() === "" ? 0 : Math.round(Number(inflation) * 100)
     if (
       !Number.isFinite(laborMinor) ||
       laborMinor < 0 ||
@@ -87,6 +91,10 @@ function SettingsForm({
       toast.error("Revisá los asientos y las horas de apertura.")
       return
     }
+    if (!Number.isFinite(inflationBps) || inflationBps < 0 || inflationBps > 100000) {
+      toast.error("Revisá la inflación mensual estimada.")
+      return
+    }
     update.mutate(
       {
         monthly_labor_cost: laborMinor,
@@ -94,6 +102,7 @@ function SettingsForm({
         target_food_cost_bps: targetBps,
         seats: seatsN,
         daily_open_minutes: openMin,
+        monthly_inflation_bps: inflationBps,
       },
       {
         onSuccess: () => {
@@ -161,6 +170,20 @@ function SettingsForm({
           value={openHours}
           onChange={(e) => setOpenHours(e.target.value)}
         />
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        Inflación mensual estimada (%)
+        <Input
+          type="number"
+          min={0}
+          step="0.1"
+          placeholder="Ej. 4"
+          value={inflation}
+          onChange={(e) => setInflation(e.target.value)}
+        />
+        <span className="text-xs text-muted-foreground">
+          Para estimar a cuánto “debería estar” cada precio en Productos.
+        </span>
       </label>
       <Button onClick={submit} disabled={update.isPending}>
         {update.isPending ? "Guardando…" : "Guardar costos"}

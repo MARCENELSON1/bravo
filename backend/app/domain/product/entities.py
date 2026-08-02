@@ -24,3 +24,7 @@ class Product:
 
     def deactivate(self) -> None:
         self.active = False
+
+    def change_price(self, new_amount: int) -> None:
+        """Reprice in the tenant's currency (keeps the money's currency)."""
+        self.price = Money(new_amount, self.price.currency)

@@ -36,6 +36,7 @@ describe("AdvisorApi", () => {
       target_food_cost_bps: 3000,
       seats: 40,
       daily_open_minutes: 480,
+      monthly_inflation_bps: 400,
     })
 
     const [method, path, options] = request.mock.calls[0]
