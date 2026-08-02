@@ -46,11 +46,27 @@ Como dueño, quiero ver mi carta clasificada (qué platos funcionan, cuáles me 
 - **Frontend:** card "Precios vs inflación" (platos rezagados, simular/aplicar), simulador por producto, cronograma de rotación.
 - **Tests:** unit del cálculo "debería estar en"; e2e del registro de cambio de precio + rotación por weekday.
 
-## TANDA C — Recetas madre / anidadas (dominio nuevo; migración 0021)
-**Entrega:** preparaciones base reutilizables; un cambio de costo de un insumo se propaga a todos los platos.
-- **Backend:** modelar **sub-recetas** — un `RecipeItem` puede apuntar a otra receta (madre) en vez de solo a un ingrediente. Migr. 0021 (columna `sub_recipe_id` nullable en `recipe_items`, o tabla de recetas-madre). Extender `compute_food_cost` a **multinivel** (recursivo, con guard anti-ciclo). Impacto en `ProjectOrderSales` (el food cost al proyectar) y en el drill-down.
-- **Frontend:** sección "Recetas madre" (CRUD de preparaciones base + "usada en N platos"); ficha de producto con ingredientes directos + recetas anidadas + histórico de costos.
-- **Tests:** unit del food cost multinivel + guard de ciclos; e2e de propagación (cambiar costo de insumo base → cambia el food cost de los platos que lo usan).
+## TANDA C — Recetas madre / anidadas (dominio nuevo; migración 0021) — PRÓXIMA, decisión de modelo FIJADA
+**Entrega:** preparaciones base reutilizables con rendimiento; un cambio de costo de un insumo base se propaga a todos los platos.
+
+### Decisión de modelo (fijada con el usuario 2026-08-02)
+**Preparación base propia CON rendimiento** (elegida sobre "producto del catálogo usado como ingrediente"):
+- Una **preparación** (receta madre) es una entidad NUEVA, separada del catálogo vendible: `name` + sus insumos + cuánto **rinde** (ej. "salsa fileto" rinde 2000 g).
+- **Costo por unidad de la preparación** = costo total de sus insumos ÷ rendimiento. Un plato la referencia y usa X (ej. 150 g) → aporta `X × costo/unidad`.
+- Ventaja: food cost exacto, no ensucia el catálogo. Costo: más migración/UX que la opción de reusar `product_id`.
+
+### Motor actual confirmado (touchpoints — leído 2026-08-02)
+| Pieza | Ubicación | Cómo se extiende |
+|---|---|---|
+| Cálculo puro | `domain/inventory/costing.py::food_cost(items, cost_by_ingredient, currency)` — Σ(qty × unit_cost)/1000, **matemática pura, sin I/O** | Extender a multinivel: un ítem puede ser insumo O preparación; el costo de una preparación se resuelve recursivamente con **guard anti-ciclo** (set de ids en la pila). |
+| Entidades | `domain/inventory/recipe.py` (`Recipe{product_id, items}`, `RecipeItem{ingredient_id, qty}`) | `RecipeItem` pasa a poder apuntar a una preparación (`preparation_id` XOR `ingredient_id`). Nueva entidad `Preparation{id, name, yield_qty, items}`. |
+| ORM | `RecipeORM` (1:1 product) + `RecipeItemORM` en `models.py` | Migr. **0021**: tablas nuevas `preparations` + `preparation_items` (RLS, patrón 0019) + columnas `sub_preparation_id` (nullable) en `recipe_items` **y** en `preparation_items` (una prep puede anidar otra prep → multinivel). `qty` en milésimas (mismo `QUANTITY_SCALE`). |
+| Proyección food cost | `application/analytics/projection.py::ProjectOrderSales` (snapshot de food cost al pasar a PAID) | Usa la `food_cost` multinivel. **e2e de paridad**: una receta plana (solo insumos) debe dar EXACTAMENTE lo mismo que antes. |
+| Read models que consumen food cost | `food_cost_repo.py` (`FoodCostReadModel`), `SqlAlchemyFinanceProductDetailReadModel` (drill-down), advisor | Deben resolver el costo multinivel al armar `cost_by_ingredient`/receta. |
+
+- **Frontend:** sección "Recetas madre / preparaciones" (CRUD: nombre + insumos + rendimiento + "usada en N platos"); el editor de receta del producto (`RecipeForm` en `products-page.tsx`) suma la opción de agregar una preparación (además de insumos), con su cantidad.
+- **Tests:** unit del food cost multinivel + **guard de ciclos** (A→B→A no cuelga); unit del prorrateo por rendimiento; **e2e de paridad** (receta plana = igual que hoy); e2e de propagación (cambiar costo de un insumo base → cambia el food cost de todos los platos que usan la preparación).
+- **Sub-decisiones a resolver en implementación (menores):** unidad del rendimiento (¿libre por texto tipo "g/ml/u" o reusar la unidad del insumo principal?); si una preparación puede venderse como producto (por ahora: NO, son solo internas).
 
 ## NOT Building
 - ❌ Carga de carta por foto/Excel con IA (integración pesada; fase futura).
