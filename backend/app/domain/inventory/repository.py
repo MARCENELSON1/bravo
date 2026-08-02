@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from app.domain.inventory.entities import Ingredient, StockMovement, Supplier
-from app.domain.inventory.recipe import Recipe
+from app.domain.inventory.recipe import Preparation, Recipe
 
 
 class IngredientRepository(ABC):
@@ -54,6 +54,22 @@ class RecipeRepository(ABC):
 
     @abstractmethod
     async def save(self, recipe: Recipe) -> None: ...
+
+
+class PreparationRepository(ABC):
+    """Port for preparation (receta madre) persistence. Scoped by ``tenant_id``."""
+
+    @abstractmethod
+    async def get(self, tenant_id: str, preparation_id: str) -> Preparation | None: ...
+
+    @abstractmethod
+    async def list(self, tenant_id: str) -> list[Preparation]: ...
+
+    @abstractmethod
+    async def save(self, preparation: Preparation) -> None: ...
+
+    @abstractmethod
+    async def delete(self, tenant_id: str, preparation_id: str) -> None: ...
 
 
 class StockMovementRepository(ABC):

@@ -192,6 +192,9 @@ from app.infrastructure.persistence.invoice_repo import SqlAlchemyInvoiceReposit
 from app.infrastructure.persistence.labor_cost_repo import SqlAlchemyLaborCostReadModel
 from app.infrastructure.persistence.order_repo import SqlAlchemyOrderRepository
 from app.infrastructure.persistence.payment_repo import SqlAlchemyPaymentRepository
+from app.infrastructure.persistence.preparation_repo import (
+    SqlAlchemyPreparationRepository,
+)
 from app.infrastructure.persistence.presence_store_repo import (
     SqlAlchemyPresenceUsageStore,
 )
@@ -534,6 +537,9 @@ class Container(containers.DeclarativeContainer):
     recipe_repository = providers.Factory(
         SqlAlchemyRecipeRepository, session_factory=db.provided.session
     )
+    preparation_repository = providers.Factory(
+        SqlAlchemyPreparationRepository, session_factory=db.provided.session
+    )
     stock_movement_repository = providers.Factory(
         SqlAlchemyStockMovementRepository, session_factory=db.provided.session
     )
@@ -560,6 +566,7 @@ class Container(containers.DeclarativeContainer):
         products=product_repository,
         recipes=recipe_repository,
         ingredients=ingredient_repository,
+        preparations=preparation_repository,
         sale_facts=sale_facts_repository,
         snapshots=finance_snapshot_repository,
         tenant_context=tenant_context,

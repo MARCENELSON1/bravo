@@ -13,12 +13,17 @@ from app.domain.inventory.costing import (
 from app.domain.inventory.costing import (
     food_cost_ratio_bps,
     margin,
+    resolve_preparation_costs,
 )
+from app.domain.inventory.exceptions import RecipeCycle
 from app.domain.inventory.recipe import RecipeItem
 from app.domain.shared.money import Money
 from app.infrastructure.persistence.database import SessionFactory
+from app.infrastructure.persistence.mappers import preparation_to_domain
 from app.infrastructure.persistence.models import (
     IngredientORM,
+    PreparationItemORM,
+    PreparationORM,
     ProductORM,
     RecipeItemORM,
     TenantORM,
@@ -70,18 +75,43 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
             }
 
             items_by_product: dict[str, list[RecipeItem]] = {}
-            for product_id, ingredient_id, qty in (
+            for row in (
                 await session.execute(
-                    select(
-                        RecipeItemORM.product_id,
-                        RecipeItemORM.ingredient_id,
-                        RecipeItemORM.qty,
-                    ).where(RecipeItemORM.tenant_id == tenant_id)
+                    select(RecipeItemORM).where(RecipeItemORM.tenant_id == tenant_id)
                 )
-            ).all():
-                items_by_product.setdefault(product_id, []).append(
-                    RecipeItem(ingredient_id=ingredient_id, qty=qty)
+            ).scalars().all():
+                item = (
+                    RecipeItem(preparation_id=row.preparation_id, qty=row.qty)
+                    if row.preparation_id is not None
+                    else RecipeItem(ingredient_id=row.ingredient_id, qty=row.qty)
                 )
+                items_by_product.setdefault(row.product_id, []).append(item)
+
+            # Preparaciones (recetas madre) → costo por unidad, multinivel.
+            prep_rows = (
+                await session.execute(
+                    select(PreparationORM).where(PreparationORM.tenant_id == tenant_id)
+                )
+            ).scalars().all()
+            prep_items_by_prep: dict[str, list[PreparationItemORM]] = {}
+            for pi in (
+                await session.execute(
+                    select(PreparationItemORM).where(
+                        PreparationItemORM.tenant_id == tenant_id
+                    )
+                )
+            ).scalars().all():
+                prep_items_by_prep.setdefault(pi.preparation_id, []).append(pi)
+            preparations = {
+                r.id: preparation_to_domain(r, prep_items_by_prep.get(r.id, []))
+                for r in prep_rows
+            }
+            try:
+                cost_by_preparation = resolve_preparation_costs(
+                    preparations, cost_by_ingredient, currency
+                )
+            except RecipeCycle:
+                cost_by_preparation = {}
 
             rows: list[FoodCostRow] = []
             for product_id, items in items_by_product.items():
@@ -90,7 +120,12 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
                     continue
                 name, price_amount, price_currency = product
                 price = Money(price_amount, price_currency)
-                fc = compute_food_cost(items, cost_by_ingredient, price_currency)
+                fc = compute_food_cost(
+                    items,
+                    cost_by_ingredient,
+                    price_currency,
+                    cost_by_preparation=cost_by_preparation,
+                )
                 rows.append(
                     FoodCostRow(
                         product_id=product_id,
