@@ -1,10 +1,19 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.application.inventory.use_cases import GetRecipe, SetRecipe
-from app.application.product.use_cases import CreateProduct, ListProducts
+from app.application.product.use_cases import (
+    CreateProduct,
+    GetPricingInsights,
+    GetProductPriceHistory,
+    GetProductRotation,
+    ListProducts,
+    UpdateProductPrice,
+)
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
 from app.domain.user.value_objects import Role
@@ -18,7 +27,14 @@ from app.presentation.schemas.inventory import (
 from app.presentation.schemas.products import (
     CreateProductRequest,
     CreateProductResponse,
+    PriceChangeResponse,
+    PricingInsightsResponse,
+    PricingRowResponse,
+    ProductPriceHistoryResponse,
     ProductResponse,
+    ProductRotationResponse,
+    UpdateProductPriceRequest,
+    WeekdayRotationResponse,
 )
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -60,6 +76,109 @@ async def list_products(
         )
         for p in products
     ]
+
+
+# --- Productos v2 Tanda B: precios vs inflación + histórico + rotación --------
+
+
+@router.get("/pricing", response_model=PricingInsightsResponse)
+@inject
+async def get_pricing_insights(
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: GetPricingInsights = Depends(Provide[Container.get_pricing_insights]),
+) -> PricingInsightsResponse:
+    insights = await use_case.execute(tenant_id=identity.tenant_id)
+    return PricingInsightsResponse(
+        currency=insights.currency,
+        monthly_inflation_bps=insights.monthly_inflation_bps,
+        configured=insights.configured,
+        rows=[
+            PricingRowResponse(
+                product_id=r.product_id,
+                product_name=r.product_name,
+                current_price_amount=r.current_price_amount,
+                suggested_price_amount=r.suggested_price_amount,
+                gap_amount=r.gap_amount,
+                gap_bps=r.gap_bps,
+                days_since_change=r.days_since_change,
+                lagging=r.lagging,
+            )
+            for r in insights.rows
+        ],
+    )
+
+
+@router.get("/rotation", response_model=ProductRotationResponse)
+@inject
+async def get_product_rotation(
+    since: datetime | None = Query(default=None, alias="from"),
+    until: datetime | None = Query(default=None, alias="to"),
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: GetProductRotation = Depends(Provide[Container.get_product_rotation]),
+) -> ProductRotationResponse:
+    rotation = await use_case.execute(
+        tenant_id=identity.tenant_id, since=since, until=until
+    )
+    return ProductRotationResponse(
+        currency=rotation.currency,
+        rows=[
+            WeekdayRotationResponse(
+                weekday=r.weekday,
+                units=r.units,
+                sales_amount=r.sales_amount,
+                top_product_name=r.top_product_name,
+            )
+            for r in rotation.rows
+        ],
+    )
+
+
+@router.put("/{product_id}/price", response_model=ProductResponse)
+@inject
+async def update_product_price(
+    product_id: str,
+    body: UpdateProductPriceRequest,
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: UpdateProductPrice = Depends(Provide[Container.update_product_price]),
+) -> ProductResponse:
+    product = await use_case.execute(
+        tenant_id=identity.tenant_id,
+        product_id=product_id,
+        new_price_amount=body.price_amount,
+    )
+    return ProductResponse(
+        id=product.id,
+        name=product.name,
+        price_amount=product.price.amount,
+        currency=product.price.currency,
+        category=product.category,
+        station=product.station.value,
+        active=product.active,
+    )
+
+
+@router.get("/{product_id}/price-history", response_model=ProductPriceHistoryResponse)
+@inject
+async def get_product_price_history(
+    product_id: str,
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: GetProductPriceHistory = Depends(
+        Provide[Container.get_product_price_history]
+    ),
+) -> ProductPriceHistoryResponse:
+    history = await use_case.execute(tenant_id=identity.tenant_id, product_id=product_id)
+    return ProductPriceHistoryResponse(
+        product_id=history.product_id,
+        currency=history.currency,
+        changes=[
+            PriceChangeResponse(
+                changed_at=c.changed_at,
+                old_price_amount=c.old_price_amount,
+                new_price_amount=c.new_price_amount,
+            )
+            for c in history.changes
+        ],
+    )
 
 
 # --- Recipe (opt-in, Fase 6): a product may or may not have one ----------

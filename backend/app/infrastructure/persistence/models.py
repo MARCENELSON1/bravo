@@ -197,6 +197,28 @@ class ProductORM(Base):
     )
 
 
+class ProductPriceChangeORM(Base):
+    """Append-only log of a product's price over time (Productos v2 Tanda B).
+    One row per change (the first, at creation, has ``old_price_amount`` NULL).
+    Drives "días desde el último aumento" y "debería estar en $X". Tenant-scoped → RLS."""
+
+    __tablename__ = "product_price_changes"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    product_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("products.id", ondelete="CASCADE"), index=True
+    )
+    old_price_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    new_price_amount: Mapped[int] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(String(3))
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+
+
 class OrderORM(Base):
     __tablename__ = "orders"
 
@@ -601,6 +623,8 @@ class AdvisorSettingsORM(Base):
     # Tanda E Finanzas: inputs de RevPASH (capacidad total + minutos abiertos/día).
     seats: Mapped[int] = mapped_column(Integer, server_default="0")
     daily_open_minutes: Mapped[int] = mapped_column(Integer, server_default="0")
+    # Productos v2 Tanda B: inflación mensual estimada (bps) para "debería estar en $X".
+    monthly_inflation_bps: Mapped[int] = mapped_column(Integer, server_default="0")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

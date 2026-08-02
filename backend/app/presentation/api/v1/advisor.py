@@ -74,6 +74,7 @@ def _settings_response(settings: AdvisorSettings | None) -> AdvisorSettingsRespo
             target_food_cost_bps=3000,
             seats=0,
             daily_open_minutes=0,
+            monthly_inflation_bps=0,
             currency="ARS",
             configured=False,
         )
@@ -83,6 +84,7 @@ def _settings_response(settings: AdvisorSettings | None) -> AdvisorSettingsRespo
         target_food_cost_bps=settings.target_food_cost_bps,
         seats=settings.seats,
         daily_open_minutes=settings.daily_open_minutes,
+        monthly_inflation_bps=settings.monthly_inflation_bps,
         currency=settings.currency,
         configured=True,
     )
@@ -136,5 +138,6 @@ async def update_settings(
         target_food_cost_bps=body.target_food_cost_bps,
         seats=body.seats,
         daily_open_minutes=body.daily_open_minutes,
+        monthly_inflation_bps=body.monthly_inflation_bps,
     )
     return _settings_response(settings)

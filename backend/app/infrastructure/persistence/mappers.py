@@ -720,6 +720,7 @@ def advisor_settings_to_domain(row: AdvisorSettingsORM) -> AdvisorSettings:
         target_food_cost_bps=row.target_food_cost_bps,
         seats=row.seats,
         daily_open_minutes=row.daily_open_minutes,
+        monthly_inflation_bps=row.monthly_inflation_bps,
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
@@ -734,6 +735,7 @@ def advisor_settings_to_orm(settings: AdvisorSettings) -> AdvisorSettingsORM:
         target_food_cost_bps=settings.target_food_cost_bps,
         seats=settings.seats,
         daily_open_minutes=settings.daily_open_minutes,
+        monthly_inflation_bps=settings.monthly_inflation_bps,
     )
 
 

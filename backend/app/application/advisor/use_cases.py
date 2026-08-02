@@ -58,6 +58,7 @@ class UpdateAdvisorSettings:
         target_food_cost_bps: int,
         seats: int = 0,
         daily_open_minutes: int = 0,
+        monthly_inflation_bps: int = 0,
     ) -> AdvisorSettings:
         self._tenant_context.set(tenant_id)
         tenant = await self._tenants.get_by_id(tenant_id)
@@ -70,6 +71,7 @@ class UpdateAdvisorSettings:
             target_food_cost_bps=target_food_cost_bps,
             seats=seats,
             daily_open_minutes=daily_open_minutes,
+            monthly_inflation_bps=monthly_inflation_bps,
         )
         await self._settings.save(settings)
         return settings

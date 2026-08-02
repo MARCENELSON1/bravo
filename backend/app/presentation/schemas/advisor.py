@@ -47,6 +47,7 @@ class AdvisorSettingsResponse(BaseModel):
     target_food_cost_bps: int
     seats: int
     daily_open_minutes: int
+    monthly_inflation_bps: int
     currency: str
     configured: bool
 
@@ -61,3 +62,4 @@ class UpdateAdvisorSettingsRequest(BaseModel):
     target_food_cost_bps: int = Field(ge=0, le=10000)
     seats: int = Field(default=0, ge=0)
     daily_open_minutes: int = Field(default=0, ge=0, le=1440)
+    monthly_inflation_bps: int = Field(default=0, ge=0, le=100000)

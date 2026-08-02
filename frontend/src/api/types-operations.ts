@@ -33,6 +33,50 @@ export interface CreateProductResponse {
   product_id: string
 }
 
+// --- Productos v2 Tanda B: precios vs inflación + histórico + rotación --------
+
+export interface PricingRowDTO {
+  product_id: string
+  product_name: string
+  current_price_amount: number
+  suggested_price_amount: number
+  gap_amount: number
+  gap_bps: number
+  days_since_change: number
+  lagging: boolean
+}
+
+export interface PricingInsightsDTO {
+  currency: string
+  monthly_inflation_bps: number
+  configured: boolean
+  rows: PricingRowDTO[]
+}
+
+export interface PriceChangeDTO {
+  changed_at: string // ISO-8601
+  old_price_amount: number | null
+  new_price_amount: number
+}
+
+export interface ProductPriceHistoryDTO {
+  product_id: string
+  currency: string
+  changes: PriceChangeDTO[]
+}
+
+export interface WeekdayRotationDTO {
+  weekday: number // 0 = Lunes .. 6 = Domingo
+  units: number
+  sales_amount: number
+  top_product_name: string | null
+}
+
+export interface ProductRotationDTO {
+  currency: string
+  rows: WeekdayRotationDTO[]
+}
+
 export interface TableDTO {
   id: string
   number: number

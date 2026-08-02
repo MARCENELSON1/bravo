@@ -42,12 +42,12 @@ from app.application.identity.authenticate import Authenticate
 from app.application.identity.change_password import ChangePassword
 from app.application.identity.get_my_profile import GetMyProfile
 from app.application.identity.invite_user import InviteUser
-from app.application.identity.set_hourly_rate import SetUserHourlyRate
 from app.application.identity.logout import Logout
 from app.application.identity.onboard_tenant import OnboardTenant
 from app.application.identity.refresh_token import RefreshAccessToken
 from app.application.identity.request_password_reset import RequestPasswordReset
 from app.application.identity.reset_password import ResetPassword
+from app.application.identity.set_hourly_rate import SetUserHourlyRate
 from app.application.identity.verify_email import VerifyEmail
 from app.application.inventory.consume import ConsumeRecipesForOrder
 from app.application.inventory.food_cost import GetFoodCost
@@ -99,7 +99,14 @@ from app.application.payment.use_cases import (
     RegisterExpense,
     RegisterPayment,
 )
-from app.application.product.use_cases import CreateProduct, ListProducts
+from app.application.product.use_cases import (
+    CreateProduct,
+    GetPricingInsights,
+    GetProductPriceHistory,
+    GetProductRotation,
+    ListProducts,
+    UpdateProductPrice,
+)
 from app.application.reporting.dashboard import GetDashboardSummary
 from app.application.reporting.staff import GetStaffReport
 from app.application.reservation.use_cases import (
@@ -153,9 +160,6 @@ from app.infrastructure.persistence.advisor_repo import (
     SqlAlchemyAdvisorReadModel,
     SqlAlchemyAdvisorSnapshotReadModel,
 )
-from app.infrastructure.persistence.finance_snapshot_repo import (
-    SqlAlchemyFinanceSnapshotRepository,
-)
 from app.infrastructure.persistence.advisor_settings_repo import (
     SqlAlchemyAdvisorSettingsRepository,
 )
@@ -178,6 +182,9 @@ from app.infrastructure.persistence.finance_repo import (
     SqlAlchemyInventoryValueReadModel,
     SqlAlchemyRecentMovementsReadModel,
 )
+from app.infrastructure.persistence.finance_snapshot_repo import (
+    SqlAlchemyFinanceSnapshotRepository,
+)
 from app.infrastructure.persistence.food_cost_repo import SqlAlchemyFoodCostReadModel
 from app.infrastructure.persistence.ingredient_repo import SqlAlchemyIngredientRepository
 from app.infrastructure.persistence.invitation_repo import SqlAlchemyInvitationRepository
@@ -187,6 +194,11 @@ from app.infrastructure.persistence.order_repo import SqlAlchemyOrderRepository
 from app.infrastructure.persistence.payment_repo import SqlAlchemyPaymentRepository
 from app.infrastructure.persistence.presence_store_repo import (
     SqlAlchemyPresenceUsageStore,
+)
+from app.infrastructure.persistence.product_pricing_repo import (
+    SqlAlchemyPriceChangeRepository,
+    SqlAlchemyPricingReadModel,
+    SqlAlchemyRotationReadModel,
 )
 from app.infrastructure.persistence.product_repo import SqlAlchemyProductRepository
 from app.infrastructure.persistence.recipe_repo import SqlAlchemyRecipeRepository
@@ -265,6 +277,15 @@ class Container(containers.DeclarativeContainer):
     )
     product_repository = providers.Factory(
         SqlAlchemyProductRepository, session_factory=db.provided.session
+    )
+    price_change_repository = providers.Factory(
+        SqlAlchemyPriceChangeRepository, session_factory=db.provided.session
+    )
+    pricing_read_model = providers.Factory(
+        SqlAlchemyPricingReadModel, session_factory=db.provided.session
+    )
+    rotation_read_model = providers.Factory(
+        SqlAlchemyRotationReadModel, session_factory=db.provided.session
     )
     order_repository = providers.Factory(
         SqlAlchemyOrderRepository, session_factory=db.provided.session
@@ -398,10 +419,28 @@ class Container(containers.DeclarativeContainer):
         CreateProduct,
         products=product_repository,
         tenants=tenant_repository,
+        price_changes=price_change_repository,
         tenant_context=tenant_context,
     )
     list_products = providers.Factory(
         ListProducts, products=product_repository, tenant_context=tenant_context
+    )
+    update_product_price = providers.Factory(
+        UpdateProductPrice,
+        products=product_repository,
+        price_changes=price_change_repository,
+        tenant_context=tenant_context,
+    )
+    get_product_price_history = providers.Factory(
+        GetProductPriceHistory,
+        products=product_repository,
+        price_changes=price_change_repository,
+        tenant_context=tenant_context,
+    )
+    get_product_rotation = providers.Factory(
+        GetProductRotation,
+        rotation=rotation_read_model,
+        tenant_context=tenant_context,
     )
     create_table = providers.Factory(
         CreateTable, tables=table_repository, tenant_context=tenant_context
@@ -1011,6 +1050,13 @@ class Container(containers.DeclarativeContainer):
         UpdateAdvisorSettings,
         settings=advisor_settings_repository,
         tenants=tenant_repository,
+        tenant_context=tenant_context,
+    )
+    # Productos v2 Tanda B: precios vs inflación (reusa advisor_settings + productos).
+    get_pricing_insights = providers.Factory(
+        GetPricingInsights,
+        pricing=pricing_read_model,
+        settings=advisor_settings_repository,
         tenant_context=tenant_context,
     )
     rebuild_advisor_diagnostics = providers.Factory(

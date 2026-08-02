@@ -42,6 +42,7 @@ export interface AdvisorSettingsDTO {
   target_food_cost_bps: number
   seats: number
   daily_open_minutes: number
+  monthly_inflation_bps: number
   currency: string
   configured: boolean
 }
@@ -52,6 +53,7 @@ export interface UpdateAdvisorSettingsBody {
   target_food_cost_bps: number
   seats: number
   daily_open_minutes: number
+  monthly_inflation_bps: number
 }
 
 export interface AdvisorQuery {

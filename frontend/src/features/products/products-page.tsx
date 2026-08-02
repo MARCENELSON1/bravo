@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { MenuEngineering } from "@/features/products/menu-engineering-view"
+import { PricingInflationCard } from "@/features/products/pricing-inflation-card"
+import { RotationSchedule } from "@/features/products/rotation-schedule"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -304,6 +306,12 @@ export function ProductsPage() {
 
       {/* Menu engineering (Productos v2 Tanda A): la carta clasificada. */}
       <MenuEngineering />
+
+      {/* Productos v2 Tanda B: precios vs inflación + rotación por día. */}
+      <div className="grid gap-5 lg:grid-cols-2">
+        <PricingInflationCard />
+        <RotationSchedule />
+      </div>
 
       <h2 className="text-sm font-semibold text-foreground">Catálogo</h2>
       <div className="overflow-hidden rounded-xl border border-border">
