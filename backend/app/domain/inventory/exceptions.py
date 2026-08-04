@@ -40,3 +40,8 @@ class RecipeCycle(DomainError):
 
     code = "recipe_cycle"
     message = "Las preparaciones no pueden formar un ciclo."
+
+
+class PreparationNotFound(DomainError):
+    code = "preparation_not_found"
+    message = "No encontramos la preparación indicada."

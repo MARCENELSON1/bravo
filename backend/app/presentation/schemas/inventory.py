@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.domain.inventory.value_objects import UnitOfMeasure
 
@@ -65,8 +65,17 @@ class CreateSupplierResponse(BaseModel):
 
 
 class RecipeItemSchema(BaseModel):
-    ingredient_id: str
+    """Un ítem de receta/preparación: un insumo O una preparación, no ambos."""
+
+    ingredient_id: str | None = None
+    preparation_id: str | None = None
     qty: int = Field(gt=0)
+
+    @model_validator(mode="after")
+    def _exactly_one_component(self) -> RecipeItemSchema:
+        if (self.ingredient_id is None) == (self.preparation_id is None):
+            raise ValueError("indicá un insumo o una preparación, no ambos")
+        return self
 
 
 class SetRecipeRequest(BaseModel):
@@ -77,6 +86,26 @@ class RecipeResponse(BaseModel):
     product_id: str
     has_recipe: bool
     items: list[RecipeItemSchema]
+
+
+# --- Preparaciones (recetas madre) ------------------------------------------
+
+
+class SavePreparationRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    yield_qty: int = Field(gt=0)  # rendimiento en milésimas de la unidad de la prep
+    items: list[RecipeItemSchema]
+
+
+class PreparationResponse(BaseModel):
+    id: str
+    name: str
+    yield_qty: int
+    items: list[RecipeItemSchema]
+
+
+class CreatePreparationResponse(BaseModel):
+    preparation_id: str
 
 
 class FoodCostRowResponse(BaseModel):
