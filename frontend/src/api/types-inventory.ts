@@ -83,6 +83,7 @@ export interface PreparationDTO {
   id: string
   name: string
   yield_qty: number // rendimiento en milésimas de la unidad de la preparación
+  used_in_products: number // en cuántos platos se usa
   items: RecipeItemDTO[]
 }
 

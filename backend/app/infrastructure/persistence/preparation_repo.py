@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 
 from app.domain.inventory.recipe import Preparation
 from app.domain.inventory.repository import PreparationRepository
@@ -15,6 +15,7 @@ from app.infrastructure.persistence.mappers import (
 from app.infrastructure.persistence.models import (
     PreparationItemORM,
     PreparationORM,
+    RecipeItemORM,
 )
 
 
@@ -72,6 +73,21 @@ class SqlAlchemyPreparationRepository(PreparationRepository):
                 preparation_to_domain(row, items_by_prep.get(row.id, []))
                 for row in rows
             ]
+
+    async def usage_counts(self, tenant_id: str) -> dict[str, int]:
+        async with self._session_factory() as session:
+            stmt = (
+                select(
+                    RecipeItemORM.preparation_id,
+                    func.count(func.distinct(RecipeItemORM.product_id)),
+                )
+                .where(
+                    RecipeItemORM.tenant_id == tenant_id,
+                    RecipeItemORM.preparation_id.is_not(None),
+                )
+                .group_by(RecipeItemORM.preparation_id)
+            )
+            return {pid: int(n) for pid, n in (await session.execute(stmt)).all()}
 
     async def save(self, preparation: Preparation) -> None:
         async with self._session_factory() as session:

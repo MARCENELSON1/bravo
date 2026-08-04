@@ -101,6 +101,7 @@ class PreparationResponse(BaseModel):
     id: str
     name: str
     yield_qty: int
+    used_in_products: int = 0  # en cuántos platos se usa
     items: list[RecipeItemSchema]
 
 

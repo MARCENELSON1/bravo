@@ -55,11 +55,14 @@ def _to_recipe_items(items: list[RecipeItemSchema]) -> list[RecipeItem]:
     ]
 
 
-def _preparation_response(prep: Preparation) -> PreparationResponse:
+def _preparation_response(
+    prep: Preparation, used_in_products: int = 0
+) -> PreparationResponse:
     return PreparationResponse(
         id=prep.id,
         name=prep.name,
         yield_qty=prep.yield_qty,
+        used_in_products=used_in_products,
         items=[
             RecipeItemSchema(
                 ingredient_id=item.ingredient_id,
@@ -225,7 +228,9 @@ async def list_preparations(
     use_case: ListPreparations = Depends(Provide[Container.list_preparations]),
 ) -> list[PreparationResponse]:
     preparations = await use_case.execute(tenant_id=identity.tenant_id)
-    return [_preparation_response(p) for p in preparations]
+    return [
+        _preparation_response(p.preparation, p.used_in_products) for p in preparations
+    ]
 
 
 @router.post(
