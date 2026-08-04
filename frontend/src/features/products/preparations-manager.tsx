@@ -276,7 +276,12 @@ export function PreparationsManager() {
                   <p className="truncate font-medium text-foreground">{prep.name}</p>
                   <p className="text-xs text-muted-foreground">
                     Rinde {prep.yield_qty / 1000} · {prep.items.length}{" "}
-                    {prep.items.length === 1 ? "componente" : "componentes"}
+                    {prep.items.length === 1 ? "componente" : "componentes"} ·{" "}
+                    {prep.used_in_products === 0
+                      ? "sin usar"
+                      : `usada en ${prep.used_in_products} ${
+                          prep.used_in_products === 1 ? "plato" : "platos"
+                        }`}
                   </p>
                 </div>
                 <div className="flex items-center gap-1">

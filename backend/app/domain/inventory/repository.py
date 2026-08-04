@@ -66,6 +66,12 @@ class PreparationRepository(ABC):
     async def list(self, tenant_id: str) -> list[Preparation]: ...
 
     @abstractmethod
+    async def usage_counts(self, tenant_id: str) -> dict[str, int]:
+        """En cuántos platos (products con receta) se usa cada preparación,
+        por ``preparation_id``. Las que no se usan no aparecen en el dict."""
+        ...
+
+    @abstractmethod
     async def save(self, preparation: Preparation) -> None: ...
 
     @abstractmethod

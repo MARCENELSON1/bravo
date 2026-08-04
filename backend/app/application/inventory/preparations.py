@@ -6,6 +6,7 @@ que los componentes existan y que el grafo de preparaciones no forme un ciclo
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from uuid import uuid4
 
 from app.domain.identity.ports import TenantContext
@@ -25,6 +26,12 @@ from app.domain.inventory.repository import (
 _GUARD_CURRENCY = "ARS"
 
 
+@dataclass(frozen=True)
+class PreparationListItem:
+    preparation: Preparation
+    used_in_products: int  # en cuántos platos se usa
+
+
 class ListPreparations:
     def __init__(
         self, preparations: PreparationRepository, tenant_context: TenantContext
@@ -32,9 +39,16 @@ class ListPreparations:
         self._preparations = preparations
         self._tenant_context = tenant_context
 
-    async def execute(self, *, tenant_id: str) -> list[Preparation]:
+    async def execute(self, *, tenant_id: str) -> list[PreparationListItem]:
         self._tenant_context.set(tenant_id)
-        return await self._preparations.list(tenant_id)
+        preparations = await self._preparations.list(tenant_id)
+        counts = await self._preparations.usage_counts(tenant_id)
+        return [
+            PreparationListItem(
+                preparation=p, used_in_products=counts.get(p.id, 0)
+            )
+            for p in preparations
+        ]
 
 
 class SavePreparation:

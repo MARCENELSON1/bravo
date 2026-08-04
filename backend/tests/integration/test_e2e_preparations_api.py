@@ -153,6 +153,37 @@ async def test_list_and_delete_preparations(client):
     assert (await http.get("/api/v1/inventory/preparations", headers=h)).json() == []
 
 
+async def test_usage_count_reflects_products_using_the_preparation(client):
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    tomate = await _ingredient(http, h, "Tomate", unit_cost_amount=1000)
+    salsa = (
+        await http.post(
+            "/api/v1/inventory/preparations",
+            json={
+                "name": "Salsa",
+                "yield_qty": 2000,
+                "items": [{"ingredient_id": tomate, "qty": 2000}],
+            },
+            headers=h,
+        )
+    ).json()["preparation_id"]
+
+    # Sin platos que la usen todavía.
+    listed = (await http.get("/api/v1/inventory/preparations", headers=h)).json()
+    assert listed[0]["used_in_products"] == 0
+
+    pid = await _product(http, h, "Napolitana", 300000)
+    await http.put(
+        f"/api/v1/products/{pid}/recipe",
+        json={"items": [{"preparation_id": salsa, "qty": 150}]},
+        headers=h,
+    )
+
+    listed = (await http.get("/api/v1/inventory/preparations", headers=h)).json()
+    assert listed[0]["used_in_products"] == 1
+
+
 async def test_preparations_are_tenant_isolated(client):
     http, fake_email = client
     t1 = _auth(await _onboard_verify_login(http, fake_email, slug="uno", email="a@uno.com"))
