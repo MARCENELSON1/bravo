@@ -31,7 +31,10 @@ from app.domain.identity.exceptions import (
 from app.domain.inventory.exceptions import (
     IngredientNotFound,
     InvalidQuantity,
+    InvalidRecipeComponent,
     InvalidUnitCost,
+    PreparationNotFound,
+    RecipeCycle,
     RecipeNotFound,
     SupplierNotFound,
 )
@@ -152,8 +155,11 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (IngredientNotFound, 404),
     (SupplierNotFound, 404),
     (RecipeNotFound, 404),
+    (PreparationNotFound, 404),
     (InvalidQuantity, 422),
     (InvalidUnitCost, 422),
+    (InvalidRecipeComponent, 422),
+    (RecipeCycle, 409),
     # Fase 7 — reservas
     (ReservationNotFound, 404),
     (InvalidReservationTransition, 409),

@@ -14,10 +14,12 @@ from app.domain.inventory.exceptions import (
     IngredientNotFound,
     InvalidQuantity,
     InvalidUnitCost,
+    PreparationNotFound,
 )
 from app.domain.inventory.recipe import Recipe, RecipeItem
 from app.domain.inventory.repository import (
     IngredientRepository,
+    PreparationRepository,
     RecipeRepository,
     StockMovementRepository,
     SupplierRepository,
@@ -256,29 +258,30 @@ class SetRecipe:
         recipes: RecipeRepository,
         products: ProductRepository,
         ingredients: IngredientRepository,
+        preparations: PreparationRepository,
         tenant_context: TenantContext,
     ) -> None:
         self._recipes = recipes
         self._products = products
         self._ingredients = ingredients
+        self._preparations = preparations
         self._tenant_context = tenant_context
 
     async def execute(
-        self, *, tenant_id: str, product_id: str, items: list[tuple[str, int]]
+        self, *, tenant_id: str, product_id: str, items: list[RecipeItem]
     ) -> Recipe:
         self._tenant_context.set(tenant_id)
         product = await self._products.get_by_id(tenant_id, product_id)
         if product is None:
             raise ProductNotFound()
-        known = {i.id for i in await self._ingredients.list(tenant_id)}
-        for ingredient_id, _qty in items:
-            if ingredient_id not in known:
+        known_ingredients = {i.id for i in await self._ingredients.list(tenant_id)}
+        known_preparations = {p.id for p in await self._preparations.list(tenant_id)}
+        for item in items:
+            if item.ingredient_id is not None and item.ingredient_id not in known_ingredients:
                 raise IngredientNotFound()
-        recipe = Recipe(
-            product_id=product_id,
-            tenant_id=tenant_id,
-            items=[RecipeItem(ingredient_id=iid, qty=qty) for iid, qty in items],
-        )
+            if item.preparation_id is not None and item.preparation_id not in known_preparations:
+                raise PreparationNotFound()
+        recipe = Recipe(product_id=product_id, tenant_id=tenant_id, items=items)
         await self._recipes.save(recipe)
         return recipe
 

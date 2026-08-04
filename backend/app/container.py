@@ -51,6 +51,11 @@ from app.application.identity.set_hourly_rate import SetUserHourlyRate
 from app.application.identity.verify_email import VerifyEmail
 from app.application.inventory.consume import ConsumeRecipesForOrder
 from app.application.inventory.food_cost import GetFoodCost
+from app.application.inventory.preparations import (
+    DeletePreparation,
+    ListPreparations,
+    SavePreparation,
+)
 from app.application.inventory.use_cases import (
     CreateIngredient,
     CreateSupplier,
@@ -871,10 +876,27 @@ class Container(containers.DeclarativeContainer):
         recipes=recipe_repository,
         products=product_repository,
         ingredients=ingredient_repository,
+        preparations=preparation_repository,
         tenant_context=tenant_context,
     )
     get_recipe = providers.Factory(
         GetRecipe, recipes=recipe_repository, tenant_context=tenant_context
+    )
+    list_preparations = providers.Factory(
+        ListPreparations,
+        preparations=preparation_repository,
+        tenant_context=tenant_context,
+    )
+    save_preparation = providers.Factory(
+        SavePreparation,
+        preparations=preparation_repository,
+        ingredients=ingredient_repository,
+        tenant_context=tenant_context,
+    )
+    delete_preparation = providers.Factory(
+        DeletePreparation,
+        preparations=preparation_repository,
+        tenant_context=tenant_context,
     )
     food_cost_read_model = providers.Factory(
         SqlAlchemyFoodCostReadModel, session_factory=db.provided.session

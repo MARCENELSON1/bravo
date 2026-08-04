@@ -148,7 +148,9 @@ async def test_set_and_get_recipe_opt_in(client):
 
     got = await http.get(f"/api/v1/products/{pid}/recipe", headers=h)
     assert got.json()["has_recipe"] is True
-    assert got.json()["items"] == [{"ingredient_id": iid, "qty": 200}]
+    assert got.json()["items"] == [
+        {"ingredient_id": iid, "preparation_id": None, "qty": 200}
+    ]
 
 
 async def test_set_recipe_unknown_ingredient_rejected(client):

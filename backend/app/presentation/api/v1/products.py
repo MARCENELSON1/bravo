@@ -16,6 +16,7 @@ from app.application.product.use_cases import (
 )
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
+from app.domain.inventory.recipe import RecipeItem
 from app.domain.user.value_objects import Role
 from app.presentation.deps import current_identity
 from app.presentation.rbac import require_roles
@@ -198,7 +199,11 @@ async def get_product_recipe(
         product_id=product_id,
         has_recipe=True,
         items=[
-            RecipeItemSchema(ingredient_id=item.ingredient_id, qty=item.qty)
+            RecipeItemSchema(
+                ingredient_id=item.ingredient_id,
+                preparation_id=item.preparation_id,
+                qty=item.qty,
+            )
             for item in recipe.items
         ],
     )
@@ -215,13 +220,24 @@ async def set_product_recipe(
     recipe = await use_case.execute(
         tenant_id=identity.tenant_id,
         product_id=product_id,
-        items=[(item.ingredient_id, item.qty) for item in body.items],
+        items=[
+            RecipeItem(
+                ingredient_id=item.ingredient_id,
+                preparation_id=item.preparation_id,
+                qty=item.qty,
+            )
+            for item in body.items
+        ],
     )
     return RecipeResponse(
         product_id=product_id,
         has_recipe=True,
         items=[
-            RecipeItemSchema(ingredient_id=item.ingredient_id, qty=item.qty)
+            RecipeItemSchema(
+                ingredient_id=item.ingredient_id,
+                preparation_id=item.preparation_id,
+                qty=item.qty,
+            )
             for item in recipe.items
         ],
     )
