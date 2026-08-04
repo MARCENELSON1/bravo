@@ -61,7 +61,9 @@ export interface CreateSupplierResponse {
 }
 
 export interface RecipeItemDTO {
-  ingredient_id: string
+  // Un ítem apunta a un insumo O a una preparación (receta madre), no ambos.
+  ingredient_id?: string | null
+  preparation_id?: string | null
   qty: number
 }
 
@@ -73,6 +75,25 @@ export interface RecipeDTO {
 
 export interface SetRecipeBody {
   items: RecipeItemDTO[]
+}
+
+// --- Preparaciones (recetas madre, Productos v2 Tanda C) ---------------------
+
+export interface PreparationDTO {
+  id: string
+  name: string
+  yield_qty: number // rendimiento en milésimas de la unidad de la preparación
+  items: RecipeItemDTO[]
+}
+
+export interface SavePreparationBody {
+  name: string
+  yield_qty: number
+  items: RecipeItemDTO[]
+}
+
+export interface CreatePreparationResponse {
+  preparation_id: string
 }
 
 export interface FoodCostRowDTO {

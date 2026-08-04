@@ -2,12 +2,15 @@ import type { HttpClient } from "@/api/http-client"
 import type {
   CreateIngredientBody,
   CreateIngredientResponse,
+  CreatePreparationResponse,
   CreateSupplierBody,
   CreateSupplierResponse,
   FoodCostReportDTO,
   IngredientDTO,
+  PreparationDTO,
   PurchaseBody,
   RecipeDTO,
+  SavePreparationBody,
   SetRecipeBody,
   SupplierDTO,
   UpdateIngredientBody,
@@ -81,6 +84,34 @@ export class InventoryApi {
   setRecipe(productId: string, body: SetRecipeBody): Promise<RecipeDTO> {
     return this.http.request<RecipeDTO>("PUT", `/products/${productId}/recipe`, {
       body,
+      auth: true,
+    })
+  }
+
+  // --- Preparaciones (recetas madre) -----------------------------------------
+
+  listPreparations(): Promise<PreparationDTO[]> {
+    return this.http.request<PreparationDTO[]>("GET", "/inventory/preparations", {
+      auth: true,
+    })
+  }
+
+  createPreparation(body: SavePreparationBody): Promise<CreatePreparationResponse> {
+    return this.http.request<CreatePreparationResponse>("POST", "/inventory/preparations", {
+      body,
+      auth: true,
+    })
+  }
+
+  updatePreparation(id: string, body: SavePreparationBody): Promise<PreparationDTO> {
+    return this.http.request<PreparationDTO>("PUT", `/inventory/preparations/${id}`, {
+      body,
+      auth: true,
+    })
+  }
+
+  deletePreparation(id: string): Promise<void> {
+    return this.http.request<void>("DELETE", `/inventory/preparations/${id}`, {
       auth: true,
     })
   }
