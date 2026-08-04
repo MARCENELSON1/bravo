@@ -5,7 +5,7 @@ import { z } from "zod"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
-import type { IngredientDTO, RecipeItemDTO } from "@/api/types-inventory"
+import type { IngredientDTO, PreparationDTO, RecipeItemDTO } from "@/api/types-inventory"
 import type { ProductDTO } from "@/api/types-operations"
 import { FormError } from "@/components/form-error"
 import { Badge } from "@/components/ui/badge"
@@ -13,16 +13,18 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { MenuEngineering } from "@/features/products/menu-engineering-view"
+import {
+  ComponentRowsEditor,
+  PreparationsManager,
+} from "@/features/products/preparations-manager"
+import {
+  type ComponentDraft,
+  draftsToItems,
+  itemsToDrafts,
+} from "@/features/products/recipe-items"
 import { PricingInflationCard } from "@/features/products/pricing-inflation-card"
 import { RotationSchedule } from "@/features/products/rotation-schedule"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   Sheet,
   SheetContent,
@@ -40,9 +42,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useIngredients, useRecipe, useSetRecipe } from "@/hooks/use-inventory"
+import {
+  useIngredients,
+  usePreparations,
+  useRecipe,
+  useSetRecipe,
+} from "@/hooks/use-inventory"
 import { useCreateProduct, useProducts } from "@/hooks/use-products"
-import { toMilesimas, UNIT_LABELS } from "@/lib/inventory"
 import { formatMoney } from "@/lib/money"
 
 const schema = z.object({
@@ -58,42 +64,28 @@ const schema = z.object({
 
 type ProductValues = z.infer<typeof schema>
 
-type DraftRow = { ingredient_id: string; qty: string }
-
-// Recipe editor (opt-in): seeds local rows from the fetched recipe once both the
-// recipe and the ingredient list are loaded, so no setState-in-effect is needed.
+// Recipe editor (opt-in): seeds local rows from the fetched recipe once the
+// recipe, ingredients and preparations are loaded (no setState-in-effect). Un
+// ítem puede ser un insumo o una preparación (receta madre).
 function RecipeForm({
   product,
   initialItems,
   ingredients,
+  preparations,
   onDone,
 }: {
   product: ProductDTO
   initialItems: RecipeItemDTO[]
   ingredients: IngredientDTO[]
+  preparations: PreparationDTO[]
   onDone: () => void
 }) {
   const setRecipe = useSetRecipe(product.id)
-  const [rows, setRows] = useState<DraftRow[]>(() =>
-    initialItems.map((i) => ({ ingredient_id: i.ingredient_id, qty: String(i.qty / 1000) }))
-  )
-
-  const unitOf = (ingredientId: string) =>
-    ingredients.find((i) => i.id === ingredientId)?.unit
-
-  const addRow = () =>
-    setRows((prev) => [...prev, { ingredient_id: ingredients[0]?.id ?? "", qty: "" }])
-  const removeRow = (index: number) =>
-    setRows((prev) => prev.filter((_, idx) => idx !== index))
-  const patchRow = (index: number, patch: Partial<DraftRow>) =>
-    setRows((prev) => prev.map((row, idx) => (idx === index ? { ...row, ...patch } : row)))
+  const [rows, setRows] = useState<ComponentDraft[]>(() => itemsToDrafts(initialItems))
 
   const save = () => {
-    const items = rows
-      .filter((r) => r.ingredient_id && Number(r.qty) > 0)
-      .map((r) => ({ ingredient_id: r.ingredient_id, qty: toMilesimas(r.qty) }))
     setRecipe.mutate(
-      { items },
+      { items: draftsToItems(rows) },
       {
         onSuccess: () => {
           toast.success("Receta guardada.")
@@ -115,46 +107,13 @@ function RecipeForm({
 
   return (
     <div className="flex flex-col gap-3 px-4 pb-4">
-      {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Sin insumos. Agregá los que consume una unidad de este producto.
-        </p>
-      ) : null}
-      {rows.map((row, index) => (
-        <div key={index} className="flex items-end gap-2">
-          <Select
-            value={row.ingredient_id}
-            onValueChange={(v) => patchRow(index, { ingredient_id: v })}
-          >
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Insumo" />
-            </SelectTrigger>
-            <SelectContent>
-              {ingredients.map((i) => (
-                <SelectItem key={i.id} value={i.id}>
-                  {i.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            type="number"
-            step="0.001"
-            min={0}
-            placeholder={unitOf(row.ingredient_id) ? UNIT_LABELS[unitOf(row.ingredient_id)!] : "cant."}
-            value={row.qty}
-            onChange={(e) => patchRow(index, { qty: e.target.value })}
-            className="max-w-[7rem]"
-          />
-          <Button variant="ghost" size="sm" onClick={() => removeRow(index)}>
-            Quitar
-          </Button>
-        </div>
-      ))}
-      <div className="flex items-center justify-between gap-2">
-        <Button variant="outline" size="sm" onClick={addRow}>
-          Agregar insumo
-        </Button>
+      <ComponentRowsEditor
+        rows={rows}
+        onChange={setRows}
+        ingredients={ingredients}
+        preparations={preparations}
+      />
+      <div className="flex items-center justify-end">
         <Button onClick={save} disabled={setRecipe.isPending}>
           {setRecipe.isPending ? "Guardando…" : "Guardar receta"}
         </Button>
@@ -166,7 +125,8 @@ function RecipeForm({
 function RecipeEditor({ product, onDone }: { product: ProductDTO; onDone: () => void }) {
   const recipe = useRecipe(product.id)
   const ingredients = useIngredients()
-  if (recipe.isPending || ingredients.isPending) {
+  const preparations = usePreparations()
+  if (recipe.isPending || ingredients.isPending || preparations.isPending) {
     return (
       <div className="flex justify-center p-10">
         <Spinner className="size-5 text-muted-foreground" />
@@ -178,6 +138,7 @@ function RecipeEditor({ product, onDone }: { product: ProductDTO; onDone: () => 
       product={product}
       initialItems={recipe.data?.items ?? []}
       ingredients={ingredients.data ?? []}
+      preparations={preparations.data ?? []}
       onDone={onDone}
     />
   )
@@ -360,6 +321,9 @@ export function ProductsPage() {
           </p>
         )}
       </div>
+
+      {/* Productos v2 Tanda C: recetas madre (preparaciones base). */}
+      <PreparationsManager />
     </div>
   )
 }

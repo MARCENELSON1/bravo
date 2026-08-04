@@ -4,6 +4,7 @@ import type {
   CreateIngredientBody,
   CreateSupplierBody,
   PurchaseBody,
+  SavePreparationBody,
   SetRecipeBody,
   UpdateIngredientBody,
   WasteBody,
@@ -102,5 +103,49 @@ export function useSetRecipe(productId: string) {
       void queryClient.invalidateQueries({ queryKey: ["recipe", productId] })
       void queryClient.invalidateQueries({ queryKey: ["food-cost"] })
     },
+  })
+}
+
+// --- Preparaciones (recetas madre) ------------------------------------------
+
+export function usePreparations() {
+  const { inventoryApi } = useServices()
+  return useQuery({
+    queryKey: ["preparations"],
+    queryFn: () => inventoryApi.listPreparations(),
+  })
+}
+
+// Cambiar una preparación mueve el food cost de los platos que la usan.
+function invalidatePreparations(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: ["preparations"] })
+  void queryClient.invalidateQueries({ queryKey: ["food-cost"] })
+}
+
+export function useCreatePreparation() {
+  const { inventoryApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: SavePreparationBody) => inventoryApi.createPreparation(body),
+    onSuccess: () => invalidatePreparations(queryClient),
+  })
+}
+
+export function useUpdatePreparation() {
+  const { inventoryApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: SavePreparationBody }) =>
+      inventoryApi.updatePreparation(id, body),
+    onSuccess: () => invalidatePreparations(queryClient),
+  })
+}
+
+export function useDeletePreparation() {
+  const { inventoryApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => inventoryApi.deletePreparation(id),
+    onSuccess: () => invalidatePreparations(queryClient),
   })
 }
