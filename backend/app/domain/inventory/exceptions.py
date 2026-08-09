@@ -45,3 +45,10 @@ class RecipeCycle(DomainError):
 class PreparationNotFound(DomainError):
     code = "preparation_not_found"
     message = "No encontramos la preparación indicada."
+
+
+class IncompatibleUnits(DomainError):
+    """La unidad de receta debe ser la del insumo o su sub-unidad fina (KG→G, L→ML)."""
+
+    code = "incompatible_units"
+    message = "La unidad de receta debe ser la del insumo o su sub-unidad (kg→g, l→ml)."

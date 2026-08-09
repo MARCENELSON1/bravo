@@ -46,30 +46,36 @@ def food_cost(
     currency: str,
     *,
     cost_by_preparation: dict[str, Money] | None = None,
+    factor_by_ingredient: dict[str, tuple[int, int]] | None = None,
 ) -> Money:
     """Cost of one sold unit = Σ(recipe_qty × component unit_cost).
 
     Each item points to an ingredient **or** a preparation (receta madre).
-    ``recipe_qty`` is in milésimas of the component's base unit and ``unit_cost``
-    is Money per *one* base unit, so each line is ``unit_cost.amount × qty / 1000``
-    (rounded to the minor unit). ``currency`` is required because Money always
-    needs one — even for an empty recipe or when a cost is missing. A component
-    absent from its cost map contributes zero (treated as unknown). Backward
-    compatible: with only ingredient items and no ``cost_by_preparation`` it
-    behaves exactly as the flat (one-level) recipe cost.
+    ``recipe_qty`` is in milésimas of the component's recipe unit and ``unit_cost``
+    is Money per *one* base (purchase) unit, so each line is
+    ``unit_cost.amount × qty × num / (den × 1000)`` (rounded to the minor unit),
+    where ``(num, den)`` is the ingredient's unit-conversion factor from
+    ``factor_by_ingredient`` (default identity ``(1, 1)`` → recipe unit == base
+    unit). ``currency`` is required because Money always needs one — even for an
+    empty recipe or when a cost is missing. A component absent from its cost map
+    contributes zero (treated as unknown). Backward compatible: with no
+    ``factor_by_ingredient`` (or all identity) it behaves exactly as before.
     """
     prep_costs = cost_by_preparation or {}
+    factors = factor_by_ingredient or {}
     total = 0
     for item in items:
         if item.preparation_id is not None:
             cost = prep_costs.get(item.preparation_id)
+            num, den = 1, 1  # a preparation carries its own unit (via yield)
         else:
             cost = cost_by_ingredient.get(item.ingredient_id)
+            num, den = factors.get(item.ingredient_id, (1, 1))
         if cost is None:
             continue
         if cost.currency != currency:
             raise CurrencyMismatch()
-        total += round(cost.amount * item.qty / QUANTITY_SCALE)
+        total += round(cost.amount * item.qty * num / (den * QUANTITY_SCALE))
     return Money(total, currency)
 
 
@@ -77,6 +83,8 @@ def resolve_preparation_costs(
     preparations: dict[str, Preparation],
     cost_by_ingredient: dict[str, Money],
     currency: str,
+    *,
+    factor_by_ingredient: dict[str, tuple[int, int]] | None = None,
 ) -> dict[str, Money]:
     """Cost of *one base unit* of each preparation, resolved multi-level.
 
@@ -85,9 +93,12 @@ def resolve_preparation_costs(
     unit cost is that batch prorated by the yield: ``batch × SCALE / yield_qty``.
     Nested preparations are resolved recursively with an anti-cycle guard
     (raises :class:`RecipeCycle` on A→…→A). Missing components contribute zero.
+    Ingredient items apply their unit-conversion factor from
+    ``factor_by_ingredient`` (default identity); sub-preparations do not.
     """
     resolved: dict[str, Money] = {}
     in_progress: set[str] = set()
+    factors = factor_by_ingredient or {}
 
     def resolve(prep_id: str) -> Money:
         if prep_id in resolved:
@@ -102,12 +113,14 @@ def resolve_preparation_costs(
         for item in prep.items:
             if item.preparation_id is not None:
                 cost = resolve(item.preparation_id)
+                num, den = 1, 1
             else:
                 found = cost_by_ingredient.get(item.ingredient_id)
                 cost = found if found is not None else Money(0, currency)
+                num, den = factors.get(item.ingredient_id, (1, 1))
             if cost.currency != currency:
                 raise CurrencyMismatch()
-            batch_total += round(cost.amount * item.qty / QUANTITY_SCALE)
+            batch_total += round(cost.amount * item.qty * num / (den * QUANTITY_SCALE))
         in_progress.discard(prep_id)
         unit = (
             round(batch_total * QUANTITY_SCALE / prep.yield_qty)
