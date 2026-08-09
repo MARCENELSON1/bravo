@@ -61,6 +61,26 @@ async def _set_inflation(http, h, bps: int) -> None:
     assert resp.status_code == 200, resp.text
 
 
+async def test_product_name_is_validated(client):
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    for bad in ("a", "   ", "!!"):
+        resp = await http.post(
+            "/api/v1/products",
+            json={"name": bad, "price_amount": 1000, "category": "Cocina"},
+            headers=h,
+        )
+        assert resp.status_code == 422, f"{bad!r} -> {resp.status_code}: {resp.text}"
+    # Nombres cortos legítimos (marcas/combos como "33") deben aceptarse.
+    for good in ("Milanesa", "33"):
+        resp = await http.post(
+            "/api/v1/products",
+            json={"name": good, "price_amount": 1000, "category": "Cocina"},
+            headers=h,
+        )
+        assert resp.status_code == 201, f"{good!r} -> {resp.text}"
+
+
 # --- Log de precios (histórico real, base del simulador) ---------------------
 
 

@@ -1,16 +1,25 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.domain.order.value_objects import Station
 
 
 class CreateProductRequest(BaseModel):
-    name: str = Field(min_length=1, max_length=120)
+    name: str = Field(min_length=2, max_length=120)
     price_amount: int = Field(ge=0)  # minor units (e.g. centavos)
     category: str | None = Field(default=None, max_length=60)
     # Where it's prepared — defaults to the kitchen; set BAR for drinks/coffee.
     station: Station = Station.KITCHEN
+
+    @field_validator("name")
+    @classmethod
+    def _real_name(cls, value: str) -> str:
+        # Reject blank/garbage names: require min length and one alphanumeric char.
+        name = value.strip()
+        if len(name) < 2 or not any(char.isalnum() for char in name):
+            raise ValueError("invalid product name")
+        return name
 
 
 class CreateProductResponse(BaseModel):
