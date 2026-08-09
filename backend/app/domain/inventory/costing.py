@@ -5,9 +5,26 @@ from __future__ import annotations
 
 from app.domain.inventory.exceptions import RecipeCycle
 from app.domain.inventory.recipe import Preparation, RecipeItem
-from app.domain.inventory.value_objects import QUANTITY_SCALE
+from app.domain.inventory.value_objects import FULL_YIELD_BPS, QUANTITY_SCALE
 from app.domain.shared.exceptions import CurrencyMismatch
 from app.domain.shared.money import Money
+
+
+def effective_unit_cost(unit_cost: Money, yield_pct: int) -> Money:
+    """Cost per *usable* base unit: the raw unit cost adjusted for yield (merma).
+
+    ``yield_pct`` is in basis points (10000 = 100% = no loss). A yield below 100%
+    means part of the purchased ingredient is lost (bone, trim, cooking), so what
+    reaches the plate costs ``raw / yield``. Same integer/round idiom as the rest
+    of the costing math; the result is never below the raw cost.
+    """
+    # An invalid yield (0 or negative from a non-schema write) degrades to the
+    # raw cost instead of dividing by zero and crashing the whole report.
+    if yield_pct >= FULL_YIELD_BPS or yield_pct <= 0:
+        return unit_cost
+    return Money(
+        round(unit_cost.amount * FULL_YIELD_BPS / yield_pct), unit_cost.currency
+    )
 
 
 def food_cost(

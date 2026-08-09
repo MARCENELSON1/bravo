@@ -3,9 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
+from app.domain.inventory.costing import (
+    effective_unit_cost as _effective_unit_cost,
+)
 from app.domain.inventory.costing import is_below_min
 from app.domain.inventory.exceptions import InvalidQuantity, InvalidUnitCost
 from app.domain.inventory.value_objects import (
+    FULL_YIELD_BPS,
     MovementDirection,
     MovementReason,
     UnitOfMeasure,
@@ -56,6 +60,8 @@ class Ingredient:
     stock_qty: int
     min_qty: int
     unit_cost: Money
+    # Yield (rendimiento/merma) in basis points; 10000 = 100% = no loss.
+    yield_pct: int = FULL_YIELD_BPS
     active: bool = True
     created_at: datetime | None = None
 
@@ -81,6 +87,11 @@ class Ingredient:
     @property
     def is_below_min(self) -> bool:
         return is_below_min(self.stock_qty, self.min_qty)
+
+    @property
+    def effective_unit_cost(self) -> Money:
+        """Cost per usable unit — the raw unit cost adjusted for yield (merma)."""
+        return _effective_unit_cost(self.unit_cost, self.yield_pct)
 
 
 @dataclass

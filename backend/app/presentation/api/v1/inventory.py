@@ -83,6 +83,7 @@ def _ingredient_response(ingredient: Ingredient) -> IngredientResponse:
         min_qty=ingredient.min_qty,
         unit_cost_amount=ingredient.unit_cost.amount,
         currency=ingredient.unit_cost.currency,
+        yield_pct=ingredient.yield_pct,
         active=ingredient.active,
         is_below_min=ingredient.is_below_min,
     )
@@ -115,6 +116,7 @@ async def create_ingredient(
         min_qty=body.min_qty,
         unit_cost_amount=body.unit_cost_amount,
         stock_qty=body.stock_qty,
+        yield_pct=body.yield_pct,
     )
     return CreateIngredientResponse(ingredient_id=ingredient.id)
 
@@ -146,6 +148,7 @@ async def update_ingredient(
         name=body.name,
         min_qty=body.min_qty,
         active=body.active,
+        yield_pct=body.yield_pct,
     )
     return _ingredient_response(ingredient)
 

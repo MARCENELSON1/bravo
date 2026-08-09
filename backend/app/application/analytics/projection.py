@@ -70,7 +70,10 @@ class ProjectOrderSales(SalesProjector):
             product.id: product.category for product in await self._products.list(tenant_id)
         }
         cost_by_ingredient = (
-            {ing.id: ing.unit_cost for ing in await self._ingredients.list(tenant_id)}
+            {
+                ing.id: ing.effective_unit_cost
+                for ing in await self._ingredients.list(tenant_id)
+            }
             if recipes
             else {}
         )

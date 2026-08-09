@@ -38,10 +38,20 @@ import {
   useIngredients,
   useLowStock,
   usePurchase,
+  useUpdateIngredient,
   useWaste,
 } from "@/hooks/use-inventory"
 import { formatMoney } from "@/lib/money"
-import { formatBps, formatQty, toMilesimas, UNIT_LABELS, UNIT_OPTIONS } from "@/lib/inventory"
+import {
+  bpsToPercent,
+  formatBps,
+  formatQty,
+  isValidYieldBps,
+  percentToBps,
+  toMilesimas,
+  UNIT_LABELS,
+  UNIT_OPTIONS,
+} from "@/lib/inventory"
 
 // Alta de insumo. Internal (not exported) so the page file exports only the page.
 function CreateIngredientSheet() {
@@ -52,6 +62,7 @@ function CreateIngredientSheet() {
   const [stock, setStock] = useState("")
   const [min, setMin] = useState("")
   const [cost, setCost] = useState("")
+  const [yieldPct, setYieldPct] = useState("100")
 
   const submit = () => {
     if (!name.trim()) {
@@ -63,6 +74,11 @@ function CreateIngredientSheet() {
       toast.error("Ingresá un costo válido.")
       return
     }
+    const yp = yieldPct ? percentToBps(yieldPct) : 10000
+    if (!isValidYieldBps(yp)) {
+      toast.error("Rendimiento entre 1 y 100%.")
+      return
+    }
     create.mutate(
       {
         name: name.trim(),
@@ -70,6 +86,7 @@ function CreateIngredientSheet() {
         stock_qty: stock ? toMilesimas(stock) : 0,
         min_qty: min ? toMilesimas(min) : 0,
         unit_cost_amount: unitCost,
+        yield_pct: yp,
       },
       {
         onSuccess: () => {
@@ -78,6 +95,7 @@ function CreateIngredientSheet() {
           setStock("")
           setMin("")
           setCost("")
+          setYieldPct("100")
           setOpen(false)
         },
         onError: (error) =>
@@ -138,6 +156,20 @@ function CreateIngredientSheet() {
             value={cost}
             onChange={(e) => setCost(e.target.value)}
           />
+          <label className="flex flex-col gap-1 text-sm">
+            Rendimiento (%)
+            <Input
+              type="number"
+              step="1"
+              min={1}
+              max={100}
+              value={yieldPct}
+              onChange={(e) => setYieldPct(e.target.value)}
+            />
+            <span className="text-xs text-muted-foreground">
+              Cuánto del insumo llega al plato. 100% = sin merma (hueso, recorte, cocción).
+            </span>
+          </label>
           <Button onClick={submit} disabled={create.isPending}>
             {create.isPending ? "Creando…" : "Crear insumo"}
           </Button>
@@ -279,6 +311,86 @@ function WasteSheet({ ingredient }: { ingredient: IngredientDTO }) {
   )
 }
 
+// Editar un insumo existente: nombre + rendimiento (merma). El costo se mueve
+// por compras (último costo), no acá.
+// Seeds its state from props at mount; the sheet renders it only while open, so
+// it remounts (re-seeds from fresh server data) each time — no stale lost-update.
+function EditIngredientForm({
+  ingredient,
+  onDone,
+}: {
+  ingredient: IngredientDTO
+  onDone: () => void
+}) {
+  const update = useUpdateIngredient()
+  const [name, setName] = useState(ingredient.name)
+  const [yieldPct, setYieldPct] = useState(String(bpsToPercent(ingredient.yield_pct)))
+
+  const submit = () => {
+    const yp = percentToBps(yieldPct)
+    if (!isValidYieldBps(yp)) {
+      toast.error("Rendimiento entre 1 y 100%.")
+      return
+    }
+    update.mutate(
+      { id: ingredient.id, body: { name: name.trim() || undefined, yield_pct: yp } },
+      {
+        onSuccess: () => {
+          toast.success("Insumo actualizado.")
+          onDone()
+        },
+        onError: (error) =>
+          toast.error(isApiError(error) ? error.message : "No pudimos actualizar el insumo."),
+      }
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-3 px-4 pb-4">
+      <Input placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
+      <label className="flex flex-col gap-1 text-sm">
+        Rendimiento (%)
+        <Input
+          type="number"
+          step="1"
+          min={1}
+          max={100}
+          value={yieldPct}
+          onChange={(e) => setYieldPct(e.target.value)}
+        />
+        <span className="text-xs text-muted-foreground">
+          Cuánto del insumo llega al plato. 100% = sin merma.
+        </span>
+      </label>
+      <Button onClick={submit} disabled={update.isPending}>
+        {update.isPending ? "Guardando…" : "Guardar"}
+      </Button>
+    </div>
+  )
+}
+
+function EditIngredientSheet({ ingredient }: { ingredient: IngredientDTO }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="sm">
+          Editar
+        </Button>
+      </SheetTrigger>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Editar {ingredient.name}</SheetTitle>
+          <SheetDescription>Nombre y rendimiento (merma) del insumo.</SheetDescription>
+        </SheetHeader>
+        {open ? (
+          <EditIngredientForm ingredient={ingredient} onDone={() => setOpen(false)} />
+        ) : null}
+      </SheetContent>
+    </Sheet>
+  )
+}
+
 function FoodCostSection() {
   const report = useFoodCost()
   if (report.isPending) return null
@@ -372,6 +484,7 @@ export function StockPage() {
                   <TableHead className="text-right">Stock</TableHead>
                   <TableHead className="text-right">Mínimo</TableHead>
                   <TableHead className="text-right">Costo</TableHead>
+                  <TableHead className="text-right">Rend.</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
@@ -389,6 +502,9 @@ export function StockPage() {
                     <TableCell className="text-right tabular-nums">
                       {formatMoney(i.unit_cost_amount, i.currency)} / {UNIT_LABELS[i.unit]}
                     </TableCell>
+                    <TableCell className="text-right tabular-nums text-muted-foreground">
+                      {bpsToPercent(i.yield_pct)}%
+                    </TableCell>
                     <TableCell>
                       {i.is_below_min ? (
                         <Badge variant="destructive">Quiebre</Badge>
@@ -398,6 +514,7 @@ export function StockPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        <EditIngredientSheet ingredient={i} />
                         <PurchaseSheet ingredient={i} />
                         <WasteSheet ingredient={i} />
                       </div>

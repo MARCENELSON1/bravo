@@ -7,6 +7,11 @@ from enum import StrEnum
 # (e.g. 1.5 kg if the unit is KG). Costs are Money per *one* base unit.
 QUANTITY_SCALE = 1000
 
+# Ingredient yield (rendimiento / merma) in basis points: 10000 = 100% = no loss.
+# What reaches the plate costs raw_cost / (yield / 10000): a lower yield (bone,
+# trim, cooking loss) raises the effective cost of the usable ingredient.
+FULL_YIELD_BPS = 10000
+
 
 class UnitOfMeasure(StrEnum):
     """Base unit an ingredient (insumo) is measured in. No automatic conversion

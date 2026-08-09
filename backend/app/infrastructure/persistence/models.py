@@ -434,6 +434,8 @@ class IngredientORM(Base):
     min_qty: Mapped[int] = mapped_column(BigInteger, default=0)
     unit_cost_amount: Mapped[int] = mapped_column(BigInteger)
     unit_cost_currency: Mapped[str] = mapped_column(String(3))
+    # Yield (rendimiento/merma) in basis points; 10000 = 100% = no loss.
+    yield_pct: Mapped[int] = mapped_column(Integer, server_default="10000")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
