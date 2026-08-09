@@ -43,6 +43,7 @@ export interface AdvisorSettingsDTO {
   seats: number
   daily_open_minutes: number
   monthly_inflation_bps: number
+  default_vat_bps: number
   currency: string
   configured: boolean
 }
@@ -54,6 +55,7 @@ export interface UpdateAdvisorSettingsBody {
   seats: number
   daily_open_minutes: number
   monthly_inflation_bps: number
+  default_vat_bps: number
 }
 
 export interface AdvisorQuery {

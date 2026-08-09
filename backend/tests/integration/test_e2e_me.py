@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from httpx import AsyncClient
 
-from tests.fakes import FakeEmailSender
 from tests.integration.test_e2e_auth import (
     PASSWORD,
     _login,

@@ -67,6 +67,9 @@ function SettingsForm({
   const [inflation, setInflation] = useState(() =>
     initial.monthly_inflation_bps ? String(initial.monthly_inflation_bps / 100) : ""
   )
+  const [vat, setVat] = useState(() =>
+    initial.default_vat_bps ? String(initial.default_vat_bps / 100) : ""
+  )
 
   const submit = () => {
     const laborMinor = Math.round(Number(labor) * 100)
@@ -75,6 +78,7 @@ function SettingsForm({
     const seatsN = seats.trim() === "" ? 0 : Math.round(Number(seats))
     const openMin = openHours.trim() === "" ? 0 : Math.round(Number(openHours) * 60)
     const inflationBps = inflation.trim() === "" ? 0 : Math.round(Number(inflation) * 100)
+    const vatBps = vat.trim() === "" ? 0 : Math.round(Number(vat) * 100)
     if (
       !Number.isFinite(laborMinor) ||
       laborMinor < 0 ||
@@ -95,6 +99,10 @@ function SettingsForm({
       toast.error("Revisá la inflación mensual estimada.")
       return
     }
+    if (!Number.isFinite(vatBps) || vatBps < 0 || vatBps > 10000) {
+      toast.error("Revisá el IVA (entre 0 y 100%).")
+      return
+    }
     update.mutate(
       {
         monthly_labor_cost: laborMinor,
@@ -103,6 +111,7 @@ function SettingsForm({
         seats: seatsN,
         daily_open_minutes: openMin,
         monthly_inflation_bps: inflationBps,
+        default_vat_bps: vatBps,
       },
       {
         onSuccess: () => {
@@ -183,6 +192,22 @@ function SettingsForm({
         />
         <span className="text-xs text-muted-foreground">
           Para estimar a cuánto “debería estar” cada precio en Productos.
+        </span>
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        IVA (%)
+        <Input
+          type="number"
+          min={0}
+          max={100}
+          step="0.5"
+          placeholder="Ej. 21"
+          value={vat}
+          onChange={(e) => setVat(e.target.value)}
+        />
+        <span className="text-xs text-muted-foreground">
+          Al cargarlo, los márgenes se calculan netos de IVA (los precios se
+          siguen mostrando con IVA, como los cargás). Vacío = sin aplicar.
         </span>
       </label>
       <Button onClick={submit} disabled={update.isPending}>

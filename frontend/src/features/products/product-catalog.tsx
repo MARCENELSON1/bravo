@@ -286,6 +286,13 @@ export function ProductCatalog({ period }: { period: RangeWindow }) {
           </p>
         )}
       </div>
+
+      <p className="mt-2 text-xs text-muted-foreground">
+        <span className="font-medium">Precio</span> en bruto (lo que cobrás);{" "}
+        <span className="font-medium">Te deja</span> es el margen <em>neto de IVA</em> y el %
+        es el food cost sobre ese neto. Cargá tu IVA en el Asesor para que el cálculo sea
+        exacto (con IVA sin cargar, neto = bruto).
+      </p>
     </section>
   )
 }

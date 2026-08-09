@@ -16,11 +16,10 @@ import os
 import random
 import sys
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import asyncpg
 
-UTC = timezone.utc
 TENANT = uuid.UUID("d3721920-c102-4ae6-b0fd-8aae401f55a0")
 OWNER_EMAIL = "bravo@gmail.com"
 CUR = "ARS"

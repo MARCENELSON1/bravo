@@ -34,7 +34,9 @@ class FinanceSnapshotWriter(ABC):
         day: date,
         *,
         sales_amount: int,
+        sales_net_amount: int,
         food_cost_amount: int,
+        food_cost_net_amount: int,
         orders_count: int,
         units_sold: int,
     ) -> None: ...

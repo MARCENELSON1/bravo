@@ -21,6 +21,7 @@ from app.application.analytics.read_models import (
 from app.domain.payment.value_objects import PaymentDirection, PaymentStatus
 from app.infrastructure.persistence.database import SessionFactory
 from app.infrastructure.persistence.models import PaymentORM, SaleFactORM, TenantORM
+from app.infrastructure.persistence.sale_fact_columns import net_food_col, net_sales_col
 
 
 async def _tenant_currency(session, tenant_id: str) -> str:
@@ -108,6 +109,9 @@ class SqlAlchemyRevenueReadModel(RevenueReadModel):
             sales_amount = int(sales_amount)
             food_cost_amount = int(food_cost_amount)
             orders_count = int(orders_count)
+            # RevenueSummary queda TODO bruto y reconcilia (sales − food = margen).
+            # La ganancia neta de IVA la cuenta el Asesor (AdvisorKpis), que es la
+            # autoridad de márgenes netos (B2). Con VAT 0 son idénticos.
             return RevenueSummary(
                 currency=currency,
                 sales_amount=sales_amount,
@@ -188,14 +192,18 @@ class SqlAlchemyProductPerformanceReadModel(ProductPerformanceReadModel):
         async with self._session_factory() as session:
             currency = await _tenant_currency(session, tenant_id)
             sales = func.coalesce(func.sum(SaleFactORM.line_amount), 0)
+            net_sales = func.coalesce(func.sum(net_sales_col()), 0)
             food_cost = func.coalesce(func.sum(SaleFactORM.food_cost_amount), 0)
+            food_net = func.coalesce(func.sum(net_food_col()), 0)
             stmt = (
                 select(
                     SaleFactORM.product_id,
                     SaleFactORM.product_name,
                     func.coalesce(func.sum(SaleFactORM.quantity), 0),
                     sales,
+                    net_sales,
                     food_cost,
+                    food_net,
                 )
                 .where(SaleFactORM.tenant_id == tenant_id)
                 .group_by(SaleFactORM.product_id, SaleFactORM.product_name)
@@ -207,19 +215,27 @@ class SqlAlchemyProductPerformanceReadModel(ProductPerformanceReadModel):
             if until is not None:
                 stmt = stmt.where(SaleFactORM.occurred_at <= until)
             rows: list[ProductPerformanceRow] = []
-            for product_id, name, units, sales_amount, food_cost_amount in (
-                await session.execute(stmt)
-            ).all():
-                sales_amount = int(sales_amount)
-                food_cost_amount = int(food_cost_amount)
+            for (
+                product_id,
+                name,
+                units,
+                sales_amount,
+                net_sales_amount,
+                food_cost_amount,
+                food_net_amount,
+            ) in (await session.execute(stmt)).all():
+                # Margen neto congelado (Solución 1): ventas netas − food neto. Las
+                # columnas ``sales_amount``/``food_cost_amount`` se muestran brutas
+                # (lo facturado / COGS real). Con VAT 0 el neto = bruto (paridad).
+                margin_amount = int(net_sales_amount) - int(food_net_amount)
                 rows.append(
                     ProductPerformanceRow(
                         product_id=product_id,
                         product_name=name,
                         units_sold=int(units),
-                        sales_amount=sales_amount,
-                        food_cost_amount=food_cost_amount,
-                        margin_amount=sales_amount - food_cost_amount,
+                        sales_amount=int(sales_amount),
+                        food_cost_amount=int(food_cost_amount),
+                        margin_amount=margin_amount,
                         currency=currency,
                     )
                 )

@@ -20,6 +20,7 @@ class AdvisorSettings:
     seats: int = 0  # capacidad total del local (RevPASH); 0 = sin cargar
     daily_open_minutes: int = 0  # minutos abiertos por día (RevPASH)
     monthly_inflation_bps: int = 0  # inflación mensual estimada; 0 = sin cargar
+    default_vat_bps: int = 0  # IVA global (bps); 0 = sin cargar (off), 2100 = 21%
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -29,6 +30,8 @@ class AdvisorSettings:
         if self.seats < 0 or self.daily_open_minutes < 0:
             raise InvalidAdvisorSettings()
         if self.monthly_inflation_bps < 0:
+            raise InvalidAdvisorSettings()
+        if not 0 <= self.default_vat_bps <= 10000:
             raise InvalidAdvisorSettings()
         if self.monthly_labor_cost.currency != self.monthly_other_fixed_costs.currency:
             raise CurrencyMismatch()

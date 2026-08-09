@@ -24,7 +24,9 @@ class _ReadModel(AdvisorReadModel):
         return AdvisorMetrics(
             currency="ARS",
             sales_amount=1_000_000,
+            sales_net_amount=1_000_000,
             food_cost_amount=300_000,
+            food_cost_net_amount=300_000,
             orders_count=10,
             waste_amount=0,
             no_show_rate_bps=0,

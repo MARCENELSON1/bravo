@@ -16,14 +16,13 @@ import os
 import random
 import sys
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import asyncpg
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from seed_demo import MENU, RECIPES, TENANT  # noqa: E402
 
-UTC = timezone.utc
 CUR = "ARS"
 DAYS = 60
 TODAY = datetime(2026, 6, 25, tzinfo=UTC)

@@ -597,6 +597,7 @@ def ingredient_to_domain(row: IngredientORM) -> Ingredient:
         min_qty=row.min_qty,
         unit_cost=Money(row.unit_cost_amount, row.unit_cost_currency),
         yield_pct=row.yield_pct,
+        cost_includes_tax=row.cost_includes_tax,
         active=row.active,
         created_at=row.created_at,
     )
@@ -613,6 +614,7 @@ def ingredient_to_orm(ingredient: Ingredient) -> IngredientORM:
         unit_cost_amount=ingredient.unit_cost.amount,
         unit_cost_currency=ingredient.unit_cost.currency,
         yield_pct=ingredient.yield_pct,
+        cost_includes_tax=ingredient.cost_includes_tax,
         active=ingredient.active,
     )
 
@@ -775,6 +777,7 @@ def advisor_settings_to_domain(row: AdvisorSettingsORM) -> AdvisorSettings:
         seats=row.seats,
         daily_open_minutes=row.daily_open_minutes,
         monthly_inflation_bps=row.monthly_inflation_bps,
+        default_vat_bps=row.default_vat_bps,
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
@@ -790,6 +793,7 @@ def advisor_settings_to_orm(settings: AdvisorSettings) -> AdvisorSettingsORM:
         seats=settings.seats,
         daily_open_minutes=settings.daily_open_minutes,
         monthly_inflation_bps=settings.monthly_inflation_bps,
+        default_vat_bps=settings.default_vat_bps,
     )
 
 

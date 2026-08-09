@@ -5,6 +5,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+# Re-exported for existing importers (app.domain.advisor.kpis.net_of_vat); the
+# single definition lives in domain/shared so nothing crosses bounded contexts.
+from app.domain.shared.vat import net_of_vat  # noqa: F401
+
 _DAYS_IN_MONTH = 30
 
 
@@ -71,37 +75,65 @@ class AdvisorKpis:
     average_ticket_amount: int
     no_show_rate_bps: int
     configured: bool
+    vat_bps: int = 0  # IVA (bps) para netear ventas en márgenes/ratios; 0 = off
+    # Netos de IVA congelados en la proyección (base del margen). None → se cae al
+    # re-neteo global con ``vat_bps`` (construcción directa/legacy/tests).
+    sales_net_amount: int | None = None
+    food_cost_net_amount: int | None = None
+
+    @property
+    def _net_sales(self) -> int:
+        """Ventas netas de IVA (base de márgenes y ratios). El ``sales_amount``
+        y el ticket promedio quedan brutos (lo que ringea/paga el cliente)."""
+        if self.sales_net_amount is not None:
+            return self.sales_net_amount
+        return net_of_vat(self.sales_amount, self.vat_bps)
+
+    @property
+    def _net_food_cost(self) -> int:
+        """Food cost neto de IVA, en la misma base que las ventas netas. Usa el
+        neto per-insumo de la proyección cuando está (exacto para monotributo); si
+        no, cae al re-neteo global (asume que todo el costo incluye IVA)."""
+        if self.food_cost_net_amount is not None:
+            return self.food_cost_net_amount
+        return net_of_vat(self.food_cost_amount, self.vat_bps)
 
     @property
     def gross_margin_amount(self) -> int:
-        return self.sales_amount - self.food_cost_amount
+        return self._net_sales - self._net_food_cost
 
     @property
     def net_margin_amount(self) -> int:
         return net_margin(
-            self.sales_amount,
-            self.food_cost_amount,
+            self._net_sales,
+            self._net_food_cost,
             self.labor_cost_amount,
             self.other_fixed_amount,
         )
 
     @property
     def food_cost_ratio_bps(self) -> int:
-        return food_cost_ratio_bps(self.sales_amount, self.food_cost_amount)
+        return food_cost_ratio_bps(self._net_sales, self._net_food_cost)
 
     @property
     def labor_cost_ratio_bps(self) -> int:
-        return labor_cost_ratio_bps(self.sales_amount, self.labor_cost_amount)
+        return labor_cost_ratio_bps(self._net_sales, self.labor_cost_amount)
 
     @property
     def prime_cost_ratio_bps(self) -> int:
         return prime_cost_ratio_bps(
-            self.sales_amount, self.food_cost_amount, self.labor_cost_amount
+            self._net_sales, self._net_food_cost, self.labor_cost_amount
         )
 
     @property
     def break_even_amount(self) -> int:
-        contribution = contribution_margin_ratio_bps(self.sales_amount, self.food_cost_amount)
-        return break_even_sales(
+        contribution = contribution_margin_ratio_bps(self._net_sales, self._net_food_cost)
+        net_break_even = break_even_sales(
             self.labor_cost_amount + self.other_fixed_amount, contribution
         )
+        # Se expresa en ventas BRUTAS (lo que factura el dueño, comparable con
+        # ``sales_amount``): se desnetea con la proporción bruto/neto del período.
+        # Con VAT 0, neto == bruto → sin cambio.
+        if self._net_sales <= 0:
+            return net_break_even
+        return round(net_break_even * self.sales_amount / self._net_sales)

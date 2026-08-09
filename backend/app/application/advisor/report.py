@@ -23,15 +23,16 @@ from app.domain.advisor.repository import (
 from app.domain.identity.ports import TenantContext
 
 
-def _fingerprint(insights: list[Insight], llm_enabled: bool) -> str:
+def _fingerprint(insights: list[Insight], llm_enabled: bool, vat_bps: int) -> str:
     """Hash determinístico de los insights (la narración es función pura de esto
-    + el proveedor). Mismo estado de datos → mismo fingerprint → cache hit."""
+    + el proveedor + la base de IVA). Mismo estado → mismo fingerprint → cache hit.
+    ``vat_bps`` entra porque el summary cita márgenes que cambian con el neteo."""
     parts = [
         f"{i.code}:{i.severity.value}:{i.bucket.value}:"
         + ",".join(f"{k}={i.data[k]}" for k in sorted(i.data))
         for i in insights
     ]
-    raw = ("|".join(parts) + f"#llm={llm_enabled}").encode()
+    raw = ("|".join(parts) + f"#llm={llm_enabled}#vat={vat_bps}").encode()
     return hashlib.sha256(raw).hexdigest()
 
 _DEFAULT_TARGET_FOOD_COST_BPS = 3000
@@ -42,8 +43,10 @@ class AdvisorMetrics:
     """Raw canonical inputs for a period (before applying the cost settings)."""
 
     currency: str
-    sales_amount: int
-    food_cost_amount: int
+    sales_amount: int  # bruto (lo facturado)
+    sales_net_amount: int  # neto de IVA congelado (base del margen)
+    food_cost_amount: int  # bruto (COGS a costo real)
+    food_cost_net_amount: int  # neto de IVA per-insumo congelado (base del margen)
     orders_count: int
     waste_amount: int
     no_show_rate_bps: int
@@ -153,7 +156,7 @@ class GetAdvisorReport:
         self, tenant_id: str, kpis: AdvisorKpis, insights: list[Insight]
     ) -> tuple[list[NarratedInsight], str | None]:
         if self._llm_enabled and self._cache is not None:
-            fingerprint = _fingerprint(insights, self._llm_enabled)
+            fingerprint = _fingerprint(insights, self._llm_enabled, kpis.vat_bps)
             cached = await self._cache.get(tenant_id, fingerprint)
             if cached is not None:
                 return cached.insights, cached.summary
@@ -198,7 +201,9 @@ class GetAdvisorReport:
             currency=metrics.currency,
             period_days=period_days,
             sales_amount=metrics.sales_amount,
+            sales_net_amount=metrics.sales_net_amount,
             food_cost_amount=metrics.food_cost_amount,
+            food_cost_net_amount=metrics.food_cost_net_amount,
             labor_cost_amount=labor,
             other_fixed_amount=other,
             waste_amount=metrics.waste_amount,
@@ -206,4 +211,5 @@ class GetAdvisorReport:
             average_ticket_amount=avg_ticket,
             no_show_rate_bps=metrics.no_show_rate_bps,
             configured=settings is not None,
+            vat_bps=settings.default_vat_bps if settings else 0,
         )
