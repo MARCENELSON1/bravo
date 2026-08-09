@@ -63,6 +63,7 @@ function CreateIngredientSheet() {
   const [min, setMin] = useState("")
   const [cost, setCost] = useState("")
   const [yieldPct, setYieldPct] = useState("100")
+  const [inclVat, setInclVat] = useState(true)
 
   const submit = () => {
     if (!name.trim()) {
@@ -87,6 +88,7 @@ function CreateIngredientSheet() {
         min_qty: min ? toMilesimas(min) : 0,
         unit_cost_amount: unitCost,
         yield_pct: yp,
+        price_includes_tax: inclVat,
       },
       {
         onSuccess: () => {
@@ -96,6 +98,7 @@ function CreateIngredientSheet() {
           setMin("")
           setCost("")
           setYieldPct("100")
+          setInclVat(true)
           setOpen(false)
         },
         onError: (error) =>
@@ -170,6 +173,14 @@ function CreateIngredientSheet() {
               Cuánto del insumo llega al plato. 100% = sin merma (hueso, recorte, cocción).
             </span>
           </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={inclVat}
+              onChange={(e) => setInclVat(e.target.checked)}
+            />
+            El costo incluye IVA (destildá si el proveedor no lo cobra, ej. monotributo)
+          </label>
           <Button onClick={submit} disabled={create.isPending}>
             {create.isPending ? "Creando…" : "Crear insumo"}
           </Button>
@@ -184,6 +195,12 @@ function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
   const [open, setOpen] = useState(false)
   const [qty, setQty] = useState("")
   const [cost, setCost] = useState("")
+  // Tri-estado: `undefined` = "no tocar la clasificación de IVA del insumo" (una
+  // compra no reclasifica). Solo se envía si el usuario la cambia en esta compra;
+  // así una compra no revierte una reclasificación hecha en Editar. Se muestra la
+  // clasificación vigente del insumo (prop fresca) mientras no se toque.
+  const [inclVat, setInclVat] = useState<boolean | undefined>(undefined)
+  const shownInclVat = inclVat ?? ingredient.cost_includes_tax
 
   const submit = () => {
     const q = qty ? toMilesimas(qty) : 0
@@ -197,12 +214,20 @@ function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
       return
     }
     purchase.mutate(
-      { id: ingredient.id, body: { qty: q, unit_cost_amount: unitCost } },
+      {
+        id: ingredient.id,
+        body: {
+          qty: q,
+          unit_cost_amount: unitCost,
+          ...(inclVat !== undefined ? { price_includes_tax: inclVat } : {}),
+        },
+      },
       {
         onSuccess: () => {
           toast.success("Compra registrada.")
           setQty("")
           setCost("")
+          setInclVat(undefined)
           setOpen(false)
         },
         onError: (error) =>
@@ -240,6 +265,14 @@ function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
             value={cost}
             onChange={(e) => setCost(e.target.value)}
           />
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={shownInclVat}
+              onChange={(e) => setInclVat(e.target.checked)}
+            />
+            El costo incluye IVA
+          </label>
           <Button onClick={submit} disabled={purchase.isPending}>
             {purchase.isPending ? "Guardando…" : "Registrar compra"}
           </Button>
@@ -325,6 +358,7 @@ function EditIngredientForm({
   const update = useUpdateIngredient()
   const [name, setName] = useState(ingredient.name)
   const [yieldPct, setYieldPct] = useState(String(bpsToPercent(ingredient.yield_pct)))
+  const [inclVat, setInclVat] = useState(ingredient.cost_includes_tax)
 
   const submit = () => {
     const yp = percentToBps(yieldPct)
@@ -333,7 +367,10 @@ function EditIngredientForm({
       return
     }
     update.mutate(
-      { id: ingredient.id, body: { name: name.trim() || undefined, yield_pct: yp } },
+      {
+        id: ingredient.id,
+        body: { name: name.trim() || undefined, yield_pct: yp, cost_includes_tax: inclVat },
+      },
       {
         onSuccess: () => {
           toast.success("Insumo actualizado.")
@@ -361,6 +398,14 @@ function EditIngredientForm({
         <span className="text-xs text-muted-foreground">
           Cuánto del insumo llega al plato. 100% = sin merma.
         </span>
+      </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={inclVat}
+          onChange={(e) => setInclVat(e.target.checked)}
+        />
+        El costo incluye IVA (destildá para monotributo/sin IVA)
       </label>
       <Button onClick={submit} disabled={update.isPending}>
         {update.isPending ? "Guardando…" : "Guardar"}

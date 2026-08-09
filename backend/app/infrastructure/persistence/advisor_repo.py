@@ -26,6 +26,7 @@ from app.infrastructure.persistence.models import (
     StockMovementORM,
     TenantORM,
 )
+from app.infrastructure.persistence.sale_fact_columns import net_food_col, net_sales_col
 
 _QUANTITY_SCALE = 1000
 
@@ -94,11 +95,15 @@ class SqlAlchemyAdvisorReadModel(AdvisorReadModel):
         self, tenant_id: str, since: datetime, until: datetime
     ) -> AdvisorMetrics:
         async with self._session_factory() as session:
-            sales, food_cost, orders = (
+            # Netos congelados (Solución 1); filas previas a la migración (net NULL)
+            # caen al bruto vía los helpers → paridad exacta con VAT off.
+            sales, sales_net, food_cost, food_net, orders = (
                 await session.execute(
                     select(
                         func.coalesce(func.sum(SaleFactORM.line_amount), 0),
+                        func.coalesce(func.sum(net_sales_col()), 0),
                         func.coalesce(func.sum(SaleFactORM.food_cost_amount), 0),
+                        func.coalesce(func.sum(net_food_col()), 0),
                         func.count(func.distinct(SaleFactORM.order_id)),
                     ).where(
                         SaleFactORM.tenant_id == tenant_id,
@@ -110,7 +115,9 @@ class SqlAlchemyAdvisorReadModel(AdvisorReadModel):
             return AdvisorMetrics(
                 currency=await _currency(session, tenant_id),
                 sales_amount=int(sales),
+                sales_net_amount=int(sales_net),
                 food_cost_amount=int(food_cost),
+                food_cost_net_amount=int(food_net),
                 orders_count=int(orders),
                 waste_amount=await _waste_amount(session, tenant_id, since, until),
                 no_show_rate_bps=await _no_show_rate_bps(session, tenant_id, since, until),
@@ -130,12 +137,18 @@ class SqlAlchemyAdvisorSnapshotReadModel(AdvisorReadModel):
         self, tenant_id: str, since: datetime, until: datetime
     ) -> AdvisorMetrics:
         async with self._session_factory() as session:
-            sales, food_cost, orders = (
+            sales, sales_net, food_cost, food_net, orders = (
                 await session.execute(
                     select(
                         func.coalesce(func.sum(FinanceDailySnapshotORM.sales_amount), 0),
                         func.coalesce(
+                            func.sum(FinanceDailySnapshotORM.sales_net_amount), 0
+                        ),
+                        func.coalesce(
                             func.sum(FinanceDailySnapshotORM.food_cost_amount), 0
+                        ),
+                        func.coalesce(
+                            func.sum(FinanceDailySnapshotORM.food_cost_net_amount), 0
                         ),
                         func.coalesce(func.sum(FinanceDailySnapshotORM.orders_count), 0),
                     ).where(
@@ -148,7 +161,9 @@ class SqlAlchemyAdvisorSnapshotReadModel(AdvisorReadModel):
             return AdvisorMetrics(
                 currency=await _currency(session, tenant_id),
                 sales_amount=int(sales),
+                sales_net_amount=int(sales_net),
                 food_cost_amount=int(food_cost),
+                food_cost_net_amount=int(food_net),
                 orders_count=int(orders),
                 waste_amount=await _waste_amount(session, tenant_id, since, until),
                 no_show_rate_bps=await _no_show_rate_bps(session, tenant_id, since, until),

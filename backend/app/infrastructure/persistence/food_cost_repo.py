@@ -11,6 +11,7 @@ from app.domain.inventory.costing import (
     effective_unit_cost,
     food_cost_ratio_bps,
     margin,
+    net_effective_unit_cost,
     resolve_preparation_costs,
 )
 from app.domain.inventory.costing import (
@@ -19,9 +20,11 @@ from app.domain.inventory.costing import (
 from app.domain.inventory.exceptions import RecipeCycle
 from app.domain.inventory.recipe import RecipeItem
 from app.domain.shared.money import Money
+from app.domain.shared.vat import net_of_vat
 from app.infrastructure.persistence.database import SessionFactory
 from app.infrastructure.persistence.mappers import preparation_to_domain
 from app.infrastructure.persistence.models import (
+    AdvisorSettingsORM,
     IngredientORM,
     PreparationItemORM,
     PreparationORM,
@@ -48,6 +51,16 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
             ).scalar_one_or_none()
             currency = currency_row if currency_row is not None else "ARS"
 
+            # IVA global del tenant (bps): netea precio y costo para el margen real.
+            # 0 = sin cargar → net_of_vat es identidad → paridad total.
+            vat_bps = (
+                await session.execute(
+                    select(AdvisorSettingsORM.default_vat_bps).where(
+                        AdvisorSettingsORM.tenant_id == tenant_id
+                    )
+                )
+            ).scalar_one_or_none() or 0
+
             products = {
                 pid: (name, price_amount, price_currency)
                 for pid, name, price_amount, price_currency in (
@@ -62,18 +75,28 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
                 ).all()
             }
 
+            # Dos costos por insumo: bruto (merma/yield, COGS real) y neto de IVA
+            # per-insumo según su flag cost_includes_tax. El food cost se MUESTRA
+            # bruto (consistente con Asesor/Finanzas); el margen/ratio usan el neto.
+            # Con vat_bps 0 → neto == bruto (paridad).
+            ingredient_rows = (
+                await session.execute(
+                    select(
+                        IngredientORM.id,
+                        IngredientORM.unit_cost_amount,
+                        IngredientORM.unit_cost_currency,
+                        IngredientORM.yield_pct,
+                        IngredientORM.cost_includes_tax,
+                    ).where(IngredientORM.tenant_id == tenant_id)
+                )
+            ).all()
             cost_by_ingredient = {
                 iid: effective_unit_cost(Money(amount, cur), yld)
-                for iid, amount, cur, yld in (
-                    await session.execute(
-                        select(
-                            IngredientORM.id,
-                            IngredientORM.unit_cost_amount,
-                            IngredientORM.unit_cost_currency,
-                            IngredientORM.yield_pct,
-                        ).where(IngredientORM.tenant_id == tenant_id)
-                    )
-                ).all()
+                for iid, amount, cur, yld, _inc in ingredient_rows
+            }
+            net_cost_by_ingredient = {
+                iid: net_effective_unit_cost(Money(amount, cur), yld, inc, vat_bps)
+                for iid, amount, cur, yld, inc in ingredient_rows
             }
 
             items_by_product: dict[str, list[RecipeItem]] = {}
@@ -112,8 +135,17 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
                 cost_by_preparation = resolve_preparation_costs(
                     preparations, cost_by_ingredient, currency
                 )
+                # Con VAT 0 el mapa neto es idéntico al bruto → se reusa.
+                net_cost_by_preparation = (
+                    cost_by_preparation
+                    if vat_bps == 0
+                    else resolve_preparation_costs(
+                        preparations, net_cost_by_ingredient, currency
+                    )
+                )
             except RecipeCycle:
                 cost_by_preparation = {}
+                net_cost_by_preparation = {}
 
             rows: list[FoodCostRow] = []
             for product_id, items in items_by_product.items():
@@ -122,20 +154,31 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
                     continue
                 name, price_amount, price_currency = product
                 price = Money(price_amount, price_currency)
-                fc = compute_food_cost(
+                gross_fc = compute_food_cost(
                     items,
                     cost_by_ingredient,
                     price_currency,
                     cost_by_preparation=cost_by_preparation,
                 )
+                net_fc = compute_food_cost(
+                    items,
+                    net_cost_by_ingredient,
+                    price_currency,
+                    cost_by_preparation=net_cost_by_preparation,
+                )
+                # El food cost se muestra BRUTO (COGS real). El margen ("te deja") y
+                # el ratio (food cost %) son NETOS: precio neto − costo neto. El
+                # precio se muestra bruto (lo que cobra el dueño). Con VAT 0, neto ==
+                # bruto (paridad).
+                net_price = Money(net_of_vat(price.amount, vat_bps), price_currency)
                 rows.append(
                     FoodCostRow(
                         product_id=product_id,
                         product_name=name,
                         price_amount=price.amount,
-                        food_cost_amount=fc.amount,
-                        margin_amount=margin(price, fc),
-                        food_cost_ratio_bps=food_cost_ratio_bps(price, fc),
+                        food_cost_amount=gross_fc.amount,
+                        margin_amount=margin(net_price, net_fc),
+                        food_cost_ratio_bps=food_cost_ratio_bps(net_price, net_fc),
                         currency=price_currency,
                     )
                 )

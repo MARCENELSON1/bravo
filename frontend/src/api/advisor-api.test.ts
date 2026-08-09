@@ -37,6 +37,7 @@ describe("AdvisorApi", () => {
       seats: 40,
       daily_open_minutes: 480,
       monthly_inflation_bps: 400,
+      default_vat_bps: 2100,
     })
 
     const [method, path, options] = request.mock.calls[0]

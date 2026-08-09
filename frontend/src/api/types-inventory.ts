@@ -13,6 +13,7 @@ export interface IngredientDTO {
   unit_cost_amount: number
   currency: string
   yield_pct: number // rendimiento/merma en bps (10000 = 100%)
+  cost_includes_tax: boolean // ¿el costo cargado incluye IVA?
   active: boolean
   is_below_min: boolean
 }
@@ -24,6 +25,7 @@ export interface CreateIngredientBody {
   unit_cost_amount: number
   stock_qty: number
   yield_pct?: number // bps; default 10000 (100%) en el backend
+  price_includes_tax?: boolean // ¿el costo incluye IVA? default true
 }
 
 export interface UpdateIngredientBody {
@@ -31,6 +33,7 @@ export interface UpdateIngredientBody {
   min_qty?: number
   active?: boolean
   yield_pct?: number
+  cost_includes_tax?: boolean
 }
 
 export interface CreateIngredientResponse {
@@ -40,6 +43,7 @@ export interface CreateIngredientResponse {
 export interface PurchaseBody {
   qty: number
   unit_cost_amount: number
+  price_includes_tax?: boolean // ¿el costo de compra incluye IVA? default true
 }
 
 export interface WasteBody {

@@ -48,6 +48,7 @@ class AdvisorSettingsResponse(BaseModel):
     seats: int
     daily_open_minutes: int
     monthly_inflation_bps: int
+    default_vat_bps: int
     currency: str
     configured: bool
 
@@ -63,3 +64,4 @@ class UpdateAdvisorSettingsRequest(BaseModel):
     seats: int = Field(default=0, ge=0)
     daily_open_minutes: int = Field(default=0, ge=0, le=1440)
     monthly_inflation_bps: int = Field(default=0, ge=0, le=100000)
+    default_vat_bps: int = Field(default=0, ge=0, le=10000)

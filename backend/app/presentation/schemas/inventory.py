@@ -16,6 +16,8 @@ class CreateIngredientRequest(BaseModel):
     stock_qty: int = Field(default=0, ge=0)
     # Yield/merma in basis points (10000 = 100% = no loss).
     yield_pct: int = Field(default=10000, ge=1, le=10000)
+    # Does the loaded cost include VAT? (responsable inscripto). False = monotributo.
+    price_includes_tax: bool = True
 
 
 class UpdateIngredientRequest(BaseModel):
@@ -23,6 +25,7 @@ class UpdateIngredientRequest(BaseModel):
     min_qty: int | None = Field(default=None, ge=0)
     active: bool | None = None
     yield_pct: int | None = Field(default=None, ge=1, le=10000)
+    cost_includes_tax: bool | None = None  # editar la clasificación de IVA
 
 
 class IngredientResponse(BaseModel):
@@ -34,6 +37,7 @@ class IngredientResponse(BaseModel):
     unit_cost_amount: int
     currency: str
     yield_pct: int
+    cost_includes_tax: bool
     active: bool
     is_below_min: bool
 
@@ -45,6 +49,8 @@ class CreateIngredientResponse(BaseModel):
 class PurchaseRequest(BaseModel):
     qty: int = Field(gt=0)
     unit_cost_amount: int = Field(gt=0)
+    # None = no toca la clasificación de IVA del insumo (un restock no la pisa).
+    price_includes_tax: bool | None = None
 
 
 class WasteRequest(BaseModel):

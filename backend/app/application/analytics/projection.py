@@ -12,9 +12,10 @@ from app.application.analytics.ports import (
     SalesProjector,
 )
 from app.application.clock import utcnow
+from app.domain.advisor.repository import AdvisorSettingsRepository
 from app.domain.identity.ports import TenantContext
 from app.domain.inventory.costing import food_cost as compute_food_cost
-from app.domain.inventory.costing import resolve_preparation_costs
+from app.domain.inventory.costing import net_effective_unit_cost, resolve_preparation_costs
 from app.domain.inventory.exceptions import RecipeCycle
 from app.domain.inventory.repository import (
     IngredientRepository,
@@ -24,6 +25,7 @@ from app.domain.inventory.repository import (
 from app.domain.order.repository import OrderRepository
 from app.domain.order.value_objects import OrderStatus
 from app.domain.product.repository import ProductRepository
+from app.domain.shared.vat import net_of_vat
 
 
 class ProjectOrderSales(SalesProjector):
@@ -43,6 +45,7 @@ class ProjectOrderSales(SalesProjector):
         preparations: PreparationRepository,
         sale_facts: SaleFactsRepository,
         snapshots: FinanceSnapshotWriter,
+        advisor_settings: AdvisorSettingsRepository,
         tenant_context: TenantContext,
     ) -> None:
         self._orders = orders
@@ -52,6 +55,7 @@ class ProjectOrderSales(SalesProjector):
         self._preparations = preparations
         self._sale_facts = sale_facts
         self._snapshots = snapshots
+        self._advisor_settings = advisor_settings
         self._tenant_context = tenant_context
 
     async def project_order(self, tenant_id: str, order_id: str) -> None:
@@ -69,17 +73,27 @@ class ProjectOrderSales(SalesProjector):
         category_by_product = {
             product.id: product.category for product in await self._products.list(tenant_id)
         }
-        cost_by_ingredient = (
-            {
-                ing.id: ing.effective_unit_cost
-                for ing in await self._ingredients.list(tenant_id)
-            }
-            if recipes
-            else {}
-        )
-        # Costo por unidad de cada preparación (receta madre), multinivel. Un ciclo
-        # no debe romper el cobro → se degrada a "sin preparaciones" (0).
+        # Solución 1: se congelan en la proyección los netos de IVA (ventas y food)
+        # además de los brutos, para que el margen agregado sea siempre "ventas
+        # netas − food neto" sin re-netear en lectura (simétrico y estable si luego
+        # cambia el IVA). El food neto respeta cost_includes_tax de cada insumo. Con
+        # default_vat_bps 0 el neto = bruto (paridad, nada cambia en vivo).
+        settings = await self._advisor_settings.get(tenant_id)
+        vat_bps = settings.default_vat_bps if settings else 0
+
+        cost_by_ingredient: dict = {}
+        cost_net_by_ingredient: dict = {}
+        if recipes:
+            for ing in await self._ingredients.list(tenant_id):
+                cost_by_ingredient[ing.id] = ing.effective_unit_cost
+                cost_net_by_ingredient[ing.id] = net_effective_unit_cost(
+                    ing.unit_cost, ing.yield_pct, ing.cost_includes_tax, vat_bps
+                )
+        # Costo por unidad de cada preparación (receta madre), multinivel, bruto y
+        # neto. Un ciclo no debe romper el cobro → se degrada a "sin preparaciones".
+        # Con VAT 0 el mapa neto es idéntico al bruto → se reusa (una sola pasada).
         cost_by_preparation: dict = {}
+        cost_net_by_preparation: dict = {}
         if recipes:
             preparations = {p.id: p for p in await self._preparations.list(tenant_id)}
             if preparations:
@@ -87,14 +101,23 @@ class ProjectOrderSales(SalesProjector):
                     cost_by_preparation = resolve_preparation_costs(
                         preparations, cost_by_ingredient, order.currency
                     )
+                    cost_net_by_preparation = (
+                        cost_by_preparation
+                        if vat_bps == 0
+                        else resolve_preparation_costs(
+                            preparations, cost_net_by_ingredient, order.currency
+                        )
+                    )
                 except RecipeCycle:
                     cost_by_preparation = {}
+                    cost_net_by_preparation = {}
         occurred_at = utcnow()
 
         facts: list[SaleFact] = []
         for item in order.items:
             recipe = recipes.get(item.product_id)
             food_cost_amount: int | None = None
+            food_cost_net_amount: int | None = None
             if recipe is not None:
                 per_unit = compute_food_cost(
                     recipe.items,
@@ -102,7 +125,15 @@ class ProjectOrderSales(SalesProjector):
                     order.currency,
                     cost_by_preparation=cost_by_preparation,
                 )
+                per_unit_net = compute_food_cost(
+                    recipe.items,
+                    cost_net_by_ingredient,
+                    order.currency,
+                    cost_by_preparation=cost_net_by_preparation,
+                )
                 food_cost_amount = per_unit.amount * item.quantity
+                food_cost_net_amount = per_unit_net.amount * item.quantity
+            line_amount = item.unit_price.amount * item.quantity
             facts.append(
                 SaleFact(
                     id=str(uuid4()),
@@ -114,8 +145,10 @@ class ProjectOrderSales(SalesProjector):
                     category=category_by_product.get(item.product_id),
                     quantity=item.quantity,
                     unit_price_amount=item.unit_price.amount,
-                    line_amount=item.unit_price.amount * item.quantity,
+                    line_amount=line_amount,
+                    line_net_amount=net_of_vat(line_amount, vat_bps),
                     food_cost_amount=food_cost_amount,
+                    food_cost_net_amount=food_cost_net_amount,
                     currency=order.currency,
                     waiter_id=order.waiter_id,
                     table_id=order.table_id,
@@ -129,7 +162,9 @@ class ProjectOrderSales(SalesProjector):
             tenant_id,
             occurred_at.date(),
             sales_amount=sum(f.line_amount for f in facts),
+            sales_net_amount=sum(f.line_net_amount or 0 for f in facts),
             food_cost_amount=sum(f.food_cost_amount or 0 for f in facts),
+            food_cost_net_amount=sum(f.food_cost_net_amount or 0 for f in facts),
             orders_count=1,
             units_sold=sum(f.quantity for f in facts),
         )
@@ -145,7 +180,9 @@ class ProjectOrderSales(SalesProjector):
                 tenant_id,
                 facts[0].occurred_at.date(),
                 sales_amount=-sum(f.line_amount for f in facts),
+                sales_net_amount=-sum(f.line_net_amount or 0 for f in facts),
                 food_cost_amount=-sum(f.food_cost_amount or 0 for f in facts),
+                food_cost_net_amount=-sum(f.food_cost_net_amount or 0 for f in facts),
                 orders_count=-1,
                 units_sold=-sum(f.quantity for f in facts),
             )

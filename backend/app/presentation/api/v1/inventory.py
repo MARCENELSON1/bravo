@@ -84,6 +84,7 @@ def _ingredient_response(ingredient: Ingredient) -> IngredientResponse:
         unit_cost_amount=ingredient.unit_cost.amount,
         currency=ingredient.unit_cost.currency,
         yield_pct=ingredient.yield_pct,
+        cost_includes_tax=ingredient.cost_includes_tax,
         active=ingredient.active,
         is_below_min=ingredient.is_below_min,
     )
@@ -117,6 +118,7 @@ async def create_ingredient(
         unit_cost_amount=body.unit_cost_amount,
         stock_qty=body.stock_qty,
         yield_pct=body.yield_pct,
+        price_includes_tax=body.price_includes_tax,
     )
     return CreateIngredientResponse(ingredient_id=ingredient.id)
 
@@ -149,6 +151,7 @@ async def update_ingredient(
         min_qty=body.min_qty,
         active=body.active,
         yield_pct=body.yield_pct,
+        cost_includes_tax=body.cost_includes_tax,
     )
     return _ingredient_response(ingredient)
 
@@ -166,6 +169,7 @@ async def register_purchase(
         ingredient_id=ingredient_id,
         qty=body.qty,
         unit_cost_amount=body.unit_cost_amount,
+        price_includes_tax=body.price_includes_tax,
     )
     return _ingredient_response(ingredient)
 

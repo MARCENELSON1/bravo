@@ -32,9 +32,10 @@ def test_fingerprint_is_stable_and_data_sensitive() -> None:
     a = [_insight("high_food_cost", food_cost_ratio_bps=4000)]
     b = [_insight("high_food_cost", food_cost_ratio_bps=4000)]
     c = [_insight("high_food_cost", food_cost_ratio_bps=3800)]
-    assert _fingerprint(a, True) == _fingerprint(b, True)  # mismos datos → mismo hash
-    assert _fingerprint(a, True) != _fingerprint(c, True)  # cambia un número → cambia
-    assert _fingerprint(a, True) != _fingerprint(a, False)  # cambia proveedor → cambia
+    assert _fingerprint(a, True, 0) == _fingerprint(b, True, 0)  # mismos datos → mismo hash
+    assert _fingerprint(a, True, 0) != _fingerprint(c, True, 0)  # cambia un número → cambia
+    assert _fingerprint(a, True, 0) != _fingerprint(a, False, 0)  # cambia proveedor → cambia
+    assert _fingerprint(a, True, 0) != _fingerprint(a, True, 2100)  # cambia IVA → cambia
 
 
 class _ReadModel(AdvisorReadModel):
@@ -96,7 +97,9 @@ def _metrics(food: int) -> AdvisorMetrics:
     return AdvisorMetrics(
         currency="ARS",
         sales_amount=100_000,
+        sales_net_amount=100_000,
         food_cost_amount=food,
+        food_cost_net_amount=food,
         orders_count=10,
         waste_amount=0,
         no_show_rate_bps=0,

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import text
 
@@ -17,7 +17,7 @@ def _auth(tokens: dict) -> dict:
 async def _insert_closed_shift(
     admin_engine, *, tenant_id: str, user_id: str, hours: float
 ) -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     async with admin_engine.begin() as conn:
         await conn.execute(
             text(

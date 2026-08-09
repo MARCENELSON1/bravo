@@ -75,6 +75,7 @@ def _settings_response(settings: AdvisorSettings | None) -> AdvisorSettingsRespo
             seats=0,
             daily_open_minutes=0,
             monthly_inflation_bps=0,
+            default_vat_bps=0,
             currency="ARS",
             configured=False,
         )
@@ -85,6 +86,7 @@ def _settings_response(settings: AdvisorSettings | None) -> AdvisorSettingsRespo
         seats=settings.seats,
         daily_open_minutes=settings.daily_open_minutes,
         monthly_inflation_bps=settings.monthly_inflation_bps,
+        default_vat_bps=settings.default_vat_bps,
         currency=settings.currency,
         configured=True,
     )
@@ -139,5 +141,6 @@ async def update_settings(
         seats=body.seats,
         daily_open_minutes=body.daily_open_minutes,
         monthly_inflation_bps=body.monthly_inflation_bps,
+        default_vat_bps=body.default_vat_bps,
     )
     return _settings_response(settings)

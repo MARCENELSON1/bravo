@@ -14,6 +14,7 @@ from app.application.analytics.ports import (
 )
 from app.infrastructure.persistence.database import SessionFactory
 from app.infrastructure.persistence.models import FinanceDailySnapshotORM, SaleFactORM
+from app.infrastructure.persistence.sale_fact_columns import net_food_col, net_sales_col
 
 
 class SqlAlchemyFinanceSnapshotRepository(FinanceSnapshotWriter, FinanceSnapshotRebuilder):
@@ -26,7 +27,9 @@ class SqlAlchemyFinanceSnapshotRepository(FinanceSnapshotWriter, FinanceSnapshot
         day: date,
         *,
         sales_amount: int,
+        sales_net_amount: int,
         food_cost_amount: int,
+        food_cost_net_amount: int,
         orders_count: int,
         units_sold: int,
     ) -> None:
@@ -36,18 +39,27 @@ class SqlAlchemyFinanceSnapshotRepository(FinanceSnapshotWriter, FinanceSnapshot
                 tenant_id=tenant_id,
                 day=day,
                 sales_amount=sales_amount,
+                sales_net_amount=sales_net_amount,
                 food_cost_amount=food_cost_amount,
+                food_cost_net_amount=food_cost_net_amount,
                 orders_count=orders_count,
                 units_sold=units_sold,
             )
             stmt = stmt.on_conflict_do_update(
                 index_elements=["tenant_id", "day"],
                 set_={
-                    "sales_amount": FinanceDailySnapshotORM.sales_amount + stmt.excluded.sales_amount,
+                    "sales_amount": FinanceDailySnapshotORM.sales_amount
+                    + stmt.excluded.sales_amount,
+                    "sales_net_amount": FinanceDailySnapshotORM.sales_net_amount
+                    + stmt.excluded.sales_net_amount,
                     "food_cost_amount": FinanceDailySnapshotORM.food_cost_amount
                     + stmt.excluded.food_cost_amount,
-                    "orders_count": FinanceDailySnapshotORM.orders_count + stmt.excluded.orders_count,
-                    "units_sold": FinanceDailySnapshotORM.units_sold + stmt.excluded.units_sold,
+                    "food_cost_net_amount": FinanceDailySnapshotORM.food_cost_net_amount
+                    + stmt.excluded.food_cost_net_amount,
+                    "orders_count": FinanceDailySnapshotORM.orders_count
+                    + stmt.excluded.orders_count,
+                    "units_sold": FinanceDailySnapshotORM.units_sold
+                    + stmt.excluded.units_sold,
                 },
             )
             await session.execute(stmt)
@@ -62,12 +74,15 @@ class SqlAlchemyFinanceSnapshotRepository(FinanceSnapshotWriter, FinanceSnapshot
                     FinanceDailySnapshotORM.tenant_id == tenant_id
                 )
             )
+            # Netos congelados: filas previas a la migración (net NULL) caen al bruto.
             rows = (
                 await session.execute(
                     select(
                         day,
                         func.coalesce(func.sum(SaleFactORM.line_amount), 0),
+                        func.coalesce(func.sum(net_sales_col()), 0),
                         func.coalesce(func.sum(SaleFactORM.food_cost_amount), 0),
+                        func.coalesce(func.sum(net_food_col()), 0),
                         func.count(func.distinct(SaleFactORM.order_id)),
                         func.coalesce(func.sum(SaleFactORM.quantity), 0),
                     )
@@ -75,13 +90,15 @@ class SqlAlchemyFinanceSnapshotRepository(FinanceSnapshotWriter, FinanceSnapshot
                     .group_by(day)
                 )
             ).all()
-            for bucket, sales, food, orders, units in rows:
+            for bucket, sales, sales_net, food, food_net, orders, units in rows:
                 session.add(
                     FinanceDailySnapshotORM(
                         tenant_id=tenant_id,
                         day=bucket,
                         sales_amount=int(sales),
+                        sales_net_amount=int(sales_net),
                         food_cost_amount=int(food),
+                        food_cost_net_amount=int(food_net),
                         orders_count=int(orders),
                         units_sold=int(units),
                     )

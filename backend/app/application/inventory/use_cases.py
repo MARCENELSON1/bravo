@@ -60,6 +60,7 @@ class CreateIngredient:
         unit_cost_amount: int,
         stock_qty: int = 0,
         yield_pct: int = FULL_YIELD_BPS,
+        price_includes_tax: bool = True,
     ) -> Ingredient:
         self._tenant_context.set(tenant_id)
         tenant = await self._tenants.get_by_id(tenant_id)
@@ -78,6 +79,7 @@ class CreateIngredient:
             min_qty=min_qty,
             unit_cost=Money(unit_cost_amount, tenant.currency),
             yield_pct=yield_pct,
+            cost_includes_tax=price_includes_tax,
         )
         await self._ingredients.add(ingredient)
         return ingredient
@@ -113,6 +115,7 @@ class UpdateIngredient:
         min_qty: int | None = None,
         active: bool | None = None,
         yield_pct: int | None = None,
+        cost_includes_tax: bool | None = None,
     ) -> Ingredient:
         self._tenant_context.set(tenant_id)
         ingredient = await self._ingredients.get_by_id(tenant_id, ingredient_id)
@@ -128,6 +131,8 @@ class UpdateIngredient:
             ingredient.active = active
         if yield_pct is not None:
             ingredient.yield_pct = yield_pct
+        if cost_includes_tax is not None:
+            ingredient.cost_includes_tax = cost_includes_tax
         await self._ingredients.save(ingredient)
         return ingredient
 
@@ -147,7 +152,13 @@ class RegisterPurchase:
         self._tenant_context = tenant_context
 
     async def execute(
-        self, *, tenant_id: str, ingredient_id: str, qty: int, unit_cost_amount: int
+        self,
+        *,
+        tenant_id: str,
+        ingredient_id: str,
+        qty: int,
+        unit_cost_amount: int,
+        price_includes_tax: bool | None = None,
     ) -> Ingredient:
         self._tenant_context.set(tenant_id)
         ingredient = await self._ingredients.get_by_id(tenant_id, ingredient_id)
@@ -157,6 +168,9 @@ class RegisterPurchase:
             raise InvalidQuantity()
         if unit_cost_amount <= 0:
             raise InvalidUnitCost()
+        # Solo reclasifica el IVA si el usuario lo indica; un restock no lo pisa.
+        if price_includes_tax is not None:
+            ingredient.cost_includes_tax = price_includes_tax
         unit_cost = Money(unit_cost_amount, ingredient.unit_cost.currency)
         movement = StockMovement(
             id=str(uuid4()),

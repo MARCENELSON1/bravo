@@ -436,6 +436,8 @@ class IngredientORM(Base):
     unit_cost_currency: Mapped[str] = mapped_column(String(3))
     # Yield (rendimiento/merma) in basis points; 10000 = 100% = no loss.
     yield_pct: Mapped[int] = mapped_column(Integer, server_default="10000")
+    # Whether the loaded cost includes VAT (net it) or is already net (monotributo).
+    cost_includes_tax: Mapped[bool] = mapped_column(Boolean, default=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -600,7 +602,12 @@ class SaleFactORM(Base):
     quantity: Mapped[int] = mapped_column(Integer)
     unit_price_amount: Mapped[int] = mapped_column(BigInteger)
     line_amount: Mapped[int] = mapped_column(BigInteger)
+    # Ventas netas de IVA congeladas en la proyección (Solución 1); nullable →
+    # filas previas se leen como bruto vía COALESCE. Igual al bruto con VAT 0.
+    line_net_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     food_cost_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    # Neto de IVA per-insumo congelado (Solución 1); nullable → bruto vía COALESCE.
+    food_cost_net_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     currency: Mapped[str] = mapped_column(String(3))
     waiter_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
     table_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True)
@@ -673,6 +680,9 @@ class AdvisorSettingsORM(Base):
     daily_open_minutes: Mapped[int] = mapped_column(Integer, server_default="0")
     # Productos v2 Tanda B: inflación mensual estimada (bps) para "debería estar en $X".
     monthly_inflation_bps: Mapped[int] = mapped_column(Integer, server_default="0")
+    # Productos v3 Tanda 2B: IVA global (bps) para netear costos y precios.
+    # 0 = sin cargar (netting off, paridad); el dueño carga 2100 (21%) para activar.
+    default_vat_bps: Mapped[int] = mapped_column(Integer, server_default="0")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -718,6 +728,14 @@ class FinanceDailySnapshotORM(Base):
     )
     day: Mapped[date] = mapped_column(Date, primary_key=True)
     sales_amount: Mapped[int] = mapped_column(BigInteger, default=0)
+    # Ventas netas de IVA congeladas (Solución 1). Igual al bruto con VAT 0.
+    sales_net_amount: Mapped[int] = mapped_column(
+        BigInteger, server_default="0", default=0
+    )
     food_cost_amount: Mapped[int] = mapped_column(BigInteger, default=0)
+    # Neto de IVA per-insumo (Solución 1): base del margen. Igual al bruto con VAT 0.
+    food_cost_net_amount: Mapped[int] = mapped_column(
+        BigInteger, server_default="0", default=0
+    )
     orders_count: Mapped[int] = mapped_column(Integer, default=0)
     units_sold: Mapped[int] = mapped_column(BigInteger, default=0)

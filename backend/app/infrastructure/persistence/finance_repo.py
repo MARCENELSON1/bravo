@@ -26,6 +26,18 @@ from app.infrastructure.persistence.models import (
     TenantORM,
 )
 
+
+def _net_line(row: SaleFactORM) -> int:
+    """Ventas netas de IVA congeladas de una fila; cae al bruto si aún no está seteado."""
+    return row.line_net_amount if row.line_net_amount is not None else row.line_amount
+
+
+def _net_food(row: SaleFactORM) -> int:
+    """Food cost neto congelado de una fila; cae al bruto si aún no está seteado."""
+    if row.food_cost_net_amount is not None:
+        return row.food_cost_net_amount
+    return row.food_cost_amount or 0
+
 _OTROS = "Otros"
 
 
@@ -97,6 +109,8 @@ class SqlAlchemyFinanceProductDetailReadModel(FinanceProductDetailReadModel):
             rows = (await session.execute(stmt)).scalars().all()
 
         currency = rows[0].currency if rows else "ARS"
+        # Margen neto congelado (Solución 1): ventas netas − food neto per-insumo.
+        # ``line_amount``/``food_cost_amount`` se muestran brutos. Paridad con VAT 0.
         lines = [
             ProductSaleLine(
                 order_id=r.order_id,
@@ -104,7 +118,7 @@ class SqlAlchemyFinanceProductDetailReadModel(FinanceProductDetailReadModel):
                 quantity=r.quantity,
                 line_amount=r.line_amount,
                 food_cost_amount=r.food_cost_amount,
-                margin_amount=r.line_amount - (r.food_cost_amount or 0),
+                margin_amount=_net_line(r) - _net_food(r),
             )
             for r in rows
         ]
@@ -114,7 +128,7 @@ class SqlAlchemyFinanceProductDetailReadModel(FinanceProductDetailReadModel):
             units_sold=sum(r.quantity for r in rows),
             sales_amount=sum(r.line_amount for r in rows),
             food_cost_amount=sum(r.food_cost_amount or 0 for r in rows),
-            margin_amount=sum(r.line_amount - (r.food_cost_amount or 0) for r in rows),
+            margin_amount=sum(_net_line(r) - _net_food(r) for r in rows),
             lines=lines,
         )
 

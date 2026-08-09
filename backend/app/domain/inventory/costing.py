@@ -8,6 +8,7 @@ from app.domain.inventory.recipe import Preparation, RecipeItem
 from app.domain.inventory.value_objects import FULL_YIELD_BPS, QUANTITY_SCALE
 from app.domain.shared.exceptions import CurrencyMismatch
 from app.domain.shared.money import Money
+from app.domain.shared.vat import net_of_vat
 
 
 def effective_unit_cost(unit_cost: Money, yield_pct: int) -> Money:
@@ -25,6 +26,18 @@ def effective_unit_cost(unit_cost: Money, yield_pct: int) -> Money:
     return Money(
         round(unit_cost.amount * FULL_YIELD_BPS / yield_pct), unit_cost.currency
     )
+
+
+def net_effective_unit_cost(
+    unit_cost: Money, yield_pct: int, cost_includes_tax: bool, vat_bps: int
+) -> Money:
+    """Effective cost per usable unit (yield-adjusted), net of VAT when the loaded
+    cost includes it. ``vat_bps`` 0 or ``cost_includes_tax`` False → no VAT netting
+    (identity), so it stays backward compatible when VAT is unset."""
+    cost = effective_unit_cost(unit_cost, yield_pct)
+    if cost_includes_tax:
+        return Money(net_of_vat(cost.amount, vat_bps), cost.currency)
+    return cost
 
 
 def food_cost(

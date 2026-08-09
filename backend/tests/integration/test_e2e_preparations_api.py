@@ -36,9 +36,12 @@ async def _product(http, h, name: str, price: int) -> str:
 
 
 async def _food_cost(http, h, product_id: str) -> int:
+    return (await _food_cost_row(http, h, product_id))["food_cost_amount"]
+
+
+async def _food_cost_row(http, h, product_id: str) -> dict:
     report = (await http.get("/api/v1/inventory/food-cost", headers=h)).json()
-    row = next(r for r in report["rows"] if r["product_id"] == product_id)
-    return row["food_cost_amount"]
+    return next(r for r in report["rows"] if r["product_id"] == product_id)
 
 
 async def test_preparation_food_cost_propagates_on_ingredient_cost_change(client):
@@ -220,3 +223,136 @@ async def test_yield_pct_propagates_to_food_cost(client):
     assert patch.status_code == 200, patch.text
     assert patch.json()["yield_pct"] == 8000
     assert await _food_cost(http, h, pid) == 250
+
+
+async def test_cost_includes_tax_nets_per_ingredient(client):
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    # IVA global 21%.
+    await http.put(
+        "/api/v1/advisor/settings",
+        json={
+            "monthly_labor_cost": 0,
+            "monthly_other_fixed_costs": 0,
+            "target_food_cost_bps": 3000,
+            "default_vat_bps": 2100,
+        },
+        headers=h,
+    )
+
+    async def _ing(name: str, cost: int, includes_tax: bool) -> str:
+        resp = await http.post(
+            "/api/v1/inventory/ingredients",
+            json={
+                "name": name,
+                "unit": "KG",
+                "min_qty": 0,
+                "unit_cost_amount": cost,
+                "stock_qty": 100000,
+                "price_includes_tax": includes_tax,
+            },
+            headers=h,
+        )
+        return resp.json()["ingredient_id"]
+
+    con_iva = await _ing("ConIVA", 1210, True)  # 1210 con IVA → neto 1000
+    sin_iva = await _ing("SinIVA", 1210, False)  # monotributo → queda 1210
+    pa = await _product(http, h, "PlatoA", 300000)
+    pb = await _product(http, h, "PlatoB", 300000)
+    await http.put(
+        f"/api/v1/products/{pa}/recipe",
+        json={"items": [{"ingredient_id": con_iva, "qty": 1000}]},
+        headers=h,
+    )
+    await http.put(
+        f"/api/v1/products/{pb}/recipe",
+        json={"items": [{"ingredient_id": sin_iva, "qty": 1000}]},
+        headers=h,
+    )
+    # El food cost se MUESTRA bruto (COGS real) en ambos: 1210 (consistente con
+    # Asesor/Finanzas). El neteo per-insumo se refleja en el MARGEN.
+    row_a = await _food_cost_row(http, h, pa)
+    row_b = await _food_cost_row(http, h, pb)
+    assert row_a["food_cost_amount"] == 1210
+    assert row_b["food_cost_amount"] == 1210
+    # A netea su costo (incluye IVA → neto 1000), B no (monotributo → 1210). El
+    # precio neto es igual para ambos → el margen de A supera al de B en 210.
+    assert row_a["margin_amount"] - row_b["margin_amount"] == 210
+    assert row_a["food_cost_ratio_bps"] < row_b["food_cost_ratio_bps"]
+
+
+async def _sell(http, h, product_id: str, *, price: int, qty: int) -> None:
+    """Vende un producto (mesa → orden → ítem → cobro) para que proyecte a
+    sale_facts con el food cost bruto y neto snapshoteados."""
+    table_id = (
+        await http.post("/api/v1/tables", json={"number": 1, "name": None}, headers=h)
+    ).json()["table_id"]
+    order_id = (
+        await http.post("/api/v1/orders", json={"table_id": table_id}, headers=h)
+    ).json()["order_id"]
+    await http.post(
+        f"/api/v1/orders/{order_id}/items",
+        json={"product_id": product_id, "quantity": qty},
+        headers=h,
+    )
+    await http.post(
+        f"/api/v1/orders/{order_id}/payments",
+        json={"method": "CASH", "amount": price * qty},
+        headers=h,
+    )
+
+
+async def test_advisor_aggregate_uses_per_ingredient_net(client):
+    """Solución 1 (F3): el agregado del Asesor/Finanzas usa el food neto
+    per-insumo snapshoteado — NO re-netea el bruto global (que trataría al insumo
+    monotributo como si incluyera IVA). Consistente con Productos per-plato."""
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    await http.put(
+        "/api/v1/advisor/settings",
+        json={
+            "monthly_labor_cost": 0,
+            "monthly_other_fixed_costs": 0,
+            "target_food_cost_bps": 3000,
+            "default_vat_bps": 2100,
+        },
+        headers=h,
+    )
+
+    async def _ing(name: str, cost: int, includes_tax: bool) -> str:
+        resp = await http.post(
+            "/api/v1/inventory/ingredients",
+            json={
+                "name": name,
+                "unit": "KG",
+                "min_qty": 0,
+                "unit_cost_amount": cost,
+                "stock_qty": 100000,
+                "price_includes_tax": includes_tax,
+            },
+            headers=h,
+        )
+        return resp.json()["ingredient_id"]
+
+    con_iva = await _ing("ConIVA", 121000, True)  # incluye IVA → neto 100000
+    sin_iva = await _ing("SinIVA", 90000, False)  # monotributo → queda 90000
+    pa = await _product(http, h, "PlatoA", 605000)  # neto de venta 500000
+    pb = await _product(http, h, "PlatoB", 605000)
+    for pid, ing in ((pa, con_iva), (pb, sin_iva)):
+        await http.put(
+            f"/api/v1/products/{pid}/recipe",
+            json={"items": [{"ingredient_id": ing, "qty": 1000}]},
+            headers=h,
+        )
+    await _sell(http, h, pa, price=605000, qty=1)
+    await _sell(http, h, pb, price=605000, qty=1)
+
+    body = (await http.get("/api/v1/finance/overview", headers=h)).json()
+    kpis = {k["key"]: k for k in body["kpis"]}
+    # food neto per-insumo = 100000 + 90000 = 190000; ventas netas = 1000000.
+    # ratio = 190000/1000000 = 1900 bps. El re-neteo global (BUG F3) daría 1744.
+    assert kpis["food_cost"]["value"] == 1900
+    # Margen por producto (ProductPerformance): ventas netas − food neto per-plato.
+    margins = {m["product_name"]: m["margin_amount"] for m in body["product_margins"]}
+    assert margins["PlatoA"] == 400000  # 500000 − 100000
+    assert margins["PlatoB"] == 410000  # 500000 − 90000 (monotributo, no netea)

@@ -62,6 +62,9 @@ class Ingredient:
     unit_cost: Money
     # Yield (rendimiento/merma) in basis points; 10000 = 100% = no loss.
     yield_pct: int = FULL_YIELD_BPS
+    # Whether the loaded cost includes VAT (responsable inscripto → net it) or is
+    # already net (monotributo/no-VAT supplier). Only applies when VAT is set.
+    cost_includes_tax: bool = True
     active: bool = True
     created_at: datetime | None = None
 

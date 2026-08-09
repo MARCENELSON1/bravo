@@ -59,6 +59,7 @@ class UpdateAdvisorSettings:
         seats: int = 0,
         daily_open_minutes: int = 0,
         monthly_inflation_bps: int = 0,
+        default_vat_bps: int = 0,
     ) -> AdvisorSettings:
         self._tenant_context.set(tenant_id)
         tenant = await self._tenants.get_by_id(tenant_id)
@@ -72,6 +73,7 @@ class UpdateAdvisorSettings:
             seats=seats,
             daily_open_minutes=daily_open_minutes,
             monthly_inflation_bps=monthly_inflation_bps,
+            default_vat_bps=default_vat_bps,
         )
         await self._settings.save(settings)
         return settings

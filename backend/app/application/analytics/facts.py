@@ -23,9 +23,14 @@ class SaleFact:
     quantity: int
     unit_price_amount: int
     line_amount: int
-    food_cost_amount: int | None
+    food_cost_amount: int | None  # bruto (COGS a costo real)
     currency: str
     waiter_id: str
     table_id: str | None
     occurred_at: datetime
     created_at: datetime | None = None
+    # Netos de IVA congelados en la proyección (Solución 1): base del margen
+    # consistente en todas las pantallas (ventas netas − food neto), simétricos y
+    # sin re-neteo en lectura. None → se leen como bruto (filas previas / VAT off).
+    line_net_amount: int | None = None
+    food_cost_net_amount: int | None = None

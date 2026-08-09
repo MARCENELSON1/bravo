@@ -565,6 +565,10 @@ class Container(containers.DeclarativeContainer):
     finance_snapshot_repository = providers.Factory(
         SqlAlchemyFinanceSnapshotRepository, session_factory=db.provided.session
     )
+    # Definido acá (antes de project_order_sales, que lo usa para netear el IVA).
+    advisor_settings_repository = providers.Factory(
+        SqlAlchemyAdvisorSettingsRepository, session_factory=db.provided.session
+    )
     project_order_sales = providers.Factory(
         ProjectOrderSales,
         orders=order_repository,
@@ -574,6 +578,7 @@ class Container(containers.DeclarativeContainer):
         preparations=preparation_repository,
         sale_facts=sale_facts_repository,
         snapshots=finance_snapshot_repository,
+        advisor_settings=advisor_settings_repository,
         tenant_context=tenant_context,
     )
 
@@ -980,9 +985,7 @@ class Container(containers.DeclarativeContainer):
     )
 
     # --- Fase 9: asesor financiero (narrator/synthesizer deterministas; LLM en T4) ---
-    advisor_settings_repository = providers.Factory(
-        SqlAlchemyAdvisorSettingsRepository, session_factory=db.provided.session
-    )
+    # advisor_settings_repository se define arriba (lo usa project_order_sales).
     # Tanda F: selector live/snapshot del read model del Asesor (default live).
     advisor_read_model = providers.Selector(
         config.provided.finance_snapshots_read,
