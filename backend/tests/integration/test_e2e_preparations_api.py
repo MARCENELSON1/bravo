@@ -196,3 +196,27 @@ async def test_preparations_are_tenant_isolated(client):
 
     t2 = _auth(await _onboard_verify_login(http, fake_email, slug="dos", email="b@dos.com"))
     assert (await http.get("/api/v1/inventory/preparations", headers=t2)).json() == []
+
+
+async def test_yield_pct_propagates_to_food_cost(client):
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    carne = await _ingredient(http, h, "Carne", unit_cost_amount=1000)  # 1000/u, yield 100%
+    pid = await _product(http, h, "Bife", 300000)
+    r = await http.put(
+        f"/api/v1/products/{pid}/recipe",
+        json={"items": [{"ingredient_id": carne, "qty": 200}]},
+        headers=h,
+    )
+    assert r.status_code == 200, r.text
+    assert await _food_cost(http, h, pid) == 200  # 0.2 × 1000
+
+    # Merma 80% (yield 8000) → costo efectivo 1250/u → food cost 250.
+    patch = await http.patch(
+        f"/api/v1/inventory/ingredients/{carne}",
+        json={"yield_pct": 8000},
+        headers=h,
+    )
+    assert patch.status_code == 200, patch.text
+    assert patch.json()["yield_pct"] == 8000
+    assert await _food_cost(http, h, pid) == 250

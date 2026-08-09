@@ -8,12 +8,13 @@ from app.application.inventory.food_cost import (
     FoodCostRow,
 )
 from app.domain.inventory.costing import (
-    food_cost as compute_food_cost,
-)
-from app.domain.inventory.costing import (
+    effective_unit_cost,
     food_cost_ratio_bps,
     margin,
     resolve_preparation_costs,
+)
+from app.domain.inventory.costing import (
+    food_cost as compute_food_cost,
 )
 from app.domain.inventory.exceptions import RecipeCycle
 from app.domain.inventory.recipe import RecipeItem
@@ -62,13 +63,14 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
             }
 
             cost_by_ingredient = {
-                iid: Money(amount, cur)
-                for iid, amount, cur in (
+                iid: effective_unit_cost(Money(amount, cur), yld)
+                for iid, amount, cur, yld in (
                     await session.execute(
                         select(
                             IngredientORM.id,
                             IngredientORM.unit_cost_amount,
                             IngredientORM.unit_cost_currency,
+                            IngredientORM.yield_pct,
                         ).where(IngredientORM.tenant_id == tenant_id)
                     )
                 ).all()

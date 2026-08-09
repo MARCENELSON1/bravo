@@ -12,6 +12,7 @@ export interface IngredientDTO {
   min_qty: number
   unit_cost_amount: number
   currency: string
+  yield_pct: number // rendimiento/merma en bps (10000 = 100%)
   active: boolean
   is_below_min: boolean
 }
@@ -22,12 +23,14 @@ export interface CreateIngredientBody {
   min_qty: number
   unit_cost_amount: number
   stock_qty: number
+  yield_pct?: number // bps; default 10000 (100%) en el backend
 }
 
 export interface UpdateIngredientBody {
   name?: string
   min_qty?: number
   active?: boolean
+  yield_pct?: number
 }
 
 export interface CreateIngredientResponse {

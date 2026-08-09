@@ -25,6 +25,7 @@ from app.domain.inventory.repository import (
     SupplierRepository,
 )
 from app.domain.inventory.value_objects import (
+    FULL_YIELD_BPS,
     MovementDirection,
     MovementReason,
     UnitOfMeasure,
@@ -58,6 +59,7 @@ class CreateIngredient:
         min_qty: int,
         unit_cost_amount: int,
         stock_qty: int = 0,
+        yield_pct: int = FULL_YIELD_BPS,
     ) -> Ingredient:
         self._tenant_context.set(tenant_id)
         tenant = await self._tenants.get_by_id(tenant_id)
@@ -75,6 +77,7 @@ class CreateIngredient:
             stock_qty=stock_qty,
             min_qty=min_qty,
             unit_cost=Money(unit_cost_amount, tenant.currency),
+            yield_pct=yield_pct,
         )
         await self._ingredients.add(ingredient)
         return ingredient
@@ -109,6 +112,7 @@ class UpdateIngredient:
         name: str | None = None,
         min_qty: int | None = None,
         active: bool | None = None,
+        yield_pct: int | None = None,
     ) -> Ingredient:
         self._tenant_context.set(tenant_id)
         ingredient = await self._ingredients.get_by_id(tenant_id, ingredient_id)
@@ -122,6 +126,8 @@ class UpdateIngredient:
             ingredient.min_qty = min_qty
         if active is not None:
             ingredient.active = active
+        if yield_pct is not None:
+            ingredient.yield_pct = yield_pct
         await self._ingredients.save(ingredient)
         return ingredient
 

@@ -596,6 +596,7 @@ def ingredient_to_domain(row: IngredientORM) -> Ingredient:
         stock_qty=row.stock_qty,
         min_qty=row.min_qty,
         unit_cost=Money(row.unit_cost_amount, row.unit_cost_currency),
+        yield_pct=row.yield_pct,
         active=row.active,
         created_at=row.created_at,
     )
@@ -611,6 +612,7 @@ def ingredient_to_orm(ingredient: Ingredient) -> IngredientORM:
         min_qty=ingredient.min_qty,
         unit_cost_amount=ingredient.unit_cost.amount,
         unit_cost_currency=ingredient.unit_cost.currency,
+        yield_pct=ingredient.yield_pct,
         active=ingredient.active,
     )
 

@@ -14,12 +14,15 @@ class CreateIngredientRequest(BaseModel):
     min_qty: int = Field(default=0, ge=0)
     unit_cost_amount: int = Field(gt=0)
     stock_qty: int = Field(default=0, ge=0)
+    # Yield/merma in basis points (10000 = 100% = no loss).
+    yield_pct: int = Field(default=10000, ge=1, le=10000)
 
 
 class UpdateIngredientRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
     min_qty: int | None = Field(default=None, ge=0)
     active: bool | None = None
+    yield_pct: int | None = Field(default=None, ge=1, le=10000)
 
 
 class IngredientResponse(BaseModel):
@@ -30,6 +33,7 @@ class IngredientResponse(BaseModel):
     min_qty: int
     unit_cost_amount: int
     currency: str
+    yield_pct: int
     active: bool
     is_below_min: bool
 
