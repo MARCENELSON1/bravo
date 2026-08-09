@@ -1,13 +1,14 @@
 import { GlassCard } from "@/components/ui/glass-card"
 import { Spinner } from "@/components/ui/spinner"
 import { useProductRotation } from "@/hooks/use-products"
+import { type RangeWindow } from "@/lib/finance-range"
 import { weekdayLabel } from "@/features/products/pricing"
 import { formatMoney } from "@/lib/money"
 
 // Rotación por día de semana (Productos v2 Tanda B): qué días vendés más y cuál es
 // el plato estrella de cada día, a partir de sale_facts.
-export function RotationSchedule() {
-  const rotation = useProductRotation()
+export function RotationSchedule({ period }: { period: RangeWindow }) {
+  const rotation = useProductRotation({ from: period.from, to: period.to })
 
   if (rotation.isPending) {
     return (

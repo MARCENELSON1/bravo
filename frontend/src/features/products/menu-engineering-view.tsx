@@ -8,6 +8,7 @@ import {
   type MenuCategory,
 } from "@/features/products/menu-engineering"
 import { useProductPerformance } from "@/hooks/use-analytics"
+import { type RangeWindow } from "@/lib/finance-range"
 import { formatMoney } from "@/lib/money"
 
 const CATEGORY_META: Record<
@@ -22,15 +23,9 @@ const CATEGORY_META: Record<
 }
 const ORDER: MenuCategory[] = ["funciona", "oportunidad", "estable", "revisar", "no_vendido"]
 
-function last30DaysIso(): string {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  d.setDate(d.getDate() - 30)
-  return d.toISOString()
-}
-
-export function MenuEngineering() {
-  const query = useMemo(() => ({ from: last30DaysIso(), limit: 500 }), [])
+export function MenuEngineering({ period }: { period: RangeWindow }) {
+  // limit alto para no truncar la clasificación (el endpoint corta en le=1000).
+  const query = useMemo(() => ({ from: period.from, to: period.to, limit: 1000 }), [period])
   const perf = useProductPerformance(query)
   const products = useMemo(() => classifyMenu(perf.data ?? []), [perf.data])
   const currency = perf.data?.[0]?.currency ?? "ARS"
@@ -41,7 +36,7 @@ export function MenuEngineering() {
   if (products.length === 0) {
     return (
       <GlassCard className="p-6 text-sm text-muted-foreground">
-        Todavía no hay ventas de productos en los últimos 30 días para analizar la carta.
+        Todavía no hay ventas de productos en el período elegido para analizar la carta.
       </GlassCard>
     )
   }
@@ -54,7 +49,7 @@ export function MenuEngineering() {
     <div className="flex flex-col gap-4">
       {/* Hero — resumen de la carta */}
       <GlassCard className="p-6">
-        <h2 className="text-base font-semibold text-foreground">Tu carta este mes</h2>
+        <h2 className="text-base font-semibold text-foreground">Tu carta</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           De tus {products.length} platos, {byCat("funciona").length} son estrellas,{" "}
           {byCat("oportunidad").length} son oportunidades, {byCat("revisar").length} te están

@@ -87,7 +87,7 @@ async def get_payment_mix(
 async def get_product_performance(
     since: datetime | None = Query(default=None, alias="from"),
     until: datetime | None = Query(default=None, alias="to"),
-    limit: int = Query(default=10, ge=1, le=100),
+    limit: int = Query(default=10, ge=1, le=1000),
     identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
     use_case: GetProductPerformance = Depends(Provide[Container.get_product_performance]),
 ) -> list[ProductPerformanceRowResponse]:
