@@ -8,6 +8,9 @@ from app.application.inventory.food_cost import (
     FoodCostRow,
 )
 from app.domain.inventory.costing import (
+    coverage_bps as compute_coverage_bps,
+)
+from app.domain.inventory.costing import (
     effective_unit_cost,
     food_cost_ratio_bps,
     margin,
@@ -20,7 +23,11 @@ from app.domain.inventory.costing import (
 from app.domain.inventory.exceptions import RecipeCycle
 from app.domain.inventory.recipe import RecipeItem
 from app.domain.inventory.recipe_conversion import conversion_factor
-from app.domain.inventory.value_objects import UnitOfMeasure
+from app.domain.inventory.value_objects import (
+    CONFIRMED_PLATE_BPS,
+    MovementReason,
+    UnitOfMeasure,
+)
 from app.domain.shared.money import Money
 from app.domain.shared.vat import net_of_vat
 from app.infrastructure.persistence.database import SessionFactory
@@ -32,6 +39,7 @@ from app.infrastructure.persistence.models import (
     PreparationORM,
     ProductORM,
     RecipeItemORM,
+    StockMovementORM,
     TenantORM,
 )
 
@@ -117,6 +125,31 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
                 )
                 for r in ingredient_rows
             }
+            # Fase 3: un insumo está "confirmado" si tiene ≥1 compra real cargada
+            # (movimiento PURCHASE). El costo solo se mueve por compra → derivación
+            # exacta, sin flag ni migración. Tenant-scoped + RLS.
+            confirmed_ids = set(
+                (
+                    await session.execute(
+                        select(StockMovementORM.ingredient_id)
+                        .where(
+                            StockMovementORM.tenant_id == tenant_id,
+                            StockMovementORM.reason == MovementReason.PURCHASE.value,
+                        )
+                        .distinct()
+                    )
+                ).scalars().all()
+            )
+            # Costo confirmado por insumo (bruto): el costo si tiene compra, si no 0
+            # (no cuenta a la cobertura). La cobertura del plato = confirmado/bruto.
+            confirmed_cost_by_ingredient = {
+                r.id: (
+                    cost_by_ingredient[r.id]
+                    if r.id in confirmed_ids
+                    else Money(0, r.unit_cost_currency)
+                )
+                for r in ingredient_rows
+            }
 
             items_by_product: dict[str, list[RecipeItem]] = {}
             for row in (
@@ -168,9 +201,18 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
                         factor_by_ingredient=factor_by_ingredient,
                     )
                 )
+                # Fase 3: preparación confirmada = componentes confirmados (los no
+                # confirmados aportan 0 al costo confirmado, igual que el mapa neto).
+                confirmed_cost_by_preparation = resolve_preparation_costs(
+                    preparations,
+                    confirmed_cost_by_ingredient,
+                    currency,
+                    factor_by_ingredient=factor_by_ingredient,
+                )
             except RecipeCycle:
                 cost_by_preparation = {}
                 net_cost_by_preparation = {}
+                confirmed_cost_by_preparation = {}
 
             rows: list[FoodCostRow] = []
             for product_id, items in items_by_product.items():
@@ -193,6 +235,17 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
                     cost_by_preparation=net_cost_by_preparation,
                     factor_by_ingredient=factor_by_ingredient,
                 )
+                # Fase 3: costo confirmado (solo insumos con compra real) → cobertura
+                # = confirmado / bruto. Un plato es confirmado si la cobertura es
+                # total. NO afecta food_cost_amount/margen (se agregan campos).
+                confirmed_fc = compute_food_cost(
+                    items,
+                    confirmed_cost_by_ingredient,
+                    price_currency,
+                    cost_by_preparation=confirmed_cost_by_preparation,
+                    factor_by_ingredient=factor_by_ingredient,
+                )
+                coverage = compute_coverage_bps(confirmed_fc, gross_fc)
                 # El food cost se muestra BRUTO (COGS real). El margen ("te deja") y
                 # el ratio (food cost %) son NETOS: precio neto − costo neto. El
                 # precio se muestra bruto (lo que cobra el dueño). Con VAT 0, neto ==
@@ -207,7 +260,20 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
                         margin_amount=margin(net_price, net_fc),
                         food_cost_ratio_bps=food_cost_ratio_bps(net_price, net_fc),
                         currency=price_currency,
+                        cost_confirmed=coverage >= CONFIRMED_PLATE_BPS,
+                        coverage_bps=coverage,
                     )
                 )
             rows.sort(key=lambda r: r.product_name)
-            return FoodCostReport(currency=currency, rows=rows)
+            total_count = len(rows)
+            confirmed_count = sum(1 for r in rows if r.cost_confirmed)
+            report_coverage = (
+                round(confirmed_count * 10000 / total_count) if total_count else 10000
+            )
+            return FoodCostReport(
+                currency=currency,
+                rows=rows,
+                coverage_bps=report_coverage,
+                confirmed_count=confirmed_count,
+                total_count=total_count,
+            )

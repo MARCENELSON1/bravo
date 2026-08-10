@@ -7,6 +7,11 @@ from enum import StrEnum
 # (e.g. 1.5 kg if the unit is KG). Costs are Money per *one* base unit.
 QUANTITY_SCALE = 1000
 
+# Fase 3: a plate's cost is "confirmed" when this share of its food cost is backed
+# by real purchases (100% = strict). Per-tenant coverage gate for the hero (Fase 6).
+CONFIRMED_PLATE_BPS = 10000
+COVERAGE_GATE_BPS = 7000
+
 # Ingredient yield (rendimiento / merma) in basis points: 10000 = 100% = no loss.
 # What reaches the plate costs raw_cost / (yield / 10000): a lower yield (bone,
 # trim, cooking loss) raises the effective cost of the usable ingredient.
