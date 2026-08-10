@@ -80,6 +80,14 @@ export interface RecipeDTO {
   product_id: string
   has_recipe: boolean
   items: RecipeItemDTO[]
+  version?: number // Fase 2D: versión de la receta (incrementa en cada guardado)
+}
+
+// Fase 7 (Ficha): un punto del histórico de costo de un insumo (una compra).
+export interface IngredientCostPointDTO {
+  occurred_at: string // ISO
+  unit_cost_amount: number
+  currency: string
 }
 
 export interface SetRecipeBody {
