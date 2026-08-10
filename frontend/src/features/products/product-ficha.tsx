@@ -163,7 +163,7 @@ function FichaBody({ product, period }: { product: ProductDTO; period: RangeWind
             })}
           </ul>
         )}
-        {recipe.data?.version ? (
+        {items.length > 0 && recipe.data?.version ? (
           <p className="text-xs text-muted-foreground">Versión de receta: v{recipe.data.version}</p>
         ) : null}
       </section>
