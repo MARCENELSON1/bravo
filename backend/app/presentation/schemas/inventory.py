@@ -150,3 +150,4 @@ class FoodCostResponse(BaseModel):
     coverage_bps: int = 10000  # Fase 3: cobertura del tenant (platos confirmados)
     confirmed_count: int = 0
     total_count: int = 0
+    coverage_ok: bool = True  # Fase 6: ¿la cobertura llega al umbral del hero?

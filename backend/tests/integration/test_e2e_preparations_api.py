@@ -500,3 +500,5 @@ async def test_cost_coverage_confirmed_vs_estimated(client):
     assert report["confirmed_count"] == 1
     assert report["total_count"] == 2
     assert report["coverage_bps"] == 5000
+    # Fase 6: 50% < umbral del hero (70%) → gate cerrado.
+    assert report["coverage_ok"] is False

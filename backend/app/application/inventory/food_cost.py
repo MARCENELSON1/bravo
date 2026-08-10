@@ -34,6 +34,9 @@ class FoodCostReport:
     coverage_bps: int = 10000
     confirmed_count: int = 0
     total_count: int = 0
+    # Fase 6: ¿la cobertura llega al umbral del hero (COVERAGE_GATE_BPS)? El front
+    # lee este bool y nunca hardcodea el 70% (umbral definido una vez en el dominio).
+    coverage_ok: bool = True
 
 
 class FoodCostReadModel(ABC):

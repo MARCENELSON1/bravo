@@ -231,6 +231,7 @@ async def get_food_cost(
         coverage_bps=report.coverage_bps,
         confirmed_count=report.confirmed_count,
         total_count=report.total_count,
+        coverage_ok=report.coverage_ok,
     )
 
 

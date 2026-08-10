@@ -25,6 +25,7 @@ from app.domain.inventory.recipe import RecipeItem
 from app.domain.inventory.recipe_conversion import conversion_factor
 from app.domain.inventory.value_objects import (
     CONFIRMED_PLATE_BPS,
+    COVERAGE_GATE_BPS,
     MovementReason,
     UnitOfMeasure,
 )
@@ -276,4 +277,5 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
                 coverage_bps=report_coverage,
                 confirmed_count=confirmed_count,
                 total_count=total_count,
+                coverage_ok=report_coverage >= COVERAGE_GATE_BPS,
             )

@@ -1,7 +1,9 @@
 import { useMemo } from "react"
+import { Link } from "react-router-dom"
 
 import { Badge } from "@/components/ui/badge"
 import { GlassCard } from "@/components/ui/glass-card"
+import { coverageGate } from "@/features/products/coverage-gate"
 import {
   classifyMenu,
   confirmedMargin,
@@ -62,6 +64,10 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
   const byCat = (c: MenuCategory) => products.filter((p) => p.category === c)
   const top = topEarners(products)
   const money = (n: number) => formatMoney(n, currency)
+  // Fase 6: gate del hero. Bajo el umbral de cobertura ocultamos las conclusiones
+  // de plata (top-earners, "Te dejan $X", "te dejaron $X") — nunca un total inflado
+  // por costos estimados. Sin food cost cargado → open (paridad).
+  const gate = coverageGate(foodCost.data)
 
   return (
     <div className="flex flex-col gap-4">
@@ -73,13 +79,38 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
           {byCat("oportunidad").length} son oportunidades, {byCat("revisar").length} te están
           costando margen y {byCat("no_vendido").length} no se vendieron.
         </p>
-        {foodCost.data && foodCost.data.total_count > 0 ? (
-          <p className="mt-2 text-xs text-muted-foreground">
-            {foodCost.data.confirmed_count} de {foodCost.data.total_count} platos con
-            costo confirmado. Los de costo estimado no suman a la plata de arriba —
-            cargá sus compras para confirmarlos.
-          </p>
-        ) : null}
+        {gate.open ? (
+          <>
+            <p className="mt-2 text-sm text-foreground">
+              En este período tu carta te dejó{" "}
+              <span className="font-semibold tabular-nums">
+                {money(confirmedMargin(products))}
+              </span>
+              .
+            </p>
+            {foodCost.data && foodCost.data.total_count > 0 ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {foodCost.data.confirmed_count} de {foodCost.data.total_count} platos con
+                costo confirmado. Los de costo estimado no suman a la plata de arriba —
+                cargá sus compras para confirmarlos.
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <div className="mt-2">
+            <p className="text-sm text-foreground">
+              Todavía no podemos decirte cuánto te dejó tu carta — te faltan{" "}
+              <span className="font-semibold tabular-nums">{gate.missing}</span> platos con
+              costo confirmado (vas {gate.confirmed} de {gate.total}).
+            </p>
+            <Link
+              to="/app/stock"
+              className="mt-2 inline-flex text-sm font-medium text-primary hover:underline"
+            >
+              Cargar compras →
+            </Link>
+          </div>
+        )}
       </GlassCard>
 
       {/* 5 categorías de acción */}
@@ -98,7 +129,7 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">{meta.sub}</p>
-              {cat !== "no_vendido" ? (
+              {gate.open && cat !== "no_vendido" ? (
                 <p className="text-sm tabular-nums text-foreground">
                   Te dejan {money(totalMargin)}
                 </p>
@@ -116,24 +147,27 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
         })}
       </section>
 
-      {/* Top 3 que más plata dejan */}
-      <GlassCard className="p-6">
-        <h2 className="mb-3 text-base font-semibold text-foreground">
-          Los 3 platos que más plata te dejan
-        </h2>
-        <div className="flex flex-col gap-2">
-          {top.map((p, i) => (
-            <div key={p.id} className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="min-w-0 flex-1 truncate">
-                {["🥇", "🥈", "🥉"][i]} {p.name}
-              </span>
-              <span className="shrink-0 tabular-nums text-muted-foreground">
-                {p.units} uds · <span className="font-semibold text-foreground">{money(p.margin)}</span>
-              </span>
-            </div>
-          ))}
-        </div>
-      </GlassCard>
+      {/* Top 3 que más plata dejan — solo con cobertura suficiente (Fase 6) */}
+      {gate.open ? (
+        <GlassCard className="p-6">
+          <h2 className="mb-3 text-base font-semibold text-foreground">
+            Los 3 platos que más plata te dejan
+          </h2>
+          <div className="flex flex-col gap-2">
+            {top.map((p, i) => (
+              <div key={p.id} className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="min-w-0 flex-1 truncate">
+                  {["🥇", "🥈", "🥉"][i]} {p.name}
+                </span>
+                <span className="shrink-0 tabular-nums text-muted-foreground">
+                  {p.units} uds ·{" "}
+                  <span className="font-semibold text-foreground">{money(p.margin)}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      ) : null}
 
       {/* Tabla de detalle */}
       <GlassCard className="p-6">

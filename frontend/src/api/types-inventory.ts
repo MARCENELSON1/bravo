@@ -132,4 +132,5 @@ export interface FoodCostReportDTO {
   coverage_bps: number // Fase 3: cobertura del tenant (platos confirmados)
   confirmed_count: number
   total_count: number
+  coverage_ok: boolean // Fase 6: ¿la cobertura llega al umbral del hero (≥70%)?
 }
