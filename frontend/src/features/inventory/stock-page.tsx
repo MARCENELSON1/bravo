@@ -48,6 +48,7 @@ import {
   formatQty,
   isValidYieldBps,
   percentToBps,
+  recipeUnitOptions,
   toMilesimas,
   UNIT_LABELS,
   UNIT_OPTIONS,
@@ -64,6 +65,9 @@ function CreateIngredientSheet() {
   const [cost, setCost] = useState("")
   const [yieldPct, setYieldPct] = useState("100")
   const [inclVat, setInclVat] = useState(true)
+  // Fase 2C: "" = receta en la unidad base (sin conversión). Solo se setea al crear.
+  const [recipeUnit, setRecipeUnit] = useState<UnitOfMeasure | "">("")
+  const recipeOpts = recipeUnitOptions(unit)
 
   const submit = () => {
     if (!name.trim()) {
@@ -89,6 +93,7 @@ function CreateIngredientSheet() {
         unit_cost_amount: unitCost,
         yield_pct: yp,
         price_includes_tax: inclVat,
+        recipe_unit: recipeUnit && recipeUnit !== unit ? recipeUnit : undefined,
       },
       {
         onSuccess: () => {
@@ -99,6 +104,7 @@ function CreateIngredientSheet() {
           setCost("")
           setYieldPct("100")
           setInclVat(true)
+          setRecipeUnit("")
           setOpen(false)
         },
         onError: (error) =>
@@ -121,7 +127,13 @@ function CreateIngredientSheet() {
         </SheetHeader>
         <div className="flex flex-col gap-3 px-4 pb-4">
           <Input placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
-          <Select value={unit} onValueChange={(v) => setUnit(v as UnitOfMeasure)}>
+          <Select
+            value={unit}
+            onValueChange={(v) => {
+              setUnit(v as UnitOfMeasure)
+              setRecipeUnit("")  // otra familia → resetear la unidad de receta
+            }}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -133,6 +145,31 @@ function CreateIngredientSheet() {
               ))}
             </SelectContent>
           </Select>
+          {recipeOpts.length > 0 ? (
+            <label className="flex flex-col gap-1 text-sm">
+              Unidad de receta (opcional)
+              <Select
+                value={recipeUnit || unit}
+                onValueChange={(v) => setRecipeUnit(v as UnitOfMeasure)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {recipeOpts.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-muted-foreground">
+                Cargá el costo/stock por {UNIT_LABELS[unit]} y usá{" "}
+                {UNIT_LABELS[recipeOpts[1].value]} en la receta. No se puede cambiar
+                después.
+              </span>
+            </label>
+          ) : null}
           <div className="flex gap-2">
             <Input
               type="number"

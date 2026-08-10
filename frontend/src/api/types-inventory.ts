@@ -14,6 +14,7 @@ export interface IngredientDTO {
   currency: string
   yield_pct: number // rendimiento/merma en bps (10000 = 100%)
   cost_includes_tax: boolean // ¿el costo cargado incluye IVA?
+  recipe_unit: UnitOfMeasure | null // Fase 2C: unidad fina para receta (KG→G, L→ML)
   active: boolean
   is_below_min: boolean
 }
@@ -26,6 +27,7 @@ export interface CreateIngredientBody {
   stock_qty: number
   yield_pct?: number // bps; default 10000 (100%) en el backend
   price_includes_tax?: boolean // ¿el costo incluye IVA? default true
+  recipe_unit?: UnitOfMeasure | null // Fase 2C: unidad de receta (misma familia, más fina)
 }
 
 export interface UpdateIngredientBody {

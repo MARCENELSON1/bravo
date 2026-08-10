@@ -17,6 +17,7 @@ from app.domain.inventory.exceptions import (
     PreparationNotFound,
 )
 from app.domain.inventory.recipe import Recipe, RecipeItem
+from app.domain.inventory.recipe_conversion import assert_convertible
 from app.domain.inventory.repository import (
     IngredientRepository,
     PreparationRepository,
@@ -61,6 +62,7 @@ class CreateIngredient:
         stock_qty: int = 0,
         yield_pct: int = FULL_YIELD_BPS,
         price_includes_tax: bool = True,
+        recipe_unit: str | None = None,
     ) -> Ingredient:
         self._tenant_context.set(tenant_id)
         tenant = await self._tenants.get_by_id(tenant_id)
@@ -70,16 +72,20 @@ class CreateIngredient:
             raise InvalidUnitCost()
         if min_qty < 0 or stock_qty < 0:
             raise InvalidQuantity()
+        base_unit = UnitOfMeasure(unit)
+        recipe = UnitOfMeasure(recipe_unit) if recipe_unit else None
+        assert_convertible(base_unit, recipe)  # raises IncompatibleUnits
         ingredient = Ingredient(
             id=str(uuid4()),
             tenant_id=tenant_id,
             name=name,
-            unit=UnitOfMeasure(unit),
+            unit=base_unit,
             stock_qty=stock_qty,
             min_qty=min_qty,
             unit_cost=Money(unit_cost_amount, tenant.currency),
             yield_pct=yield_pct,
             cost_includes_tax=price_includes_tax,
+            recipe_unit=recipe,
         )
         await self._ingredients.add(ingredient)
         return ingredient

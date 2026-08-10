@@ -29,6 +29,7 @@ from app.domain.identity.exceptions import (
     TokenAlreadyUsed,
 )
 from app.domain.inventory.exceptions import (
+    IncompatibleUnits,
     IngredientNotFound,
     InvalidQuantity,
     InvalidRecipeComponent,
@@ -160,6 +161,7 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (InvalidUnitCost, 422),
     (InvalidRecipeComponent, 422),
     (RecipeCycle, 409),
+    (IncompatibleUnits, 422),
     # Fase 7 — reservas
     (ReservationNotFound, 404),
     (InvalidReservationTransition, 409),

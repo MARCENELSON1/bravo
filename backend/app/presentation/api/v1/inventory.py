@@ -85,6 +85,7 @@ def _ingredient_response(ingredient: Ingredient) -> IngredientResponse:
         currency=ingredient.unit_cost.currency,
         yield_pct=ingredient.yield_pct,
         cost_includes_tax=ingredient.cost_includes_tax,
+        recipe_unit=ingredient.recipe_unit.value if ingredient.recipe_unit else None,
         active=ingredient.active,
         is_below_min=ingredient.is_below_min,
     )
@@ -119,6 +120,7 @@ async def create_ingredient(
         stock_qty=body.stock_qty,
         yield_pct=body.yield_pct,
         price_includes_tax=body.price_includes_tax,
+        recipe_unit=body.recipe_unit.value if body.recipe_unit else None,
     )
     return CreateIngredientResponse(ingredient_id=ingredient.id)
 

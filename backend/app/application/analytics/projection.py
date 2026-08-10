@@ -17,6 +17,7 @@ from app.domain.identity.ports import TenantContext
 from app.domain.inventory.costing import food_cost as compute_food_cost
 from app.domain.inventory.costing import net_effective_unit_cost, resolve_preparation_costs
 from app.domain.inventory.exceptions import RecipeCycle
+from app.domain.inventory.recipe_conversion import conversion_factor
 from app.domain.inventory.repository import (
     IngredientRepository,
     PreparationRepository,
@@ -83,11 +84,15 @@ class ProjectOrderSales(SalesProjector):
 
         cost_by_ingredient: dict = {}
         cost_net_by_ingredient: dict = {}
+        factor_by_ingredient: dict = {}  # Fase 2C: unidad de receta → base
         if recipes:
             for ing in await self._ingredients.list(tenant_id):
                 cost_by_ingredient[ing.id] = ing.effective_unit_cost
                 cost_net_by_ingredient[ing.id] = net_effective_unit_cost(
                     ing.unit_cost, ing.yield_pct, ing.cost_includes_tax, vat_bps
+                )
+                factor_by_ingredient[ing.id] = conversion_factor(
+                    ing.unit, ing.recipe_unit
                 )
         # Costo por unidad de cada preparación (receta madre), multinivel, bruto y
         # neto. Un ciclo no debe romper el cobro → se degrada a "sin preparaciones".
@@ -99,13 +104,19 @@ class ProjectOrderSales(SalesProjector):
             if preparations:
                 try:
                     cost_by_preparation = resolve_preparation_costs(
-                        preparations, cost_by_ingredient, order.currency
+                        preparations,
+                        cost_by_ingredient,
+                        order.currency,
+                        factor_by_ingredient=factor_by_ingredient,
                     )
                     cost_net_by_preparation = (
                         cost_by_preparation
                         if vat_bps == 0
                         else resolve_preparation_costs(
-                            preparations, cost_net_by_ingredient, order.currency
+                            preparations,
+                            cost_net_by_ingredient,
+                            order.currency,
+                            factor_by_ingredient=factor_by_ingredient,
                         )
                     )
                 except RecipeCycle:
@@ -124,12 +135,14 @@ class ProjectOrderSales(SalesProjector):
                     cost_by_ingredient,
                     order.currency,
                     cost_by_preparation=cost_by_preparation,
+                    factor_by_ingredient=factor_by_ingredient,
                 )
                 per_unit_net = compute_food_cost(
                     recipe.items,
                     cost_net_by_ingredient,
                     order.currency,
                     cost_by_preparation=cost_net_by_preparation,
+                    factor_by_ingredient=factor_by_ingredient,
                 )
                 food_cost_amount = per_unit.amount * item.quantity
                 food_cost_net_amount = per_unit_net.amount * item.quantity

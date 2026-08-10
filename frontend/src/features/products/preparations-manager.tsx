@@ -35,7 +35,7 @@ import {
   usePreparations,
   useUpdatePreparation,
 } from "@/hooks/use-inventory"
-import { toMilesimas } from "@/lib/inventory"
+import { toMilesimas, UNIT_LABELS } from "@/lib/inventory"
 
 // Editor reutilizable de componentes (insumos + preparaciones). Lo usan la receta
 // de un producto y la de una preparación.
@@ -62,39 +62,50 @@ export function ComponentRowsEditor({
           Sin componentes. Agregá insumos o preparaciones.
         </p>
       ) : null}
-      {rows.map((row, index) => (
-        <div key={index} className="flex items-end gap-2">
-          <Select value={row.value} onValueChange={(v) => patch(index, { value: v })}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Insumo o preparación" />
-            </SelectTrigger>
-            <SelectContent>
-              {ingredients.map((i) => (
-                <SelectItem key={i.id} value={ING + i.id}>
-                  {i.name}
-                </SelectItem>
-              ))}
-              {preparations.map((p) => (
-                <SelectItem key={p.id} value={PREP + p.id}>
-                  Preparación: {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            type="number"
-            step="0.001"
-            min={0}
-            placeholder="cant."
-            value={row.qty}
-            onChange={(e) => patch(index, { qty: e.target.value })}
-            className="max-w-[7rem]"
-          />
-          <Button variant="ghost" size="sm" onClick={() => remove(index)}>
-            Quitar
-          </Button>
-        </div>
-      ))}
+      {rows.map((row, index) => {
+        // Fase 2C: la cantidad se tipea en la unidad de RECETA del insumo
+        // (recipe_unit si está, si no la base) → mostrar la etiqueta correcta.
+        const ing = row.value.startsWith(ING)
+          ? ingredients.find((i) => i.id === row.value.slice(ING.length))
+          : undefined
+        const unitLabel = ing ? UNIT_LABELS[ing.recipe_unit ?? ing.unit] : ""
+        return (
+          <div key={index} className="flex items-end gap-2">
+            <Select value={row.value} onValueChange={(v) => patch(index, { value: v })}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Insumo o preparación" />
+              </SelectTrigger>
+              <SelectContent>
+                {ingredients.map((i) => (
+                  <SelectItem key={i.id} value={ING + i.id}>
+                    {i.name}
+                  </SelectItem>
+                ))}
+                {preparations.map((p) => (
+                  <SelectItem key={p.id} value={PREP + p.id}>
+                    Preparación: {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              type="number"
+              step="0.001"
+              min={0}
+              placeholder="cant."
+              value={row.qty}
+              onChange={(e) => patch(index, { qty: e.target.value })}
+              className="max-w-[6rem]"
+            />
+            <span className="w-6 shrink-0 pb-2 text-xs text-muted-foreground">
+              {unitLabel}
+            </span>
+            <Button variant="ghost" size="sm" onClick={() => remove(index)}>
+              Quitar
+            </Button>
+          </div>
+        )
+      })}
       <Button variant="outline" size="sm" onClick={add}>
         Agregar componente
       </Button>
