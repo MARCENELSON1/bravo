@@ -404,3 +404,26 @@ async def test_incompatible_recipe_unit_rejected(client):
     )
     assert r.status_code == 422, r.text
     assert "incompatible_units" in r.text
+
+
+async def test_recipe_version_increments_on_save(client):
+    """Fase 2D: cada guardado de receta incrementa la versión (nueva → v1)."""
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    ing = await _ingredient(http, h, "Carne", unit_cost_amount=1000)
+    pid = await _product(http, h, "Plato", 150000)
+    r1 = await http.put(
+        f"/api/v1/products/{pid}/recipe",
+        json={"items": [{"ingredient_id": ing, "qty": 100}]},
+        headers=h,
+    )
+    assert r1.status_code == 200, r1.text
+    assert r1.json()["version"] == 1
+    r2 = await http.put(
+        f"/api/v1/products/{pid}/recipe",
+        json={"items": [{"ingredient_id": ing, "qty": 200}]},
+        headers=h,
+    )
+    assert r2.json()["version"] == 2
+    got = await http.get(f"/api/v1/products/{pid}/recipe", headers=h)
+    assert got.json()["version"] == 2

@@ -100,6 +100,7 @@ class RecipeResponse(BaseModel):
     product_id: str
     has_recipe: bool
     items: list[RecipeItemSchema]
+    version: int = 1  # Fase 2D: versión de la receta (incrementa en cada guardado)
 
 
 # --- Preparaciones (recetas madre) ------------------------------------------

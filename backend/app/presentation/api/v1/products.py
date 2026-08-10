@@ -198,6 +198,7 @@ async def get_product_recipe(
     return RecipeResponse(
         product_id=product_id,
         has_recipe=True,
+        version=recipe.version,
         items=[
             RecipeItemSchema(
                 ingredient_id=item.ingredient_id,
@@ -232,6 +233,7 @@ async def set_product_recipe(
     return RecipeResponse(
         product_id=product_id,
         has_recipe=True,
+        version=recipe.version,
         items=[
             RecipeItemSchema(
                 ingredient_id=item.ingredient_id,

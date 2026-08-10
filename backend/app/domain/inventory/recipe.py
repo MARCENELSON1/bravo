@@ -35,6 +35,10 @@ class Recipe:
     product_id: str
     tenant_id: str
     items: list[RecipeItem] = field(default_factory=list)
+    # Incremental version (Fase 2D): bumped on every SetRecipe. Snapshotted into
+    # sale_facts at PAID time for attribution (recipe change vs ingredient price
+    # change) — the food cost itself is already frozen per sale. Default 1.
+    version: int = 1
 
 
 @dataclass
