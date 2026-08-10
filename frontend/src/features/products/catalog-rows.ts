@@ -12,6 +12,10 @@ export interface CatalogRow {
   margin: number | null // "te deja" en minor units (null = sin costo)
   marginBps: number | null // margen sobre precio en bps (7000 = 70%)
   units: number // vendidos en el período
+  // Fase 3: costo confirmado (todo respaldado por compras). Sin receta → true
+  // (no hay costo que confirmar). coverageBps null cuando no hay costo.
+  costConfirmed: boolean
+  coverageBps: number | null
 }
 
 export function mergeCatalogRows(
@@ -30,6 +34,8 @@ export function mergeCatalogRows(
       // food_cost_ratio_bps = costo/precio; margen sobre precio = 10000 - ratio.
       marginBps: fc ? 10000 - fc.food_cost_ratio_bps : null,
       units: soldById.get(product.id) ?? 0,
+      costConfirmed: fc ? fc.cost_confirmed : true,
+      coverageBps: fc ? fc.coverage_bps : null,
     }
   })
 }

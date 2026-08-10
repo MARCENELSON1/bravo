@@ -122,9 +122,14 @@ export interface FoodCostRowDTO {
   margin_amount: number
   food_cost_ratio_bps: number
   currency: string
+  cost_confirmed: boolean // Fase 3: todo el food cost respaldado por compras
+  coverage_bps: number // Fase 3: cobertura de costo confirmado (bps)
 }
 
 export interface FoodCostReportDTO {
   currency: string
   rows: FoodCostRowDTO[]
+  coverage_bps: number // Fase 3: cobertura del tenant (platos confirmados)
+  confirmed_count: number
+  total_count: number
 }

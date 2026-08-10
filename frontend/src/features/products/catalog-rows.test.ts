@@ -28,6 +28,8 @@ function fc(over: Partial<FoodCostRowDTO> = {}): FoodCostRowDTO {
     margin_amount: 70000,
     food_cost_ratio_bps: 3000,
     currency: "ARS",
+    cost_confirmed: true,
+    coverage_bps: 10000,
     ...over,
   }
 }
@@ -52,6 +54,22 @@ describe("mergeCatalogRows", () => {
     expect(rows[0].margin).toBe(70000)
     expect(rows[0].marginBps).toBe(7000) // 10000 - 3000
     expect(rows[0].units).toBe(12)
+    expect(rows[0].costConfirmed).toBe(true)
+    expect(rows[0].coverageBps).toBe(10000)
+  })
+
+  it("Fase 3: refleja el estado de confirmación; sin receta → confirmado (sin costo)", () => {
+    const estimated = mergeCatalogRows(
+      [product()],
+      [fc({ cost_confirmed: false, coverage_bps: 5000 })],
+      [],
+    )
+    expect(estimated[0].costConfirmed).toBe(false)
+    expect(estimated[0].coverageBps).toBe(5000)
+    // Sin fila de food cost (sin receta) → no hay costo que confirmar.
+    const noRecipe = mergeCatalogRows([product({ id: "p2" })], [], [])
+    expect(noRecipe[0].costConfirmed).toBe(true)
+    expect(noRecipe[0].coverageBps).toBeNull()
   })
 
   it("producto sin receta → costo/margen null y vendidos 0", () => {

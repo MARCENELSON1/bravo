@@ -239,7 +239,22 @@ export function ProductCatalog({ period }: { period: RangeWindow }) {
                   const p = row.product
                   return (
                     <TableRow key={p.id}>
-                      <TableCell className="font-medium">{p.name}</TableCell>
+                      <TableCell className="font-medium">
+                        {p.name}
+                        {row.cost !== null && !row.costConfirmed ? (
+                          <Badge
+                            variant="secondary"
+                            className="ml-2 align-middle text-xs font-normal"
+                            title={
+                              row.coverageBps !== null
+                                ? `${Math.round(row.coverageBps / 100)}% del costo confirmado con compras`
+                                : undefined
+                            }
+                          >
+                            estimado
+                          </Badge>
+                        ) : null}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">{p.category ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground">
                         {p.station === "BAR" ? "Barra" : "Cocina"}
@@ -254,7 +269,9 @@ export function ProductCatalog({ period }: { period: RangeWindow }) {
                         {row.margin === null ? (
                           "—"
                         ) : (
-                          <span className="font-medium">
+                          <span
+                            className={row.costConfirmed ? "font-medium" : "text-muted-foreground"}
+                          >
                             {formatMoney(row.margin, currency)}
                             {row.marginBps !== null ? (
                               <span className="ml-1 text-xs text-muted-foreground">
