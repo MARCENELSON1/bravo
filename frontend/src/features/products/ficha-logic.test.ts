@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import type { IngredientCostPointDTO } from "@/api/types-inventory"
 import type { ProductSaleLineDTO } from "@/api/types-operations"
 
-import { costSeriesByDay, ingredientCostAlert } from "./product-ficha"
+import { costSeriesByDay, ingredientCostAlert } from "./ficha-logic"
 
 function line(occurred_at: string, quantity: number, food: number | null): ProductSaleLineDTO {
   return {

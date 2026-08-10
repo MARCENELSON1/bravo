@@ -31,6 +31,7 @@ import {
   mergeCatalogRows,
 } from "@/features/products/catalog-rows"
 import { ComponentRowsEditor } from "@/features/products/preparations-manager"
+import { ProductFicha } from "@/features/products/product-ficha"
 import {
   type ComponentDraft,
   draftsToItems,
@@ -270,7 +271,10 @@ export function ProductCatalog({ period }: { period: RangeWindow }) {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <RecipeSheet product={p} />
+                        <div className="flex justify-end gap-1">
+                          <ProductFicha product={p} period={period} />
+                          <RecipeSheet product={p} />
+                        </div>
                       </TableCell>
                     </TableRow>
                   )
