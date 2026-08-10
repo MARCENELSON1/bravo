@@ -31,6 +31,16 @@ export function useSuppliers() {
   return useQuery({ queryKey: ["suppliers"], queryFn: () => inventoryApi.listSuppliers() })
 }
 
+// Fase 7 (Ficha): histórico de costo de un insumo (compras). On-demand por id.
+export function useIngredientCostHistory(ingredientId: string | null) {
+  const { inventoryApi } = useServices()
+  return useQuery({
+    queryKey: ["ingredient-cost-history", ingredientId],
+    queryFn: () => inventoryApi.ingredientCostHistory(ingredientId as string),
+    enabled: Boolean(ingredientId),
+  })
+}
+
 // Invalidate everything that depends on stock levels after a movement.
 function invalidateStock(queryClient: ReturnType<typeof useQueryClient>) {
   void queryClient.invalidateQueries({ queryKey: ["ingredients"] })

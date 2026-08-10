@@ -6,6 +6,7 @@ import type {
   CreateSupplierBody,
   CreateSupplierResponse,
   FoodCostReportDTO,
+  IngredientCostPointDTO,
   IngredientDTO,
   PreparationDTO,
   PurchaseBody,
@@ -64,6 +65,14 @@ export class InventoryApi {
 
   foodCost(): Promise<FoodCostReportDTO> {
     return this.http.request<FoodCostReportDTO>("GET", "/inventory/food-cost", { auth: true })
+  }
+
+  ingredientCostHistory(id: string): Promise<IngredientCostPointDTO[]> {
+    return this.http.request<IngredientCostPointDTO[]>(
+      "GET",
+      `/inventory/ingredients/${id}/cost-history`,
+      { auth: true }
+    )
   }
 
   listSuppliers(): Promise<SupplierDTO[]> {
