@@ -17,13 +17,17 @@ export interface ClassifiedProduct {
   unitPrice: number // sales / units (minor units)
   unitCost: number // foodCost / units
   category: MenuCategory
+  costConfirmed: boolean // Fase 3: costo respaldado por compras (no entra a la plata si false)
 }
 
 // Umbrales (ajustables). El doc toma ~58% como margen sano promedio.
 const HIGH_MARGIN = 0.55
 const LOW_MARGIN = 0.45
 
-export function classifyMenu(rows: ProductPerformanceRowDTO[]): ClassifiedProduct[] {
+export function classifyMenu(
+  rows: ProductPerformanceRowDTO[],
+  estimatedIds?: Set<string>,
+): ClassifiedProduct[] {
   const withUnits = rows.filter((r) => r.units_sold > 0)
   const avgUnits =
     withUnits.length > 0
@@ -56,13 +60,25 @@ export function classifyMenu(rows: ProductPerformanceRowDTO[]): ClassifiedProduc
       unitPrice: r.units_sold > 0 ? Math.round(r.sales_amount / r.units_sold) : 0,
       unitCost: r.units_sold > 0 ? Math.round(r.food_cost_amount / r.units_sold) : 0,
       category,
+      // Fase 3: estimado solo si tiene costo estimado; sin receta (no está en el
+      // set) → confirmado. Sin estimatedIds → todo confirmado (paridad con hoy).
+      costConfirmed: estimatedIds ? !estimatedIds.has(r.product_id) : true,
     }
   })
 }
 
-// Top 3 platos que más plata dejan (margin desc).
+// Top 3 platos que más plata dejan (margin desc). Fase 3: solo confirmados — no se
+// rankea plata sobre costos estimados.
 export function topEarners(products: ClassifiedProduct[]): ClassifiedProduct[] {
-  return [...products].sort((a, b) => b.margin - a.margin).slice(0, 3)
+  return [...products]
+    .filter((p) => p.costConfirmed)
+    .sort((a, b) => b.margin - a.margin)
+    .slice(0, 3)
+}
+
+// Total "te dejan" del período — Fase 3: solo platos con costo confirmado.
+export function confirmedMargin(products: ClassifiedProduct[]): number {
+  return products.reduce((s, p) => (p.costConfirmed ? s + p.margin : s), 0)
 }
 
 // Asesinos de margen: venden (units>0) pero margen < sano.

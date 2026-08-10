@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 
-import { classifyMenu, marginKillers, topEarners } from "@/features/products/menu-engineering"
+import {
+  classifyMenu,
+  confirmedMargin,
+  marginKillers,
+  topEarners,
+} from "@/features/products/menu-engineering"
 import type { ProductPerformanceRowDTO } from "@/api/types-analytics"
 
 function row(
@@ -64,5 +69,22 @@ describe("topEarners / marginKillers", () => {
   })
   it("margin killers son los de margen bajo", () => {
     expect(marginKillers(products).map((p) => p.id)).toContain("c")
+  })
+})
+
+describe("Fase 3: costo confirmado/estimado", () => {
+  it("sin estimatedIds → todo confirmado (paridad)", () => {
+    const ps = classifyMenu([row("a", 5, 10000, 3000)])
+    expect(ps[0].costConfirmed).toBe(true)
+  })
+
+  it("estimatedIds marca estimados y los excluye de la plata", () => {
+    const rows = [row("conf", 5, 10000, 3000), row("est", 5, 10000, 3000)]
+    const ps = classifyMenu(rows, new Set(["est"]))
+    expect(ps.find((p) => p.id === "conf")!.costConfirmed).toBe(true)
+    expect(ps.find((p) => p.id === "est")!.costConfirmed).toBe(false)
+    // topEarners y confirmedMargin no cuentan al estimado.
+    expect(topEarners(ps).map((p) => p.id)).toEqual(["conf"])
+    expect(confirmedMargin(ps)).toBe(7000) // solo el confirmado (10000-3000)
   })
 })
