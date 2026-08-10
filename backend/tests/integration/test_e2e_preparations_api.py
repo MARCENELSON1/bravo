@@ -356,3 +356,51 @@ async def test_advisor_aggregate_uses_per_ingredient_net(client):
     margins = {m["product_name"]: m["margin_amount"] for m in body["product_margins"]}
     assert margins["PlatoA"] == 400000  # 500000 − 100000
     assert margins["PlatoB"] == 410000  # 500000 − 90000 (monotributo, no netea)
+
+
+async def test_recipe_unit_converts_food_cost(client):
+    """Fase 2C: costo cargado por LITRO, receta en ML → food cost exacto."""
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    r = await http.post(
+        "/api/v1/inventory/ingredients",
+        json={
+            "name": "Aceite",
+            "unit": "L",
+            "min_qty": 0,
+            "unit_cost_amount": 200000,  # ARS 2000 por litro
+            "stock_qty": 1_000_000,
+            "recipe_unit": "ML",
+        },
+        headers=h,
+    )
+    assert r.status_code == 201, r.text
+    aceite = r.json()["ingredient_id"]
+    pid = await _product(http, h, "Fritura", 300000)
+    await http.put(
+        f"/api/v1/products/{pid}/recipe",
+        json={"items": [{"ingredient_id": aceite, "qty": 250_000}]},  # 250 ml
+        headers=h,
+    )
+    # 2000/L × 0,25 L = 500,00 = 50000 c (sin conversión daría un disparate).
+    assert await _food_cost(http, h, pid) == 50000
+
+
+async def test_incompatible_recipe_unit_rejected(client):
+    """Fase 2C: recipe_unit fuera de la familia del insumo → 422."""
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    r = await http.post(
+        "/api/v1/inventory/ingredients",
+        json={
+            "name": "Aceite",
+            "unit": "L",
+            "min_qty": 0,
+            "unit_cost_amount": 200000,
+            "stock_qty": 0,
+            "recipe_unit": "G",  # masa para un insumo de volumen
+        },
+        headers=h,
+    )
+    assert r.status_code == 422, r.text
+    assert "incompatible_units" in r.text

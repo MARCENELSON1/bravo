@@ -598,6 +598,7 @@ def ingredient_to_domain(row: IngredientORM) -> Ingredient:
         unit_cost=Money(row.unit_cost_amount, row.unit_cost_currency),
         yield_pct=row.yield_pct,
         cost_includes_tax=row.cost_includes_tax,
+        recipe_unit=UnitOfMeasure(row.recipe_unit) if row.recipe_unit else None,
         active=row.active,
         created_at=row.created_at,
     )
@@ -615,6 +616,7 @@ def ingredient_to_orm(ingredient: Ingredient) -> IngredientORM:
         unit_cost_currency=ingredient.unit_cost.currency,
         yield_pct=ingredient.yield_pct,
         cost_includes_tax=ingredient.cost_includes_tax,
+        recipe_unit=ingredient.recipe_unit.value if ingredient.recipe_unit else None,
         active=ingredient.active,
     )
 

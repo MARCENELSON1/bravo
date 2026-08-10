@@ -8,6 +8,7 @@ from uuid import uuid4
 from app.application.inventory.ports import InventoryConsumer
 from app.domain.identity.ports import TenantContext
 from app.domain.inventory.entities import StockMovement
+from app.domain.inventory.recipe_conversion import conversion_factor
 from app.domain.inventory.repository import (
     IngredientRepository,
     RecipeRepository,
@@ -75,13 +76,20 @@ class ConsumeRecipesForOrder(InventoryConsumer):
             ingredient = await self._ingredients.get_by_id(tenant_id, ingredient_id)
             if ingredient is None:
                 continue  # ingredient deleted after the recipe was set — skip
+            # Fase 2C: la receta puede estar en la sub-unidad fina (g/ml); el stock
+            # se lleva en la unidad base (kg/l) → convertir antes del OUT. Sin
+            # recipe_unit el factor es identidad (paridad).
+            num, den = conversion_factor(ingredient.unit, ingredient.recipe_unit)
+            base_qty = round(total_qty * num / den)
+            if base_qty <= 0:
+                continue  # consumo sub-milésima (pizca) → no genera movimiento
             movement = StockMovement(
                 id=str(uuid4()),
                 tenant_id=tenant_id,
                 ingredient_id=ingredient_id,
                 direction=MovementDirection.OUT,
                 reason=MovementReason.SALE,
-                qty=total_qty,
+                qty=base_qty,
                 order_id=order_id,
             )
             ingredient.apply(movement)

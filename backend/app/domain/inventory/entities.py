@@ -65,6 +65,9 @@ class Ingredient:
     # Whether the loaded cost includes VAT (responsable inscripto → net it) or is
     # already net (monotributo/no-VAT supplier). Only applies when VAT is set.
     cost_includes_tax: bool = True
+    # Recipe unit (Fase 2C): finer same-family sub-unit the recipe qty is in
+    # (KG→G, L→ML). None = recipe uses the base ``unit`` (parity with today).
+    recipe_unit: UnitOfMeasure | None = None
     active: bool = True
     created_at: datetime | None = None
 

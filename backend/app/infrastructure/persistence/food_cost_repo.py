@@ -19,6 +19,8 @@ from app.domain.inventory.costing import (
 )
 from app.domain.inventory.exceptions import RecipeCycle
 from app.domain.inventory.recipe import RecipeItem
+from app.domain.inventory.recipe_conversion import conversion_factor
+from app.domain.inventory.value_objects import UnitOfMeasure
 from app.domain.shared.money import Money
 from app.domain.shared.vat import net_of_vat
 from app.infrastructure.persistence.database import SessionFactory
@@ -87,16 +89,33 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
                         IngredientORM.unit_cost_currency,
                         IngredientORM.yield_pct,
                         IngredientORM.cost_includes_tax,
+                        IngredientORM.unit,
+                        IngredientORM.recipe_unit,
                     ).where(IngredientORM.tenant_id == tenant_id)
                 )
             ).all()
             cost_by_ingredient = {
-                iid: effective_unit_cost(Money(amount, cur), yld)
-                for iid, amount, cur, yld, _inc in ingredient_rows
+                r.id: effective_unit_cost(
+                    Money(r.unit_cost_amount, r.unit_cost_currency), r.yield_pct
+                )
+                for r in ingredient_rows
             }
             net_cost_by_ingredient = {
-                iid: net_effective_unit_cost(Money(amount, cur), yld, inc, vat_bps)
-                for iid, amount, cur, yld, inc in ingredient_rows
+                r.id: net_effective_unit_cost(
+                    Money(r.unit_cost_amount, r.unit_cost_currency),
+                    r.yield_pct,
+                    r.cost_includes_tax,
+                    vat_bps,
+                )
+                for r in ingredient_rows
+            }
+            # Fase 2C: factor de conversión unidad de receta → unidad base por insumo.
+            factor_by_ingredient = {
+                r.id: conversion_factor(
+                    UnitOfMeasure(r.unit),
+                    UnitOfMeasure(r.recipe_unit) if r.recipe_unit else None,
+                )
+                for r in ingredient_rows
             }
 
             items_by_product: dict[str, list[RecipeItem]] = {}
@@ -133,14 +152,20 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
             }
             try:
                 cost_by_preparation = resolve_preparation_costs(
-                    preparations, cost_by_ingredient, currency
+                    preparations,
+                    cost_by_ingredient,
+                    currency,
+                    factor_by_ingredient=factor_by_ingredient,
                 )
                 # Con VAT 0 el mapa neto es idéntico al bruto → se reusa.
                 net_cost_by_preparation = (
                     cost_by_preparation
                     if vat_bps == 0
                     else resolve_preparation_costs(
-                        preparations, net_cost_by_ingredient, currency
+                        preparations,
+                        net_cost_by_ingredient,
+                        currency,
+                        factor_by_ingredient=factor_by_ingredient,
                     )
                 )
             except RecipeCycle:
@@ -159,12 +184,14 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
                     cost_by_ingredient,
                     price_currency,
                     cost_by_preparation=cost_by_preparation,
+                    factor_by_ingredient=factor_by_ingredient,
                 )
                 net_fc = compute_food_cost(
                     items,
                     net_cost_by_ingredient,
                     price_currency,
                     cost_by_preparation=net_cost_by_preparation,
+                    factor_by_ingredient=factor_by_ingredient,
                 )
                 # El food cost se muestra BRUTO (COGS real). El margen ("te deja") y
                 # el ratio (food cost %) son NETOS: precio neto − costo neto. El

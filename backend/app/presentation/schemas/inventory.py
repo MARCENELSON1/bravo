@@ -18,6 +18,9 @@ class CreateIngredientRequest(BaseModel):
     yield_pct: int = Field(default=10000, ge=1, le=10000)
     # Does the loaded cost include VAT? (responsable inscripto). False = monotributo.
     price_includes_tax: bool = True
+    # Recipe unit (Fase 2C): finer same-family sub-unit for recipes (KG→G, L→ML).
+    # None = base unit. Validated server-side; set only at creation.
+    recipe_unit: UnitOfMeasure | None = None
 
 
 class UpdateIngredientRequest(BaseModel):
@@ -38,6 +41,7 @@ class IngredientResponse(BaseModel):
     currency: str
     yield_pct: int
     cost_includes_tax: bool
+    recipe_unit: str | None
     active: bool
     is_below_min: bool
 

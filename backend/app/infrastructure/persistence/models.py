@@ -438,6 +438,9 @@ class IngredientORM(Base):
     yield_pct: Mapped[int] = mapped_column(Integer, server_default="10000")
     # Whether the loaded cost includes VAT (net it) or is already net (monotributo).
     cost_includes_tax: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Recipe unit (Fase 2C): finer same-family sub-unit the recipe qty is in
+    # (KG→G, L→ML). NULL = recipe uses the base unit (parity).
+    recipe_unit: Mapped[str | None] = mapped_column(String(10), nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

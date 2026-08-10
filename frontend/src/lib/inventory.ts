@@ -19,6 +19,25 @@ export const UNIT_OPTIONS: { value: UnitOfMeasure; label: string }[] = [
   { value: "UNIT", label: "Unidades (u)" },
 ]
 
+// Fase 2C: sub-unidad de receta más fina de la misma familia (KG→G, L→ML).
+const RECIPE_FINER_UNIT: Partial<Record<UnitOfMeasure, UnitOfMeasure>> = {
+  KG: "G",
+  L: "ML",
+}
+
+// Opciones de "unidad de receta" para una unidad base: la misma o su sub-unidad
+// fina. Vacío cuando la unidad no tiene sub-unidad (G, ML, UNIT) → sin selector.
+export function recipeUnitOptions(
+  baseUnit: UnitOfMeasure
+): { value: UnitOfMeasure; label: string }[] {
+  const finer = RECIPE_FINER_UNIT[baseUnit]
+  if (!finer) return []
+  return [
+    { value: baseUnit, label: UNIT_LABELS[baseUnit] },
+    { value: finer, label: UNIT_LABELS[finer] },
+  ]
+}
+
 // milésimas → human (e.g. 1500, "KG" → "1,5 kg"). Negative stock is shown as-is.
 export function formatQty(qty: number, unit: string): string {
   const value = qty / QUANTITY_SCALE
