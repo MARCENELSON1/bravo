@@ -160,6 +160,17 @@ def food_cost_ratio_bps(price: Money, food_cost: Money) -> int:
     return round(food_cost.amount * 10000 / price.amount)
 
 
+def coverage_bps(confirmed: Money, total: Money) -> int:
+    """Share of a plate's food cost backed by *confirmed* (purchased) ingredients,
+    in basis points (10000 = 100%). ``total`` 0 → 10000 (a plate with no cost is
+    trivially fully covered). Twin of :func:`food_cost_ratio_bps`."""
+    if confirmed.currency != total.currency:
+        raise CurrencyMismatch()
+    if total.amount == 0:
+        return 10000
+    return round(confirmed.amount * 10000 / total.amount)
+
+
 def is_below_min(stock_qty: int, min_qty: int) -> bool:
     """An ingredient is in shortage (quiebre) when at or below its minimum."""
     return stock_qty <= min_qty

@@ -140,8 +140,13 @@ class FoodCostRowResponse(BaseModel):
     margin_amount: int  # may be negative (sold below cost)
     food_cost_ratio_bps: int
     currency: str
+    cost_confirmed: bool  # Fase 3: todo el food cost respaldado por compras
+    coverage_bps: int  # Fase 3: cobertura de costo confirmado (bps)
 
 
 class FoodCostResponse(BaseModel):
     currency: str
     rows: list[FoodCostRowResponse]
+    coverage_bps: int = 10000  # Fase 3: cobertura del tenant (platos confirmados)
+    confirmed_count: int = 0
+    total_count: int = 0

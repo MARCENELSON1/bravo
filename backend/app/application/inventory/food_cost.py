@@ -19,12 +19,21 @@ class FoodCostRow:
     margin_amount: int  # price − food cost; may be negative (sold below cost)
     food_cost_ratio_bps: int  # food cost / price, in basis points
     currency: str
+    # Fase 3: cost confirmation. ``cost_confirmed`` True when the whole food cost is
+    # backed by real purchases; ``coverage_bps`` = confirmed share (bps).
+    cost_confirmed: bool = True
+    coverage_bps: int = 10000
 
 
 @dataclass(frozen=True)
 class FoodCostReport:
     currency: str
     rows: list[FoodCostRow]
+    # Fase 3: per-tenant coverage — share of plates fully confirmed (for the hero
+    # gate in Fase 6) + the "N de M confirmados" counts.
+    coverage_bps: int = 10000
+    confirmed_count: int = 0
+    total_count: int = 0
 
 
 class FoodCostReadModel(ABC):

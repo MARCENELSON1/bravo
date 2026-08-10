@@ -223,9 +223,14 @@ async def get_food_cost(
                 margin_amount=r.margin_amount,
                 food_cost_ratio_bps=r.food_cost_ratio_bps,
                 currency=r.currency,
+                cost_confirmed=r.cost_confirmed,
+                coverage_bps=r.coverage_bps,
             )
             for r in report.rows
         ],
+        coverage_bps=report.coverage_bps,
+        confirmed_count=report.confirmed_count,
+        total_count=report.total_count,
     )
 
 

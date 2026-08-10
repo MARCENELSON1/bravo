@@ -455,3 +455,48 @@ async def test_replacement_cost_is_last_purchase_with_history(client):
         await http.get(f"/api/v1/inventory/ingredients/{ing}/cost-history", headers=h)
     ).json()
     assert [p["unit_cost_amount"] for p in hist] == [200000]
+
+
+async def test_cost_coverage_confirmed_vs_estimated(client):
+    """Fase 3: un insumo con compra real cuenta como confirmado; sin compra,
+    estimado. La cobertura del plato = confirmado / bruto; el reporte agrega."""
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    a = await _ingredient(http, h, "ConfirmadoA", unit_cost_amount=100000)
+    b = await _ingredient(http, h, "EstimadoB", unit_cost_amount=100000)
+    # Confirmar A con una compra real (B queda estimado, sin compra).
+    r = await http.post(
+        f"/api/v1/inventory/ingredients/{a}/purchase",
+        json={"qty": 1000, "unit_cost_amount": 100000},
+        headers=h,
+    )
+    assert r.status_code == 200, r.text
+    # Plato solo con A → confirmado (cobertura 100%).
+    pa = await _product(http, h, "PlatoA", 300000)
+    await http.put(
+        f"/api/v1/products/{pa}/recipe",
+        json={"items": [{"ingredient_id": a, "qty": 1000}]},
+        headers=h,
+    )
+    # Plato con A (confirmado 100000) + B (estimado 100000) → cobertura 50%.
+    pb = await _product(http, h, "PlatoB", 300000)
+    await http.put(
+        f"/api/v1/products/{pb}/recipe",
+        json={
+            "items": [
+                {"ingredient_id": a, "qty": 1000},
+                {"ingredient_id": b, "qty": 1000},
+            ]
+        },
+        headers=h,
+    )
+    report = (await http.get("/api/v1/inventory/food-cost", headers=h)).json()
+    rows = {r["product_id"]: r for r in report["rows"]}
+    assert rows[pa]["cost_confirmed"] is True
+    assert rows[pa]["coverage_bps"] == 10000
+    assert rows[pb]["cost_confirmed"] is False
+    assert rows[pb]["coverage_bps"] == 5000
+    # Reporte del tenant: 1 de 2 platos confirmados.
+    assert report["confirmed_count"] == 1
+    assert report["total_count"] == 2
+    assert report["coverage_bps"] == 5000
