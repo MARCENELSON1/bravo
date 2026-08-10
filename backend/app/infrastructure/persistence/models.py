@@ -471,6 +471,8 @@ class RecipeORM(Base):
     tenant_id: Mapped[str] = mapped_column(
         Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
     )
+    # Incremental recipe version (Fase 2D); bumped on every SetRecipe.
+    version: Mapped[int] = mapped_column(Integer, server_default="1")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -611,6 +613,8 @@ class SaleFactORM(Base):
     food_cost_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     # Neto de IVA per-insumo congelado (Solución 1); nullable → bruto vía COALESCE.
     food_cost_net_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    # Versión de la receta al momento de la venta (Fase 2D); NULL en filas previas.
+    recipe_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     currency: Mapped[str] = mapped_column(String(3))
     waiter_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
     table_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True)

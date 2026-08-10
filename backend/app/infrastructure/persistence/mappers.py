@@ -688,11 +688,16 @@ def recipe_to_domain(row: RecipeORM, item_rows: list[RecipeItemORM]) -> Recipe:
         product_id=row.product_id,
         tenant_id=row.tenant_id,
         items=[_recipe_item_to_domain(item) for item in item_rows],
+        version=row.version,
     )
 
 
 def recipe_to_orm(recipe: Recipe) -> RecipeORM:
-    return RecipeORM(product_id=recipe.product_id, tenant_id=recipe.tenant_id)
+    return RecipeORM(
+        product_id=recipe.product_id,
+        tenant_id=recipe.tenant_id,
+        version=recipe.version,
+    )
 
 
 def recipe_item_to_orm(item: RecipeItem, recipe: Recipe, item_id: str) -> RecipeItemORM:

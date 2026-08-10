@@ -34,3 +34,6 @@ class SaleFact:
     # sin re-neteo en lectura. None → se leen como bruto (filas previas / VAT off).
     line_net_amount: int | None = None
     food_cost_net_amount: int | None = None
+    # Versión de la receta al momento de la venta (Fase 2D); None = sin receta o
+    # fila previa. Es metadata de atribución; no afecta ningún agregado de costo.
+    recipe_version: int | None = None

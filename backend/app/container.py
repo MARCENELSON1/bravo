@@ -50,6 +50,7 @@ from app.application.identity.reset_password import ResetPassword
 from app.application.identity.set_hourly_rate import SetUserHourlyRate
 from app.application.identity.verify_email import VerifyEmail
 from app.application.inventory.consume import ConsumeRecipesForOrder
+from app.application.inventory.cost_history import GetIngredientCostHistory
 from app.application.inventory.food_cost import GetFoodCost
 from app.application.inventory.preparations import (
     DeletePreparation,
@@ -176,6 +177,9 @@ from app.infrastructure.persistence.analytics_repo import (
 )
 from app.infrastructure.persistence.audit_repo import SqlAlchemyAuditRepository
 from app.infrastructure.persistence.cash_repo import SqlAlchemyCashSessionRepository
+from app.infrastructure.persistence.cost_history_repo import (
+    SqlAlchemyIngredientCostHistoryReadModel,
+)
 from app.infrastructure.persistence.credentials_repo import (
     SqlAlchemyPaymentCredentialRepository,
 )
@@ -908,6 +912,14 @@ class Container(containers.DeclarativeContainer):
     )
     get_food_cost = providers.Factory(
         GetFoodCost, read_model=food_cost_read_model, tenant_context=tenant_context
+    )
+    ingredient_cost_history_read_model = providers.Factory(
+        SqlAlchemyIngredientCostHistoryReadModel, session_factory=db.provided.session
+    )
+    get_ingredient_cost_history = providers.Factory(
+        GetIngredientCostHistory,
+        read_model=ingredient_cost_history_read_model,
+        tenant_context=tenant_context,
     )
 
     # --- Fase 7: reservas ---

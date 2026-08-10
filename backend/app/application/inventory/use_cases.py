@@ -307,7 +307,13 @@ class SetRecipe:
                 raise IngredientNotFound()
             if item.preparation_id is not None and item.preparation_id not in known_preparations:
                 raise PreparationNotFound()
-        recipe = Recipe(product_id=product_id, tenant_id=tenant_id, items=items)
+        # Fase 2D: versión incremental para atribución histórica (el food cost ya
+        # se congela por venta). Receta nueva → v1; edición → versión previa + 1.
+        current = await self._recipes.get_for_product(tenant_id, product_id)
+        version = current.version + 1 if current is not None else 1
+        recipe = Recipe(
+            product_id=product_id, tenant_id=tenant_id, items=items, version=version
+        )
         await self._recipes.save(recipe)
         return recipe
 

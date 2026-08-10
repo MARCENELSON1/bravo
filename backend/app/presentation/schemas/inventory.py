@@ -46,6 +46,14 @@ class IngredientResponse(BaseModel):
     is_below_min: bool
 
 
+class IngredientCostPointResponse(BaseModel):
+    """Fase 2D: un punto del histórico de costo de un insumo (una compra)."""
+
+    occurred_at: str
+    unit_cost_amount: int
+    currency: str
+
+
 class CreateIngredientResponse(BaseModel):
     ingredient_id: str
 
@@ -100,6 +108,7 @@ class RecipeResponse(BaseModel):
     product_id: str
     has_recipe: bool
     items: list[RecipeItemSchema]
+    version: int = 1  # Fase 2D: versión de la receta (incrementa en cada guardado)
 
 
 # --- Preparaciones (recetas madre) ------------------------------------------

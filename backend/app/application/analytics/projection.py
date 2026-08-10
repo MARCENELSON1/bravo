@@ -162,6 +162,7 @@ class ProjectOrderSales(SalesProjector):
                     line_net_amount=net_of_vat(line_amount, vat_bps),
                     food_cost_amount=food_cost_amount,
                     food_cost_net_amount=food_cost_net_amount,
+                    recipe_version=recipe.version if recipe is not None else None,
                     currency=order.currency,
                     waiter_id=order.waiter_id,
                     table_id=order.table_id,

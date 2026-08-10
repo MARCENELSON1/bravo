@@ -404,3 +404,54 @@ async def test_incompatible_recipe_unit_rejected(client):
     )
     assert r.status_code == 422, r.text
     assert "incompatible_units" in r.text
+
+
+async def test_recipe_version_increments_on_save(client):
+    """Fase 2D: cada guardado de receta incrementa la versión (nueva → v1)."""
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    ing = await _ingredient(http, h, "Carne", unit_cost_amount=1000)
+    pid = await _product(http, h, "Plato", 150000)
+    r1 = await http.put(
+        f"/api/v1/products/{pid}/recipe",
+        json={"items": [{"ingredient_id": ing, "qty": 100}]},
+        headers=h,
+    )
+    assert r1.status_code == 200, r1.text
+    assert r1.json()["version"] == 1
+    r2 = await http.put(
+        f"/api/v1/products/{pid}/recipe",
+        json={"items": [{"ingredient_id": ing, "qty": 200}]},
+        headers=h,
+    )
+    assert r2.json()["version"] == 2
+    got = await http.get(f"/api/v1/products/{pid}/recipe", headers=h)
+    assert got.json()["version"] == 2
+
+
+async def test_replacement_cost_is_last_purchase_with_history(client):
+    """Fase 2D T1.4: el costo de reposición = último precio (ya default); una compra
+    más cara sube el food cost, y queda en el histórico del insumo."""
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    ing = await _ingredient(http, h, "Carne", unit_cost_amount=100000)  # 1000/kg
+    pid = await _product(http, h, "Plato", 300000)
+    await http.put(
+        f"/api/v1/products/{pid}/recipe",
+        json={"items": [{"ingredient_id": ing, "qty": 1000}]},  # 1,0 unidad base
+        headers=h,
+    )
+    assert await _food_cost(http, h, pid) == 100000
+    # Compra a mayor precio → último costo (reposición) → food cost sube.
+    r = await http.post(
+        f"/api/v1/inventory/ingredients/{ing}/purchase",
+        json={"qty": 1000, "unit_cost_amount": 200000},
+        headers=h,
+    )
+    assert r.status_code == 200, r.text
+    assert await _food_cost(http, h, pid) == 200000
+    # El histórico registra la compra (la creación del insumo no es una compra).
+    hist = (
+        await http.get(f"/api/v1/inventory/ingredients/{ing}/cost-history", headers=h)
+    ).json()
+    assert [p["unit_cost_amount"] for p in hist] == [200000]
