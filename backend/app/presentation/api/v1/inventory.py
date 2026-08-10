@@ -3,6 +3,7 @@ from __future__ import annotations
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, status
 
+from app.application.inventory.cost_history import GetIngredientCostHistory
 from app.application.inventory.food_cost import GetFoodCost
 from app.application.inventory.preparations import (
     DeletePreparation,
@@ -33,6 +34,7 @@ from app.presentation.schemas.inventory import (
     CreateSupplierResponse,
     FoodCostResponse,
     FoodCostRowResponse,
+    IngredientCostPointResponse,
     IngredientResponse,
     PreparationResponse,
     PurchaseRequest,
@@ -225,6 +227,31 @@ async def get_food_cost(
             for r in report.rows
         ],
     )
+
+
+@router.get(
+    "/ingredients/{ingredient_id}/cost-history",
+    response_model=list[IngredientCostPointResponse],
+)
+@inject
+async def get_ingredient_cost_history(
+    ingredient_id: str,
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: GetIngredientCostHistory = Depends(
+        Provide[Container.get_ingredient_cost_history]
+    ),
+) -> list[IngredientCostPointResponse]:
+    points = await use_case.execute(
+        tenant_id=identity.tenant_id, ingredient_id=ingredient_id
+    )
+    return [
+        IngredientCostPointResponse(
+            occurred_at=p.occurred_at,
+            unit_cost_amount=p.unit_cost_amount,
+            currency=p.currency,
+        )
+        for p in points
+    ]
 
 
 # --- Preparaciones (recetas madre) ------------------------------------------
