@@ -84,6 +84,23 @@ export function AppShell() {
           )
         })}
       </nav>
+
+      {/* Cuenta de usuario */}
+      <div className="border-t border-black/10 p-3 dark:border-white/10">
+        <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+            {initials(session.name, session.email)}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold text-sidebar-foreground">
+              {session.name ?? session.email}
+            </span>
+            <span className="block truncate text-xs text-sidebar-foreground/50">
+              {ROLE_LABELS[role]}
+            </span>
+          </span>
+        </div>
+      </div>
     </div>
   )
 
