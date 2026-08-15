@@ -18,16 +18,21 @@ export function AuthLayout({
 }) {
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
-      <aside className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-primary to-primary/80 p-10 text-primary-foreground lg:flex">
-        {/* soft decorative glow */}
-        <div className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-primary-foreground/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 -left-16 size-80 rounded-full bg-primary-foreground/5 blur-3xl" />
+      <aside
+        className="relative hidden flex-col justify-between overflow-hidden bg-cover bg-center p-10 text-white lg:flex"
+        style={{ backgroundImage: "url('/app-bg.png')" }}
+      >
+        {/* overlay para legibilidad del texto sobre la foto */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-black/45 via-black/25 to-black/55"
+        />
 
         <div className="relative flex items-center gap-2">
-          <WellnodMark className="h-8 w-auto text-primary-foreground/90" />
+          <WellnodMark className="h-8 w-auto text-white/90" />
           <span className="font-heading text-lg tracking-tight">
             <span className="font-bold">Well</span>
-            <span className="font-light text-primary-foreground/70">nod</span>
+            <span className="font-light text-white/70">nod</span>
           </span>
         </div>
 
@@ -35,17 +40,17 @@ export function AuthLayout({
           <h2 className="font-heading text-4xl font-semibold leading-tight">
             El cerebro del local
           </h2>
-          <p className="mt-4 max-w-sm text-sm text-primary-foreground/70">
+          <p className="mt-4 max-w-sm text-sm text-white/70">
             Comandas, cobros y tu copiloto en español — todo tu local en un solo lugar.
           </p>
-          <ul className="mt-6 flex flex-col gap-2 text-sm text-primary-foreground/80">
+          <ul className="mt-6 flex flex-col gap-2 text-sm text-white/80">
             <li>· Comandas y cocina (KDS)</li>
             <li>· Cobros con MercadoPago</li>
             <li>· Reportes y asesor en pesos</li>
           </ul>
         </div>
 
-        <div className="relative text-xs text-primary-foreground/50">© Wellnod</div>
+        <div className="relative text-xs text-white/50">© Wellnod</div>
       </aside>
 
       <main className="flex items-center justify-center bg-background p-6">

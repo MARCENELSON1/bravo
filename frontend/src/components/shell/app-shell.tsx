@@ -89,10 +89,11 @@ export function AppShell() {
 
   return (
     <div className="relative flex h-svh gap-3 overflow-hidden p-3">
-      {/* Scenic backdrop — the frosted panels float over it (swap for a real photo later) */}
+      {/* Scenic backdrop — the frosted panels float over the brand photo */}
       <div
         aria-hidden
-        className="fixed inset-0 -z-10 bg-[radial-gradient(120%_120%_at_15%_10%,#eef2f0_0%,#d8e2dd_35%,#c4d2cb_65%,#a9bcb2_100%)] dark:bg-[radial-gradient(120%_120%_at_15%_10%,#9fb0aa_0%,#63736b_28%,#2c3833_58%,#101915_82%,#0a0f0c_100%)]"
+        className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/app-bg.png')" }}
       />
       <div aria-hidden className="fixed inset-0 -z-10 bg-white/10 dark:bg-black/25" />
 
