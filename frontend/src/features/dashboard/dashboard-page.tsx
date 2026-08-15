@@ -2,8 +2,6 @@ import type { ComponentType, ReactNode } from "react"
 import { ArrowUp, Plus } from "lucide-react"
 
 // ── Mock data (design pass — no backend wiring yet) ──────────────────────────
-const USER_FIRST_NAME = "Juan"
-
 const KPIS = [
   { label: "Facturación hoy", value: 284500, hint: "+12% vs ayer", trend: "up" as const },
   { label: "Gastos del día", value: 98200, hint: "34% de la facturación" },
@@ -75,13 +73,8 @@ export function DashboardPage() {
       </div>
 
       {/* Header */}
-      <header className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
-            Buen día, {USER_FIRST_NAME}
-          </h1>
-          <p className="text-sm text-muted-foreground">Esto es lo que pasa hoy en tu negocio</p>
-        </div>
+      <header className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">Esto es lo que pasa hoy en tu negocio</p>
         <p className="text-sm text-muted-foreground">{todayLabel()}</p>
       </header>
 

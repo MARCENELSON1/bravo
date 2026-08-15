@@ -1,9 +1,10 @@
 import type { ReactNode } from "react"
 
-import { GradientHeading } from "@/components/ui/gradient-heading"
+import { WellnodMark } from "@/components/brand/wellnod-mark"
 
-// Split-screen shell reused by every identity screen. The brand panel is hidden
-// on mobile; the form sits on the right. Changing this re-skins all auth pages.
+// Split-screen shell reused by every identity screen. Minimal centered form on
+// the left, brand image on the right (hidden on mobile). Changing this re-skins
+// all auth pages.
 export function AuthLayout({
   title,
   description,
@@ -17,47 +18,58 @@ export function AuthLayout({
 }) {
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
-      <aside className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-primary to-primary/80 p-10 text-primary-foreground lg:flex">
-        {/* soft decorative glow */}
-        <div className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-primary-foreground/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 -left-16 size-80 rounded-full bg-primary-foreground/5 blur-3xl" />
-
-        <div className="relative flex items-center gap-2">
-          <div className="size-7 rounded-md bg-primary-foreground/90" />
-          <span className="font-heading text-sm font-semibold tracking-wide">NÚCLEO</span>
+      <main className="flex min-h-svh flex-col bg-background px-6 py-8">
+        {/* Marca arriba, centrada */}
+        <div className="flex items-center justify-center gap-2 py-4">
+          <WellnodMark className="h-8 w-auto text-primary" />
+          <span className="font-heading text-lg tracking-tight">
+            <span className="font-bold text-foreground">Well</span>
+            <span className="font-light text-foreground/55">nod</span>
+          </span>
         </div>
 
-        <div className="relative">
-          <h2 className="font-heading text-4xl font-semibold leading-tight">
-            El cerebro del local
-          </h2>
-          <p className="mt-4 max-w-sm text-sm text-primary-foreground/70">
-            Comandas, cobros y tu copiloto en español — todo tu local en un solo lugar.
-          </p>
-          <ul className="mt-6 flex flex-col gap-2 text-sm text-primary-foreground/80">
-            <li>· Comandas y cocina (KDS)</li>
-            <li>· Cobros con MercadoPago</li>
-            <li>· Reportes y asesor en pesos</li>
-          </ul>
-        </div>
-
-        <div className="relative text-xs text-primary-foreground/50">© NÚCLEO</div>
-      </aside>
-
-      <main className="flex items-center justify-center bg-background p-6">
-        <div className="w-full max-w-sm">
-          <div className="mb-6 flex flex-col gap-1">
-            <GradientHeading size="sm" weight="bold">
-              {title}
-            </GradientHeading>
-            {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+        {/* Contenido centrado */}
+        <div className="flex flex-1 items-center justify-center">
+          <div className="w-full max-w-sm">
+            <div className="mb-6 flex flex-col items-center gap-2 text-center">
+              <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">
+                {title}
+              </h1>
+              {description ? (
+                <p className="text-sm text-muted-foreground">{description}</p>
+              ) : null}
+            </div>
+            {children}
+            {footer ? (
+              <div className="mt-6 text-center text-sm text-muted-foreground">{footer}</div>
+            ) : null}
           </div>
-          {children}
-          {footer ? (
-            <div className="mt-6 text-center text-sm text-muted-foreground">{footer}</div>
-          ) : null}
+        </div>
+
+        {/* Links de pie */}
+        <div className="flex items-center justify-center gap-3 py-2 text-xs text-muted-foreground">
+          <a href="#" className="transition-colors hover:text-foreground">
+            Ayuda
+          </a>
+          <span aria-hidden>/</span>
+          <a href="#" className="transition-colors hover:text-foreground">
+            Términos
+          </a>
+          <span aria-hidden>/</span>
+          <a href="#" className="transition-colors hover:text-foreground">
+            Privacidad
+          </a>
         </div>
       </main>
+
+      {/* Panel de imagen (oculto en mobile) */}
+      <aside
+        aria-hidden
+        className="relative hidden bg-cover bg-center lg:block"
+        style={{ backgroundImage: "url('/app-bg.png')" }}
+      >
+        <div className="absolute inset-0 bg-primary/10" />
+      </aside>
     </div>
   )
 }

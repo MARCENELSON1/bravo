@@ -59,10 +59,14 @@ export function LoginPage() {
     })
   })
 
+  // Acceso social: placeholder de diseño hasta implementar OAuth.
+  const socialSoon = () =>
+    setServerError("El acceso con Google/Apple estará disponible pronto.")
+
   return (
     <AuthLayout
-      title="Iniciar sesión"
-      description="Ingresá con el comercio y tu cuenta."
+      title="¡Hola de nuevo!"
+      description="Comandas, cobros y tu copiloto — todo tu local en un solo lugar."
       footer={
         <span>
           ¿No tenés cuenta?{" "}
@@ -72,62 +76,118 @@ export function LoginPage() {
         </span>
       }
     >
-      <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
-        <FieldGroup>
-          <Field>
-            <FieldLabel htmlFor="slug">Comercio</FieldLabel>
-            <Input
-              id="slug"
-              placeholder="mi-bar"
-              autoCapitalize="none"
-              autoCorrect="off"
-              aria-invalid={!!errors.slug}
-              {...register("slug")}
-            />
-            <FieldError>{errors.slug?.message}</FieldError>
-          </Field>
+      <div className="flex flex-col gap-4">
+        {/* Acceso social */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <button type="button" onClick={socialSoon} className={socialButtonClass}>
+            <GoogleIcon />
+            Google
+          </button>
+          <button type="button" onClick={socialSoon} className={socialButtonClass}>
+            <AppleIcon />
+            Apple
+          </button>
+        </div>
 
-          <Field>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              aria-invalid={!!errors.email}
-              {...register("email")}
-            />
-            <FieldError>{errors.email?.message}</FieldError>
-          </Field>
+        {/* Divisor */}
+        <div className="flex items-center gap-3 py-1 text-xs text-muted-foreground">
+          <span className="h-px flex-1 bg-border" />
+          O
+          <span className="h-px flex-1 bg-border" />
+        </div>
 
-          <Field>
-            <FieldLabel htmlFor="password">Contraseña</FieldLabel>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              aria-invalid={!!errors.password}
-              {...register("password")}
-            />
-            <FieldError>{errors.password?.message}</FieldError>
-          </Field>
-        </FieldGroup>
+        <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="slug">Comercio</FieldLabel>
+              <Input
+                id="slug"
+                placeholder="mi-bar"
+                autoCapitalize="none"
+                autoCorrect="off"
+                aria-invalid={!!errors.slug}
+                {...register("slug")}
+              />
+              <FieldError>{errors.slug?.message}</FieldError>
+            </Field>
 
-        {needsVerification ? (
-          <div
-            role="alert"
-            className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-foreground"
-          >
-            Tenés que verificar tu email antes de ingresar. Revisá tu casilla y seguí el
-            enlace que te enviamos.
-          </div>
-        ) : null}
+            <Field>
+              <FieldLabel htmlFor="email">Email</FieldLabel>
+              <Input
+                id="email"
+                type="email"
+                placeholder="vos@correo.com"
+                autoComplete="email"
+                aria-invalid={!!errors.email}
+                {...register("email")}
+              />
+              <FieldError>{errors.email?.message}</FieldError>
+            </Field>
 
-        <FormError message={serverError} />
+            <Field>
+              <FieldLabel htmlFor="password">Contraseña</FieldLabel>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                aria-invalid={!!errors.password}
+                {...register("password")}
+              />
+              <FieldError>{errors.password?.message}</FieldError>
+            </Field>
+          </FieldGroup>
 
-        <Button type="submit" className="w-full" disabled={login.isPending}>
-          {login.isPending ? "Ingresando…" : "Ingresar"}
-        </Button>
-      </form>
+          {needsVerification ? (
+            <div
+              role="alert"
+              className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-foreground"
+            >
+              Tenés que verificar tu email antes de ingresar. Revisá tu casilla y seguí el
+              enlace que te enviamos.
+            </div>
+          ) : null}
+
+          <FormError message={serverError} />
+
+          <Button type="submit" className="w-full rounded-full" disabled={login.isPending}>
+            {login.isPending ? "Ingresando…" : "Ingresar con email"}
+          </Button>
+        </form>
+      </div>
     </AuthLayout>
+  )
+}
+
+const socialButtonClass =
+  "flex items-center justify-center gap-2 rounded-full border border-border bg-secondary/40 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 48 48" className="size-4" aria-hidden>
+      <path
+        fill="#FFC107"
+        d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
+      />
+      <path
+        fill="#FF3D00"
+        d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"
+      />
+      <path
+        fill="#4CAF50"
+        d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"
+      />
+      <path
+        fill="#1976D2"
+        d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"
+      />
+    </svg>
+  )
+}
+
+function AppleIcon() {
+  return (
+    <svg viewBox="0 0 384 512" className="size-4" fill="currentColor" aria-hidden>
+      <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
+    </svg>
   )
 }

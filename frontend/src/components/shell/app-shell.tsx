@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Bell, LogOut, Menu } from "lucide-react"
+import { Bell, ChevronsUpDown, LogOut, Menu, Search, Store } from "lucide-react"
 import { NavLink, Outlet } from "react-router-dom"
 
 import { useAuth } from "@/auth/auth-context"
@@ -11,9 +11,18 @@ import { cn } from "@/lib/utils"
 // Mock branding for the design pass (no backend wiring yet).
 const TENANT_NAME = "Restaurante Villapaz"
 const USER_INITIALS = "JM"
-const PLAN_NAME = "Plan Pro"
-const PLAN_RENEWAL = "Vence 28 jun"
+const USER_NAME = "Juan Martínez"
+const USER_FIRST_NAME = USER_NAME.split(" ")[0]
 const UNREAD_NOTIFICATIONS = 3
+
+// Etiquetas de rol para la UX (código EN → español mostrado).
+const ROLE_LABELS: Record<string, string> = {
+  OWNER: "Dueño",
+  MANAGER: "Encargado",
+  WAITER: "Mozo",
+  KITCHEN: "Cocina",
+  CASHIER: "Cajero",
+}
 
 // Wellnod console layout: persistent role-based sidebar + topbar + content area.
 // Wraps the protected /app/* routes (rendered via <Outlet/>).
@@ -23,19 +32,56 @@ export function AppShell() {
 
   if (!session) return null
   const role = session.role
+  const roleLabel = ROLE_LABELS[role] ?? role
   const items = NAV_ITEMS.filter((item) => item.roles.includes(role))
 
   const sidebar = (
     <div className="flex h-full w-64 flex-col rounded-2xl border border-white/10 bg-black/30 text-sidebar-foreground backdrop-blur-2xl">
-      <div className="flex h-16 items-center gap-2 px-5">
-        <WellnodMark className="h-9 w-auto text-[#8a9d94]" />
-        <span className="font-heading text-lg tracking-tight">
+      <div className="flex h-16 items-center gap-1 px-5">
+        <WellnodMark className="h-9 w-auto text-[#8FA8A2]" />
+        <span className="-ml-1 translate-y-0.5 font-heading text-lg tracking-tight">
           <span className="font-bold text-sidebar-foreground">Well</span>
-          <span className="font-light text-sidebar-foreground/55">nod</span>
+          <span className="-ml-px font-light text-sidebar-foreground/55">nod</span>
         </span>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 overflow-auto px-3 py-4">
+      {/* Selector de espacio de trabajo (tenant) */}
+      <div className="px-3">
+        <button
+          type="button"
+          className="flex w-full items-center gap-3 rounded-xl border border-sidebar-border bg-sidebar-accent/10 px-3 py-2.5 text-left transition-colors hover:bg-sidebar-accent/20"
+        >
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-sidebar-primary/20 text-sidebar-primary">
+            <Store className="size-4" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[10px] font-medium uppercase tracking-wide text-sidebar-foreground/40">
+              Espacio de trabajo
+            </span>
+            <span className="block truncate text-sm font-semibold text-sidebar-foreground">
+              {TENANT_NAME}
+            </span>
+          </span>
+          <ChevronsUpDown className="size-4 shrink-0 text-sidebar-foreground/40" />
+        </button>
+      </div>
+
+      {/* Buscador */}
+      <div className="px-3 pt-3">
+        <label className="flex items-center gap-2 rounded-xl border border-sidebar-border bg-black/20 px-3 py-2 text-sidebar-foreground/50 focus-within:border-sidebar-ring/50">
+          <Search className="size-4 shrink-0" />
+          <input
+            type="search"
+            placeholder="Buscar…"
+            className="w-full bg-transparent text-sm text-sidebar-foreground placeholder:text-sidebar-foreground/40 focus:outline-none"
+          />
+        </label>
+      </div>
+
+      <p className="px-4 pb-1.5 pt-4 text-[10px] font-medium uppercase tracking-wide text-sidebar-foreground/40">
+        Navegación
+      </p>
+      <nav className="flex flex-1 flex-col gap-1 overflow-auto px-3 pb-4">
         {items.map((item) => (
           <NavLink
             key={item.to}
@@ -57,21 +103,43 @@ export function AppShell() {
         ))}
       </nav>
 
-      <div className="p-3">
-        <div className="rounded-xl border border-sidebar-border bg-sidebar-accent/10 px-4 py-3">
-          <p className="text-sm font-semibold text-sidebar-foreground">{PLAN_NAME}</p>
-          <p className="text-xs text-sidebar-foreground/50">{PLAN_RENEWAL}</p>
+      {/* Cuenta de usuario */}
+      <div className="px-3 pb-3">
+        <p className="px-1 pb-1.5 text-[10px] font-medium uppercase tracking-wide text-sidebar-foreground/40">
+          Cuenta
+        </p>
+        <div className="flex items-center gap-3 rounded-xl border border-sidebar-border bg-sidebar-accent/10 px-3 py-2.5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground">
+            {USER_INITIALS}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold text-sidebar-foreground">
+              {USER_NAME}
+            </span>
+            <span className="block truncate text-xs text-sidebar-foreground/50">{roleLabel}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => void logout()}
+            title="Cerrar sesión"
+            aria-label="Cerrar sesión"
+            className="grid size-8 shrink-0 place-items-center rounded-lg text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent/20 hover:text-sidebar-foreground"
+          >
+            <LogOut className="size-4" />
+          </button>
         </div>
       </div>
+
     </div>
   )
 
   return (
     <div className="relative flex h-svh gap-3 overflow-hidden p-3">
-      {/* Scenic backdrop — the frosted panels float over it (swap for a real photo later) */}
+      {/* Scenic backdrop — the frosted panels float over the brand photo */}
       <div
         aria-hidden
-        className="fixed inset-0 -z-10 bg-[radial-gradient(120%_120%_at_15%_10%,#9fb0aa_0%,#63736b_28%,#2c3833_58%,#101915_82%,#0a0f0c_100%)]"
+        className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/app-bg.png')" }}
       />
       <div aria-hidden className="fixed inset-0 -z-10 bg-black/25" />
 
@@ -100,7 +168,9 @@ export function AppShell() {
           >
             <Menu className="size-4" />
           </Button>
-          <span className="text-sm font-medium text-muted-foreground">{TENANT_NAME}</span>
+          <span className="font-display text-xl font-bold text-foreground">
+            Buen día, {USER_FIRST_NAME}
+          </span>
           <div className="flex-1" />
 
           <button
@@ -114,17 +184,6 @@ export function AppShell() {
                 {UNREAD_NOTIFICATIONS}
               </span>
             ) : null}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => void logout()}
-            title="Cerrar sesión"
-            className="group relative grid size-9 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
-            aria-label="Cerrar sesión"
-          >
-            <span className="group-hover:opacity-0">{USER_INITIALS}</span>
-            <LogOut className="absolute size-4 opacity-0 transition-opacity group-hover:opacity-100" />
           </button>
         </header>
         <main className="flex-1 overflow-auto">

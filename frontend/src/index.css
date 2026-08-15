@@ -51,72 +51,76 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.16 0.01 165);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.16 0.01 165);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.16 0.01 165);
-    --primary: oklch(0.63 0.14 163);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.96 0.01 165);
-    --secondary-foreground: oklch(0.2 0.01 165);
-    --muted: oklch(0.96 0.01 165);
-    --muted-foreground: oklch(0.5 0.02 165);
-    --accent: oklch(0.95 0.03 165);
-    --accent-foreground: oklch(0.2 0.02 165);
+    /* Misma paleta de marca, mapeada para modo claro */
+    --background: #E3ECE9;           /* claro suave (derivado de #C7D8D2) */
+    --foreground: #0F1F1A;           /* bosque */
+    --card: #FFFFFF;
+    --card-foreground: #0F1F1A;
+    --popover: #FFFFFF;
+    --popover-foreground: #0F1F1A;
+    --primary: #23403B;              /* petróleo */
+    --primary-foreground: #E3ECE9;
+    --secondary: #C7D8D2;            /* claro */
+    --secondary-foreground: #0F1F1A;
+    --muted: #DCE7E3;
+    --muted-foreground: #55706A;     /* humo */
+    --accent: #8FA8A2;               /* salvia */
+    --accent-foreground: #0F1F1A;
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.9 0.01 165);
-    --input: oklch(0.9 0.01 165);
-    --ring: oklch(0.63 0.14 163);
-    --chart-1: oklch(0.7 0.16 163);
-    --chart-2: oklch(0.63 0.14 163);
-    --chart-3: oklch(0.55 0.12 165);
-    --chart-4: oklch(0.47 0.1 166);
-    --chart-5: oklch(0.39 0.08 167);
+    --border: #C7D8D2;
+    --input: #C7D8D2;
+    --ring: #55706A;
+    --chart-1: #23403B;             /* petróleo */
+    --chart-2: #55706A;            /* humo */
+    --chart-3: #8FA8A2;           /* salvia */
+    --chart-4: #C7D8D2;          /* claro */
+    --chart-5: #0F1F1A;         /* bosque */
     --radius: 0.75rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.16 0.01 165);
-    --sidebar-primary: oklch(0.63 0.14 163);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.63 0.14 163);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.9 0.01 165);
-    --sidebar-ring: oklch(0.63 0.14 163);
+    --sidebar: #FFFFFF;
+    --sidebar-foreground: #0F1F1A;
+    --sidebar-primary: #23403B;
+    --sidebar-primary-foreground: #E3ECE9;
+    --sidebar-accent: #C7D8D2;       /* claro (nav activo) */
+    --sidebar-accent-foreground: #0F1F1A;
+    --sidebar-border: #C7D8D2;
+    --sidebar-ring: #55706A;
 }
 
 .dark {
-    --background: oklch(0.16 0.008 165);
-    --foreground: oklch(0.97 0.005 165);
-    --card: oklch(0.205 0.009 165);
-    --card-foreground: oklch(0.97 0.005 165);
-    --popover: oklch(0.205 0.009 165);
-    --popover-foreground: oklch(0.97 0.005 165);
-    --primary: oklch(0.7 0.16 163);
-    --primary-foreground: oklch(0.16 0.02 165);
-    --secondary: oklch(0.26 0.01 165);
-    --secondary-foreground: oklch(0.97 0.005 165);
-    --muted: oklch(0.24 0.009 165);
-    --muted-foreground: oklch(0.7 0.02 165);
-    --accent: oklch(0.27 0.02 165);
-    --accent-foreground: oklch(0.97 0.005 165);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 8%);
-    --input: oklch(1 0 0 / 12%);
-    --ring: oklch(0.7 0.16 163);
-    --chart-1: oklch(0.7 0.16 163);
-    --chart-2: oklch(0.63 0.14 163);
-    --chart-3: oklch(0.55 0.12 165);
-    --chart-4: oklch(0.47 0.1 166);
-    --chart-5: oklch(0.39 0.08 167);
-    --sidebar: oklch(0.13 0.006 165);
-    --sidebar-foreground: oklch(0.96 0.005 165);
-    --sidebar-primary: oklch(0.7 0.16 163);
-    --sidebar-primary-foreground: oklch(0.16 0.02 165);
-    --sidebar-accent: oklch(0.55 0.14 163);
-    --sidebar-accent-foreground: oklch(0.99 0.005 165);
-    --sidebar-border: oklch(1 0 0 / 8%);
-    --sidebar-ring: oklch(0.7 0.16 163);
+    /* Paleta de marca Wellnod:
+       01 Verde Bosque #0F1F1A · 02 Verde Petróleo #23403B · 03 Verde Humo #55706A
+       04 Verde Salvia #8FA8A2 · 05 Verde Claro #C7D8D2 */
+    --background: #0F1F1A;            /* bosque */
+    --foreground: #C7D8D2;           /* claro */
+    --card: #23403B;                 /* petróleo */
+    --card-foreground: #C7D8D2;
+    --popover: #23403B;
+    --popover-foreground: #C7D8D2;
+    --primary: #8FA8A2;              /* salvia */
+    --primary-foreground: #0F1F1A;
+    --secondary: #23403B;
+    --secondary-foreground: #C7D8D2;
+    --muted: #23403B;
+    --muted-foreground: #8FA8A2;     /* salvia */
+    --accent: #55706A;               /* humo */
+    --accent-foreground: #C7D8D2;
+    --destructive: oklch(0.704 0.191 22.216); /* la paleta no tiene rojo: se conserva */
+    --border: color-mix(in oklab, #C7D8D2 14%, transparent);
+    --input: color-mix(in oklab, #C7D8D2 18%, transparent);
+    --ring: #8FA8A2;
+    --chart-1: #8FA8A2;              /* salvia */
+    --chart-2: #C7D8D2;             /* claro */
+    --chart-3: #55706A;            /* humo */
+    --chart-4: #23403B;           /* petróleo */
+    --chart-5: #0F1F1A;          /* bosque */
+    --sidebar: #0F1F1A;             /* bosque */
+    --sidebar-foreground: #C7D8D2;
+    --sidebar-primary: #8FA8A2;
+    --sidebar-primary-foreground: #0F1F1A;
+    --sidebar-accent: #55706A;       /* humo (nav activo) */
+    --sidebar-accent-foreground: #C7D8D2;
+    --sidebar-border: color-mix(in oklab, #C7D8D2 12%, transparent);
+    --sidebar-ring: #8FA8A2;
 }
 
 @layer base {
