@@ -9,6 +9,7 @@ import { AnalyticsPage } from "@/features/analytics/analytics-page"
 import { CashSessionPage } from "@/features/cashier/cash-session-page"
 import { TipsPage } from "@/features/cashier/tips-page"
 import { CopilotPage } from "@/features/copilot/copilot-page"
+import { ConfigPage } from "@/features/settings/config-page"
 import { FinancePage } from "@/features/finance/finance-page"
 import { FloorPage } from "@/features/floor/floor-page"
 import { AcceptInvitationPage } from "@/features/identity/accept-invitation-page"
@@ -43,6 +44,8 @@ export const router = createBrowserRouter([
   {
     element: <RequireAuth />,
     children: [
+      // Full-screen (sin el shell/sidebar)
+      { path: "/app/config", element: <ConfigPage /> },
       {
         element: <AppShell />,
         children: [

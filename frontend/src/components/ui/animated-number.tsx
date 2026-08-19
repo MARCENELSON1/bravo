@@ -1,6 +1,8 @@
 import { useEffect } from "react"
 import { motion, MotionValue, useSpring, useTransform } from "motion/react"
 
+import { useReduceMotion } from "@/lib/reduce-motion"
+
 interface AnimatedNumberProps {
   value: number
   mass?: number
@@ -22,6 +24,7 @@ export function AnimatedNumber({
   onAnimationStart,
   onAnimationComplete,
 }: AnimatedNumberProps) {
+  const reduce = useReduceMotion()
   const spring = useSpring(value, { mass, stiffness, damping })
   const display: MotionValue<string> = useTransform(spring, (current) =>
     format(parseFloat(current.toFixed(precision)))
@@ -35,6 +38,9 @@ export function AnimatedNumber({
     })
     return () => unsubscribe()
   }, [spring, value, onAnimationStart, onAnimationComplete])
+
+  // Reducir movimiento: mostrar el valor final sin animar el conteo.
+  if (reduce) return <span>{format(parseFloat(value.toFixed(precision)))}</span>
 
   return <motion.span>{display}</motion.span>
 }

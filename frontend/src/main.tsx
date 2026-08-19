@@ -4,6 +4,11 @@ import './index.css'
 import App from './App.tsx'
 import { Providers } from '@/app/providers'
 
+// Preferencia local "reducir movimiento": aplicar la clase al arrancar.
+if (localStorage.getItem('wellnod:reduce-motion') === '1') {
+  document.documentElement.classList.add('reduce-motion')
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Providers>
