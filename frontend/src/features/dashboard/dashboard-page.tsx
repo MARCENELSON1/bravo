@@ -94,8 +94,8 @@ export function DashboardPage() {
 
   return (
     <div className="relative isolate mx-auto flex w-full max-w-5xl flex-col gap-5 px-6 py-8">
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-24 left-8 size-[30rem] rounded-full bg-primary/20 blur-[110px]" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-40 left-1/2 h-[26rem] w-[80%] -translate-x-1/2 rounded-[50%] bg-primary/22 blur-[130px]" />
       </div>
 
       <header className="flex flex-wrap items-start justify-between gap-2">
@@ -263,7 +263,7 @@ export function DashboardPage() {
         to="/app/expenses"
         aria-label="Registrar egreso"
         title="Registrar egreso"
-        className="fixed bottom-6 right-6 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105"
+        className="fixed bottom-6 right-6 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform duration-200 ease-out hover:scale-105 active:scale-[0.97]"
       >
         <Plus className="size-6" />
       </Link>
