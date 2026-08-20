@@ -40,7 +40,7 @@ function KpiCard({
     <div className="flex flex-col gap-1 rounded-xl border border-border p-4">
       <span className="text-xs text-muted-foreground">{label}</span>
       <span
-        className={`text-xl font-semibold tabular-nums ${negative ? "text-destructive" : "text-foreground"}`}
+        className={`text-lg font-semibold tabular-nums sm:text-xl ${negative ? "text-destructive" : "text-foreground"}`}
       >
         {value}
       </span>
@@ -273,7 +273,7 @@ function KpiGrid({ kpis }: { kpis: AdvisorKpisDTO }) {
   )
 }
 
-export function AdvisorPage({ embedded = false }: { embedded?: boolean }) {
+export function AdvisorPage() {
   const [from, setFrom] = useState("")
   const [to, setTo] = useState("")
   const fromIso = from ? new Date(`${from}T00:00:00`).toISOString() : undefined
@@ -344,27 +344,6 @@ export function AdvisorPage({ embedded = false }: { embedded?: boolean }) {
       </div>
     </>
   ) : null
-
-  // Modo embebido (dentro de "IA Insights", en su propia burbuja de glass): título
-  // propio ("Diagnóstico") + explicación, más los controles y el reporte.
-  if (embedded) {
-    return (
-      <div className="flex flex-col gap-8">
-        <header className="flex flex-wrap items-end justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <GradientHeading size="md" weight="bold">
-              Diagnóstico
-            </GradientHeading>
-            <p className="text-sm text-muted-foreground">
-              Cómo te fue y qué hacer, en el período que elijas.
-            </p>
-          </div>
-          {controls}
-        </header>
-        {body}
-      </div>
-    )
-  }
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-8">

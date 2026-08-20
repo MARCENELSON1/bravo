@@ -35,7 +35,7 @@ function KpiCard({
     <div className="flex flex-col gap-1 rounded-xl border border-border p-4">
       <span className="text-xs text-muted-foreground">{label}</span>
       <span
-        className={`text-xl font-semibold tabular-nums ${negative ? "text-destructive" : "text-foreground"}`}
+        className={`text-lg font-semibold tabular-nums sm:text-xl ${negative ? "text-destructive" : "text-foreground"}`}
       >
         {value}
       </span>
@@ -144,7 +144,7 @@ export function AnalyticsPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="p-8 text-center text-sm text-muted-foreground">
+            <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
               Sin pagos en el período.
             </p>
           )}
@@ -184,7 +184,7 @@ export function AnalyticsPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="p-8 text-center text-sm text-muted-foreground">
+            <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
               Sin ventas en el período.
             </p>
           )}

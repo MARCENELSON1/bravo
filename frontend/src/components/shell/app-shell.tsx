@@ -132,7 +132,12 @@ export function AppShell() {
   )
 
   return (
-    <div className="relative flex h-svh gap-3 overflow-hidden p-3">
+    <motion.div
+      className="relative flex h-svh gap-3 overflow-hidden p-3"
+      initial={reduce ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={reduce ? { duration: 0 } : { duration: 0.4, ease: "easeOut" }}
+    >
       <AppBackground />
 
       <aside className="hidden h-full md:block">{sidebar}</aside>
@@ -152,7 +157,7 @@ export function AppShell() {
       <div
         className={cn("flex h-full min-w-0 flex-1 flex-col overflow-hidden", GLASS_PANEL)}
       >
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-black/10 px-6 dark:border-white/10">
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-black/10 px-4 sm:px-6 dark:border-white/10">
           <Button
             variant="ghost"
             size="icon"
@@ -162,7 +167,7 @@ export function AppShell() {
           >
             <Menu className="size-4" />
           </Button>
-          <span className="truncate text-sm font-medium text-muted-foreground">
+          <span className="min-w-0 truncate text-sm font-medium text-muted-foreground">
             {session.tenantName}
           </span>
           <div className="flex-1" />
@@ -186,6 +191,6 @@ export function AppShell() {
           </motion.div>
         </OverlayScrollbarsComponent>
       </div>
-    </div>
+    </motion.div>
   )
 }

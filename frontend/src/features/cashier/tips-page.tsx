@@ -34,7 +34,7 @@ export function TipsPage() {
             {report.data.rows.length === 0 ? (
               <p className="text-sm text-muted-foreground">Todavía no hay propinas registradas.</p>
             ) : (
-              <div className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-x-3 gap-y-2 text-sm">
+              <div className="overflow-x-auto"><div className="grid min-w-[30rem] grid-cols-[1fr_auto_auto_auto_auto] items-center gap-x-3 gap-y-2 text-sm">
                 <span className="text-xs font-medium text-muted-foreground">Mozo</span>
                 <span className="text-right text-xs font-medium text-muted-foreground">Ganó</span>
                 <span className="text-right text-xs font-medium text-muted-foreground">Pagado</span>
@@ -45,7 +45,7 @@ export function TipsPage() {
                 {report.data.rows.map((row) => (
                   <TipRow key={row.waiter_id} row={row} currency={report.data!.currency} />
                 ))}
-              </div>
+              </div></div>
             )}
           </CardContent>
         </Card>

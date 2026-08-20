@@ -205,7 +205,7 @@ function Row({
         placeholder="0.00"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-8 w-28 text-right"
+        className="h-8 w-20 text-right sm:w-28"
       />
     </>
   )
@@ -224,7 +224,7 @@ function ClosedArqueo({
         <CardTitle>Caja cerrada · arqueo</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 gap-y-1 text-sm">
+        <div className="overflow-x-auto"><div className="grid min-w-[26rem] grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 gap-y-1 text-sm">
           <span className="text-xs font-medium text-muted-foreground">Medio</span>
           <span className="text-right text-xs font-medium text-muted-foreground">Esperado</span>
           <span className="text-right text-xs font-medium text-muted-foreground">Contado</span>
@@ -252,7 +252,7 @@ function ClosedArqueo({
               </span>
             </Fragment>
           ))}
-        </div>
+        </div></div>
         <div className="flex items-center justify-between border-t pt-3 text-sm font-medium">
           <span>Diferencia total</span>
           <span

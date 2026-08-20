@@ -23,7 +23,7 @@ const EXAMPLES = [
   "¿Cuántas reservas tengo para mañana?",
 ]
 
-export function CopilotPage({ embedded = false }: { embedded?: boolean }) {
+export function CopilotPage() {
   const ask = useAskCopilot()
   const [question, setQuestion] = useState("")
   const [showSource, setShowSource] = useState(false)
@@ -45,8 +45,8 @@ export function CopilotPage({ embedded = false }: { embedded?: boolean }) {
       : null
   const result = ask.data
 
-  const content = (
-    <>
+  return (
+    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-8">
       <header className="flex flex-col gap-1">
         <GradientHeading size="md" weight="bold">
           Copiloto
@@ -161,12 +161,6 @@ export function CopilotPage({ embedded = false }: { embedded?: boolean }) {
           ) : null}
         </section>
       ) : null}
-    </>
-  )
-
-  return embedded ? (
-    <div className="flex flex-col gap-8">{content}</div>
-  ) : (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-8">{content}</div>
+    </div>
   )
 }

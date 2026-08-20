@@ -256,7 +256,7 @@ export function StaffPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="p-8 text-center text-sm text-muted-foreground">
+            <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
               No hay datos para el período.
             </p>
           )}
@@ -319,7 +319,7 @@ export function StaffPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="p-8 text-center text-sm text-muted-foreground">
+            <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
               No hay fichajes para el período.
             </p>
           )}

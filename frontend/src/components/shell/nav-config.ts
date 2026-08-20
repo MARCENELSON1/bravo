@@ -13,6 +13,7 @@ import {
   Package,
   QrCode,
   Receipt,
+  Sparkles,
   Truck,
   Users,
   UtensilsCrossed,
@@ -91,6 +92,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Gestión",
     items: [
+      { label: "Asesor", to: "/app/advisor", icon: Sparkles, roles: ["OWNER", "MANAGER"] },
       { label: "Egresos", to: "/app/expenses", icon: Receipt, roles: ["OWNER", "MANAGER"] },
       {
         label: "Comprobantes",

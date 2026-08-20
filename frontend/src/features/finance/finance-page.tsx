@@ -138,7 +138,7 @@ function FinanceBody({
       <GlassCard className="p-6">
         <p className="text-sm text-muted-foreground">Tu ganancia neta del período</p>
         <p
-          className={`mt-1 text-4xl font-bold tabular-nums ${net && net.value < 0 ? "text-red-500" : "text-foreground"}`}
+          className={`mt-1 text-3xl font-bold tabular-nums sm:text-4xl ${net && net.value < 0 ? "text-red-500" : "text-foreground"}`}
         >
           {net ? formatMoney(net.value, data.currency) : "—"}
         </p>

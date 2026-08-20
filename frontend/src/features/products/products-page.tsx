@@ -95,7 +95,7 @@ export function ProductsPage() {
           <p className="text-sm text-muted-foreground">Tu catálogo y precios.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
             {FINANCE_RANGES.map((r) => (
               <Button
                 key={r.value}

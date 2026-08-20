@@ -6,7 +6,7 @@ export function AppBackground() {
       {/* Base: gradiente verde suave (borroso) por tema */}
       <div
         aria-hidden
-        className="fixed inset-0 -z-20 bg-[radial-gradient(125%_125%_at_18%_12%,#e8f0ec_0%,#cdddd6_50%,#b1c7be_100%)] dark:bg-[radial-gradient(125%_125%_at_18%_12%,#2a4b43_0%,#16241f_52%,#0a120e_100%)]"
+        className="fixed inset-0 -z-20 bg-[radial-gradient(125%_125%_at_18%_12%,#d7e6df_0%,#aec7bb_50%,#85a394_100%)] dark:bg-[radial-gradient(125%_125%_at_18%_12%,#2a4b43_0%,#16241f_52%,#0a120e_100%)]"
       />
       {/* Textura (imagen) semi-transparente encima del gradiente */}
       <div

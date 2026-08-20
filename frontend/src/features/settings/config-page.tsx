@@ -335,7 +335,7 @@ export function ConfigPage() {
           if (closing) navigate("/app")
         }}
       >
-        <div className="mx-auto flex h-full w-full max-w-4xl flex-col px-6 py-8">
+        <div className="mx-auto flex h-full w-full max-w-4xl flex-col px-4 py-6 sm:px-6 sm:py-8">
           <button
             type="button"
             onClick={() => setClosing(true)}
@@ -385,19 +385,19 @@ export function ConfigPage() {
           >
             {tab === "equipo" ? (
               <ScrollCard>
-                <div className="px-6">
+                <div className="px-4 sm:px-6">
                   <InviteUserForm embedded />
                 </div>
               </ScrollCard>
             ) : tab === "integraciones" ? (
               <ScrollCard>
-                <div className="px-6">
+                <div className="px-4 sm:px-6">
                   <IntegrationsPanel embedded />
                 </div>
               </ScrollCard>
             ) : (
               <ScrollCard>
-                <div className="divide-y divide-border px-6">
+                <div className="divide-y divide-border px-4 sm:px-6">
                   {/* Apariencia: filas funcionales primero */}
                   {tab === "apariencia" ? (
                 <>

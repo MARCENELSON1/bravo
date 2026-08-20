@@ -84,7 +84,7 @@ export function ExpensesPage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5 px-6 py-8">
-      <header className="flex items-end justify-between gap-2">
+      <header className="flex flex-wrap items-end justify-between gap-2">
         <div className="flex flex-col gap-1">
           <GradientHeading size="md" weight="bold">
             Egresos
@@ -185,7 +185,7 @@ export function ExpensesPage() {
             </TableBody>
           </Table>
         ) : (
-          <p className="p-8 text-center text-sm text-muted-foreground">
+          <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
             Todavía no registraste egresos.
           </p>
         )}

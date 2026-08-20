@@ -606,7 +606,7 @@ export function StockPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="p-8 text-center text-sm text-muted-foreground">
+            <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
               Todavía no cargaste insumos.
             </p>
           )}

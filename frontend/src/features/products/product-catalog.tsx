@@ -187,7 +187,7 @@ export function ProductCatalog({ period }: { period: RangeWindow }) {
             placeholder="Buscar…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="h-9 w-40"
+            className="h-9 w-full sm:w-40"
           />
           <select
             value={category}
@@ -300,7 +300,7 @@ export function ProductCatalog({ period }: { period: RangeWindow }) {
             </Table>
           </div>
         ) : (
-          <p className="p-8 text-center text-sm text-muted-foreground">
+          <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
             {products.data && products.data.length > 0
               ? "Ningún producto coincide con el filtro."
               : "Todavía no cargaste productos."}

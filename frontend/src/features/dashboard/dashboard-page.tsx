@@ -93,7 +93,7 @@ export function DashboardPage() {
   const projection = overview.data?.projection ?? null
 
   return (
-    <div className="relative isolate mx-auto flex w-full max-w-5xl flex-col gap-5 px-6 py-8">
+    <div className="relative isolate mx-auto flex w-full max-w-5xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -top-40 left-1/2 h-[26rem] w-[80%] -translate-x-1/2 rounded-[50%] bg-primary/22 blur-[130px]" />
       </div>
