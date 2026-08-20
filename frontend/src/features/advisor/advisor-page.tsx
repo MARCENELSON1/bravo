@@ -273,12 +273,98 @@ function KpiGrid({ kpis }: { kpis: AdvisorKpisDTO }) {
   )
 }
 
-export function AdvisorPage() {
+export function AdvisorPage({ embedded = false }: { embedded?: boolean }) {
   const [from, setFrom] = useState("")
   const [to, setTo] = useState("")
   const fromIso = from ? new Date(`${from}T00:00:00`).toISOString() : undefined
   const toIso = to ? new Date(`${to}T23:59:59`).toISOString() : undefined
   const report = useAdvisorReport({ from: fromIso, to: toIso })
+
+  const controls = (
+    <div className="flex flex-wrap items-end gap-2">
+      <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+        Desde
+        <Input
+          type="date"
+          value={from}
+          onChange={(e) => setFrom(e.target.value)}
+          className="w-auto"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+        Hasta
+        <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-auto" />
+      </label>
+      <SettingsSheet />
+    </div>
+  )
+
+  const body = report.isPending ? (
+    <div className="flex justify-center p-10">
+      <Spinner className="size-5 text-muted-foreground" />
+    </div>
+  ) : report.data ? (
+    <>
+      {report.data.summary ? (
+        <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+          <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
+          <p className="text-sm text-foreground">{report.data.summary}</p>
+        </div>
+      ) : null}
+
+      <KpiGrid kpis={report.data.kpis} />
+
+      <div className="flex flex-col gap-6">
+        {BUCKET_ORDER.map((bucket) => {
+          const items = report.data.insights.filter((i) => i.bucket === bucket)
+          if (items.length === 0) return null
+          return (
+            <section key={bucket} className="flex flex-col gap-3">
+              <h2 className="text-sm font-semibold text-foreground">{BUCKET_LABELS[bucket]}</h2>
+              <div className="flex flex-col gap-2">
+                {items.map((insight) => (
+                  <div
+                    key={insight.code}
+                    className="flex flex-col gap-1 rounded-xl border border-border p-4"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-foreground">{insight.title}</span>
+                      <Badge variant={SEVERITY_VARIANT[insight.severity] ?? "outline"}>
+                        {insight.severity}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{insight.body}</p>
+                    <p className="text-sm text-foreground">→ {insight.action}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )
+        })}
+      </div>
+    </>
+  ) : null
+
+  // Modo embebido (dentro de "IA Insights", en su propia burbuja de glass): título
+  // propio ("Diagnóstico") + explicación, más los controles y el reporte.
+  if (embedded) {
+    return (
+      <div className="flex flex-col gap-8">
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <GradientHeading size="md" weight="bold">
+              Diagnóstico
+            </GradientHeading>
+            <p className="text-sm text-muted-foreground">
+              Cómo te fue y qué hacer, en el período que elijas.
+            </p>
+          </div>
+          {controls}
+        </header>
+        {body}
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-8">
@@ -288,74 +374,13 @@ export function AdvisorPage() {
             Asesor
           </GradientHeading>
           <p className="text-sm text-muted-foreground">
-            Cómo te fue en pesos y qué hacer. Por defecto, este mes.
+            Cómo te fue y qué hacer. Por defecto, este mes.
           </p>
         </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-            Desde
-            <Input
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="w-auto"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-            Hasta
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-auto" />
-          </label>
-          <SettingsSheet />
-        </div>
+        {controls}
       </header>
 
-      {report.isPending ? (
-        <div className="flex justify-center p-10">
-          <Spinner className="size-5 text-muted-foreground" />
-        </div>
-      ) : report.data ? (
-        <>
-          {report.data.summary ? (
-            <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
-              <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
-              <p className="text-sm text-foreground">{report.data.summary}</p>
-            </div>
-          ) : null}
-
-          <KpiGrid kpis={report.data.kpis} />
-
-          <div className="flex flex-col gap-6">
-            {BUCKET_ORDER.map((bucket) => {
-              const items = report.data.insights.filter((i) => i.bucket === bucket)
-              if (items.length === 0) return null
-              return (
-                <section key={bucket} className="flex flex-col gap-3">
-                  <h2 className="text-sm font-semibold text-foreground">
-                    {BUCKET_LABELS[bucket]}
-                  </h2>
-                  <div className="flex flex-col gap-2">
-                    {items.map((insight) => (
-                      <div
-                        key={insight.code}
-                        className="flex flex-col gap-1 rounded-xl border border-border p-4"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-medium text-foreground">{insight.title}</span>
-                          <Badge variant={SEVERITY_VARIANT[insight.severity] ?? "outline"}>
-                            {insight.severity}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{insight.body}</p>
-                        <p className="text-sm text-foreground">→ {insight.action}</p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )
-            })}
-          </div>
-        </>
-      ) : null}
+      {body}
     </div>
   )
 }

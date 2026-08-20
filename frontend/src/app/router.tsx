@@ -4,11 +4,10 @@ import { AppShell } from "@/components/shell/app-shell"
 import { RequireAuth } from "@/auth/require-auth"
 import { RequireRole } from "@/auth/require-role"
 import { RoleLanding } from "@/auth/role-landing"
-import { AdvisorPage } from "@/features/advisor/advisor-page"
 import { AnalyticsPage } from "@/features/analytics/analytics-page"
 import { CashSessionPage } from "@/features/cashier/cash-session-page"
 import { TipsPage } from "@/features/cashier/tips-page"
-import { CopilotPage } from "@/features/copilot/copilot-page"
+import { InsightsPage } from "@/features/copilot/insights-page"
 import { ConfigPage } from "@/features/settings/config-page"
 import { FinancePage } from "@/features/finance/finance-page"
 import { FloorPage } from "@/features/floor/floor-page"
@@ -79,8 +78,7 @@ export const router = createBrowserRouter([
             children: [
               { path: "/app/invite", element: <InviteUserPage /> },
               { path: "/app/finanzas", element: <FinancePage /> },
-              { path: "/app/advisor", element: <AdvisorPage /> },
-              { path: "/app/copilot", element: <CopilotPage /> },
+              { path: "/app/copilot", element: <InsightsPage /> },
               { path: "/app/analytics", element: <AnalyticsPage /> },
               { path: "/app/products", element: <ProductsPage /> },
               { path: "/app/stock", element: <StockPage /> },

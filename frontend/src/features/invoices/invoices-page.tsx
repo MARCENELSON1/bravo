@@ -34,7 +34,7 @@ export function InvoicesPage() {
           Comprobantes
         </GradientHeading>
         <p className="text-sm text-muted-foreground">
-          Facturas electrónicas emitidas (AFIP). El CAE es la autorización fiscal.
+          Facturas electrónicas emitidas (ARCA). El CAE es la autorización fiscal.
         </p>
       </header>
 
