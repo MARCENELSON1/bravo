@@ -171,8 +171,8 @@ export function AppShell() {
             {session.tenantName}
           </span>
           <div className="flex-1" />
-          <ClockStatus />
           <TopbarClock />
+          <ClockStatus />
         </header>
         <OverlayScrollbarsComponent
           ref={mainOsRef}
