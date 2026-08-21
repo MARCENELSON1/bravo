@@ -23,6 +23,9 @@ class FoodCostRow:
     # backed by real purchases; ``coverage_bps`` = confirmed share (bps).
     cost_confirmed: bool = True
     coverage_bps: int = 10000
+    # Guarda de sanidad (spec Insumos): False si el ratio food-cost/precio cae fuera
+    # de la banda [5%, 95%] (receta incompleta o dato erróneo → "revisar").
+    ratio_sane: bool = True
 
 
 @dataclass(frozen=True)

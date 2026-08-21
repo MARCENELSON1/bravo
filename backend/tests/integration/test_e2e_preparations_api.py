@@ -502,3 +502,31 @@ async def test_cost_coverage_confirmed_vs_estimated(client):
     assert report["coverage_bps"] == 5000
     # Fase 6: 50% < umbral del hero (70%) → gate cerrado.
     assert report["coverage_ok"] is False
+
+
+async def test_food_cost_sanity_guard(client):
+    """Guarda Insumos: un ratio food-cost fuera de [5%, 95%] marca la receta como
+    incompleta (ratio_sane False); dentro de la banda queda sano."""
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="guard", email="o@guard.com"))
+    ing = await _ingredient(http, h, "Insumo", unit_cost_amount=100000)
+    # Plato caro: food cost 100000 sobre precio 5.000.000 → ratio 2% (< 5%) → incompleta.
+    caro = await _product(http, h, "PlatoCaro", 5000000)
+    await http.put(
+        f"/api/v1/products/{caro}/recipe",
+        json={"items": [{"ingredient_id": ing, "qty": 1000}]},
+        headers=h,
+    )
+    # Plato normal: food cost 100000 sobre 300000 → ratio 33% → sano.
+    normal = await _product(http, h, "PlatoNormal", 300000)
+    await http.put(
+        f"/api/v1/products/{normal}/recipe",
+        json={"items": [{"ingredient_id": ing, "qty": 1000}]},
+        headers=h,
+    )
+    rows = {
+        r["product_id"]: r
+        for r in (await http.get("/api/v1/inventory/food-cost", headers=h)).json()["rows"]
+    }
+    assert rows[caro]["ratio_sane"] is False
+    assert rows[normal]["ratio_sane"] is True

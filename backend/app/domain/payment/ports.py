@@ -29,6 +29,10 @@ class GatewayChargeStatus:
     gateway_payment_id: str
     external_reference: str | None
     status: PaymentStatus
+    # Comisiones slice C: comisión REAL retenida por la pasarela (minor units), si el
+    # gateway la reporta. None → se conserva la estimada (tasa configurada). El neto
+    # se recomputa como amount − fee al confirmar.
+    fee_amount: int | None = None
 
 
 class PaymentNotificationGateway(ABC):

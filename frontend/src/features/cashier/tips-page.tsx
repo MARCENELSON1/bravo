@@ -61,7 +61,7 @@ function TipRow({ row, currency }: { row: TipsReportRowDTO; currency: string }) 
   const canPay = row.pending > 0
 
   const liquidar = () => {
-    if (!window.confirm(`¿Liquidar ${formatMoney(row.pending, currency)} a ${row.waiter_email}?`)) {
+    if (!window.confirm(`¿Liquidar ${formatMoney(row.pending, currency)} a ${row.waiter_name}?`)) {
       return
     }
     payTip.mutate(
@@ -76,7 +76,7 @@ function TipRow({ row, currency }: { row: TipsReportRowDTO; currency: string }) 
 
   return (
     <Fragment>
-      <span className="truncate">{row.waiter_email}</span>
+      <span className="truncate">{row.waiter_name}</span>
       <span className="text-right tabular-nums">{formatMoney(row.earned, currency)}</span>
       <span className="text-right tabular-nums text-muted-foreground">
         {formatMoney(row.paid, currency)}

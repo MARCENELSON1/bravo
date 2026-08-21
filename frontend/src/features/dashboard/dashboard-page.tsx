@@ -65,7 +65,9 @@ function topAlert(diagnostics: FinanceDiagnosticDTO[]): FinanceDiagnosticDTO | n
 
 export function DashboardPage() {
   const { session } = useAuth()
-  const summary = useDashboard()
+  // Guarda C: el Home es "hoy" — acotamos a hoy para que el hero cuadre con
+  // "Cobros por canal" (antes sumaba all-time rotulado "hoy").
+  const summary = useDashboard({ from: startOfTodayIso() })
   const daily = useRevenueDaily({ from: sevenDaysAgoIso() })
   const mix = usePaymentMix({ from: startOfTodayIso() })
   const overview = useFinanceOverview({})
@@ -77,12 +79,18 @@ export function DashboardPage() {
   const money = (n: number) => formatMoney(Math.round(n), currency, 0)
   const firstName = session?.name ? session.name.trim().split(/\s+/)[0] : null
 
-  const net = d?.net ?? 0
   const sales = d?.sales ?? 0
   const expenses = d?.expenses ?? 0
+  // Comisiones (slice B): la ganancia REAL resta las comisiones de pasarela. Sin
+  // tasas cargadas, collected_net == sales → net == sales − expenses (paridad).
+  const feesTotal = d?.fees_total ?? 0
+  const net = (d?.collected_net ?? sales) - expenses
   const pctVsYesterday = revenuePctVsYesterday(daily.data ?? [])
   const verdict = dailyVerdict(net, pctVsYesterday)
   const marginPer100 = sales > 0 ? Math.round((net / sales) * 100) : 0
+  // Guarda C: hubo ventas pero cero egresos → el margen = ventas es un número
+  // inflado (todavía no cargaste gastos). Lo mostramos provisorio, no como sólido.
+  const marginTentative = sales > 0 && expenses === 0
 
   const inflows = (mix.data ?? []).filter((row) => row.direction === "INFLOW")
   const inflowTotal = inflows.reduce((sum, row) => sum + row.amount, 0)
@@ -119,6 +127,16 @@ export function DashboardPage() {
           )}
         </div>
         <p className={`mt-2 text-sm font-medium ${TONE_STYLE[verdict.tone]}`}>{verdict.message}</p>
+        {marginTentative ? (
+          <p className="mt-1 text-xs text-amber-500">
+            Provisorio — todavía no cargaste egresos hoy.
+          </p>
+        ) : null}
+        {feesTotal > 0 ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Ya restamos {money(feesTotal)} de comisiones de tarjeta / MercadoPago.
+          </p>
+        ) : null}
       </GlassCard>
 
       {/* NIVEL 2 — Los 3 números que lo explican */}
@@ -135,10 +153,24 @@ export function DashboardPage() {
         </GlassCard>
         <GlassCard className="p-5">
           <p className="text-sm text-muted-foreground">Tu margen hoy</p>
-          <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{money(net)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {sales > 0 ? `De cada $100, $${marginPer100} son ganancia` : "Sin ventas aún"}
-          </p>
+          {marginTentative ? (
+            <>
+              <p className="mt-1 text-2xl font-bold tabular-nums text-muted-foreground">—</p>
+              <p className="mt-1 text-xs text-amber-500">
+                Cargá tus egresos para saber el margen real
+              </p>
+            </>
+          ) : (
+            <>
+              {/* Dedupe (B4): el $ de la ganancia vive en el hero; acá el margen %. */}
+              <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
+                {sales > 0 ? `${marginPer100}%` : "—"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {sales > 0 ? `De cada $100, $${marginPer100} son ganancia` : "Sin ventas aún"}
+              </p>
+            </>
+          )}
         </GlassCard>
       </section>
 

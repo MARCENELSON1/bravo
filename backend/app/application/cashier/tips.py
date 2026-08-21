@@ -11,10 +11,12 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
+from uuid import uuid4
 
-from app.application.payment.use_cases import RegisterExpense
+from app.domain.cashier.tip_payout import TipPayout, TipPayoutRepository
 from app.domain.identity.ports import TenantContext
-from app.domain.payment.entities import Payment
+from app.domain.tenant.exceptions import TenantNotFound
+from app.domain.tenant.repository import TenantRepository
 from app.domain.user.exceptions import UserNotFound
 from app.domain.user.repository import UserRepository
 
@@ -26,7 +28,7 @@ TIP_PAYOUT_CATEGORY = "Propinas"
 @dataclass(frozen=True)
 class TipsReportRow:
     waiter_id: str
-    waiter_email: str
+    waiter_name: str  # nombre del mozo (fallback email); nunca el UUID
     earned: int  # Σ propinas de cobros CONFIRMED de las órdenes de este mozo
     paid: int  # Σ liquidaciones (egreso Propinas) a este mozo
     pending: int  # earned - paid
@@ -69,31 +71,39 @@ class GetTipsReport:
 
 
 class PayTips:
-    """Liquidar (pagar) propinas a un mozo: registra un egreso 'Propinas' a su
-    nombre. Reusa ``RegisterExpense`` — el saldo pendiente sale del reporte."""
+    """Liquidar (pagar) propinas a un mozo: registra un **pasivo** en el ledger
+    ``tip_payouts``. NO es un egreso → no pega en el resultado del mes; solo salda lo
+    que ya se le debía. El saldo pendiente sale del reporte (ganado − liquidado)."""
 
     def __init__(
         self,
-        register_expense: RegisterExpense,
+        payouts: TipPayoutRepository,
         users: UserRepository,
+        tenants: TenantRepository,
         tenant_context: TenantContext,
     ) -> None:
-        self._register_expense = register_expense
+        self._payouts = payouts
         self._users = users
+        self._tenants = tenants
         self._tenant_context = tenant_context
 
     async def execute(
         self, *, tenant_id: str, waiter_id: str, amount: int, method: str = "CASH"
-    ) -> Payment:
+    ) -> TipPayout:
         self._tenant_context.set(tenant_id)
         waiter = await self._users.get_by_id(tenant_id, waiter_id)
         if waiter is None:
             raise UserNotFound()
-        return await self._register_expense.execute(
+        tenant = await self._tenants.get_by_id(tenant_id)
+        if tenant is None:
+            raise TenantNotFound()
+        payout = TipPayout(
+            id=str(uuid4()),
             tenant_id=tenant_id,
-            method=method,
+            waiter_id=waiter_id,
             amount=amount,
-            category=TIP_PAYOUT_CATEGORY,
-            counterparty=waiter_id,
-            description=f"Propina {waiter.email}",
+            currency=tenant.currency,
+            method=method,
         )
+        await self._payouts.add(payout)
+        return payout

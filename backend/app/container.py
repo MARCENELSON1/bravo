@@ -97,6 +97,7 @@ from app.application.payment.connect_mercadopago import (
     GetMercadoPagoConnection,
     StartMercadoPagoConnection,
 )
+from app.application.payment.fee_rates import GetPaymentFeeRates, UpdatePaymentFeeRates
 from app.application.payment.use_cases import (
     ConfirmGatewayPayment,
     ListExpenses,
@@ -150,6 +151,7 @@ from app.infrastructure.copilot.anthropic_copilot import AnthropicCopilotLLM
 from app.infrastructure.copilot.no_copilot import NoCopilot
 from app.infrastructure.copilot.sql_runner import SqlAlchemyCopilotQueryRunner
 from app.infrastructure.email.console_sender import ConsoleEmailSender
+from app.infrastructure.email.resend_sender import ResendEmailSender
 from app.infrastructure.email.smtp_sender import SmtpEmailSender
 from app.infrastructure.invoicing.afip_invoicing import AfipInvoicing
 from app.infrastructure.invoicing.credentials_resolver import DbTaxCredentialsResolver
@@ -176,6 +178,7 @@ from app.infrastructure.persistence.analytics_repo import (
     SqlAlchemyRevenueReadModel,
 )
 from app.infrastructure.persistence.audit_repo import SqlAlchemyAuditRepository
+from app.infrastructure.persistence.cash_policy_repo import SqlAlchemyCashSessionPolicy
 from app.infrastructure.persistence.cash_repo import SqlAlchemyCashSessionRepository
 from app.infrastructure.persistence.cost_history_repo import (
     SqlAlchemyIngredientCostHistoryReadModel,
@@ -200,6 +203,9 @@ from app.infrastructure.persistence.invitation_repo import SqlAlchemyInvitationR
 from app.infrastructure.persistence.invoice_repo import SqlAlchemyInvoiceRepository
 from app.infrastructure.persistence.labor_cost_repo import SqlAlchemyLaborCostReadModel
 from app.infrastructure.persistence.order_repo import SqlAlchemyOrderRepository
+from app.infrastructure.persistence.payment_fee_repo import (
+    SqlAlchemyPaymentFeeRateRepository,
+)
 from app.infrastructure.persistence.payment_repo import SqlAlchemyPaymentRepository
 from app.infrastructure.persistence.preparation_repo import (
     SqlAlchemyPreparationRepository,
@@ -231,7 +237,10 @@ from app.infrastructure.persistence.tax_credentials_repo import (
     SqlAlchemyTaxCredentialRepository,
 )
 from app.infrastructure.persistence.tenant_repo import SqlAlchemyTenantRepository
-from app.infrastructure.persistence.tips_repo import SqlAlchemyTipsReadModel
+from app.infrastructure.persistence.tips_repo import (
+    SqlAlchemyTipPayoutRepository,
+    SqlAlchemyTipsReadModel,
+)
 from app.infrastructure.persistence.user_repo import SqlAlchemyUserRepository
 from app.infrastructure.persistence.verification_token_repo import (
     SqlAlchemyVerificationTokenRepository,
@@ -274,6 +283,11 @@ class Container(containers.DeclarativeContainer):
             password=config.provided.smtp_password,
             from_email=config.provided.from_email,
             use_tls=config.provided.smtp_use_tls,
+        ),
+        resend=providers.Singleton(
+            ResendEmailSender,
+            api_key=config.provided.resend_api_key,
+            from_email=config.provided.from_email,
         ),
     )
 
@@ -594,6 +608,22 @@ class Container(containers.DeclarativeContainer):
     cash_session_repository = providers.Factory(
         SqlAlchemyCashSessionRepository, session_factory=db.provided.session
     )
+    cash_session_policy = providers.Factory(
+        SqlAlchemyCashSessionPolicy, session_factory=db.provided.session
+    )
+    payment_fee_rate_repository = providers.Factory(
+        SqlAlchemyPaymentFeeRateRepository, session_factory=db.provided.session
+    )
+    get_payment_fee_rates = providers.Factory(
+        GetPaymentFeeRates,
+        rates=payment_fee_rate_repository,
+        tenant_context=tenant_context,
+    )
+    update_payment_fee_rates = providers.Factory(
+        UpdatePaymentFeeRates,
+        rates=payment_fee_rate_repository,
+        tenant_context=tenant_context,
+    )
     open_cash_session = providers.Factory(
         OpenCashSession,
         cash=cash_session_repository,
@@ -682,6 +712,9 @@ class Container(containers.DeclarativeContainer):
         tenant_context=tenant_context,
         inventory=consume_recipes_for_order,
         sales=project_order_sales,
+        cash=cash_session_repository,
+        policy=cash_session_policy,
+        fee_rates=payment_fee_rate_repository,
     )
     confirm_gateway_payment = providers.Factory(
         ConfirmGatewayPayment,
@@ -730,10 +763,14 @@ class Container(containers.DeclarativeContainer):
     get_tips_report = providers.Factory(
         GetTipsReport, read_model=tips_read_model, tenant_context=tenant_context
     )
+    tip_payout_repository = providers.Factory(
+        SqlAlchemyTipPayoutRepository, session_factory=db.provided.session
+    )
     pay_tips = providers.Factory(
         PayTips,
-        register_expense=register_expense,
+        payouts=tip_payout_repository,
         users=user_repository,
+        tenants=tenant_repository,
         tenant_context=tenant_context,
     )
 

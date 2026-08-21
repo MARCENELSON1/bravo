@@ -12,6 +12,13 @@ QUANTITY_SCALE = 1000
 CONFIRMED_PLATE_BPS = 10000
 COVERAGE_GATE_BPS = 7000
 
+# Guarda de sanidad del food cost (spec Insumos): un ratio food-cost/precio fuera
+# de esta banda [5%, 95%] es implausible (receta incompleta o dato cargado mal) →
+# se marca "receta incompleta / revisar". Complementa la cobertura, no la reemplaza:
+# la cobertura mide "¿respaldado por compras?"; la banda, "¿el ratio es plausible?".
+FOOD_COST_SANE_MIN_BPS = 500
+FOOD_COST_SANE_MAX_BPS = 9500
+
 # Ingredient yield (rendimiento / merma) in basis points: 10000 = 100% = no loss.
 # What reaches the plate costs raw_cost / (yield / 10000): a lower yield (bone,
 # trim, cooking loss) raises the effective cost of the usable ingredient.

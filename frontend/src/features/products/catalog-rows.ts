@@ -16,6 +16,8 @@ export interface CatalogRow {
   // (no hay costo que confirmar). coverageBps null cuando no hay costo.
   costConfirmed: boolean
   coverageBps: number | null
+  // Guarda Insumos: ratio food-cost plausible [5%, 95%]. Sin receta → true.
+  ratioSane: boolean
 }
 
 export function mergeCatalogRows(
@@ -36,6 +38,7 @@ export function mergeCatalogRows(
       units: soldById.get(product.id) ?? 0,
       costConfirmed: fc ? fc.cost_confirmed : true,
       coverageBps: fc ? fc.coverage_bps : null,
+      ratioSane: fc ? fc.ratio_sane : true,
     }
   })
 }

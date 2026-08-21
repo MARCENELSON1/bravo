@@ -88,3 +88,20 @@ describe("Fase 3: costo confirmado/estimado", () => {
     expect(confirmedMargin(ps)).toBe(7000) // solo el confirmado (10000-3000)
   })
 })
+
+describe("Guarda Insumos: receta incompleta (ratio_sane)", () => {
+  it("sin insaneIds → todo sano (paridad)", () => {
+    const ps = classifyMenu([row("a", 5, 10000, 3000)])
+    expect(ps[0].ratioSane).toBe(true)
+  })
+
+  it("insaneIds marca incompletas y las excluye de la plata", () => {
+    const rows = [row("ok", 5, 10000, 3000), row("bad", 5, 10000, 300)]
+    const ps = classifyMenu(rows, undefined, new Set(["bad"]))
+    expect(ps.find((p) => p.id === "ok")!.ratioSane).toBe(true)
+    expect(ps.find((p) => p.id === "bad")!.ratioSane).toBe(false)
+    // "bad" deja más plata pero es incompleta → no entra al ranking ni al total.
+    expect(topEarners(ps).map((p) => p.id)).toEqual(["ok"])
+    expect(confirmedMargin(ps)).toBe(7000) // solo "ok" (10000-3000)
+  })
+})

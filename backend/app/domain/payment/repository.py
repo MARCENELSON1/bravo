@@ -41,3 +41,16 @@ class PaymentRepository(ABC):
 
     @abstractmethod
     async def save(self, payment: Payment) -> None: ...
+
+
+class PaymentFeeRateRepository(ABC):
+    """Port de las tasas de comisión por método por tenant (bps). Scopeado por
+    ``tenant_id``. Un método sin fila cargada = 0 (sin comisión → paridad)."""
+
+    @abstractmethod
+    async def rates_for(self, tenant_id: str) -> dict[str, int]:
+        """``{method_value: fee_bps}`` del tenant; los métodos sin tasa no aparecen."""
+
+    @abstractmethod
+    async def save(self, tenant_id: str, method: str, fee_bps: int) -> None:
+        """Upsert de la tasa de un método (bps) para el tenant."""

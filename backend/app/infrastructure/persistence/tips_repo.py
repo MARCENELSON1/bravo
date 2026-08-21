@@ -10,14 +10,36 @@ from app.application.cashier.tips import (
     TipsReport,
     TipsReportRow,
 )
+from app.domain.cashier.tip_payout import TipPayout, TipPayoutRepository
 from app.domain.payment.value_objects import PaymentDirection, PaymentStatus
 from app.infrastructure.persistence.database import SessionFactory
 from app.infrastructure.persistence.models import (
     OrderORM,
     PaymentORM,
     TenantORM,
+    TipPayoutORM,
     UserORM,
 )
+
+
+class SqlAlchemyTipPayoutRepository(TipPayoutRepository):
+    """Persiste liquidaciones en el ledger ``tip_payouts`` (tenant-scoped + RLS)."""
+
+    def __init__(self, session_factory: SessionFactory) -> None:
+        self._session_factory = session_factory
+
+    async def add(self, payout: TipPayout) -> None:
+        async with self._session_factory() as db:
+            db.add(
+                TipPayoutORM(
+                    id=payout.id,
+                    tenant_id=payout.tenant_id,
+                    waiter_id=payout.waiter_id,
+                    amount=payout.amount,
+                    currency=payout.currency,
+                    method=payout.method,
+                )
+            )
 
 
 class SqlAlchemyTipsReadModel(TipsReadModel):
@@ -81,22 +103,41 @@ class SqlAlchemyTipsReadModel(TipsReadModel):
             earned = {wid: int(total) for wid, total in (await session.execute(earned_stmt)).all()}
             paid = {cp: int(total) for cp, total in (await session.execute(paid_stmt)).all()}
 
+            # Guarda D: sumar las liquidaciones del ledger nuevo (tip_payouts) a las
+            # viejas (egreso 'Propinas'), sin reescribir historia. Ventana propia por
+            # created_at del payout.
+            payout_stmt = (
+                select(
+                    TipPayoutORM.waiter_id,
+                    func.coalesce(func.sum(TipPayoutORM.amount), 0),
+                )
+                .where(TipPayoutORM.tenant_id == tenant_id)
+                .group_by(TipPayoutORM.waiter_id)
+            )
+            if since is not None:
+                payout_stmt = payout_stmt.where(TipPayoutORM.created_at >= since)
+            if until is not None:
+                payout_stmt = payout_stmt.where(TipPayoutORM.created_at < until)
+            for wid, total in (await session.execute(payout_stmt)).all():
+                paid[wid] = paid.get(wid, 0) + int(total)
+
             waiter_ids = set(earned) | set(paid)
-            emails: dict[str, str] = {}
+            # Guarda D: mostramos el nombre del mozo (fallback email), no el UUID.
+            names: dict[str, str] = {}
             if waiter_ids:
-                email_rows = (
+                name_rows = (
                     await session.execute(
-                        select(UserORM.id, UserORM.email).where(
+                        select(UserORM.id, UserORM.name, UserORM.email).where(
                             UserORM.tenant_id == tenant_id, UserORM.id.in_(waiter_ids)
                         )
                     )
                 ).all()
-                emails = {uid: email for uid, email in email_rows}
+                names = {uid: (name or email) for uid, name, email in name_rows}
 
         rows = [
             TipsReportRow(
                 waiter_id=wid,
-                waiter_email=emails.get(wid, "—"),
+                waiter_name=names.get(wid, "—"),
                 earned=earned.get(wid, 0),
                 paid=paid.get(wid, 0),
                 pending=earned.get(wid, 0) - paid.get(wid, 0),

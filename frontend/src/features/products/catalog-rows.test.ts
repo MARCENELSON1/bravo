@@ -30,6 +30,7 @@ function fc(over: Partial<FoodCostRowDTO> = {}): FoodCostRowDTO {
     currency: "ARS",
     cost_confirmed: true,
     coverage_bps: 10000,
+    ratio_sane: true,
     ...over,
   }
 }
@@ -56,6 +57,14 @@ describe("mergeCatalogRows", () => {
     expect(rows[0].units).toBe(12)
     expect(rows[0].costConfirmed).toBe(true)
     expect(rows[0].coverageBps).toBe(10000)
+    expect(rows[0].ratioSane).toBe(true)
+  })
+
+  it("Guarda Insumos: refleja ratio_sane; sin receta → sano", () => {
+    const insane = mergeCatalogRows([product()], [fc({ ratio_sane: false })], [])
+    expect(insane[0].ratioSane).toBe(false)
+    const noRecipe = mergeCatalogRows([product({ id: "p2" })], [], [])
+    expect(noRecipe[0].ratioSane).toBe(true)
   })
 
   it("Fase 3: refleja el estado de confirmación; sin receta → confirmado (sin costo)", () => {

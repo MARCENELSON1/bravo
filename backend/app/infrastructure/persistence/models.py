@@ -38,6 +38,11 @@ class TenantORM(Base):
     country: Mapped[str] = mapped_column(String(2), server_default="AR")
     currency: Mapped[str] = mapped_column(String(3), server_default="ARS")
     standard_workday_minutes: Mapped[int] = mapped_column(Integer, server_default="480")
+    # Guarda B3: ¿este local exige una caja abierta para poder cobrar? OFF por
+    # default (paridad); se prende por tenant para el rollout del bloqueo de cobro.
+    require_open_cash_session: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -276,10 +281,18 @@ class PaymentORM(Base):
     # Propina cobrada encima del ``amount`` de la venta (0 si no hubo). No es
     # ingreso del local: solo cuenta para el arqueo de caja.
     tip_amount: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    # Comisiones: retención de la pasarela y neto que queda. net_amount NULL → se
+    # lee como amount (COALESCE) → paridad para pagos previos / sin comisión.
+    fee_amount: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    net_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     currency: Mapped[str] = mapped_column(String(3))
     method: Mapped[str] = mapped_column(String(20))
     status: Mapped[str] = mapped_column(String(20), index=True)
     order_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True, index=True)
+    # Caja (guarda B): sesión de caja abierta al cobrar (None si no había caja).
+    cash_session_id: Mapped[str | None] = mapped_column(
+        Uuid(as_uuid=False), nullable=True, index=True
+    )
     category: Mapped[str | None] = mapped_column(String(60), nullable=True)
     counterparty: Mapped[str | None] = mapped_column(String(120), nullable=True)
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -287,6 +300,19 @@ class PaymentORM(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+class PaymentFeeRateORM(Base):
+    """Tasa de comisión por método por tenant (bps). Sin fila → 0 (sin comisión).
+    Datos de plata → RLS."""
+
+    __tablename__ = "payment_fee_rates"
+
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), primary_key=True
+    )
+    method: Mapped[str] = mapped_column(String(20), primary_key=True)
+    fee_bps: Mapped[int] = mapped_column(Integer, server_default="0")
 
 
 class PaymentCredentialORM(Base):
@@ -666,6 +692,25 @@ class CashCountORM(Base):
     method: Mapped[str] = mapped_column(String(20))
     expected_amount: Mapped[int] = mapped_column(BigInteger)
     counted_amount: Mapped[int] = mapped_column(BigInteger)
+
+
+class TipPayoutORM(Base):
+    """Liquidaciones de propina (guarda D): pasivo neutro al resultado, NO egreso.
+    Datos de plata → RLS."""
+
+    __tablename__ = "tip_payouts"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    waiter_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
+    amount: Mapped[int] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(String(3))
+    method: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
 
 class AdvisorSettingsORM(Base):

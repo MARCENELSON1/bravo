@@ -124,6 +124,7 @@ export interface FoodCostRowDTO {
   currency: string
   cost_confirmed: boolean // Fase 3: todo el food cost respaldado por compras
   coverage_bps: number // Fase 3: cobertura de costo confirmado (bps)
+  ratio_sane: boolean // Guarda Insumos: ratio food-cost dentro de [5%, 95%]
 }
 
 export interface FoodCostReportDTO {

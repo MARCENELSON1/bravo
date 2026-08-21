@@ -24,9 +24,18 @@ class Payment:
     method: PaymentMethod
     status: PaymentStatus = PaymentStatus.CONFIRMED
     order_id: str | None = None
+    # Caja (guarda B): la sesión de caja abierta al momento de cobrar (None si no
+    # había caja abierta, o si es un egreso). Vincula cada cobro a su arqueo.
+    cash_session_id: str | None = None
     # Propina cobrada encima del ``amount`` (minor units, misma moneda). No es
     # ingreso del local: no entra en sale_facts, solo en el arqueo de caja.
     tip_amount: int = 0
+    # Comisiones (cimiento): lo que la pasarela retiene (``fee_amount``) y lo que
+    # realmente queda en la cuenta (``net_amount = amount − fee``). ``net_amount``
+    # None → se lee como ``amount`` (paridad; sin comisión cargada). Eje financiero
+    # de cobro, ORTOGONAL al neto de IVA del margen (2B, en sale_facts).
+    fee_amount: int = 0
+    net_amount: int | None = None
     category: str | None = None
     counterparty: str | None = None
     description: str | None = None

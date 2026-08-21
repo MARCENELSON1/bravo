@@ -40,7 +40,8 @@ class Settings(BaseSettings):
     invitation_token_ttl_hours: int = 72
 
     # Email — UX content is in Spanish. Transport "console" prints the link to
-    # stdout (dev, no SMTP server needed); "smtp" sends through aiosmtplib.
+    # stdout (dev, no SMTP server needed); "smtp" sends through aiosmtplib;
+    # "resend" posts to the Resend HTTP API (production).
     email_transport: str = "console"
     smtp_host: str = "localhost"
     smtp_port: int = 1025
@@ -48,6 +49,10 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     from_email: str = "no-reply@bravo.app"
     smtp_use_tls: bool = True
+
+    # Resend API key (EMAIL_TRANSPORT=resend). The sending domain must be
+    # verified in Resend and match FROM_EMAIL.
+    resend_api_key: str = ""
 
     # Base URL used to build links inside emails (points to the frontend).
     app_base_url: str = "http://localhost:5173"
@@ -158,7 +163,9 @@ class Settings(BaseSettings):
         if not self.app_base_url.startswith("https://"):
             problems.append("APP_BASE_URL must use https")
         if self.email_transport == "console" and self.env == "production":
-            problems.append("EMAIL_TRANSPORT must be 'smtp' (console logs token links)")
+            problems.append("EMAIL_TRANSPORT must be 'resend' or 'smtp' (console logs tokens)")
+        if self.email_transport == "resend" and not self.resend_api_key:
+            problems.append("RESEND_API_KEY must be set when EMAIL_TRANSPORT=resend")
         if not self.cookie_secure:
             problems.append("COOKIE_SECURE must be true (refresh cookie over HTTPS only)")
         if self.payment_gateway == "mercadopago":

@@ -1,5 +1,7 @@
 import type { HttpClient } from "@/api/http-client"
 import type {
+  FeeRateDTO,
+  FeeRatesDTO,
   PaymentDTO,
   RegisterExpenseBody,
   RegisterPaymentBody,
@@ -35,5 +37,17 @@ export class PaymentsApi {
 
   listExpenses(): Promise<PaymentDTO[]> {
     return this.http.request<PaymentDTO[]>("GET", "/expenses", { auth: true })
+  }
+
+  // Comisiones (slice B): tasas por método (bps).
+  getFeeRates(): Promise<FeeRatesDTO> {
+    return this.http.request<FeeRatesDTO>("GET", "/payments/fee-rates", { auth: true })
+  }
+
+  updateFeeRates(rates: FeeRateDTO[]): Promise<FeeRatesDTO> {
+    return this.http.request<FeeRatesDTO>("PUT", "/payments/fee-rates", {
+      body: { rates },
+      auth: true,
+    })
   }
 }
