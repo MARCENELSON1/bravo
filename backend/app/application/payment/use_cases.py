@@ -281,6 +281,11 @@ class ConfirmGatewayPayment:
         if status.status is PaymentStatus.CONFIRMED:
             payment.confirm()
             payment.external_ref = status.gateway_payment_id
+            # Comisiones slice C: si la pasarela reporta la comisión REAL, pisa la
+            # estimada (tasa configurada); el neto se recomputa. Sin fee → se conserva.
+            if status.fee_amount is not None:
+                payment.fee_amount = status.fee_amount
+                payment.net_amount = payment.amount.amount - status.fee_amount
             await self._payments.save(payment)
             if payment.order_id is not None:
                 await _settle_order(
