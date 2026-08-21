@@ -201,6 +201,9 @@ from app.infrastructure.persistence.invitation_repo import SqlAlchemyInvitationR
 from app.infrastructure.persistence.invoice_repo import SqlAlchemyInvoiceRepository
 from app.infrastructure.persistence.labor_cost_repo import SqlAlchemyLaborCostReadModel
 from app.infrastructure.persistence.order_repo import SqlAlchemyOrderRepository
+from app.infrastructure.persistence.payment_fee_repo import (
+    SqlAlchemyPaymentFeeRateRepository,
+)
 from app.infrastructure.persistence.payment_repo import SqlAlchemyPaymentRepository
 from app.infrastructure.persistence.preparation_repo import (
     SqlAlchemyPreparationRepository,
@@ -601,6 +604,9 @@ class Container(containers.DeclarativeContainer):
     cash_session_policy = providers.Factory(
         SqlAlchemyCashSessionPolicy, session_factory=db.provided.session
     )
+    payment_fee_rate_repository = providers.Factory(
+        SqlAlchemyPaymentFeeRateRepository, session_factory=db.provided.session
+    )
     open_cash_session = providers.Factory(
         OpenCashSession,
         cash=cash_session_repository,
@@ -691,6 +697,7 @@ class Container(containers.DeclarativeContainer):
         sales=project_order_sales,
         cash=cash_session_repository,
         policy=cash_session_policy,
+        fee_rates=payment_fee_rate_repository,
     )
     confirm_gateway_payment = providers.Factory(
         ConfirmGatewayPayment,

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from httpx import AsyncClient
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from tests.integration.test_e2e_auth import _onboard_verify_login
 
@@ -105,3 +107,42 @@ async def test_aislamiento_rls(client):
     )
     t2 = await _onboard_verify_login(http, fake_email, slug="dos", email="b@dos.com")
     assert (await http.get("/api/v1/expenses", headers=_auth(t2))).json() == []
+
+
+async def test_registerpayment_stamps_commission(client, admin_engine: AsyncEngine):
+    """Comisiones (slice A): con una tasa por método cargada, el cobro congela
+    fee_amount + net_amount; un método sin tasa → fee 0 y net == amount (paridad)."""
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    # Tasa CARD 3% (300 bps) para el tenant único; CASH sin tasa.
+    async with admin_engine.begin() as conn:
+        await conn.execute(
+            text(
+                "INSERT INTO payment_fee_rates (tenant_id, method, fee_bps) "
+                "SELECT id, 'CARD', 300 FROM tenants"
+            )
+        )
+    order_id = await _make_order(http, h)  # total 300000
+    r_card = await http.post(
+        f"/api/v1/orders/{order_id}/payments",
+        json={"method": "CARD", "amount": 200000},
+        headers=h,
+    )
+    assert r_card.status_code == 201, r_card.text
+    r_cash = await http.post(
+        f"/api/v1/orders/{order_id}/payments",
+        json={"method": "CASH", "amount": 100000},
+        headers=h,
+    )
+    assert r_cash.status_code == 201, r_cash.text
+    async with admin_engine.begin() as conn:
+        rows = (
+            await conn.execute(
+                text("SELECT method, amount, fee_amount, net_amount FROM payments")
+            )
+        ).all()
+    by_method = {m: (amt, fee, net) for m, amt, fee, net in rows}
+    # CARD 200000 @ 3% → fee 6000, net 194000.
+    assert by_method["CARD"] == (200000, 6000, 194000)
+    # CASH sin tasa → fee 0, net == amount (paridad).
+    assert by_method["CASH"] == (100000, 0, 100000)
