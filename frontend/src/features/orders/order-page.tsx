@@ -515,6 +515,7 @@ function CobroSection({
   tableLabel: string
   onPendingOnline: () => void
 }) {
+  const navigate = useNavigate()
   const payments = useOrderPayments(order.id)
   const registerPayment = useRegisterPayment(order.id)
   const refundPayment = useRefundPayment(order.id)
@@ -579,8 +580,17 @@ function CobroSection({
             toast.success("Cobro registrado.")
           }
         },
-        onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos registrar el cobro."),
+        onError: (error) => {
+          // Guarda B3: si el local exige caja abierta y no la hay, el back devuelve
+          // 409 → ofrecemos abrir la caja en vez de solo mostrar el error.
+          if (isApiError(error) && error.code === "no_open_cash_session") {
+            toast.error(error.message, {
+              action: { label: "Abrir caja", onClick: () => navigate("/app/caja") },
+            })
+            return
+          }
+          toast.error(isApiError(error) ? error.message : "No pudimos registrar el cobro.")
+        },
       }
     )
   }

@@ -15,6 +15,7 @@ from app.domain.cashier.exceptions import (
     CashSessionAlreadyClosed,
     CashSessionAlreadyOpen,
     CashSessionNotFound,
+    NoOpenCashSession,
 )
 from app.domain.copilot.exceptions import (
     CopilotDisabled,
@@ -171,6 +172,7 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     # Fase 14 — caja / arqueo Z
     (CashSessionNotFound, 404),
     (CashSessionAlreadyOpen, 409),
+    (NoOpenCashSession, 409),
     (CashSessionAlreadyClosed, 409),
     # Fase 11 — copiloto IA
     (CopilotDisabled, 409),

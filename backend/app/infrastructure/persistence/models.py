@@ -38,6 +38,11 @@ class TenantORM(Base):
     country: Mapped[str] = mapped_column(String(2), server_default="AR")
     currency: Mapped[str] = mapped_column(String(3), server_default="ARS")
     standard_workday_minutes: Mapped[int] = mapped_column(Integer, server_default="480")
+    # Guarda B3: ¿este local exige una caja abierta para poder cobrar? OFF por
+    # default (paridad); se prende por tenant para el rollout del bloqueo de cobro.
+    require_open_cash_session: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
