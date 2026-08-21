@@ -280,6 +280,10 @@ class PaymentORM(Base):
     method: Mapped[str] = mapped_column(String(20))
     status: Mapped[str] = mapped_column(String(20), index=True)
     order_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True, index=True)
+    # Caja (guarda B): sesión de caja abierta al cobrar (None si no había caja).
+    cash_session_id: Mapped[str | None] = mapped_column(
+        Uuid(as_uuid=False), nullable=True, index=True
+    )
     category: Mapped[str | None] = mapped_column(String(60), nullable=True)
     counterparty: Mapped[str | None] = mapped_column(String(120), nullable=True)
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)
