@@ -9,9 +9,11 @@ import { readFile, writeFile, rm } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
 import path from "node:path"
 
-const root = path.dirname(fileURLToPath(new URL("../", import.meta.url)))
-const indexPath = path.join(root, "landing", "dist", "index.html")
-const serverEntry = path.join(root, "landing", "dist-ssr", "entry-server.js")
+// Rutas relativas a ESTE archivo, sin asumir cómo se llama la carpeta: Railway
+// monta el Root Directory en /app, no en /landing.
+const projectDir = fileURLToPath(new URL("../", import.meta.url))
+const indexPath = path.join(projectDir, "dist", "index.html")
+const serverEntry = path.join(projectDir, "dist-ssr", "entry-server.js")
 
 const { render, structuredData } = await import(serverEntry)
 
@@ -33,7 +35,7 @@ template = template.replace(
 
 await writeFile(indexPath, template, "utf8")
 // El bundle SSR es un artefacto intermedio: no se publica.
-await rm(path.join(root, "landing", "dist-ssr"), { recursive: true, force: true })
+await rm(path.join(projectDir, "dist-ssr"), { recursive: true, force: true })
 
 const text = template
   .replace(/<script[\s\S]*?<\/script>/g, "")
