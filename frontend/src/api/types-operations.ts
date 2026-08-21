@@ -216,7 +216,7 @@ export interface CashReportDTO {
 
 export interface TipsReportRowDTO {
   waiter_id: string
-  waiter_email: string
+  waiter_name: string // nombre del mozo (fallback email); nunca el UUID
   earned: number // propina ganada (minor units)
   paid: number // ya liquidado al mozo
   pending: number // earned - paid
@@ -228,6 +228,15 @@ export interface TipsReportDTO {
   earned_total: number
   paid_total: number
   pending_total: number
+}
+
+// Guarda D: liquidación en el ledger de propinas (NO es un egreso).
+export interface TipPayoutDTO {
+  id: string
+  waiter_id: string
+  amount: number
+  currency: string
+  method: string
 }
 
 // --- Pantalla Finanzas ---

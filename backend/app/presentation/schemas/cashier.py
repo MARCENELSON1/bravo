@@ -48,7 +48,7 @@ class CashReportResponse(BaseModel):
 
 class TipsReportRowResponse(BaseModel):
     waiter_id: str
-    waiter_email: str
+    waiter_name: str  # nombre del mozo (fallback email); nunca el UUID
     earned: int  # propina ganada (minor units)
     paid: int  # ya liquidado al mozo
     pending: int  # earned - paid
@@ -66,3 +66,13 @@ class TipPayoutRequest(BaseModel):
     waiter_id: str
     amount: int = Field(ge=1)  # minor units
     method: PaymentMethod = PaymentMethod.CASH
+
+
+class TipPayoutResponse(BaseModel):
+    """Guarda D: liquidación en el ledger de propinas (no es un egreso)."""
+
+    id: str
+    waiter_id: str
+    amount: int
+    currency: str
+    method: str

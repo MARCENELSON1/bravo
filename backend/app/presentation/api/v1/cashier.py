@@ -16,7 +16,6 @@ from app.container import Container
 from app.domain.cashier.entities import CashSession
 from app.domain.identity.tokens import AccessClaims
 from app.domain.user.value_objects import Role
-from app.presentation.api.v1.payments import payment_to_response
 from app.presentation.rbac import require_roles
 from app.presentation.schemas.cashier import (
     CashReportLineResponse,
@@ -25,10 +24,10 @@ from app.presentation.schemas.cashier import (
     CloseCashSessionRequest,
     OpenCashSessionRequest,
     TipPayoutRequest,
+    TipPayoutResponse,
     TipsReportResponse,
     TipsReportRowResponse,
 )
-from app.presentation.schemas.payments import PaymentResponse
 
 router = APIRouter(prefix="/cashier", tags=["cashier"])
 
@@ -120,7 +119,7 @@ def _tips_response(report: TipsReport) -> TipsReportResponse:
         rows=[
             TipsReportRowResponse(
                 waiter_id=row.waiter_id,
-                waiter_email=row.waiter_email,
+                waiter_name=row.waiter_name,
                 earned=row.earned,
                 paid=row.paid,
                 pending=row.pending,
@@ -146,18 +145,25 @@ async def tips_report(
     return _tips_response(report)
 
 
-@router.post("/tips/payout", response_model=PaymentResponse)
+@router.post("/tips/payout", response_model=TipPayoutResponse)
 @inject
 async def pay_tips(
     body: TipPayoutRequest,
     identity: AccessClaims = Depends(require_roles(*_CASH_ROLES)),
     use_case: PayTips = Depends(Provide[Container.pay_tips]),
-) -> PaymentResponse:
-    """Liquidar propinas a un mozo: egreso 'Propinas' a su nombre."""
-    payment = await use_case.execute(
+) -> TipPayoutResponse:
+    """Liquidar propinas a un mozo: pasivo en el ledger (NO egreso → no pega en el
+    resultado del mes)."""
+    payout = await use_case.execute(
         tenant_id=identity.tenant_id,
         waiter_id=body.waiter_id,
         amount=body.amount,
         method=body.method.value,
     )
-    return payment_to_response(payment)
+    return TipPayoutResponse(
+        id=payout.id,
+        waiter_id=payout.waiter_id,
+        amount=payout.amount,
+        currency=payout.currency,
+        method=payout.method,
+    )

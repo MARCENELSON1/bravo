@@ -2,7 +2,7 @@ import type { HttpClient } from "@/api/http-client"
 import type {
   CashReportDTO,
   CashSessionDTO,
-  PaymentDTO,
+  TipPayoutDTO,
   PaymentMethod,
   TipsReportDTO,
 } from "@/api/types-operations"
@@ -55,8 +55,8 @@ export class CashApi {
   }
 
   // Liquidar propinas a un mozo (egreso 'Propinas' a su nombre).
-  payTip(waiterId: string, amount: number): Promise<PaymentDTO> {
-    return this.http.request<PaymentDTO>("POST", "/cashier/tips/payout", {
+  payTip(waiterId: string, amount: number): Promise<TipPayoutDTO> {
+    return this.http.request<TipPayoutDTO>("POST", "/cashier/tips/payout", {
       body: { waiter_id: waiterId, amount },
       auth: true,
     })
