@@ -244,7 +244,7 @@ export function ReservationsPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
+    <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <GradientHeading size="md" weight="bold">
@@ -329,7 +329,7 @@ export function ReservationsPage() {
             </TableBody>
           </Table>
         ) : (
-          <p className="p-8 text-center text-sm text-muted-foreground">
+          <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
             No hay reservas para este día.
           </p>
         )}

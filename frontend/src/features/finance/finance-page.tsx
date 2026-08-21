@@ -87,7 +87,7 @@ export function FinancePage() {
   const overview = useFinanceOverview(window)
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <GradientHeading>Finanzas</GradientHeading>
         <div className="flex flex-wrap gap-1">
@@ -138,7 +138,7 @@ function FinanceBody({
       <GlassCard className="p-6">
         <p className="text-sm text-muted-foreground">Tu ganancia neta del período</p>
         <p
-          className={`mt-1 text-4xl font-bold tabular-nums ${net && net.value < 0 ? "text-red-500" : "text-foreground"}`}
+          className={`mt-1 text-3xl font-bold tabular-nums sm:text-4xl ${net && net.value < 0 ? "text-red-500" : "text-foreground"}`}
         >
           {net ? formatMoney(net.value, data.currency) : "—"}
         </p>

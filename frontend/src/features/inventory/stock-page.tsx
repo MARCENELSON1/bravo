@@ -524,7 +524,7 @@ export function StockPage() {
   const lowCount = lowStock.data?.length ?? 0
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-8">
+    <div className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <GradientHeading size="md" weight="bold">
@@ -606,7 +606,7 @@ export function StockPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="p-8 text-center text-sm text-muted-foreground">
+            <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
               Todavía no cargaste insumos.
             </p>
           )}

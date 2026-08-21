@@ -86,7 +86,7 @@ export function ProductsPage() {
   })
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
           <GradientHeading size="md" weight="bold">
@@ -95,7 +95,7 @@ export function ProductsPage() {
           <p className="text-sm text-muted-foreground">Tu catálogo y precios.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
             {FINANCE_RANGES.map((r) => (
               <Button
                 key={r.value}

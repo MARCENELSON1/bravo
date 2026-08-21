@@ -75,6 +75,7 @@ from app.application.invoice.connect_afip import (
     GetAfipConnection,
 )
 from app.application.invoice.use_cases import GetOrderInvoice, IssueInvoice, ListInvoices
+from app.application.marketing.submit_lead import SubmitLead
 from app.application.order.use_cases import (
     AddOrderItem,
     AddOrderItemsBatch,
@@ -157,6 +158,8 @@ from app.infrastructure.invoicing.afip_invoicing import AfipInvoicing
 from app.infrastructure.invoicing.credentials_resolver import DbTaxCredentialsResolver
 from app.infrastructure.invoicing.fake_invoicing import FakeInvoicing
 from app.infrastructure.llm.client import AnthropicClient
+from app.infrastructure.marketing.log_lead_gateway import LogLeadGateway
+from app.infrastructure.marketing.twenty_lead_gateway import TwentyLeadGateway
 from app.infrastructure.payments.credentials_resolver import DbPaymentCredentialsResolver
 from app.infrastructure.payments.manual_gateway import ManualPaymentGateway
 from app.infrastructure.payments.mercadopago_gateway import MercadoPagoGateway
@@ -290,6 +293,16 @@ class Container(containers.DeclarativeContainer):
             from_email=config.provided.from_email,
         ),
     )
+    lead_gateway = providers.Selector(
+        config.provided.lead_gateway,
+        log=providers.Singleton(LogLeadGateway),
+        twenty=providers.Singleton(
+            TwentyLeadGateway,
+            base_url=config.provided.twenty_base_url,
+            api_key=config.provided.twenty_api_key,
+        ),
+    )
+    submit_lead = providers.Factory(SubmitLead, gateway=lead_gateway)
 
     # --- repositories (per-use factories) ---
     tenant_repository = providers.Factory(

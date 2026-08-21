@@ -11,7 +11,6 @@ import {
   Lightbulb,
   LineChart,
   Package,
-  Plug,
   QrCode,
   Receipt,
   Sparkles,
@@ -55,6 +54,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { label: "Productos", to: "/app/products", icon: Package, roles: ["OWNER", "MANAGER"] },
   { label: "IA Insights", to: "/app/copilot", icon: Lightbulb, roles: ["OWNER", "MANAGER"] },
+  { label: "Asesor", to: "/app/advisor", icon: Sparkles, roles: ["OWNER", "MANAGER"] },
   { label: "Reportes", to: "/app/analytics", icon: FileText, roles: ["OWNER", "MANAGER"] },
 ]
 
@@ -93,7 +93,6 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Gestión",
     items: [
-      { label: "Asesor", to: "/app/advisor", icon: Sparkles, roles: ["OWNER", "MANAGER"] },
       { label: "Egresos", to: "/app/expenses", icon: Receipt, roles: ["OWNER", "MANAGER"] },
       {
         label: "Comprobantes",
@@ -104,13 +103,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Insumos", to: "/app/stock", icon: Boxes, roles: ["OWNER", "MANAGER"] },
       { label: "Proveedores", to: "/app/suppliers", icon: Truck, roles: ["OWNER", "MANAGER"] },
       { label: "Personal", to: "/app/staff", icon: Clock, roles: ["OWNER", "MANAGER"] },
-      {
-        label: "Integraciones",
-        to: "/app/integrations",
-        icon: Plug,
-        roles: ["OWNER", "MANAGER"],
-      },
-      { label: "Equipo", to: "/app/invite", icon: Users, roles: ["OWNER", "MANAGER"] },
     ],
   },
 ]

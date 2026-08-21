@@ -46,13 +46,13 @@ export function CopilotPage() {
   const result = ask.data
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-8">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-col gap-1">
         <GradientHeading size="md" weight="bold">
           Copiloto
         </GradientHeading>
         <p className="text-sm text-muted-foreground">
-          Preguntá en español sobre tu negocio. Te muestro la respuesta y de dónde sale.
+          Preguntá sobre tu negocio. Te muestro la respuesta y de dónde sale.
         </p>
       </header>
 

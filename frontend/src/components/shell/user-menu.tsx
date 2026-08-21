@@ -63,7 +63,7 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
             transition={reduce ? { duration: 0 } : { duration: 0.15, ease: "easeOut" }}
             className={cn(
               "absolute bottom-full left-3 right-3 z-20 mb-2 origin-bottom overflow-hidden rounded-xl p-1.5 shadow-xl",
-              "border border-black/10 bg-white/90 backdrop-blur-xl dark:border-white/10 dark:bg-black/70"
+              "border border-black/10 bg-white/98 backdrop-blur-3xl dark:border-white/10 dark:bg-black/92"
             )}
           >
             <div className="px-2.5 py-2">

@@ -160,7 +160,7 @@ export function OrderPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-6 py-8">
+    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex items-center justify-between gap-2">
         <GradientHeading size="md" weight="bold">
           Comanda
@@ -409,7 +409,7 @@ function FacturaSection({ order }: { order: OrderDTO }) {
           if (inv.status === "AUTHORIZED") toast.success(`Factura autorizada · CAE ${inv.cae}`)
           else
             toast.error(
-              `AFIP rechazó el comprobante${inv.rejection ? `: ${inv.rejection}` : "."}`
+              `ARCA rechazó el comprobante${inv.rejection ? `: ${inv.rejection}` : "."}`
             )
         },
         onError: (error) =>
@@ -468,7 +468,7 @@ function FacturaSection({ order }: { order: OrderDTO }) {
       <CardContent className="flex flex-col gap-3">
         {existing && existing.status === "REJECTED" ? (
           <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
-            AFIP rechazó el último intento
+            ARCA rechazó el último intento
             {existing.rejection ? `: ${existing.rejection}` : "."} Probá de nuevo.
           </p>
         ) : null}
@@ -499,7 +499,7 @@ function FacturaSection({ order }: { order: OrderDTO }) {
           {issue.isPending ? "Emitiendo…" : "Emitir factura"}
         </Button>
         <p className="text-xs text-muted-foreground">
-          Necesitás AFIP conectado en Integraciones. El tipo (A/B/C) se determina solo.
+          Necesitás ARCA conectado en Integraciones. El tipo (A/B/C) se determina solo.
         </p>
       </CardContent>
     </Card>

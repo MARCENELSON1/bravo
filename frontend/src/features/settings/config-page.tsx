@@ -8,18 +8,22 @@ import {
 } from "overlayscrollbars-react"
 import { useNavigate } from "react-router-dom"
 
-const OS_OPTIONS = {
-  scrollbars: { theme: "os-theme-wellnod", autoHide: "scroll", autoHideDelay: 800 },
-} as const
-
 // Tab bar horizontal: siempre visible y un gris un poco más oscuro.
 const OS_OPTIONS_TABS = {
+  scrollbars: { theme: "os-theme-wellnod-static", autoHide: "never" },
+} as const
+
+// Cuadro de sección: la barra no se esconde (queda visible mientras haya contenido
+// para scrollear) y usa el mismo gris que la barra horizontal de las pestañas.
+const OS_OPTIONS_CARD = {
   scrollbars: { theme: "os-theme-wellnod-static", autoHide: "never" },
 } as const
 
 import { useAuth } from "@/auth/auth-context"
 import { AppBackground } from "@/components/shell/app-background"
 import { GlassCard } from "@/components/ui/glass-card"
+import { InviteUserForm } from "@/features/identity/invite-user-page"
+import { IntegrationsPanel } from "@/features/integrations/integrations-page"
 import { useEdgePeek } from "@/lib/edge-peek"
 import { setReduceMotion, useReduceMotion } from "@/lib/reduce-motion"
 import { setThemeAnimated } from "@/lib/theme-transition"
@@ -196,13 +200,13 @@ function Switch({ checked, disabled }: { checked: boolean; disabled?: boolean })
       disabled={disabled}
       className={cn(
         "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors",
-        checked ? "bg-primary" : "bg-muted",
-        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+        checked ? "bg-primary" : "bg-black/15 dark:bg-white/25",
+        disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"
       )}
     >
       <span
         className={cn(
-          "inline-block size-5 rounded-full bg-white shadow transition-transform",
+          "inline-block size-5 rounded-full bg-white shadow ring-1 ring-black/10 transition-transform",
           checked ? "translate-x-[22px]" : "translate-x-0.5"
         )}
       />
@@ -219,12 +223,12 @@ function LiveSwitch({ checked, onChange }: { checked: boolean; onChange: (v: boo
       onClick={() => onChange(!checked)}
       className={cn(
         "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors",
-        checked ? "bg-primary" : "bg-muted"
+        checked ? "bg-primary" : "bg-black/15 dark:bg-white/25"
       )}
     >
       <span
         className={cn(
-          "inline-block size-5 rounded-full bg-white shadow transition-transform",
+          "inline-block size-5 rounded-full bg-white shadow ring-1 ring-black/10 transition-transform",
           checked ? "translate-x-[22px]" : "translate-x-0.5"
         )}
       />
@@ -282,6 +286,18 @@ const initialsOf = (name: string | null, email: string) => {
   return email[0]?.toUpperCase() || "?"
 }
 
+// Cuadro de sección con scroll interno: solo scrollea su propio contenido (y solo
+// cuando no entra en el alto disponible), en vez de scrollear la página entera.
+function ScrollCard({ children }: { children: ReactNode }) {
+  return (
+    <GlassCard className="flex max-h-full flex-col overflow-hidden">
+      <OverlayScrollbarsComponent element="div" className="min-h-0" options={OS_OPTIONS_CARD} defer>
+        {children}
+      </OverlayScrollbarsComponent>
+    </GlassCard>
+  )
+}
+
 // ── Página ────────────────────────────────────────────────────────────────────
 export function ConfigPage() {
   const { session } = useAuth()
@@ -289,11 +305,9 @@ export function ConfigPage() {
   const reduceMotion = useReduceMotion()
   const [tab, setTab] = useState<TabId>("perfil")
   const tabsOsRef = useRef<OverlayScrollbarsComponentRef>(null)
-  const pageOsRef = useRef<OverlayScrollbarsComponentRef>(null)
   const navigate = useNavigate()
   const [closing, setClosing] = useState(false)
   useEdgePeek(tabsOsRef)
-  useEdgePeek(pageOsRef)
 
   if (!session) return null
 
@@ -321,120 +335,130 @@ export function ConfigPage() {
           if (closing) navigate("/app")
         }}
       >
-        <OverlayScrollbarsComponent
-          ref={pageOsRef}
-          element="div"
-          className="h-svh"
-          options={OS_OPTIONS}
-          defer
-        >
-          <div className="mx-auto w-full max-w-4xl px-6 py-8">
-            <button
-              type="button"
-              onClick={() => setClosing(true)}
-              className="mb-5 inline-flex items-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition duration-200 ease-out hover:text-foreground active:scale-[0.97]"
-            >
-              <ArrowLeft className="size-4" />
-              Inicio
-            </button>
-        <header className="mb-6">
-          <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
-            Configuración
-          </h1>
-          <p className="text-sm text-muted-foreground">Gestioná tus datos y preferencias.</p>
-        </header>
+        <div className="mx-auto flex h-full w-full max-w-4xl flex-col px-4 py-6 sm:px-6 sm:py-8">
+          <button
+            type="button"
+            onClick={() => setClosing(true)}
+            className="mb-5 inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg text-sm font-medium text-muted-foreground transition duration-200 ease-out hover:text-foreground active:scale-[0.97]"
+          >
+            <ArrowLeft className="size-4" />
+            Inicio
+          </button>
 
-      {/* Pestañas */}
-      <div className="mb-6 border-b border-border">
-        <OverlayScrollbarsComponent ref={tabsOsRef} options={OS_OPTIONS_TABS} className="pb-3" defer>
-          <div className="flex gap-1">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  "shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium whitespace-nowrap transition duration-200 ease-out active:scale-[0.97]",
-                  tab === t.id
-                    ? "bg-card text-foreground shadow-sm ring-1 ring-border"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
+          <header className="mb-6 shrink-0">
+            <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
+              Configuración
+            </h1>
+            <p className="text-sm text-muted-foreground">Gestioná tus datos y preferencias.</p>
+          </header>
+
+          {/* Pestañas (fijas) */}
+          <div className="mb-6 shrink-0 border-b border-border">
+            <OverlayScrollbarsComponent ref={tabsOsRef} options={OS_OPTIONS_TABS} className="pb-3" defer>
+              <div className="flex gap-1">
+                {tabs.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTab(t.id)}
+                    className={cn(
+                      "shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium whitespace-nowrap transition duration-200 ease-out active:scale-[0.97]",
+                      tab === t.id
+                        ? "bg-card text-foreground shadow-sm ring-1 ring-border"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </OverlayScrollbarsComponent>
           </div>
-        </OverlayScrollbarsComponent>
-      </div>
 
-      <GlassCard className="px-6">
-        <motion.div
-          key={tab}
-          initial={reduceMotion ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
-          className="divide-y divide-border"
-        >
-          {/* Apariencia: filas funcionales primero */}
-          {tab === "apariencia" ? (
-            <>
-              <Row label="Tema" desc="Apariencia de la interfaz.">
-                <div className="flex flex-wrap gap-2">
-                  {THEME_OPTIONS.map((opt) => {
-                    const active = theme === opt.value
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setThemeAnimated(setTheme, opt.value)}
-                        aria-pressed={active}
-                        className={cn(
-                          "flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition duration-200 ease-out active:scale-[0.97]",
-                          active
-                            ? "border-primary bg-primary/10 text-foreground"
-                            : "border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                        )}
-                      >
-                        <opt.icon className="size-4" />
-                        {opt.label}
-                      </button>
-                    )
-                  })}
+          {/* Contenido: solo el cuadro scrollea, y solo si no entra */}
+          <motion.div
+            key={tab}
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
+            className="min-h-0 flex-1"
+          >
+            {tab === "equipo" ? (
+              <ScrollCard>
+                <div className="px-4 sm:px-6">
+                  <InviteUserForm embedded />
                 </div>
-              </Row>
-              <Row label="Reducir movimiento" desc="Desactiva las animaciones de la interfaz.">
-                <span />
-                <LiveSwitch checked={reduceMotion} onChange={setReduceMotion} />
-              </Row>
-            </>
-          ) : null}
+              </ScrollCard>
+            ) : tab === "integraciones" ? (
+              <ScrollCard>
+                <div className="px-4 sm:px-6">
+                  <IntegrationsPanel embedded />
+                </div>
+              </ScrollCard>
+            ) : (
+              <ScrollCard>
+                <div className="divide-y divide-border px-4 sm:px-6">
+                  {/* Apariencia: filas funcionales primero */}
+                  {tab === "apariencia" ? (
+                <>
+                  <Row label="Tema" desc="Apariencia de la interfaz.">
+                    <div className="flex flex-wrap gap-2">
+                      {THEME_OPTIONS.map((opt) => {
+                        const active = theme === opt.value
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setThemeAnimated(setTheme, opt.value)}
+                            aria-pressed={active}
+                            className={cn(
+                              "flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition duration-200 ease-out active:scale-[0.97]",
+                              active
+                                ? "border-primary bg-primary/10 text-foreground"
+                                : "border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                            )}
+                          >
+                            <opt.icon className="size-4" />
+                            {opt.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </Row>
+                  <Row label="Reducir movimiento" desc="Desactiva las animaciones de la interfaz.">
+                    <span />
+                    <LiveSwitch checked={reduceMotion} onChange={setReduceMotion} />
+                  </Row>
+                </>
+              ) : null}
 
-          {/* Filas placeholder de la sección */}
-          {SECTIONS[tab].map((r) => {
-            const value = rowValue(r)
-            return (
-              <Row key={r.label} label={r.label} required={r.required} desc={r.desc}>
-                {r.valueKey === "avatar" ? (
-                  <span className="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                    {initialsOf(session.name, session.email)}
-                  </span>
-                ) : value ? (
-                  <span className="truncate text-foreground">{value}</span>
-                ) : (
-                  <span />
-                )}
-                {r.kind === "toggle" ? (
-                  <Switch checked={false} disabled />
-                ) : (
-                  <EditSoon label={r.action} />
-                )}
-              </Row>
-            )
-          })}
-        </motion.div>
-      </GlassCard>
-          </div>
-        </OverlayScrollbarsComponent>
+              {/* Filas placeholder de la sección */}
+              {SECTIONS[tab].map((r) => {
+                const value = rowValue(r)
+                return (
+                  <Row key={r.label} label={r.label} required={r.required} desc={r.desc}>
+                    {r.valueKey === "avatar" ? (
+                      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                        {initialsOf(session.name, session.email)}
+                      </span>
+                    ) : value ? (
+                      <span className="truncate text-foreground">{value}</span>
+                    ) : (
+                      <span />
+                    )}
+                    {r.kind === "toggle" ? (
+                      <Switch checked={false} disabled />
+                    ) : (
+                      <EditSoon label={r.action} />
+                    )}
+                  </Row>
+                )
+              })}
+                </div>
+              </ScrollCard>
+            )}
+          </motion.div>
+        </div>
       </motion.div>
     </div>
   )

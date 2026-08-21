@@ -8,12 +8,12 @@ export const BUCKET_LABELS: Record<string, string> = {
   WELL_DONE: "Bien hecho",
 }
 
-type BadgeVariant = "default" | "secondary" | "outline" | "destructive"
+type BadgeVariant = "default" | "secondary" | "outline" | "destructive" | "warning"
 
 export const SEVERITY_VARIANT: Record<string, BadgeVariant> = {
   GOOD: "default",
   INFO: "outline",
-  WARN: "secondary",
+  WARN: "warning",
   CRITICAL: "destructive",
 }
 

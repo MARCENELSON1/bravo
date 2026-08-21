@@ -35,7 +35,23 @@ const schema = z.object({
 
 type InviteValues = z.infer<typeof schema>
 
+// Route standalone: /app/invite. El contenido vive en <InviteUserForm/> para poder
+// reutilizarlo también dentro de la sección "Equipo" de Configuración.
 export function InviteUserPage() {
+  return (
+    <div className="mx-auto flex min-h-svh max-w-md flex-col justify-center gap-4 px-6 py-10">
+      <InviteUserForm showBack />
+    </div>
+  )
+}
+
+export function InviteUserForm({
+  showBack = false,
+  embedded = false,
+}: {
+  showBack?: boolean
+  embedded?: boolean
+}) {
   const invite = useInviteUser()
   const [serverError, setServerError] = useState<string | null>(null)
 
@@ -72,59 +88,99 @@ export function InviteUserPage() {
     })
   })
 
+  const emailField = (
+    <Field>
+      <FieldLabel htmlFor="email">Email</FieldLabel>
+      <Input id="email" type="email" aria-invalid={!!errors.email} {...register("email")} />
+      <FieldError>{errors.email?.message}</FieldError>
+    </Field>
+  )
+
+  const rolField = (
+    <Field>
+      <FieldLabel htmlFor="role">Rol</FieldLabel>
+      <Controller
+        control={control}
+        name="role"
+        render={({ field }) => (
+          <Select value={field.value} onValueChange={field.onChange}>
+            <SelectTrigger id="role" className="w-full">
+              <SelectValue placeholder="Elegí un rol" />
+            </SelectTrigger>
+            <SelectContent>
+              {INVITABLE_ROLES.map((role) => (
+                <SelectItem key={role} value={role}>
+                  {ROLE_LABELS[role]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      />
+      <FieldError>{errors.role?.message}</FieldError>
+    </Field>
+  )
+
+  // Formulario apilado (página standalone dentro del Card).
+  const form = (
+    <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
+      <FieldGroup>
+        {emailField}
+        {rolField}
+      </FieldGroup>
+
+      <FormError message={serverError} />
+
+      <div className="flex items-center justify-between gap-3">
+        {showBack ? (
+          <Link to="/app" className="text-sm text-muted-foreground underline underline-offset-4">
+            Volver
+          </Link>
+        ) : (
+          <span />
+        )}
+        <Button type="submit" disabled={invite.isPending}>
+          {invite.isPending ? "Enviando…" : "Enviar invitación"}
+        </Button>
+      </div>
+    </form>
+  )
+
+  // Modo embebido: dentro de un GlassCard de Configuración, con la misma estética
+  // que el resto de las secciones — a todo el ancho, Rol y Email en dos columnas y
+  // el botón abajo a la derecha.
+  if (embedded) {
+    return (
+      <form onSubmit={onSubmit} className="py-5" noValidate>
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">Invitar a tu equipo</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Le enviamos un email para que cree su cuenta.
+            </p>
+          </div>
+          <Button type="submit" disabled={invite.isPending} className="mt-3 mr-2 shrink-0">
+            {invite.isPending ? "Enviando…" : "Enviar invitación"}
+          </Button>
+        </div>
+        <div className="flex flex-col gap-5">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            {rolField}
+            {emailField}
+          </div>
+          <FormError message={serverError} />
+        </div>
+      </form>
+    )
+  }
+
   return (
-    <div className="mx-auto flex min-h-svh max-w-md flex-col justify-center gap-4 px-6 py-10">
-      <Card>
-        <CardHeader>
-          <CardTitle>Invitar a tu equipo</CardTitle>
-          <CardDescription>Le enviamos un email para que cree su cuenta.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input id="email" type="email" aria-invalid={!!errors.email} {...register("email")} />
-                <FieldError>{errors.email?.message}</FieldError>
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="role">Rol</FieldLabel>
-                <Controller
-                  control={control}
-                  name="role"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger id="role" className="w-full">
-                        <SelectValue placeholder="Elegí un rol" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {INVITABLE_ROLES.map((role) => (
-                          <SelectItem key={role} value={role}>
-                            {ROLE_LABELS[role]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                <FieldError>{errors.role?.message}</FieldError>
-              </Field>
-            </FieldGroup>
-
-            <FormError message={serverError} />
-
-            <div className="flex items-center justify-between gap-3">
-              <Link to="/app" className="text-sm text-muted-foreground underline underline-offset-4">
-                Volver
-              </Link>
-              <Button type="submit" disabled={invite.isPending}>
-                {invite.isPending ? "Enviando…" : "Enviar invitación"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Invitar a tu equipo</CardTitle>
+        <CardDescription>Le enviamos un email para que cree su cuenta.</CardDescription>
+      </CardHeader>
+      <CardContent>{form}</CardContent>
+    </Card>
   )
 }

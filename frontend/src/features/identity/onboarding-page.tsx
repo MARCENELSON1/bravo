@@ -139,19 +139,18 @@ export function OnboardingPage() {
               aria-invalid={!!errors.ownerName}
               {...register("ownerName")}
             />
-            <FieldDescription>Opcional. Lo usamos para saludarte en el panel.</FieldDescription>
             <FieldError>{errors.ownerName?.message}</FieldError>
           </Field>
 
           <Field>
             <FieldLabel htmlFor="ownerEmail">Tu email</FieldLabel>
-            <Input id="ownerEmail" type="email" autoComplete="email" aria-invalid={!!errors.ownerEmail} {...register("ownerEmail")} />
+            <Input id="ownerEmail" type="email" placeholder="tu@email.com" autoComplete="email" aria-invalid={!!errors.ownerEmail} {...register("ownerEmail")} />
             <FieldError>{errors.ownerEmail?.message}</FieldError>
           </Field>
 
           <Field>
             <FieldLabel htmlFor="ownerPassword">Contraseña</FieldLabel>
-            <Input id="ownerPassword" type="password" autoComplete="new-password" aria-invalid={!!errors.ownerPassword} {...register("ownerPassword")} />
+            <Input id="ownerPassword" type="password" placeholder="********" autoComplete="new-password" aria-invalid={!!errors.ownerPassword} {...register("ownerPassword")} />
             <FieldError>{errors.ownerPassword?.message}</FieldError>
           </Field>
         </FieldGroup>

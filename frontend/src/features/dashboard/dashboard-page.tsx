@@ -76,7 +76,7 @@ export function DashboardPage() {
 
   const d = summary.data
   const currency = d?.currency ?? "ARS"
-  const money = (n: number) => formatMoney(Math.round(n), currency)
+  const money = (n: number) => formatMoney(Math.round(n), currency, 0)
   const firstName = session?.name ? session.name.trim().split(/\s+/)[0] : null
 
   const sales = d?.sales ?? 0
@@ -97,11 +97,12 @@ export function DashboardPage() {
 
   const diagnostics = overview.data?.diagnostics ?? []
   const alert = topAlert(diagnostics)
+  const alertIsWarn = alert?.severity === "warn"
   const task = tomorrowTask(diagnostics)
   const projection = overview.data?.projection ?? null
 
   return (
-    <div className="relative isolate mx-auto flex w-full max-w-5xl flex-col gap-5 px-6 py-8">
+    <div className="relative isolate mx-auto flex w-full max-w-5xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -top-40 left-1/2 h-[26rem] w-[80%] -translate-x-1/2 rounded-[50%] bg-primary/22 blur-[130px]" />
       </div>
@@ -117,7 +118,7 @@ export function DashboardPage() {
       <GlassCard className="p-6">
         <p className="text-sm text-muted-foreground">Tu ganancia de hoy</p>
         <div
-          className={`mt-1 text-4xl font-bold tabular-nums ${net < 0 ? "text-red-500" : "text-foreground"}`}
+          className={`mt-1 text-3xl font-bold tabular-nums sm:text-4xl ${net < 0 ? "text-red-500" : "text-foreground"}`}
         >
           {summary.isPending ? (
             <span className="text-muted-foreground">—</span>
@@ -207,8 +208,12 @@ export function DashboardPage() {
 
       {/* NIVEL 4 — Alerta del día (máx 1) */}
       {alert ? (
-        <GlassCard className="border-l-2 border-l-destructive p-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-destructive">
+        <GlassCard
+          className={`border-l-2 p-6 ${alertIsWarn ? "border-l-amber-500" : "border-l-destructive"}`}
+        >
+          <p
+            className={`text-xs font-semibold uppercase tracking-wide ${alertIsWarn ? "text-amber-600 dark:text-amber-400" : "text-destructive"}`}
+          >
             Atención hoy
           </p>
           <p className="mt-1.5 text-sm font-medium text-foreground">{alert.title}</p>
@@ -272,6 +277,7 @@ export function DashboardPage() {
         movements={(movements.data ?? []).slice(0, 5)}
         currency={currency}
         pending={movements.isPending}
+        fractionDigits={0}
       />
 
       {/* NIVEL 7 — Tu tarea para mañana */}
@@ -384,7 +390,7 @@ function RevenueChart({
               <div
                 className="w-8 rounded-t-md bg-primary transition-all"
                 style={{ height: `${(x.value / max) * 100}%` }}
-                title={formatMoney(x.value, currency)}
+                title={formatMoney(x.value, currency, 0)}
               />
             </div>
           ))}
