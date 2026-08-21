@@ -19,6 +19,21 @@ class RegisterExpenseRequest(BaseModel):
     description: str | None = Field(default=None, max_length=255)
 
 
+class FeeRateItem(BaseModel):
+    """Comisiones (slice B): la tasa de un método, en bps (300 = 3%)."""
+
+    method: PaymentMethod
+    fee_bps: int = Field(ge=0, le=10000)
+
+
+class UpdateFeeRatesRequest(BaseModel):
+    rates: list[FeeRateItem]
+
+
+class FeeRatesResponse(BaseModel):
+    rates: list[FeeRateItem]
+
+
 class PaymentResponse(BaseModel):
     id: str
     direction: str

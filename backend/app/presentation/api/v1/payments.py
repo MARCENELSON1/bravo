@@ -3,6 +3,7 @@ from __future__ import annotations
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, status
 
+from app.application.payment.fee_rates import GetPaymentFeeRates, UpdatePaymentFeeRates
 from app.application.payment.use_cases import (
     ListOrderPayments,
     RefundPayment,
@@ -14,7 +15,13 @@ from app.domain.payment.entities import Payment
 from app.domain.user.value_objects import Role
 from app.presentation.deps import current_identity
 from app.presentation.rbac import require_roles
-from app.presentation.schemas.payments import PaymentResponse, RegisterPaymentRequest
+from app.presentation.schemas.payments import (
+    FeeRateItem,
+    FeeRatesResponse,
+    PaymentResponse,
+    RegisterPaymentRequest,
+    UpdateFeeRatesRequest,
+)
 
 router = APIRouter(tags=["payments"])
 
@@ -36,6 +43,37 @@ def payment_to_response(payment: Payment) -> PaymentResponse:
         description=payment.description,
         checkout_url=payment.checkout_url,
     )
+
+
+def _fee_rates_response(rates: dict[str, int]) -> FeeRatesResponse:
+    return FeeRatesResponse(
+        rates=[FeeRateItem(method=m, fee_bps=b) for m, b in sorted(rates.items())]
+    )
+
+
+@router.get("/payments/fee-rates", response_model=FeeRatesResponse)
+@inject
+async def get_fee_rates(
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: GetPaymentFeeRates = Depends(Provide[Container.get_payment_fee_rates]),
+) -> FeeRatesResponse:
+    """Comisiones (slice B): tasas por método del tenant (bps)."""
+    return _fee_rates_response(await use_case.execute(tenant_id=identity.tenant_id))
+
+
+@router.put("/payments/fee-rates", response_model=FeeRatesResponse)
+@inject
+async def update_fee_rates(
+    body: UpdateFeeRatesRequest,
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: UpdatePaymentFeeRates = Depends(Provide[Container.update_payment_fee_rates]),
+) -> FeeRatesResponse:
+    """Upsert de tasas por método (solo toca los enviados)."""
+    rates = await use_case.execute(
+        tenant_id=identity.tenant_id,
+        rates={item.method.value: item.fee_bps for item in body.rates},
+    )
+    return _fee_rates_response(rates)
 
 
 @router.post(

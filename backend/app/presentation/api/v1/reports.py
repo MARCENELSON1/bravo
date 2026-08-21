@@ -41,6 +41,8 @@ async def dashboard(
         paid_orders=s.paid_orders,
         avg_ticket=s.avg_ticket,
         payment_count=s.payment_count,
+        collected_net=s.collected_net,
+        fees_total=s.fees_total,
     )
 
 

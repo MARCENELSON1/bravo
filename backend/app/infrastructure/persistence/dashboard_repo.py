@@ -9,6 +9,7 @@ from app.domain.order.value_objects import OrderStatus
 from app.domain.payment.value_objects import PaymentDirection, PaymentStatus
 from app.infrastructure.persistence.database import SessionFactory
 from app.infrastructure.persistence.models import OrderORM, PaymentORM, TenantORM
+from app.infrastructure.persistence.payment_columns import net_collected_col
 
 _FINAL = (OrderStatus.PAID.value, OrderStatus.CANCELLED.value)
 
@@ -40,11 +41,14 @@ class SqlAlchemyDashboardReadModel(DashboardReadModel):
                     stmt = stmt.where(PaymentORM.created_at <= until)
                 return stmt
 
-            sales, payment_count = (
+            sales, payment_count, collected_net, fees_total = (
                 await session.execute(
                     _windowed(
                         select(
-                            func.coalesce(func.sum(PaymentORM.amount), 0), func.count()
+                            func.coalesce(func.sum(PaymentORM.amount), 0),
+                            func.count(),
+                            func.coalesce(func.sum(net_collected_col()), 0),
+                            func.coalesce(func.sum(PaymentORM.fee_amount), 0),
                         ).where(
                             PaymentORM.tenant_id == tenant_id,
                             PaymentORM.direction == PaymentDirection.INFLOW.value,
@@ -93,4 +97,6 @@ class SqlAlchemyDashboardReadModel(DashboardReadModel):
                 paid_orders=paid,
                 avg_ticket=sales // paid if paid > 0 else 0,
                 payment_count=int(payment_count),
+                collected_net=int(collected_net),
+                fees_total=int(fees_total),
             )
