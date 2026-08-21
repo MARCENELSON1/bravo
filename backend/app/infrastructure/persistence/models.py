@@ -281,6 +281,10 @@ class PaymentORM(Base):
     # Propina cobrada encima del ``amount`` de la venta (0 si no hubo). No es
     # ingreso del local: solo cuenta para el arqueo de caja.
     tip_amount: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    # Comisiones: retención de la pasarela y neto que queda. net_amount NULL → se
+    # lee como amount (COALESCE) → paridad para pagos previos / sin comisión.
+    fee_amount: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    net_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     currency: Mapped[str] = mapped_column(String(3))
     method: Mapped[str] = mapped_column(String(20))
     status: Mapped[str] = mapped_column(String(20), index=True)
@@ -296,6 +300,19 @@ class PaymentORM(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+class PaymentFeeRateORM(Base):
+    """Tasa de comisión por método por tenant (bps). Sin fila → 0 (sin comisión).
+    Datos de plata → RLS."""
+
+    __tablename__ = "payment_fee_rates"
+
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), primary_key=True
+    )
+    method: Mapped[str] = mapped_column(String(20), primary_key=True)
+    fee_bps: Mapped[int] = mapped_column(Integer, server_default="0")
 
 
 class PaymentCredentialORM(Base):

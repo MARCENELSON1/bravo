@@ -17,12 +17,13 @@ from app.domain.payment.exceptions import (
     InvalidWebhookSignature,
     PaymentNotFound,
 )
+from app.domain.payment.fees import fee_of
 from app.domain.payment.ports import (
     PaymentCredentialsResolver,
     PaymentGateway,
     PaymentNotificationGateway,
 )
-from app.domain.payment.repository import PaymentRepository
+from app.domain.payment.repository import PaymentFeeRateRepository, PaymentRepository
 from app.domain.payment.value_objects import PaymentDirection, PaymentMethod, PaymentStatus
 from app.domain.shared.money import Money
 from app.domain.tenant.exceptions import TenantNotFound
@@ -75,6 +76,7 @@ class RegisterPayment:
         sales: SalesProjector | None = None,
         cash: CashSessionRepository | None = None,
         policy: CashSessionPolicy | None = None,
+        fee_rates: PaymentFeeRateRepository | None = None,
     ) -> None:
         self._payments = payments
         self._orders = orders
@@ -84,6 +86,7 @@ class RegisterPayment:
         self._sales = sales
         self._cash = cash
         self._policy = policy
+        self._fee_rates = fee_rates
 
     async def execute(
         self, *, tenant_id: str, order_id: str, method: str, amount: int, tip: int = 0
@@ -101,6 +104,13 @@ class RegisterPayment:
         if open_session is None and self._policy is not None:
             if await self._policy.requires_open_cash_session(tenant_id):
                 raise NoOpenCashSession()
+        # Comisiones (cimiento): estampamos lo que retiene la pasarela y el neto que
+        # queda. Sin tasas cargadas → fee 0 → net == amount (paridad). Se congela por
+        # cobro (estable ante cambios de tasa posteriores).
+        fee_bps = 0
+        if self._fee_rates is not None:
+            fee_bps = (await self._fee_rates.rates_for(tenant_id)).get(method, 0)
+        fee = fee_of(amount, fee_bps)
         # The tip rides on top of the sale ``amount`` — it does NOT count toward
         # covering the order total (settle only looks at ``amount``).
         payment = Payment(
@@ -113,6 +123,8 @@ class RegisterPayment:
             order_id=order_id,
             cash_session_id=open_session.id if open_session else None,
             tip_amount=tip,
+            fee_amount=fee,
+            net_amount=amount - fee,
         )
         payment = await self._gateway.charge(payment=payment)
         await self._payments.add(payment)
