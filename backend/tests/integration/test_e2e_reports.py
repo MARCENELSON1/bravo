@@ -41,6 +41,9 @@ async def test_dashboard_summary(client):
     assert s["avg_ticket"] == 300000
     assert s["payment_count"] == 1
     assert s["currency"] == "ARS"
+    # Comisiones (slice B): sin tasas cargadas → neto financiero == bruto (paridad).
+    assert s["collected_net"] == 300000
+    assert s["fees_total"] == 0
 
     # Guarda C: ventana por fecha — un 'from' futuro excluye los cobros/egresos.
     future = (
@@ -56,3 +59,28 @@ async def test_dashboard_summary(client):
     ).json()
     assert past["sales"] == 300000
     assert past["expenses"] == 50000
+
+
+async def test_dashboard_reflects_commission(client):
+    """Comisiones (slice B): cargar una tasa por método hace que el Home muestre el
+    neto financiero (tras comisión) y el total de comisiones."""
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="com", email="o@com.com"))
+    put = await http.put(
+        "/api/v1/payments/fee-rates",
+        json={"rates": [{"method": "CARD", "fee_bps": 300}]},  # 3%
+        headers=h,
+    )
+    assert put.status_code == 200, put.text
+    assert put.json()["rates"] == [{"method": "CARD", "fee_bps": 300}]
+    order_id = await _make_order(http, h)  # total 300000
+    r = await http.post(
+        f"/api/v1/orders/{order_id}/payments",
+        json={"method": "CARD", "amount": 200000},
+        headers=h,
+    )
+    assert r.status_code == 201, r.text
+    s = (await http.get("/api/v1/reports/dashboard", headers=h)).json()
+    assert s["sales"] == 200000  # bruto (lo que entró)
+    assert s["collected_net"] == 194000  # tras 3% → lo que queda
+    assert s["fees_total"] == 6000

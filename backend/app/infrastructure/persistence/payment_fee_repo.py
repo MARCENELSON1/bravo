@@ -24,3 +24,11 @@ class SqlAlchemyPaymentFeeRateRepository(PaymentFeeRateRepository):
                 )
             ).all()
             return {method: int(bps) for method, bps in rows}
+
+    async def save(self, tenant_id: str, method: str, fee_bps: int) -> None:
+        async with self._session_factory() as db:
+            await db.merge(
+                PaymentFeeRateORM(
+                    tenant_id=tenant_id, method=method, fee_bps=fee_bps
+                )
+            )

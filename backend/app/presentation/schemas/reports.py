@@ -12,6 +12,8 @@ class DashboardSummaryResponse(BaseModel):
     paid_orders: int
     avg_ticket: int
     payment_count: int
+    collected_net: int = 0  # neto financiero (tras comisiones); == sales sin tasas
+    fees_total: int = 0
 
 
 class StaffReportRowResponse(BaseModel):

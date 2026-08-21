@@ -97,6 +97,7 @@ from app.application.payment.connect_mercadopago import (
     GetMercadoPagoConnection,
     StartMercadoPagoConnection,
 )
+from app.application.payment.fee_rates import GetPaymentFeeRates, UpdatePaymentFeeRates
 from app.application.payment.use_cases import (
     ConfirmGatewayPayment,
     ListExpenses,
@@ -606,6 +607,16 @@ class Container(containers.DeclarativeContainer):
     )
     payment_fee_rate_repository = providers.Factory(
         SqlAlchemyPaymentFeeRateRepository, session_factory=db.provided.session
+    )
+    get_payment_fee_rates = providers.Factory(
+        GetPaymentFeeRates,
+        rates=payment_fee_rate_repository,
+        tenant_context=tenant_context,
+    )
+    update_payment_fee_rates = providers.Factory(
+        UpdatePaymentFeeRates,
+        rates=payment_fee_rate_repository,
+        tenant_context=tenant_context,
     )
     open_cash_session = providers.Factory(
         OpenCashSession,

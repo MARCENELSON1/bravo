@@ -20,6 +20,10 @@ class DashboardSummary:
     paid_orders: int
     avg_ticket: int  # sales / paid_orders (0 if none)
     payment_count: int  # confirmed inflow payments
+    # Comisiones (slice B): neto financiero cobrado (tras comisión de pasarela) y
+    # total de comisiones. Sin tasas → collected_net == sales, fees_total == 0 (paridad).
+    collected_net: int = 0
+    fees_total: int = 0
 
 
 class DashboardReadModel(ABC):
