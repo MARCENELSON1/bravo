@@ -1,0 +1,7 @@
+# wellnod.com — landing pública, se indexa entera.
+User-agent: *
+Allow: /
+
+# El sistema vive en app.wellnod.com y tiene su propio robots.txt que lo bloquea.
+
+Sitemap: https://wellnod.com/sitemap.xml

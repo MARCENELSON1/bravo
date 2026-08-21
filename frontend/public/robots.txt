@@ -1,0 +1,4 @@
+# app.wellnod.com es el sistema, no contenido público: no se indexa.
+# La landing pública vive en wellnod.com y tiene su propio robots.txt.
+User-agent: *
+Disallow: /

@@ -10,9 +10,14 @@ function currentTheme(): Theme {
 // Controla el tema claro/oscuro togglear la clase .dark en <html> y persistir la
 // preferencia. El flash inicial ya lo evita el script inline de index.html.
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>(() =>
-    typeof document === "undefined" ? "light" : currentTheme(),
-  )
+  // Estado inicial determinista: durante el prerender no hay `document`, así que
+  // cualquier lectura del DOM haría diferir servidor y cliente. Se sincroniza al
+  // montar; quien necesite el tema para pintar debe usar las clases `dark:`.
+  const [theme, setThemeState] = useState<Theme>("light")
+
+  useEffect(() => {
+    setThemeState(currentTheme())
+  }, [])
 
   const setTheme = useCallback((next: Theme) => {
     document.documentElement.classList.toggle("dark", next === "dark")
