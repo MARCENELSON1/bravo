@@ -26,10 +26,12 @@ _STAFF_REPORT_ROLES = (Role.OWNER, Role.MANAGER)
 @router.get("/dashboard", response_model=DashboardSummaryResponse)
 @inject
 async def dashboard(
+    since: datetime | None = Query(default=None, alias="from"),
+    until: datetime | None = Query(default=None, alias="to"),
     identity: AccessClaims = Depends(current_identity),
     use_case: GetDashboardSummary = Depends(Provide[Container.get_dashboard_summary]),
 ) -> DashboardSummaryResponse:
-    s = await use_case.execute(tenant_id=identity.tenant_id)
+    s = await use_case.execute(tenant_id=identity.tenant_id, since=since, until=until)
     return DashboardSummaryResponse(
         currency=s.currency,
         sales=s.sales,

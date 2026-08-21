@@ -41,3 +41,18 @@ async def test_dashboard_summary(client):
     assert s["avg_ticket"] == 300000
     assert s["payment_count"] == 1
     assert s["currency"] == "ARS"
+
+    # Guarda C: ventana por fecha — un 'from' futuro excluye los cobros/egresos.
+    future = (
+        await http.get("/api/v1/reports/dashboard?from=2999-01-01T00:00:00Z", headers=h)
+    ).json()
+    assert future["sales"] == 0
+    assert future["expenses"] == 0
+    assert future["net"] == 0
+    assert future["payment_count"] == 0
+    # Un 'from' pasado incluye todo (igual que sin filtro).
+    past = (
+        await http.get("/api/v1/reports/dashboard?from=2000-01-01T00:00:00Z", headers=h)
+    ).json()
+    assert past["sales"] == 300000
+    assert past["expenses"] == 50000

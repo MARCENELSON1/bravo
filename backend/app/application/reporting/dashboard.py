@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime
 
 from app.domain.identity.ports import TenantContext
 
@@ -23,7 +24,12 @@ class DashboardSummary:
 
 class DashboardReadModel(ABC):
     @abstractmethod
-    async def summary(self, tenant_id: str) -> DashboardSummary: ...
+    async def summary(
+        self,
+        tenant_id: str,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> DashboardSummary: ...
 
 
 class GetDashboardSummary:
@@ -31,6 +37,14 @@ class GetDashboardSummary:
         self._read_model = read_model
         self._tenant_context = tenant_context
 
-    async def execute(self, *, tenant_id: str) -> DashboardSummary:
+    async def execute(
+        self,
+        *,
+        tenant_id: str,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> DashboardSummary:
+        # Guarda C (Home): ventana de fecha sobre los cobros/egresos para que "hoy"
+        # signifique hoy. Sin since/until → all-time (paridad con antes).
         self._tenant_context.set(tenant_id)
-        return await self._read_model.summary(tenant_id)
+        return await self._read_model.summary(tenant_id, since, until)

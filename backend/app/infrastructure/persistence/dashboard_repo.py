@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from sqlalchemy import func, select
 
 from app.application.reporting.dashboard import DashboardReadModel, DashboardSummary
@@ -18,28 +20,48 @@ class SqlAlchemyDashboardReadModel(DashboardReadModel):
     def __init__(self, session_factory: SessionFactory) -> None:
         self._session_factory = session_factory
 
-    async def summary(self, tenant_id: str) -> DashboardSummary:
+    async def summary(
+        self,
+        tenant_id: str,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> DashboardSummary:
         async with self._session_factory() as session:
             currency = (
                 await session.execute(select(TenantORM.currency).where(TenantORM.id == tenant_id))
             ).scalar_one_or_none() or "ARS"
 
+            # Ventana por fecha de cobro (mismo predicado que payment-mix → el hero
+            # cuadra exacto con "Cobros por canal"). Sin since/until → all-time.
+            def _windowed(stmt):
+                if since is not None:
+                    stmt = stmt.where(PaymentORM.created_at >= since)
+                if until is not None:
+                    stmt = stmt.where(PaymentORM.created_at <= until)
+                return stmt
+
             sales, payment_count = (
                 await session.execute(
-                    select(func.coalesce(func.sum(PaymentORM.amount), 0), func.count()).where(
-                        PaymentORM.tenant_id == tenant_id,
-                        PaymentORM.direction == PaymentDirection.INFLOW.value,
-                        PaymentORM.status == PaymentStatus.CONFIRMED.value,
+                    _windowed(
+                        select(
+                            func.coalesce(func.sum(PaymentORM.amount), 0), func.count()
+                        ).where(
+                            PaymentORM.tenant_id == tenant_id,
+                            PaymentORM.direction == PaymentDirection.INFLOW.value,
+                            PaymentORM.status == PaymentStatus.CONFIRMED.value,
+                        )
                     )
                 )
             ).one()
 
             expenses = (
                 await session.execute(
-                    select(func.coalesce(func.sum(PaymentORM.amount), 0)).where(
-                        PaymentORM.tenant_id == tenant_id,
-                        PaymentORM.direction == PaymentDirection.OUTFLOW.value,
-                        PaymentORM.status == PaymentStatus.CONFIRMED.value,
+                    _windowed(
+                        select(func.coalesce(func.sum(PaymentORM.amount), 0)).where(
+                            PaymentORM.tenant_id == tenant_id,
+                            PaymentORM.direction == PaymentDirection.OUTFLOW.value,
+                            PaymentORM.status == PaymentStatus.CONFIRMED.value,
+                        )
                     )
                 )
             ).scalar_one()
