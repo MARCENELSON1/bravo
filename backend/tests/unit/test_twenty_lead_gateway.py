@@ -50,7 +50,9 @@ async def test_message_becomes_a_note_linked_to_the_person() -> None:
             assert body["bodyV2"]["markdown"] == "Tengo 3 locales"
             return httpx.Response(201, json={"data": {"createNote": {"id": "n-9"}}})
         body = json.loads(request.content)
-        assert body == {"noteId": "n-9", "personId": "p-9"}
+        # targetPersonId (no personId): con el nombre viejo Twenty devuelve 400.
+        assert body["noteId"] == "n-9"
+        assert body["targetPersonId"] == "p-9"
         return httpx.Response(201, json={"data": {}})
 
     await _gateway(handler).submit(Lead(email="a@b.com", message="Tengo 3 locales"))

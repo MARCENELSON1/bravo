@@ -90,14 +90,21 @@ class TwentyLeadGateway(LeadGateway):
         try:
             created = await client.post(
                 "/rest/notes",
-                json={"title": "Consulta desde la landing", "bodyV2": {"markdown": lead.message}},
+                json={
+                    "title": "Consulta desde la landing",
+                    "bodyV2": {"markdown": lead.message},
+                    "position": "first",
+                },
             )
             note_id = _record_id(created, "note")
             if created.status_code >= 400 or not note_id:
                 logger.warning("[lead] no se pudo crear la nota: %s", created.text[:200])
                 return
+            # El campo es targetPersonId, no personId: con personId Twenty
+            # responde 400 y la nota queda huérfana.
             linked = await client.post(
-                "/rest/noteTargets", json={"noteId": note_id, "personId": person_id}
+                "/rest/noteTargets",
+                json={"noteId": note_id, "targetPersonId": person_id, "position": "first"},
             )
             if linked.status_code >= 400:
                 logger.warning("[lead] nota creada pero sin vincular: %s", linked.text[:200])
