@@ -51,10 +51,10 @@ async def test_tips_report_and_payout_flow(client):
     assert len(report["rows"]) == 1
     row = report["rows"][0]
     assert row["earned"] == 5000 and row["paid"] == 0 and row["pending"] == 5000
-    assert row["waiter_email"] == "owner@resto.com"
+    assert row["waiter_name"] == "owner@resto.com"  # sin name cargado → fallback email
     waiter_id = row["waiter_id"]
 
-    # Liquidar 5000 al mozo → egreso 'Propinas' a su nombre.
+    # Liquidar 5000 al mozo → pasivo en el ledger tip_payouts (NO egreso).
     payout = await http.post(
         "/api/v1/cashier/tips/payout",
         json={"waiter_id": waiter_id, "amount": 5000},
@@ -62,10 +62,9 @@ async def test_tips_report_and_payout_flow(client):
     )
     assert payout.status_code == 200, payout.text
     body = payout.json()
-    assert body["direction"] == "OUTFLOW"
-    assert body["category"] == "Propinas"
-    assert body["counterparty"] == waiter_id
+    assert body["waiter_id"] == waiter_id
     assert body["amount"] == 5000
+    assert body["method"] == "CASH"
 
     # Reporte de nuevo: ya quedó pagado, saldo 0.
     after = (await http.get("/api/v1/cashier/tips/report", headers=h)).json()
@@ -74,9 +73,10 @@ async def test_tips_report_and_payout_flow(client):
     assert after["pending_total"] == 0
     assert after["rows"][0]["pending"] == 0
 
-    # El egreso aparece en la lista de egresos.
+    # Guarda D: liquidar NO es un egreso → no aparece en Egresos ni pega en el
+    # resultado del mes (antes se registraba como OUTFLOW 'Propinas').
     expenses = (await http.get("/api/v1/expenses", headers=h)).json()
-    assert any(e["category"] == "Propinas" and e["amount"] == 5000 for e in expenses)
+    assert not any(e["category"] == "Propinas" for e in expenses)
 
 
 async def test_tips_payout_to_unknown_waiter_404(client):

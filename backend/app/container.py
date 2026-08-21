@@ -232,7 +232,10 @@ from app.infrastructure.persistence.tax_credentials_repo import (
     SqlAlchemyTaxCredentialRepository,
 )
 from app.infrastructure.persistence.tenant_repo import SqlAlchemyTenantRepository
-from app.infrastructure.persistence.tips_repo import SqlAlchemyTipsReadModel
+from app.infrastructure.persistence.tips_repo import (
+    SqlAlchemyTipPayoutRepository,
+    SqlAlchemyTipsReadModel,
+)
 from app.infrastructure.persistence.user_repo import SqlAlchemyUserRepository
 from app.infrastructure.persistence.verification_token_repo import (
     SqlAlchemyVerificationTokenRepository,
@@ -736,10 +739,14 @@ class Container(containers.DeclarativeContainer):
     get_tips_report = providers.Factory(
         GetTipsReport, read_model=tips_read_model, tenant_context=tenant_context
     )
+    tip_payout_repository = providers.Factory(
+        SqlAlchemyTipPayoutRepository, session_factory=db.provided.session
+    )
     pay_tips = providers.Factory(
         PayTips,
-        register_expense=register_expense,
+        payouts=tip_payout_repository,
         users=user_repository,
+        tenants=tenant_repository,
         tenant_context=tenant_context,
     )
 

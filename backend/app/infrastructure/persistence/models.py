@@ -677,6 +677,25 @@ class CashCountORM(Base):
     counted_amount: Mapped[int] = mapped_column(BigInteger)
 
 
+class TipPayoutORM(Base):
+    """Liquidaciones de propina (guarda D): pasivo neutro al resultado, NO egreso.
+    Datos de plata → RLS."""
+
+    __tablename__ = "tip_payouts"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    waiter_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
+    amount: Mapped[int] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(String(3))
+    method: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 class AdvisorSettingsORM(Base):
     """Per-tenant cost profile (1:1, keyed by tenant_id). Datos de plata → RLS."""
 
