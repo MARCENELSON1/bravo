@@ -17,10 +17,12 @@ export function RecentMovements({
   movements,
   currency,
   pending,
+  fractionDigits,
 }: {
   movements: MovementDTO[]
   currency: string
   pending: boolean
+  fractionDigits?: number
 }) {
   return (
     <GlassCard className="p-6">
@@ -57,7 +59,7 @@ export function RecentMovements({
                 }`}
               >
                 {m.kind === "IN" ? "+" : "−"}
-                {formatMoney(m.amount, currency)}
+                {formatMoney(m.amount, currency, fractionDigits)}
               </span>
             </div>
           ))}

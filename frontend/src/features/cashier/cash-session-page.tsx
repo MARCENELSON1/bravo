@@ -33,7 +33,7 @@ export function CashSessionPage() {
   const [closedReport, setClosedReport] = useState<CashReportDTO | null>(null)
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-5 px-6 py-8">
+    <div className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-col gap-1">
         <GradientHeading size="md" weight="bold">
           Caja

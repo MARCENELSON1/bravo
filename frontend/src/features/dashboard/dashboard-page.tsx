@@ -74,7 +74,7 @@ export function DashboardPage() {
 
   const d = summary.data
   const currency = d?.currency ?? "ARS"
-  const money = (n: number) => formatMoney(Math.round(n), currency)
+  const money = (n: number) => formatMoney(Math.round(n), currency, 0)
   const firstName = session?.name ? session.name.trim().split(/\s+/)[0] : null
 
   const net = d?.net ?? 0
@@ -109,7 +109,7 @@ export function DashboardPage() {
       <GlassCard className="p-6">
         <p className="text-sm text-muted-foreground">Tu ganancia de hoy</p>
         <div
-          className={`mt-1 text-4xl font-bold tabular-nums ${net < 0 ? "text-red-500" : "text-foreground"}`}
+          className={`mt-1 text-3xl font-bold tabular-nums sm:text-4xl ${net < 0 ? "text-red-500" : "text-foreground"}`}
         >
           {summary.isPending ? (
             <span className="text-muted-foreground">—</span>
@@ -240,6 +240,7 @@ export function DashboardPage() {
         movements={(movements.data ?? []).slice(0, 5)}
         currency={currency}
         pending={movements.isPending}
+        fractionDigits={0}
       />
 
       {/* NIVEL 7 — Tu tarea para mañana */}
@@ -352,7 +353,7 @@ function RevenueChart({
               <div
                 className="w-8 rounded-t-md bg-primary transition-all"
                 style={{ height: `${(x.value / max) * 100}%` }}
-                title={formatMoney(x.value, currency)}
+                title={formatMoney(x.value, currency, 0)}
               />
             </div>
           ))}

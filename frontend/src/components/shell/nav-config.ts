@@ -54,6 +54,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { label: "Productos", to: "/app/products", icon: Package, roles: ["OWNER", "MANAGER"] },
   { label: "IA Insights", to: "/app/copilot", icon: Lightbulb, roles: ["OWNER", "MANAGER"] },
+  { label: "Asesor", to: "/app/advisor", icon: Sparkles, roles: ["OWNER", "MANAGER"] },
   { label: "Reportes", to: "/app/analytics", icon: FileText, roles: ["OWNER", "MANAGER"] },
 ]
 
@@ -92,7 +93,6 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Gestión",
     items: [
-      { label: "Asesor", to: "/app/advisor", icon: Sparkles, roles: ["OWNER", "MANAGER"] },
       { label: "Egresos", to: "/app/expenses", icon: Receipt, roles: ["OWNER", "MANAGER"] },
       {
         label: "Comprobantes",

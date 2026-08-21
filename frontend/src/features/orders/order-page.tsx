@@ -160,7 +160,7 @@ export function OrderPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-6 py-8">
+    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex items-center justify-between gap-2">
         <GradientHeading size="md" weight="bold">
           Comanda

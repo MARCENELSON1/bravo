@@ -87,7 +87,7 @@ export function FinancePage() {
   const overview = useFinanceOverview(window)
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <GradientHeading>Finanzas</GradientHeading>
         <div className="flex flex-wrap gap-1">

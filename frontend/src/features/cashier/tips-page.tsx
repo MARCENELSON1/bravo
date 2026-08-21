@@ -16,7 +16,7 @@ export function TipsPage() {
   const report = useTipsReport()
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8">
       <GradientHeading>Propinas</GradientHeading>
       {report.isLoading ? (
         <Spinner />

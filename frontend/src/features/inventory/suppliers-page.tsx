@@ -81,7 +81,7 @@ export function SuppliersPage() {
   const suppliers = useSuppliers()
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-5 px-6 py-8">
+    <div className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div className="flex flex-col gap-1">
           <GradientHeading size="md" weight="bold">
