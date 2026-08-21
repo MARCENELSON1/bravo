@@ -342,4 +342,16 @@ export interface DashboardSummaryDTO {
   paid_orders: number
   avg_ticket: number
   payment_count: number
+  collected_net: number // neto financiero tras comisiones (== sales si no hay tasas)
+  fees_total: number // total de comisiones de pasarela
+}
+
+// Comisiones (slice B): tasa de comisión por método (bps; 300 = 3%).
+export interface FeeRateDTO {
+  method: PaymentMethod
+  fee_bps: number
+}
+
+export interface FeeRatesDTO {
+  rates: FeeRateDTO[]
 }
