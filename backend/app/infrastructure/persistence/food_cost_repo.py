@@ -26,6 +26,8 @@ from app.domain.inventory.recipe_conversion import conversion_factor
 from app.domain.inventory.value_objects import (
     CONFIRMED_PLATE_BPS,
     COVERAGE_GATE_BPS,
+    FOOD_COST_SANE_MAX_BPS,
+    FOOD_COST_SANE_MIN_BPS,
     MovementReason,
     UnitOfMeasure,
 )
@@ -252,6 +254,7 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
                 # precio se muestra bruto (lo que cobra el dueño). Con VAT 0, neto ==
                 # bruto (paridad).
                 net_price = Money(net_of_vat(price.amount, vat_bps), price_currency)
+                ratio = food_cost_ratio_bps(net_price, net_fc)
                 rows.append(
                     FoodCostRow(
                         product_id=product_id,
@@ -259,10 +262,12 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
                         price_amount=price.amount,
                         food_cost_amount=gross_fc.amount,
                         margin_amount=margin(net_price, net_fc),
-                        food_cost_ratio_bps=food_cost_ratio_bps(net_price, net_fc),
+                        food_cost_ratio_bps=ratio,
                         currency=price_currency,
                         cost_confirmed=coverage >= CONFIRMED_PLATE_BPS,
                         coverage_bps=coverage,
+                        # Guarda de sanidad: ratio fuera de [5%, 95%] → "revisar".
+                        ratio_sane=FOOD_COST_SANE_MIN_BPS <= ratio <= FOOD_COST_SANE_MAX_BPS,
                     )
                 )
             rows.sort(key=lambda r: r.product_name)

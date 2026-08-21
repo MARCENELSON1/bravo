@@ -142,6 +142,7 @@ class FoodCostRowResponse(BaseModel):
     currency: str
     cost_confirmed: bool  # Fase 3: todo el food cost respaldado por compras
     coverage_bps: int  # Fase 3: cobertura de costo confirmado (bps)
+    ratio_sane: bool = True  # Guarda Insumos: ratio food-cost dentro de [5%, 95%]
 
 
 class FoodCostResponse(BaseModel):

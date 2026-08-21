@@ -241,6 +241,15 @@ export function ProductCatalog({ period }: { period: RangeWindow }) {
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">
                         {p.name}
+                        {row.cost !== null && !row.ratioSane ? (
+                          <Badge
+                            variant="outline"
+                            className="ml-2 align-middle text-xs font-normal text-orange-600"
+                            title="El food cost cae fuera de 5–95%: la receta parece incompleta o mal cargada. Revisala."
+                          >
+                            receta incompleta
+                          </Badge>
+                        ) : null}
                         {row.cost !== null && !row.costConfirmed ? (
                           <Badge
                             variant="secondary"
@@ -270,7 +279,11 @@ export function ProductCatalog({ period }: { period: RangeWindow }) {
                           "—"
                         ) : (
                           <span
-                            className={row.costConfirmed ? "font-medium" : "text-muted-foreground"}
+                            className={
+                              row.costConfirmed && row.ratioSane
+                                ? "font-medium"
+                                : "text-muted-foreground"
+                            }
                           >
                             {formatMoney(row.margin, currency)}
                             {row.marginBps !== null ? (

@@ -18,6 +18,7 @@ export interface ClassifiedProduct {
   unitCost: number // foodCost / units
   category: MenuCategory
   costConfirmed: boolean // Fase 3: costo respaldado por compras (no entra a la plata si false)
+  ratioSane: boolean // Guarda Insumos: ratio plausible; si false no entra a la plata
 }
 
 // Umbrales (ajustables). El doc toma ~58% como margen sano promedio.
@@ -27,6 +28,7 @@ const LOW_MARGIN = 0.45
 export function classifyMenu(
   rows: ProductPerformanceRowDTO[],
   estimatedIds?: Set<string>,
+  insaneIds?: Set<string>,
 ): ClassifiedProduct[] {
   const withUnits = rows.filter((r) => r.units_sold > 0)
   const avgUnits =
@@ -63,22 +65,31 @@ export function classifyMenu(
       // Fase 3: estimado solo si tiene costo estimado; sin receta (no está en el
       // set) → confirmado. Sin estimatedIds → todo confirmado (paridad con hoy).
       costConfirmed: estimatedIds ? !estimatedIds.has(r.product_id) : true,
+      // Guarda Insumos: fuera de banda → receta incompleta. Sin insaneIds → sano.
+      ratioSane: insaneIds ? !insaneIds.has(r.product_id) : true,
     }
   })
 }
 
-// Top 3 platos que más plata dejan (margin desc). Fase 3: solo confirmados — no se
-// rankea plata sobre costos estimados.
+// ¿Este plato entra a las conclusiones de plata? Solo si su costo está confirmado
+// (Fase 3) Y el ratio es plausible (guarda Insumos). Nunca sumamos plata sobre un
+// costo estimado ni sobre una receta incompleta (food cost 0%/100%).
+function countsInMoney(p: ClassifiedProduct): boolean {
+  return p.costConfirmed && p.ratioSane
+}
+
+// Top 3 platos que más plata dejan (margin desc). Excluye estimados y recetas
+// incompletas — no se rankea plata sobre costos que no son sólidos.
 export function topEarners(products: ClassifiedProduct[]): ClassifiedProduct[] {
   return [...products]
-    .filter((p) => p.costConfirmed)
+    .filter(countsInMoney)
     .sort((a, b) => b.margin - a.margin)
     .slice(0, 3)
 }
 
-// Total "te dejan" del período — Fase 3: solo platos con costo confirmado.
+// Total "te dejan" del período — solo platos con costo confirmado y ratio plausible.
 export function confirmedMargin(products: ClassifiedProduct[]): number {
-  return products.reduce((s, p) => (p.costConfirmed ? s + p.margin : s), 0)
+  return products.reduce((s, p) => (countsInMoney(p) ? s + p.margin : s), 0)
 }
 
 // Asesinos de margen: venden (units>0) pero margen < sano.

@@ -136,17 +136,30 @@ function FichaBody({ product, period }: { product: ProductDTO; period: RangeWind
         />
       </section>
 
-      {/* Fase 3: estado de confirmación del costo */}
+      {/* Fase 3: estado de confirmación del costo + guarda de sanidad (Insumos) */}
       {row ? (
-        <div className="flex items-center gap-2">
-          <Badge variant={row.cost_confirmed ? "default" : "secondary"}>
-            {row.cost_confirmed ? "Costo confirmado" : "Costo estimado"}
-          </Badge>
-          {!row.cost_confirmed ? (
-            <span className="text-xs text-muted-foreground">
-              {Math.round(row.coverage_bps / 100)}% del costo respaldado por compras —
-              cargá las compras que faltan para confirmarlo.
-            </span>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Badge variant={row.cost_confirmed ? "default" : "secondary"}>
+              {row.cost_confirmed ? "Costo confirmado" : "Costo estimado"}
+            </Badge>
+            {!row.cost_confirmed ? (
+              <span className="text-xs text-muted-foreground">
+                {Math.round(row.coverage_bps / 100)}% del costo respaldado por compras —
+                cargá las compras que faltan para confirmarlo.
+              </span>
+            ) : null}
+          </div>
+          {!row.ratio_sane ? (
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-orange-600">
+                receta incompleta
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                El food cost cae fuera de 5–95% ({formatBps(row.food_cost_ratio_bps)}). Revisá la
+                receta antes de confiar en el margen.
+              </span>
+            </div>
           ) : null}
         </div>
       ) : null}

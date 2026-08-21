@@ -44,9 +44,20 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
         : undefined,
     [foodCost.data],
   )
+  // Guarda Insumos: recetas con ratio food-cost implausible (fuera de 5–95%) → no
+  // entran a las conclusiones de plata (como los estimados).
+  const insaneIds = useMemo(
+    () =>
+      foodCost.data
+        ? new Set(
+            foodCost.data.rows.filter((r) => !r.ratio_sane).map((r) => r.product_id),
+          )
+        : undefined,
+    [foodCost.data],
+  )
   const products = useMemo(
-    () => classifyMenu(perf.data ?? [], estimatedIds),
-    [perf.data, estimatedIds],
+    () => classifyMenu(perf.data ?? [], estimatedIds, insaneIds),
+    [perf.data, estimatedIds, insaneIds],
   )
   const currency = perf.data?.[0]?.currency ?? "ARS"
 
@@ -207,7 +218,7 @@ function MenuRow({ p, money }: { p: ClassifiedProduct; money: (n: number) => str
       <td className="py-1.5 text-right tabular-nums text-muted-foreground">{money(p.unitCost)}</td>
       <td
         className={`py-1.5 text-right tabular-nums ${
-          p.costConfirmed ? "font-medium" : "text-muted-foreground"
+          p.costConfirmed && p.ratioSane ? "font-medium" : "text-muted-foreground"
         }`}
       >
         {money(p.margin)}
@@ -215,6 +226,11 @@ function MenuRow({ p, money }: { p: ClassifiedProduct; money: (n: number) => str
       <td className="py-1.5 text-right tabular-nums">{p.units}</td>
       <td className="py-1.5">
         <span className="flex items-center justify-end gap-1.5 text-xs">
+          {!p.ratioSane ? (
+            <Badge variant="outline" className="text-xs font-normal text-orange-600">
+              receta incompleta
+            </Badge>
+          ) : null}
           {!p.costConfirmed ? (
             <Badge variant="secondary" className="text-xs font-normal">
               estimado
