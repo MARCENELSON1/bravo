@@ -45,6 +45,17 @@ _STATUS_MAP = {
 }
 
 
+def _mp_fee_amount(data: dict) -> int | None:
+    """Comisiones slice C: comisión real (minor units) del payload de MP — suma de
+    ``fee_details[].amount`` (unidad mayor) → minor units. None si MP no la reporta
+    (se conserva la estimada de la tasa configurada)."""
+    details = data.get("fee_details") or []
+    if not details:
+        return None
+    total = sum(float(d.get("amount") or 0) for d in details)
+    return round(total * _MINOR_UNIT)
+
+
 class MercadoPagoGateway(PaymentGateway, PaymentNotificationGateway):
     def __init__(
         self,
@@ -144,4 +155,5 @@ class MercadoPagoGateway(PaymentGateway, PaymentNotificationGateway):
             gateway_payment_id=str(data.get("id", gateway_payment_id)),
             external_reference=data.get("external_reference"),
             status=_STATUS_MAP.get(str(data.get("status", "")), PaymentStatus.PENDING),
+            fee_amount=_mp_fee_amount(data),
         )
