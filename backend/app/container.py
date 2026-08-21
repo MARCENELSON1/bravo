@@ -151,6 +151,7 @@ from app.infrastructure.copilot.anthropic_copilot import AnthropicCopilotLLM
 from app.infrastructure.copilot.no_copilot import NoCopilot
 from app.infrastructure.copilot.sql_runner import SqlAlchemyCopilotQueryRunner
 from app.infrastructure.email.console_sender import ConsoleEmailSender
+from app.infrastructure.email.resend_sender import ResendEmailSender
 from app.infrastructure.email.smtp_sender import SmtpEmailSender
 from app.infrastructure.invoicing.afip_invoicing import AfipInvoicing
 from app.infrastructure.invoicing.credentials_resolver import DbTaxCredentialsResolver
@@ -282,6 +283,11 @@ class Container(containers.DeclarativeContainer):
             password=config.provided.smtp_password,
             from_email=config.provided.from_email,
             use_tls=config.provided.smtp_use_tls,
+        ),
+        resend=providers.Singleton(
+            ResendEmailSender,
+            api_key=config.provided.resend_api_key,
+            from_email=config.provided.from_email,
         ),
     )
 
