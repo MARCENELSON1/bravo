@@ -89,6 +89,7 @@ export function DashboardPage() {
 
   const diagnostics = overview.data?.diagnostics ?? []
   const alert = topAlert(diagnostics)
+  const alertIsWarn = alert?.severity === "warn"
   const task = tomorrowTask(diagnostics)
   const projection = overview.data?.projection ?? null
 
@@ -175,8 +176,12 @@ export function DashboardPage() {
 
       {/* NIVEL 4 — Alerta del día (máx 1) */}
       {alert ? (
-        <GlassCard className="border-l-2 border-l-destructive p-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-destructive">
+        <GlassCard
+          className={`border-l-2 p-6 ${alertIsWarn ? "border-l-amber-500" : "border-l-destructive"}`}
+        >
+          <p
+            className={`text-xs font-semibold uppercase tracking-wide ${alertIsWarn ? "text-amber-600 dark:text-amber-400" : "text-destructive"}`}
+          >
             Atención hoy
           </p>
           <p className="mt-1.5 text-sm font-medium text-foreground">{alert.title}</p>

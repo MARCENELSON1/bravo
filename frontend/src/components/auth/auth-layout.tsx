@@ -73,6 +73,14 @@ export function AuthLayout({
           animate={{ opacity: 1, y: 0 }}
           transition={reduce ? { duration: 0 } : { duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
         >
+          {/* Logo Wellnod arriba del formulario, solo en móvil (en desktop está en el panel de marca) */}
+          <div className="mb-6 flex items-center justify-center gap-3 lg:hidden">
+            <WellnodMark className="h-11 w-auto shrink-0 text-foreground" />
+            <span className="font-heading translate-y-0.5 text-3xl leading-none text-foreground">
+              <span className="font-bold">Well</span>
+              <span className="-ml-[3px] font-light text-foreground/55">nod</span>
+            </span>
+          </div>
           <div className="mb-6 flex flex-col gap-1">
             <GradientHeading size="sm" weight="bold">
               {title}
