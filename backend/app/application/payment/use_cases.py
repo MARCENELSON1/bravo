@@ -4,6 +4,8 @@ from uuid import uuid4
 
 from app.application.analytics.ports import SalesProjector
 from app.application.inventory.ports import InventoryConsumer
+from app.domain.cashier.exceptions import NoOpenCashSession
+from app.domain.cashier.policy import CashSessionPolicy
 from app.domain.cashier.repository import CashSessionRepository
 from app.domain.identity.ports import TenantContext
 from app.domain.order.exceptions import OrderNotFound
@@ -72,6 +74,7 @@ class RegisterPayment:
         inventory: InventoryConsumer | None = None,
         sales: SalesProjector | None = None,
         cash: CashSessionRepository | None = None,
+        policy: CashSessionPolicy | None = None,
     ) -> None:
         self._payments = payments
         self._orders = orders
@@ -80,6 +83,7 @@ class RegisterPayment:
         self._inventory = inventory
         self._sales = sales
         self._cash = cash
+        self._policy = policy
 
     async def execute(
         self, *, tenant_id: str, order_id: str, method: str, amount: int, tip: int = 0
@@ -90,10 +94,13 @@ class RegisterPayment:
         order = await self._orders.get_by_id(tenant_id, order_id)
         if order is None:
             raise OrderNotFound()
-        # Caja (guarda B, fase 1): estampamos la caja abierta si la hay. Todavía NO
-        # bloqueamos el cobro sin caja (eso es el enforcement, detrás de un flag,
-        # en la fase siguiente) → invisible, paridad.
+        # Caja (guarda B): estampamos la caja abierta si la hay (fase 1). Enforcement
+        # (fase B3): si el tenant lo exige (flag OFF por default) y NO hay caja
+        # abierta, rechazamos el cobro. Flag OFF → path idéntico a hoy (paridad).
         open_session = await self._cash.get_open(tenant_id) if self._cash else None
+        if open_session is None and self._policy is not None:
+            if await self._policy.requires_open_cash_session(tenant_id):
+                raise NoOpenCashSession()
         # The tip rides on top of the sale ``amount`` — it does NOT count toward
         # covering the order total (settle only looks at ``amount``).
         payment = Payment(

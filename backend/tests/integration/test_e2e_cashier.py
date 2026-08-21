@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncEngine
+
 from tests.integration.test_e2e_auth import _onboard_verify_login
 
 
@@ -211,3 +214,51 @@ async def test_no_open_session_returns_null(client):
     report = await http.get("/api/v1/cashier/session/current", headers=h)
     assert report.status_code == 200
     assert report.json() is None
+
+
+async def test_require_open_cash_session_blocks_cobro(client, admin_engine: AsyncEngine):
+    """Guarda B3: con el flag prendido, cobrar sin caja abierta da 409; con la caja
+    abierta cobra normal. (El flag OFF por default = paridad lo cubren los demás
+    tests de cobro, que cobran sin caja y no fallan.)"""
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    # Prendemos el flag para este tenant (único por clean_tables).
+    async with admin_engine.begin() as conn:
+        await conn.execute(text("UPDATE tenants SET require_open_cash_session = true"))
+    # Una comanda para cobrar.
+    product_id = (
+        await http.post(
+            "/api/v1/products",
+            json={"name": "Lomo", "price_amount": 100000, "category": None},
+            headers=h,
+        )
+    ).json()["product_id"]
+    table_id = (
+        await http.post("/api/v1/tables", json={"number": 1, "name": None}, headers=h)
+    ).json()["table_id"]
+    order_id = (
+        await http.post("/api/v1/orders", json={"table_id": table_id}, headers=h)
+    ).json()["order_id"]
+    await http.post(
+        f"/api/v1/orders/{order_id}/items",
+        json={"product_id": product_id, "quantity": 1},
+        headers=h,
+    )
+    # Sin caja abierta → bloqueado (409).
+    blocked = await http.post(
+        f"/api/v1/orders/{order_id}/payments",
+        json={"method": "CASH", "amount": 100000},
+        headers=h,
+    )
+    assert blocked.status_code == 409, blocked.text
+    assert blocked.json()["code"] == "no_open_cash_session"
+    # Abrimos la caja → ahora sí cobra.
+    await http.post(
+        "/api/v1/cashier/session/open", json={"opening_float_amount": 0}, headers=h
+    )
+    ok = await http.post(
+        f"/api/v1/orders/{order_id}/payments",
+        json={"method": "CASH", "amount": 100000},
+        headers=h,
+    )
+    assert ok.status_code == 201, ok.text

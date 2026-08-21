@@ -16,3 +16,8 @@ class CashSessionAlreadyOpen(DomainError):
 class CashSessionAlreadyClosed(DomainError):
     code = "cash_session_already_closed"
     message = "La caja ya está cerrada."
+
+
+class NoOpenCashSession(DomainError):
+    code = "no_open_cash_session"
+    message = "Abrí la caja antes de cobrar."

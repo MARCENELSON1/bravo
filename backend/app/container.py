@@ -176,6 +176,7 @@ from app.infrastructure.persistence.analytics_repo import (
     SqlAlchemyRevenueReadModel,
 )
 from app.infrastructure.persistence.audit_repo import SqlAlchemyAuditRepository
+from app.infrastructure.persistence.cash_policy_repo import SqlAlchemyCashSessionPolicy
 from app.infrastructure.persistence.cash_repo import SqlAlchemyCashSessionRepository
 from app.infrastructure.persistence.cost_history_repo import (
     SqlAlchemyIngredientCostHistoryReadModel,
@@ -594,6 +595,9 @@ class Container(containers.DeclarativeContainer):
     cash_session_repository = providers.Factory(
         SqlAlchemyCashSessionRepository, session_factory=db.provided.session
     )
+    cash_session_policy = providers.Factory(
+        SqlAlchemyCashSessionPolicy, session_factory=db.provided.session
+    )
     open_cash_session = providers.Factory(
         OpenCashSession,
         cash=cash_session_repository,
@@ -683,6 +687,7 @@ class Container(containers.DeclarativeContainer):
         inventory=consume_recipes_for_order,
         sales=project_order_sales,
         cash=cash_session_repository,
+        policy=cash_session_policy,
     )
     confirm_gateway_payment = providers.Factory(
         ConfirmGatewayPayment,
