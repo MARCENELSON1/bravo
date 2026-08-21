@@ -17,6 +17,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Spinner } from "@/components/ui/spinner"
+import { CommissionRatesCard } from "@/features/finance/commission-rates-card"
 import {
   useAdvisorReport,
   useAdvisorSettings,
@@ -308,6 +309,8 @@ export function AdvisorPage() {
           <SettingsSheet />
         </div>
       </header>
+
+      <CommissionRatesCard />
 
       {report.isPending ? (
         <div className="flex justify-center p-10">

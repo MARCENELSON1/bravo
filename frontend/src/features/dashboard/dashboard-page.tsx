@@ -79,9 +79,12 @@ export function DashboardPage() {
   const money = (n: number) => formatMoney(Math.round(n), currency)
   const firstName = session?.name ? session.name.trim().split(/\s+/)[0] : null
 
-  const net = d?.net ?? 0
   const sales = d?.sales ?? 0
   const expenses = d?.expenses ?? 0
+  // Comisiones (slice B): la ganancia REAL resta las comisiones de pasarela. Sin
+  // tasas cargadas, collected_net == sales → net == sales − expenses (paridad).
+  const feesTotal = d?.fees_total ?? 0
+  const net = (d?.collected_net ?? sales) - expenses
   const pctVsYesterday = revenuePctVsYesterday(daily.data ?? [])
   const verdict = dailyVerdict(net, pctVsYesterday)
   const marginPer100 = sales > 0 ? Math.round((net / sales) * 100) : 0
@@ -126,6 +129,11 @@ export function DashboardPage() {
         {marginTentative ? (
           <p className="mt-1 text-xs text-amber-500">
             Provisorio — todavía no cargaste egresos hoy.
+          </p>
+        ) : null}
+        {feesTotal > 0 ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Ya restamos {money(feesTotal)} de comisiones de tarjeta / MercadoPago.
           </p>
         ) : null}
       </GlassCard>
