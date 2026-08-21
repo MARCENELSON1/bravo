@@ -24,6 +24,9 @@ class Payment:
     method: PaymentMethod
     status: PaymentStatus = PaymentStatus.CONFIRMED
     order_id: str | None = None
+    # Caja (guarda B): la sesión de caja abierta al momento de cobrar (None si no
+    # había caja abierta, o si es un egreso). Vincula cada cobro a su arqueo.
+    cash_session_id: str | None = None
     # Propina cobrada encima del ``amount`` (minor units, misma moneda). No es
     # ingreso del local: no entra en sale_facts, solo en el arqueo de caja.
     tip_amount: int = 0

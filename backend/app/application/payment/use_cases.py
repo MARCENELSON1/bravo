@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from app.application.analytics.ports import SalesProjector
 from app.application.inventory.ports import InventoryConsumer
+from app.domain.cashier.repository import CashSessionRepository
 from app.domain.identity.ports import TenantContext
 from app.domain.order.exceptions import OrderNotFound
 from app.domain.order.repository import OrderRepository
@@ -70,6 +71,7 @@ class RegisterPayment:
         tenant_context: TenantContext,
         inventory: InventoryConsumer | None = None,
         sales: SalesProjector | None = None,
+        cash: CashSessionRepository | None = None,
     ) -> None:
         self._payments = payments
         self._orders = orders
@@ -77,6 +79,7 @@ class RegisterPayment:
         self._tenant_context = tenant_context
         self._inventory = inventory
         self._sales = sales
+        self._cash = cash
 
     async def execute(
         self, *, tenant_id: str, order_id: str, method: str, amount: int, tip: int = 0
@@ -87,6 +90,10 @@ class RegisterPayment:
         order = await self._orders.get_by_id(tenant_id, order_id)
         if order is None:
             raise OrderNotFound()
+        # Caja (guarda B, fase 1): estampamos la caja abierta si la hay. Todavía NO
+        # bloqueamos el cobro sin caja (eso es el enforcement, detrás de un flag,
+        # en la fase siguiente) → invisible, paridad.
+        open_session = await self._cash.get_open(tenant_id) if self._cash else None
         # The tip rides on top of the sale ``amount`` — it does NOT count toward
         # covering the order total (settle only looks at ``amount``).
         payment = Payment(
@@ -97,6 +104,7 @@ class RegisterPayment:
             method=PaymentMethod(method),
             status=PaymentStatus.PENDING,
             order_id=order_id,
+            cash_session_id=open_session.id if open_session else None,
             tip_amount=tip,
         )
         payment = await self._gateway.charge(payment=payment)

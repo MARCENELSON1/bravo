@@ -682,6 +682,7 @@ class Container(containers.DeclarativeContainer):
         tenant_context=tenant_context,
         inventory=consume_recipes_for_order,
         sales=project_order_sales,
+        cash=cash_session_repository,
     )
     confirm_gateway_payment = providers.Factory(
         ConfirmGatewayPayment,
