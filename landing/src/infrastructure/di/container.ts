@@ -2,7 +2,7 @@ import { GetLandingContent } from "@/application/use-cases/get-landing-content"
 import { GetPricingPlans } from "@/application/use-cases/get-pricing-plans"
 import { SubmitLead } from "@/application/use-cases/submit-lead"
 import { loadConfig, type AppConfig } from "@/infrastructure/config/app-config"
-import { ConsoleLeadGateway } from "@/infrastructure/gateways/console-lead-gateway"
+import { HttpLeadGateway } from "@/infrastructure/gateways/http-lead-gateway"
 import { StaticContentRepository } from "@/infrastructure/repositories/static-content-repository"
 import { StaticPlanRepository } from "@/infrastructure/repositories/static-plan-repository"
 
@@ -22,7 +22,7 @@ export function createContainer(): Container {
   // Adapters (infrastructure) → cumplen los puertos del dominio.
   const planRepository = new StaticPlanRepository()
   const contentRepository = new StaticContentRepository()
-  const leadGateway = new ConsoleLeadGateway()
+  const leadGateway = new HttpLeadGateway(config.apiUrl)
 
   // Casos de uso (application) ← reciben los puertos, no las clases concretas.
   return {

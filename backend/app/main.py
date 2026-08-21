@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
@@ -24,6 +25,7 @@ from app.presentation.api.v1 import (
     inventory,
     invoices,
     kds,
+    leads,
     me,
     orders,
     payments,
@@ -92,6 +94,7 @@ def create_app() -> FastAPI:
     app.include_router(advisor.router, prefix="/api/v1")
     app.include_router(finance.router, prefix="/api/v1")
     app.include_router(copilot.router, prefix="/api/v1")
+    app.include_router(leads.router, prefix="/api/v1")
 
     @app.middleware("http")
     async def security_headers(
@@ -107,8 +110,22 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    _configure_logging()
     container.wire()
     return app
+
+
+def _configure_logging() -> None:
+    """Uvicorn solo configura sus propios loggers: sin esto, todo lo que la app
+    emite a INFO se descarta en silencio (el rastro de los leads, el transporte
+    de email de consola). Se engancha al handler de uvicorn para no duplicar."""
+    app_logger = logging.getLogger("app")
+    if app_logger.handlers:
+        return
+    app_logger.setLevel(logging.INFO)
+    uvicorn_handlers = logging.getLogger("uvicorn").handlers
+    app_logger.handlers = list(uvicorn_handlers) if uvicorn_handlers else [logging.StreamHandler()]
+    app_logger.propagate = False
 
 
 app = create_app()
