@@ -22,24 +22,35 @@ from app.domain.product.repository import ProductRepository
 from app.domain.realtime.ports import DomainEvent, EventBus
 from app.domain.table.exceptions import TableNotFound
 from app.domain.table.repository import TableRepository
+from app.domain.table_session.entities import TableSession
+from app.domain.table_session.repository import TableSessionRepository
+from app.domain.table_session.value_objects import SessionStatus
 from app.domain.tenant.exceptions import TenantNotFound
 from app.domain.tenant.repository import TenantRepository
 
 
 class CreateOrder:
-    """Open an order for a table, priced in the tenant's currency."""
+    """Open an order for a table, priced in the tenant's currency.
+
+    Also ensures the table has an open **session** (the visit) and hangs the
+    order off it (``session_id``). The session is reused if one is already open
+    (a party's second round shares the visit) and created implicitly otherwise,
+    so the floor's session-aware view works even without the explicit PAX/waiter
+    selector. Parity: this is additive — the order behaves exactly as before."""
 
     def __init__(
         self,
         orders: OrderRepository,
         tables: TableRepository,
         tenants: TenantRepository,
+        sessions: TableSessionRepository,
         tenant_context: TenantContext,
         event_bus: EventBus,
     ) -> None:
         self._orders = orders
         self._tables = tables
         self._tenants = tenants
+        self._sessions = sessions
         self._tenant_context = tenant_context
         self._event_bus = event_bus
 
@@ -56,17 +67,31 @@ class CreateOrder:
             existing = await self._orders.get_by_id(tenant_id, order_id)
             if existing is not None:
                 return CreateOrderResult(order_id=existing.id)  # idempotent no-op
-        if await self._tables.get_by_id(tenant_id, table_id) is None:
+        table = await self._tables.get_by_id(tenant_id, table_id)
+        if table is None:
             raise TableNotFound()
         tenant = await self._tenants.get_by_id(tenant_id)
         if tenant is None:
             raise TenantNotFound()
+        session = await self._sessions.get_open_by_table(tenant_id, table_id)
+        if session is None:
+            session = TableSession(
+                id=str(uuid4()),
+                tenant_id=tenant_id,
+                table_id=table_id,
+                status=SessionStatus.OPEN,
+                pax=table.capacity,
+                waiter_id=waiter_id,
+                opened_at=utcnow(),
+            )
+            await self._sessions.add(session)
         order = Order(
             id=order_id or str(uuid4()),
             tenant_id=tenant_id,
             table_id=table_id,
             waiter_id=waiter_id,
             currency=tenant.currency,
+            session_id=session.id,
         )
         await self._orders.add(order)
         await self._event_bus.publish(_floor_changed(order))  # table → occupied

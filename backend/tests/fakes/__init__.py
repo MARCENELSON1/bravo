@@ -74,6 +74,13 @@ class FakeUserRepository(UserRepository):
             None,
         )
 
+    async def names_by_ids(self, tenant_id: str, ids: set[str]) -> dict[str, str]:
+        return {
+            u.id: (u.name or str(u.email))
+            for u in self.by_id.values()
+            if u.tenant_id == tenant_id and u.id in ids
+        }
+
     async def add(self, user: User) -> None:
         self.by_id[user.id] = user
 

@@ -29,6 +29,19 @@ class SqlAlchemyUserRepository(UserRepository):
             row = (await session.execute(stmt)).scalar_one_or_none()
             return user_to_domain(row) if row is not None else None
 
+    async def names_by_ids(self, tenant_id: str, ids: set[str]) -> dict[str, str]:
+        if not ids:
+            return {}
+        async with self._session_factory() as session:
+            rows = (
+                await session.execute(
+                    select(UserORM.id, UserORM.name, UserORM.email).where(
+                        UserORM.tenant_id == tenant_id, UserORM.id.in_(ids)
+                    )
+                )
+            ).all()
+            return {uid: (name or email) for uid, name, email in rows}
+
     async def add(self, user: User) -> None:
         async with self._session_factory() as session:
             session.add(user_to_orm(user))
