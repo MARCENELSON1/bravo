@@ -44,6 +44,11 @@ import asyncpg
 
 CUR = "ARS"
 DAYS = 120
+# El dominio guarda TODAS las cantidades de inventario en milésimas de la unidad
+# base: qty de movimientos y de recetas, stock_qty, min_qty y yield_qty. Las
+# constantes de este archivo están en unidades legibles (400 = 400 g) y se
+# convierten al escribir. Sin esto la merma se lee como 0 y el stock como polvo.
+MIL = 1000
 random.seed(7)
 
 # Se fija una sola vez por corrida: todo el dataset cuelga de acá.
@@ -365,7 +370,8 @@ async def main() -> None:
                     for kind, iname, iqty in RECIPES.get(cn, []):
                         if kind == "i":
                             stock_rows.append((nid(), tenant, ing[iname][0], "OUT", "SALE",
-                                               iqty * qty, oid, None, None, None, created))
+                                               iqty * qty * MIL, oid, None, None, None,
+                                               created))
                 pos += 1
             orders_rows.append((oid, tenant, table_id, waiter, status, CUR, created))
             return total
@@ -416,7 +422,7 @@ async def main() -> None:
                 # del plato nunca se actualizó.
                 bump = 1.34 if (iname == "Ojo de bife" and d > TODAY - timedelta(days=21)) else 1.0
                 stock_rows.append((nid(), tenant, iid, "IN", "PURCHASE",
-                                   random.randint(8, 30), None, int(cost * bump), CUR,
+                                   random.randint(8, 30) * MIL, None, int(cost * bump), CUR,
                                    "Compra semanal", d.replace(hour=9)))
             d += timedelta(days=7)
 
@@ -425,7 +431,7 @@ async def main() -> None:
         d = TODAY - timedelta(days=60)
         while d < TODAY:
             stock_rows.append((nid(), tenant, ing["Langostinos"][0], "OUT", "WASTE",
-                               random.randint(2, 5), None, ing["Langostinos"][1], CUR,
+                               random.randint(2, 5) * MIL, None, ing["Langostinos"][1], CUR,
                                "Descarte por cadena de frío", d.replace(hour=23)))
             d += timedelta(days=random.randint(4, 8))
         # Merma de fondo en otros insumos: un local real descarta un poco de todo.
@@ -434,7 +440,7 @@ async def main() -> None:
             for iname in random.sample(["Tomate", "Verdeo y hierbas", "Papa", "Burrata",
                                         "Salmón fresco", "Crema de leche"], 2):
                 stock_rows.append((nid(), tenant, ing[iname][0], "OUT", "WASTE",
-                                   random.randint(1, 4), None, ing[iname][1], CUR,
+                                   random.randint(1, 4) * MIL, None, ing[iname][1], CUR,
                                    "Merma de servicio", d.replace(hour=23, minute=30)))
             d += timedelta(days=random.randint(2, 4))
 
@@ -618,18 +624,19 @@ async def main() -> None:
                     "insert into ingredients(id,tenant_id,name,unit,stock_qty,min_qty,"
                     "unit_cost_amount,unit_cost_currency,active,yield_pct,cost_includes_tax,recipe_unit)"
                     " values($1,$2,$3,$4,$5,$6,$7,$8,true,$9,$10,$11)",
-                    ing[name][0], tenant, name, unit, stock, minq, cost, CUR, yld, incl_tax, runit)
+                    ing[name][0], tenant, name, unit, stock * MIL, minq * MIL, cost, CUR,
+                    yld, incl_tax, runit)
 
             for pname, (yield_qty, items) in PREPARATIONS.items():
                 await conn.execute(
                     "insert into preparations(id,tenant_id,name,yield_qty) values($1,$2,$3,$4)",
-                    prep[pname][0], tenant, pname, yield_qty)
+                    prep[pname][0], tenant, pname, yield_qty * MIL)
                 for iname, qty in items:
                     await conn.execute(
                         "insert into preparation_items(id,tenant_id,preparation_id,"
                         "ingredient_id,qty)"
                         " values($1,$2,$3,$4,$5)",
-                        nid(), tenant, prep[pname][0], ing[iname][0], qty)
+                        nid(), tenant, prep[pname][0], ing[iname][0], qty * MIL)
 
             for pname, recipe in RECIPES.items():
                 pid = prod[pname][0]
@@ -641,7 +648,7 @@ async def main() -> None:
                         "preparation_id,qty) values($1,$2,$3,$4,$5,$6)",
                         nid(), tenant, pid,
                         ing[rname][0] if kind == "i" else None,
-                        prep[rname][0] if kind == "p" else None, qty)
+                        prep[rname][0] if kind == "p" else None, qty * MIL)
 
             for tid, number, tname in tables:
                 await conn.execute(
