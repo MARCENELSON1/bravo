@@ -18,9 +18,17 @@ export interface RequestOptions {
   signal?: AbortSignal
 }
 
+export interface DownloadResult {
+  blob: Blob
+  filename: string | null // from Content-Disposition, when present
+}
+
 // Port: every data client depends on this interface, never on fetch directly.
 export interface HttpClient {
   request<T>(method: string, path: string, options?: RequestOptions): Promise<T>
+  // Fetch a binary/file response (e.g. a CSV export) as a Blob, with the same
+  // auth + refresh-on-401 as request().
+  download(path: string, options?: RequestOptions): Promise<DownloadResult>
 }
 
 const REFRESH_PATH = "/auth/refresh"
@@ -48,6 +56,19 @@ export class FetchHttpClient implements HttpClient {
     }
 
     return this.handle<T>(response)
+  }
+
+  async download(path: string, options: RequestOptions = {}): Promise<DownloadResult> {
+    let response = await this.send("GET", path, options)
+    if (response.status === 401 && options.auth && !path.startsWith(REFRESH_PATH)) {
+      const refreshed = await this.tryRefresh()
+      if (refreshed) response = await this.send("GET", path, options)
+    }
+    if (!response.ok) return this.fail(response)
+    const blob = await response.blob()
+    const cd = response.headers.get("Content-Disposition")
+    const match = cd ? /filename="?([^"]+)"?/.exec(cd) : null
+    return { blob, filename: match ? match[1] : null }
   }
 
   private async send(method: string, path: string, options: RequestOptions): Promise<Response> {
@@ -85,7 +106,11 @@ export class FetchHttpClient implements HttpClient {
       const text = await response.text()
       return (text ? JSON.parse(text) : undefined) as T
     }
+    return this.fail(response)
+  }
 
+  // Translate a non-ok response into an ApiError ({ code, message } when present).
+  private async fail(response: Response): Promise<never> {
     let code = "unknown"
     let message = "Ocurrió un error inesperado."
     try {
