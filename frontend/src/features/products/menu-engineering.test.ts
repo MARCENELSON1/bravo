@@ -44,8 +44,8 @@ describe("classifyMenu", () => {
     expect(star.category).toBe("funciona") // 70% margen, volumen alto
   })
 
-  it("oportunidad = alto margen + bajo volumen", () => {
-    const rows = [row("hidden", 1, 1000, 300), row("popular", 100, 10000, 3000)]
+  it("oportunidad = alto margen + bajo volumen (dentro de su categoría)", () => {
+    const rows = [row("hidden", 15, 15000, 4500), row("popular", 100, 100000, 30000)]
     const hidden = classifyMenu(rows).find((p) => p.id === "hidden")!
     expect(hidden.category).toBe("oportunidad")
   })
@@ -55,6 +55,57 @@ describe("classifyMenu", () => {
     expect(p.unitPrice).toBe(10000)
     expect(p.unitCost).toBe(4000)
     expect(p.margin).toBe(12000)
+  })
+
+  it("Fase 4: sin datos cuando vende menos que el piso mínimo", () => {
+    // 3 unidades con minUnits 10 → no alcanza para clasificar.
+    const [p] = classifyMenu([row("thin", 3, 6000, 1500)], undefined, undefined, undefined, 10)
+    expect(p.category).toBe("sin_datos")
+  })
+
+  it("Fase 4: sin datos cuando el costo no está confirmado", () => {
+    const rows = [row("est", 50, 100000, 30000)]
+    const [p] = classifyMenu(rows, new Set(["est"]))
+    expect(p.category).toBe("sin_datos") // costo estimado → no clasificamos
+  })
+
+  it("Fase 4: compara el volumen dentro de la categoría de carta", () => {
+    // 4 cafés (categoría propia) + 4 platos. Un café de 40u es alto DENTRO de cafés
+    // aunque en toda la carta sea bajo frente a los platos de 200u.
+    const rows = [
+      row("cafe1", 40, 40000, 8000),
+      row("cafe2", 10, 10000, 2000),
+      row("cafe3", 12, 12000, 2400),
+      row("cafe4", 11, 11000, 2200),
+      row("plato1", 200, 400000, 120000),
+      row("plato2", 210, 420000, 126000),
+      row("plato3", 190, 380000, 114000),
+      row("plato4", 205, 410000, 123000),
+    ]
+    const cat = new Map<string, string | null>([
+      ["cafe1", "Café"],
+      ["cafe2", "Café"],
+      ["cafe3", "Café"],
+      ["cafe4", "Café"],
+      ["plato1", "Platos"],
+      ["plato2", "Platos"],
+      ["plato3", "Platos"],
+      ["plato4", "Platos"],
+    ])
+    const cafe1 = classifyMenu(rows, undefined, undefined, cat).find((p) => p.id === "cafe1")!
+    // margen 80% + alto volumen entre cafés (avg cafés ≈ 18) → funciona, no oportunidad.
+    expect(cafe1.menuCategory).toBe("Café")
+    expect(cafe1.category).toBe("funciona")
+  })
+
+  it("Fase 4: categorías con menos de 4 productos caen en Otros", () => {
+    const rows = [row("solo", 20, 20000, 5000), row("x", 30, 30000, 8000)]
+    const cat = new Map<string, string | null>([
+      ["solo", "Postres"],
+      ["x", "Platos"],
+    ])
+    const [p] = classifyMenu(rows, undefined, undefined, cat).filter((r) => r.id === "solo")
+    expect(p.menuCategory).toBe("Otros")
   })
 })
 

@@ -13,8 +13,19 @@ import {
 } from "@/features/products/menu-engineering"
 import { useProductPerformance } from "@/hooks/use-analytics"
 import { useFoodCost } from "@/hooks/use-inventory"
+import { useProducts } from "@/hooks/use-products"
 import { type RangeWindow } from "@/lib/finance-range"
 import { formatMoney } from "@/lib/money"
+
+// Piso mínimo de unidades para clasificar, escalado por el largo del período
+// (base ~10/mes, mínimo 3). Por debajo → SIN DATOS.
+function minUnitsForPeriod(period: RangeWindow): number {
+  const days = Math.max(
+    1,
+    Math.round((Date.parse(period.to) - Date.parse(period.from)) / 86_400_000),
+  )
+  return Math.max(3, Math.round((10 * days) / 30))
+}
 
 const CATEGORY_META: Record<
   MenuCategory,
@@ -25,14 +36,37 @@ const CATEGORY_META: Record<
   estable: { label: "Estables", sub: "Tu base — no los toques", dot: "bg-sky-500" },
   revisar: { label: "Revisar", sub: "Están mal, decidí", dot: "bg-orange-500" },
   no_vendido: { label: "No vendidos", sub: "Nadie los pidió", dot: "bg-neutral-500" },
+  sin_datos: {
+    label: "Sin datos",
+    sub: "Pocas ventas o costo sin confirmar",
+    dot: "bg-neutral-400",
+  },
 }
-const ORDER: MenuCategory[] = ["funciona", "oportunidad", "estable", "revisar", "no_vendido"]
+const ORDER: MenuCategory[] = [
+  "funciona",
+  "oportunidad",
+  "estable",
+  "revisar",
+  "no_vendido",
+  "sin_datos",
+]
 
 export function MenuEngineering({ period }: { period: RangeWindow }) {
   // limit alto para no truncar la clasificación (el endpoint corta en le=1000).
   const query = useMemo(() => ({ from: period.from, to: period.to, limit: 1000 }), [period])
   const perf = useProductPerformance(query)
   const foodCost = useFoodCost()
+  const productsList = useProducts()
+  // Fase 4 (T3.1): categoría de carta por producto, para comparar dentro de la
+  // categoría. Sin catálogo aún → undefined → comparación global (paridad).
+  const categoryById = useMemo(
+    () =>
+      productsList.data
+        ? new Map(productsList.data.map((p) => [p.id, p.category]))
+        : undefined,
+    [productsList.data],
+  )
+  const minUnits = useMemo(() => minUnitsForPeriod(period), [period])
   // Fase 3: platos con costo estimado (no entran a las conclusiones de plata). Sin
   // el food cost cargado → undefined → paridad (todo confirmado, no grisa nada).
   const estimatedIds = useMemo(
@@ -56,8 +90,8 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
     [foodCost.data],
   )
   const products = useMemo(
-    () => classifyMenu(perf.data ?? [], estimatedIds, insaneIds),
-    [perf.data, estimatedIds, insaneIds],
+    () => classifyMenu(perf.data ?? [], estimatedIds, insaneIds, categoryById, minUnits),
+    [perf.data, estimatedIds, insaneIds, categoryById, minUnits],
   )
   const currency = perf.data?.[0]?.currency ?? "ARS"
 
@@ -88,8 +122,15 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
         <p className="mt-1 text-sm text-muted-foreground">
           De tus {products.length} platos, {byCat("funciona").length} son estrellas,{" "}
           {byCat("oportunidad").length} son oportunidades, {byCat("revisar").length} te están
-          costando margen y {byCat("no_vendido").length} no se vendieron.
+          costando margen y {byCat("no_vendido").length} no se vendieron. Comparados dentro de su
+          categoría de carta.
         </p>
+        {byCat("sin_datos").length > 0 ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            {byCat("sin_datos").length} platos quedaron sin clasificar (pocas ventas en el período
+            o costo sin confirmar) — no los forzamos a una categoría.
+          </p>
+        ) : null}
         {gate.open ? (
           <>
             <p className="mt-2 text-sm text-foreground">
@@ -140,7 +181,7 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">{meta.sub}</p>
-              {gate.open && cat !== "no_vendido" ? (
+              {gate.open && cat !== "no_vendido" && cat !== "sin_datos" ? (
                 <p className="text-sm tabular-nums text-foreground">
                   Te dejan {money(totalMargin)}
                 </p>
