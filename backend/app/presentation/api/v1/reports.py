@@ -3,13 +3,15 @@ from __future__ import annotations
 from datetime import datetime
 
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 
 from app.application.reporting.dashboard import GetDashboardSummary
+from app.application.reporting.exports import ExportReport, ReportExportKind
 from app.application.reporting.staff import GetStaffReport
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
 from app.domain.user.value_objects import Role
+from app.presentation.csv_export import csv_response
 from app.presentation.deps import current_identity
 from app.presentation.rbac import require_roles
 from app.presentation.schemas.reports import (
@@ -21,6 +23,14 @@ from app.presentation.schemas.reports import (
 router = APIRouter(prefix="/reports", tags=["reports"])
 
 _STAFF_REPORT_ROLES = (Role.OWNER, Role.MANAGER)
+_EXPORT_ROLES = (Role.OWNER, Role.MANAGER)
+
+# Nombre de archivo por export (el contador lo reconoce de un vistazo).
+_EXPORT_FILENAMES = {
+    ReportExportKind.SALES: "ventas-por-dia.csv",
+    ReportExportKind.EXPENSES: "gastos.csv",
+    ReportExportKind.VAT_SALES: "libro-iva-ventas.csv",
+}
 
 
 @router.get("/dashboard", response_model=DashboardSummaryResponse)
@@ -73,3 +83,20 @@ async def staff_report(
             for r in report.rows
         ],
     )
+
+
+@router.get("/export/{kind}.csv")
+@inject
+async def export_csv(
+    kind: ReportExportKind,
+    since: datetime | None = Query(default=None, alias="from"),
+    until: datetime | None = Query(default=None, alias="to"),
+    identity: AccessClaims = Depends(require_roles(*_EXPORT_ROLES)),
+    use_case: ExportReport = Depends(Provide[Container.export_report]),
+) -> Response:
+    """CSV para el contador: `sales` (ventas por día), `expenses` (gastos
+    itemizados) o `vat_sales` (libro IVA ventas, comprobantes con CAE)."""
+    table = await use_case.execute(
+        tenant_id=identity.tenant_id, kind=kind, since=since, until=until
+    )
+    return csv_response(_EXPORT_FILENAMES[kind], table)
