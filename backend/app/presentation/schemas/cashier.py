@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from app.domain.cashier.value_objects import CashMovementKind
 from app.domain.payment.value_objects import PaymentMethod
 
 
@@ -32,6 +33,15 @@ class CashReportLineResponse(BaseModel):
     difference: int | None
 
 
+class CashMovementRowResponse(BaseModel):
+    id: str
+    kind: str  # "DEPOSIT" | "DROP" | "PAYOUT"
+    amount: int
+    signed_amount: int  # efecto en el cajón (+ingreso / −salida)
+    reason: str | None
+    created_at: str | None
+
+
 class CashReportResponse(BaseModel):
     session_id: str
     status: str
@@ -44,6 +54,24 @@ class CashReportResponse(BaseModel):
     counted_total: int | None
     difference_total: int | None
     tips_total: int
+    movements: list[CashMovementRowResponse] = []
+    cash_in_total: int = 0
+    cash_out_total: int = 0
+
+
+class CashMovementRequest(BaseModel):
+    kind: CashMovementKind
+    amount: int = Field(ge=1)  # minor units (siempre positivo; el kind da el signo)
+    reason: str | None = Field(default=None, max_length=255)
+
+
+class CashMovementResponse(BaseModel):
+    id: str
+    kind: str
+    amount: int
+    signed_amount: int
+    currency: str
+    reason: str | None
 
 
 class TipsReportRowResponse(BaseModel):

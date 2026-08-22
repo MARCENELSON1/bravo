@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from app.domain.cashier.entities import CashSession
+from app.domain.cashier.entities import CashMovement, CashSession
 
 
 class CashSessionRepository(ABC):
@@ -20,3 +20,16 @@ class CashSessionRepository(ABC):
 
     @abstractmethod
     async def save(self, session: CashSession) -> None: ...
+
+
+class CashMovementRepository(ABC):
+    """Port for manual cash-drawer movements. Scoped by ``tenant_id``."""
+
+    @abstractmethod
+    async def add(self, movement: CashMovement) -> None: ...
+
+    @abstractmethod
+    async def list_for_session(
+        self, tenant_id: str, cash_session_id: str
+    ) -> list[CashMovement]:
+        """All movements of a session, oldest first."""

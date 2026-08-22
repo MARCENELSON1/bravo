@@ -747,6 +747,31 @@ class CashCountORM(Base):
     counted_amount: Mapped[int] = mapped_column(BigInteger)
 
 
+class CashMovementORM(Base):
+    """Manual cash-drawer movements (sangría / ingreso / pago en efectivo) on an
+    open session. Reconcile the arqueo Z; NOT a sale. Datos de plata → RLS."""
+
+    __tablename__ = "cash_movements"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    cash_session_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False),
+        ForeignKey("cash_sessions.id", ondelete="CASCADE"),
+        index=True,
+    )
+    kind: Mapped[str] = mapped_column(String(20))
+    amount: Mapped[int] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(String(3))
+    reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_by: Mapped[str] = mapped_column(Uuid(as_uuid=False))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 class TipPayoutORM(Base):
     """Liquidaciones de propina (guarda D): pasivo neutro al resultado, NO egreso.
     Datos de plata → RLS."""

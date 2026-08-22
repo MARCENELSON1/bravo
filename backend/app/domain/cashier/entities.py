@@ -4,9 +4,30 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from app.domain.cashier.exceptions import CashSessionAlreadyClosed
-from app.domain.cashier.value_objects import CashSessionStatus
+from app.domain.cashier.value_objects import CashMovementKind, CashSessionStatus
 from app.domain.payment.value_objects import PaymentMethod
 from app.domain.shared.money import Money
+
+
+@dataclass
+class CashMovement:
+    """A manual cash-drawer movement on an open register session (sangría /
+    ingreso / pago en efectivo). It is NOT a sale: it only reconciles the
+    physical cash the arqueo Z expects. ``amount`` is always positive; the
+    ``kind`` decides the sign (see ``CashMovementKind.signed``)."""
+
+    id: str
+    tenant_id: str
+    cash_session_id: str
+    kind: CashMovementKind
+    amount: Money
+    created_by: str
+    reason: str | None = None
+    created_at: datetime | None = None
+
+    @property
+    def signed_amount(self) -> int:
+        return self.kind.signed(self.amount.amount)
 
 
 @dataclass

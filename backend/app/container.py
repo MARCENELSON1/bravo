@@ -27,6 +27,7 @@ from app.application.cashier.use_cases import (
     CloseCashSession,
     GetCurrentCashReport,
     OpenCashSession,
+    RegisterCashMovement,
 )
 from app.application.copilot.ask import AskCopilot
 from app.application.finance.snapshots import RebuildFinanceSnapshots
@@ -192,6 +193,9 @@ from app.infrastructure.persistence.analytics_repo import (
     SqlAlchemyRevenueReadModel,
 )
 from app.infrastructure.persistence.audit_repo import SqlAlchemyAuditRepository
+from app.infrastructure.persistence.cash_movement_repo import (
+    SqlAlchemyCashMovementRepository,
+)
 from app.infrastructure.persistence.cash_policy_repo import SqlAlchemyCashSessionPolicy
 from app.infrastructure.persistence.cash_repo import SqlAlchemyCashSessionRepository
 from app.infrastructure.persistence.cost_history_repo import (
@@ -677,6 +681,9 @@ class Container(containers.DeclarativeContainer):
     cash_session_repository = providers.Factory(
         SqlAlchemyCashSessionRepository, session_factory=db.provided.session
     )
+    cash_movement_repository = providers.Factory(
+        SqlAlchemyCashMovementRepository, session_factory=db.provided.session
+    )
     cash_session_policy = providers.Factory(
         SqlAlchemyCashSessionPolicy, session_factory=db.provided.session
     )
@@ -703,12 +710,20 @@ class Container(containers.DeclarativeContainer):
         GetCurrentCashReport,
         cash=cash_session_repository,
         payments=payment_repository,
+        movements=cash_movement_repository,
         tenant_context=tenant_context,
     )
     close_cash_session = providers.Factory(
         CloseCashSession,
         cash=cash_session_repository,
         payments=payment_repository,
+        movements=cash_movement_repository,
+        tenant_context=tenant_context,
+    )
+    register_cash_movement = providers.Factory(
+        RegisterCashMovement,
+        cash=cash_session_repository,
+        movements=cash_movement_repository,
         tenant_context=tenant_context,
     )
     # --- Fase 3.5: conexión MP por tenant (OAuth) ---

@@ -7,8 +7,8 @@ clobbers the DB-managed timestamp and inserts use the column ``server_default``.
 from __future__ import annotations
 
 from app.domain.advisor.entities import AdvisorSettings
-from app.domain.cashier.entities import CashCount, CashSession
-from app.domain.cashier.value_objects import CashSessionStatus
+from app.domain.cashier.entities import CashCount, CashMovement, CashSession
+from app.domain.cashier.value_objects import CashMovementKind, CashSessionStatus
 from app.domain.identity.tokens import (
     AuthAuditEntry,
     AuthEvent,
@@ -58,6 +58,7 @@ from app.infrastructure.persistence.models import (
     AdvisorSettingsORM,
     AuthAuditORM,
     CashCountORM,
+    CashMovementORM,
     CashSessionORM,
     EmailVerificationTokenORM,
     IngredientORM,
@@ -934,6 +935,32 @@ def cash_count_to_orm(
         method=count.method.value,
         expected_amount=count.expected.amount,
         counted_amount=count.counted.amount,
+    )
+
+
+def cash_movement_to_domain(row: CashMovementORM) -> CashMovement:
+    return CashMovement(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        cash_session_id=row.cash_session_id,
+        kind=CashMovementKind(row.kind),
+        amount=Money(row.amount, row.currency),
+        created_by=row.created_by,
+        reason=row.reason,
+        created_at=row.created_at,
+    )
+
+
+def cash_movement_to_orm(movement: CashMovement) -> CashMovementORM:
+    return CashMovementORM(
+        id=movement.id,
+        tenant_id=movement.tenant_id,
+        cash_session_id=movement.cash_session_id,
+        kind=movement.kind.value,
+        amount=movement.amount.amount,
+        currency=movement.amount.currency,
+        reason=movement.reason,
+        created_by=movement.created_by,
     )
 
 
