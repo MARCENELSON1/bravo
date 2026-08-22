@@ -88,6 +88,56 @@ async def test_cash_session_arqueo_flow(client):
     assert again.json()["status"] == "OPEN"
 
 
+async def test_cash_movements_adjust_arqueo(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="mov", email="o@mov.com")
+    h = _auth(tokens)
+
+    # Register requires an open caja.
+    no_caja = await http.post(
+        "/api/v1/cashier/movements", json={"kind": "DROP", "amount": 5000}, headers=h
+    )
+    assert no_caja.status_code == 409
+    assert no_caja.json()["code"] == "no_open_cash_session"
+
+    session_id = (
+        await http.post(
+            "/api/v1/cashier/session/open", json={"opening_float_amount": 50000}, headers=h
+        )
+    ).json()["id"]
+
+    # Ingreso (+10000), sangría (−5000), pago en efectivo (−2000).
+    for kind, amount, reason in (
+        ("DEPOSIT", 10000, "reposición de cambio"),
+        ("DROP", 5000, "a caja fuerte"),
+        ("PAYOUT", 2000, "delivery agua"),
+    ):
+        r = await http.post(
+            "/api/v1/cashier/movements",
+            json={"kind": kind, "amount": amount, "reason": reason},
+            headers=h,
+        )
+        assert r.status_code == 200, r.text
+
+    # CASH esperado = float 50000 + 10000 − 5000 − 2000 = 53000 (sin ventas).
+    body = (await http.get("/api/v1/cashier/session/current", headers=h)).json()
+    cash = next(line for line in body["lines"] if line["method"] == "CASH")
+    assert cash["expected"] == 53000
+    assert body["cash_in_total"] == 10000
+    assert body["cash_out_total"] == 7000
+    assert len(body["movements"]) == 3
+
+    # El cierre respeta el esperado ajustado: contar 53000 → sin diferencia.
+    closed = await http.post(
+        f"/api/v1/cashier/session/{session_id}/close",
+        json={"counted": {"CASH": 53000}},
+        headers=h,
+    )
+    assert closed.status_code == 200, closed.text
+    assert closed.json()["difference_total"] == 0
+    assert len(closed.json()["movements"]) == 3
+
+
 async def test_refund_excludes_payment_from_arqueo(client):
     http, fake_email = client
     tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="owner@resto.com")

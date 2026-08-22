@@ -11,6 +11,7 @@ from app.application.cashier.use_cases import (
     CloseCashSession,
     GetCurrentCashReport,
     OpenCashSession,
+    RegisterCashMovement,
 )
 from app.container import Container
 from app.domain.cashier.entities import CashSession
@@ -18,6 +19,9 @@ from app.domain.identity.tokens import AccessClaims
 from app.domain.user.value_objects import Role
 from app.presentation.rbac import require_roles
 from app.presentation.schemas.cashier import (
+    CashMovementRequest,
+    CashMovementResponse,
+    CashMovementRowResponse,
     CashReportLineResponse,
     CashReportResponse,
     CashSessionResponse,
@@ -66,6 +70,19 @@ def _report_response(report: CashReport) -> CashReportResponse:
         counted_total=report.counted_total,
         difference_total=report.difference_total,
         tips_total=report.tips_total,
+        movements=[
+            CashMovementRowResponse(
+                id=mv.id,
+                kind=mv.kind,
+                amount=mv.amount,
+                signed_amount=mv.signed_amount,
+                reason=mv.reason,
+                created_at=mv.created_at.isoformat() if mv.created_at else None,
+            )
+            for mv in report.movements
+        ],
+        cash_in_total=report.cash_in_total,
+        cash_out_total=report.cash_out_total,
     )
 
 
@@ -111,6 +128,32 @@ async def close_session(
         note=body.note,
     )
     return _report_response(report)
+
+
+@router.post("/movements", response_model=CashMovementResponse)
+@inject
+async def register_movement(
+    body: CashMovementRequest,
+    identity: AccessClaims = Depends(require_roles(*_CASH_ROLES)),
+    use_case: RegisterCashMovement = Depends(Provide[Container.register_cash_movement]),
+) -> CashMovementResponse:
+    """Registrar una sangría / ingreso / pago en efectivo sobre la caja abierta
+    (ajusta el esperado del arqueo). Requiere una caja abierta."""
+    movement = await use_case.execute(
+        tenant_id=identity.tenant_id,
+        kind=body.kind.value,
+        amount=body.amount,
+        created_by=identity.user_id,
+        reason=body.reason,
+    )
+    return CashMovementResponse(
+        id=movement.id,
+        kind=movement.kind.value,
+        amount=movement.amount.amount,
+        signed_amount=movement.signed_amount,
+        currency=movement.amount.currency,
+        reason=movement.reason,
+    )
 
 
 def _tips_response(report: TipsReport) -> TipsReportResponse:
