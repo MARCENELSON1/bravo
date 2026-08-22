@@ -1,5 +1,5 @@
 import { useRef, useState } from "react"
-import { motion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
 import { Menu } from "lucide-react"
 import type { OverlayScrollbars } from "overlayscrollbars"
 import {
@@ -27,7 +27,9 @@ function updateNavFade(instance: OverlayScrollbars) {
 import { useAuth } from "@/auth/auth-context"
 import { WellnodMark } from "@/components/brand/wellnod-mark"
 import { AppBackground } from "@/components/shell/app-background"
+import { CalendarMenu } from "@/components/shell/calendar-menu"
 import { ClockStatus } from "@/components/shell/clock-status"
+import { Messages } from "@/components/shell/messages"
 import { TopbarClock } from "@/components/shell/topbar-clock"
 import { NAV_GROUPS, NAV_ITEMS } from "@/components/shell/nav-config"
 import type { NavItem } from "@/components/shell/nav-config"
@@ -142,36 +144,54 @@ export function AppShell() {
 
       <aside className="hidden h-full md:block">{sidebar}</aside>
 
-      {drawerOpen ? (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <button
-            type="button"
-            aria-label="Cerrar menú"
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setDrawerOpen(false)}
-          />
-          <div className="absolute inset-y-0 left-0 p-3 shadow-xl">{sidebar}</div>
-        </div>
-      ) : null}
+      <AnimatePresence>
+        {drawerOpen ? (
+          <motion.div key="drawer" className="fixed inset-0 z-50 md:hidden">
+            {/* Fondo con fade */}
+            <motion.button
+              type="button"
+              aria-label="Cerrar menú"
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setDrawerOpen(false)}
+              initial={reduce ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={reduce ? { duration: 0 } : { duration: 0.2, ease: "easeOut" }}
+            />
+            {/* Panel deslizando desde la izquierda (abre y cierra) */}
+            <motion.div
+              className="absolute inset-y-0 left-0 p-3 shadow-xl"
+              initial={reduce ? false : { x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={reduce ? { duration: 0 } : { duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {sidebar}
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <div
         className={cn("flex h-full min-w-0 flex-1 flex-col overflow-hidden", GLASS_PANEL)}
       >
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-black/10 px-4 sm:px-6 dark:border-white/10">
+        <header className="flex h-16 shrink-0 items-center gap-1.5 border-b border-black/10 px-2 sm:gap-3 sm:px-6 dark:border-white/10">
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="shrink-0 md:hidden"
             aria-label="Abrir menú"
             onClick={() => setDrawerOpen(true)}
           >
             <Menu className="size-4" />
           </Button>
-          <span className="min-w-0 truncate text-sm font-medium text-muted-foreground">
+          {/* Nombre del comercio: ocupa el espacio libre y se trunca con "…" si es largo */}
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-muted-foreground">
             {session.tenantName}
           </span>
-          <div className="flex-1" />
           <TopbarClock />
+          <CalendarMenu />
+          <Messages />
           <ClockStatus />
         </header>
         <OverlayScrollbarsComponent

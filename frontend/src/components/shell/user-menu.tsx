@@ -57,10 +57,10 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
         {open ? (
           <motion.div
             role="menu"
-            initial={reduce ? false : { opacity: 0, y: 6, scale: 0.98 }}
+            initial={reduce ? false : { opacity: 0, y: 8, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={reduce ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.98 }}
-            transition={reduce ? { duration: 0 } : { duration: 0.15, ease: "easeOut" }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.96 }}
+            transition={reduce ? { duration: 0 } : { duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
             className={cn(
               "absolute bottom-full left-3 right-3 z-20 mb-2 origin-bottom overflow-hidden rounded-xl p-1.5 shadow-xl",
               "border border-black/10 bg-white/98 backdrop-blur-3xl dark:border-white/10 dark:bg-black/92"

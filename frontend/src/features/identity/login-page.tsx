@@ -133,7 +133,15 @@ export function LoginPage() {
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="password">Contraseña</FieldLabel>
+            <div className="flex items-center justify-between gap-2">
+              <FieldLabel htmlFor="password">Contraseña</FieldLabel>
+              <Link
+                to="/forgot-password"
+                className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
             <Input
               id="password"
               type="password"
