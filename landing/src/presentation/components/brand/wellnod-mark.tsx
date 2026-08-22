@@ -36,9 +36,9 @@ export function WellnodLogo({ className }: { className?: string }) {
     <span className={className}>
       <span className="inline-flex items-center gap-2 text-foreground">
         <WellnodMark className="h-7 w-auto" />
-        <span className="font-brand text-xl leading-none tracking-tight">
+        <span className="font-brand translate-y-0.5 text-xl leading-none tracking-tight">
           <span className="font-bold">Well</span>
-          <span className="-ml-[3px] font-light text-foreground/55">nod</span>
+          <span className="font-light text-foreground/55">nod</span>
         </span>
       </span>
     </span>
