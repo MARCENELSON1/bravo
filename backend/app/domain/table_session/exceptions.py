@@ -6,3 +6,8 @@ from app.domain.errors import DomainError
 class SessionNotFound(DomainError):
     code = "session_not_found"
     message = "No encontramos la sesión de mesa indicada."
+
+
+class SectorNotFound(DomainError):
+    code = "sector_not_found"
+    message = "No encontramos el sector indicado."

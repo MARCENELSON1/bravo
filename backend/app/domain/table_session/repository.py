@@ -2,7 +2,26 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from app.domain.table_session.entities import TableSession
+from app.domain.table_session.entities import Sector, TableSession
+
+
+class SectorRepository(ABC):
+    """Port for salon sectors (zones). Every method is scoped by ``tenant_id``."""
+
+    @abstractmethod
+    async def get_by_id(self, tenant_id: str, sector_id: str) -> Sector | None: ...
+
+    @abstractmethod
+    async def list(self, tenant_id: str) -> list[Sector]: ...
+
+    @abstractmethod
+    async def add(self, sector: Sector) -> None: ...
+
+    @abstractmethod
+    async def save(self, sector: Sector) -> None: ...
+
+    @abstractmethod
+    async def delete(self, tenant_id: str, sector_id: str) -> None: ...
 
 
 class TableSessionRepository(ABC):

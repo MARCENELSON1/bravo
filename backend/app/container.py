@@ -128,7 +128,13 @@ from app.application.reservation.use_cases import (
     SeatReservation,
     UpdateReservation,
 )
-from app.application.table.use_cases import CreateTable, ListTables
+from app.application.table.use_cases import CreateTable, ListTables, UpdateTable
+from app.application.table_session.sectors import (
+    CreateSector,
+    DeleteSector,
+    ListSectors,
+    UpdateSector,
+)
 from app.application.table_session.use_cases import (
     OpenSession,
     RequestBill,
@@ -234,6 +240,7 @@ from app.infrastructure.persistence.reservation_repo import (
 )
 from app.infrastructure.persistence.reset_token_repo import SqlAlchemyResetTokenRepository
 from app.infrastructure.persistence.sale_facts_repo import SqlAlchemySaleFactsRepository
+from app.infrastructure.persistence.sector_repo import SqlAlchemySectorRepository
 from app.infrastructure.persistence.shift_repo import SqlAlchemyShiftRepository
 from app.infrastructure.persistence.staff_report_repo import SqlAlchemyStaffReportReadModel
 from app.infrastructure.persistence.stock_movement_repo import (
@@ -324,6 +331,9 @@ class Container(containers.DeclarativeContainer):
     )
     table_session_repository = providers.Factory(
         SqlAlchemyTableSessionRepository, session_factory=db.provided.session
+    )
+    sector_repository = providers.Factory(
+        SqlAlchemySectorRepository, session_factory=db.provided.session
     )
     product_repository = providers.Factory(
         SqlAlchemyProductRepository, session_factory=db.provided.session
@@ -498,6 +508,9 @@ class Container(containers.DeclarativeContainer):
     list_tables = providers.Factory(
         ListTables, tables=table_repository, tenant_context=tenant_context
     )
+    update_table = providers.Factory(
+        UpdateTable, tables=table_repository, tenant_context=tenant_context
+    )
     create_order = providers.Factory(
         CreateOrder,
         orders=order_repository,
@@ -530,6 +543,18 @@ class Container(containers.DeclarativeContainer):
         RequestBill,
         sessions=table_session_repository,
         tenant_context=tenant_context,
+    )
+    list_sectors = providers.Factory(
+        ListSectors, sectors=sector_repository, tenant_context=tenant_context
+    )
+    create_sector = providers.Factory(
+        CreateSector, sectors=sector_repository, tenant_context=tenant_context
+    )
+    update_sector = providers.Factory(
+        UpdateSector, sectors=sector_repository, tenant_context=tenant_context
+    )
+    delete_sector = providers.Factory(
+        DeleteSector, sectors=sector_repository, tenant_context=tenant_context
     )
     get_order = providers.Factory(
         GetOrder, orders=order_repository, tenant_context=tenant_context
