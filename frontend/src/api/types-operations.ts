@@ -240,6 +240,26 @@ export interface CashReportLineDTO {
   difference: number | null
 }
 
+export type CashMovementKind = "DEPOSIT" | "DROP" | "PAYOUT"
+
+export interface CashMovementRowDTO {
+  id: string
+  kind: CashMovementKind
+  amount: number
+  signed_amount: number // efecto en el cajón (+ingreso / −salida)
+  reason: string | null
+  created_at: string | null
+}
+
+export interface CashMovementResponseDTO {
+  id: string
+  kind: CashMovementKind
+  amount: number
+  signed_amount: number
+  currency: string
+  reason: string | null
+}
+
 export interface CashReportDTO {
   session_id: string
   status: "OPEN" | "CLOSED"
@@ -252,6 +272,9 @@ export interface CashReportDTO {
   counted_total: number | null
   difference_total: number | null
   tips_total: number // total de propinas del turno (para repartir)
+  movements: CashMovementRowDTO[]
+  cash_in_total: number // Σ ingresos de efectivo
+  cash_out_total: number // Σ sangrías + pagos en efectivo
 }
 
 export interface TipsReportRowDTO {
