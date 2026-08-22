@@ -179,6 +179,57 @@ class TableORM(Base):
     number: Mapped[int] = mapped_column(Integer)
     name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # table_sessions (cimiento): zona + capacidad. Nullable → paridad.
+    sector_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True, index=True)
+    capacity: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class SectorORM(Base):
+    """Zona del salón para agrupar/facturar mesas. Datos operativos → RLS."""
+
+    __tablename__ = "sectors"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(80))
+    color: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, server_default="0")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class TableSessionORM(Base):
+    """La visita de una mesa (turno). Timestamps + PAX + mozo + status cache.
+    Datos operativos/de plata → RLS."""
+
+    __tablename__ = "table_sessions"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    table_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
+    status: Mapped[str] = mapped_column(String(20), server_default="OPEN", index=True)
+    origin: Mapped[str] = mapped_column(String(20), server_default="SALON")
+    pax: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    waiter_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True)
+    opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    first_item_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    fired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ready_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    bill_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    merged_into_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True)
+    customer_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -234,6 +285,8 @@ class OrderORM(Base):
     table_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
     waiter_id: Mapped[str] = mapped_column(Uuid(as_uuid=False))
     status: Mapped[str] = mapped_column(String(20), default="OPEN", index=True)
+    # table_sessions (cimiento): la comanda cuelga de la sesión (1:N). Nullable → paridad.
+    session_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True, index=True)
     currency: Mapped[str] = mapped_column(String(3))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

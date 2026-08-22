@@ -13,4 +13,8 @@ class Table:
     number: int
     name: str | None = None
     active: bool = True
+    # table_sessions (cimiento): zona del salón y capacidad (para el default de PAX).
+    # Nullable → paridad (sin sector = tablero plano; sin capacity = sin default).
+    sector_id: str | None = None
+    capacity: int | None = None
     created_at: datetime | None = None
