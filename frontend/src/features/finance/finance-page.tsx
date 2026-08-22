@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/ui/glass-card"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Spinner } from "@/components/ui/spinner"
-import { AccountantExport } from "@/features/finance/accountant-export"
 import { ExpenseChanges } from "@/features/finance/expense-changes"
 import { ExpenseDonut } from "@/features/finance/expense-donut"
 import { RecentMovements } from "@/features/finance/recent-movements"
@@ -287,9 +286,6 @@ function FinanceBody({
           pending={movements.isPending}
         />
       ) : null}
-
-      {/* Export para el contador (Fase 10): 3 CSV del período elegido. */}
-      <AccountantExport window={window} />
     </>
   )
 }
