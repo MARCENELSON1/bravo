@@ -28,6 +28,7 @@ import { useEdgePeek } from "@/lib/edge-peek"
 import { setReduceMotion, useReduceMotion } from "@/lib/reduce-motion"
 import { setThemeAnimated } from "@/lib/theme-transition"
 import { CommissionRatesCard } from "@/features/finance/commission-rates-card"
+import { CashSettingsCard } from "@/features/settings/cash-settings-card"
 import { SectorsManager } from "@/features/settings/sectors-manager"
 import { cn } from "@/lib/utils"
 
@@ -438,7 +439,8 @@ export function ConfigPage() {
                   Vive acá y no en el Asesor porque afecta también al Inicio y a
                   Finanzas: es un dato del negocio, no un parámetro de una pantalla. */}
               {tab === "caja" ? (
-                <div className="py-4">
+                <div className="flex flex-col gap-4 py-4">
+                  <CashSettingsCard />
                   <CommissionRatesCard />
                 </div>
               ) : null}
@@ -457,6 +459,11 @@ export function ConfigPage() {
                   (r) =>
                     tab !== "salones" ||
                     (r.label !== "Sectores" && r.label !== "Mesas y cubiertos")
+                )
+                .filter(
+                  (r) =>
+                    tab !== "caja" ||
+                    (r.label !== "Apertura de caja obligatoria" && r.label !== "Arqueo ciego")
                 )
                 .map((r) => {
                 const value = rowValue(r)

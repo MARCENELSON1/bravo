@@ -4,6 +4,7 @@ import type {
   CashMovementResponseDTO,
   CashReportDTO,
   CashSessionDTO,
+  CashSettingsDTO,
   TipPayoutDTO,
   PaymentMethod,
   TipsReportDTO,
@@ -73,6 +74,17 @@ export class CashApi {
   ): Promise<CashMovementResponseDTO> {
     return this.http.request<CashMovementResponseDTO>("POST", "/cashier/movements", {
       body: { kind, amount, reason: reason ?? null },
+      auth: true,
+    })
+  }
+
+  settings(): Promise<CashSettingsDTO> {
+    return this.http.request<CashSettingsDTO>("GET", "/cashier/settings", { auth: true })
+  }
+
+  updateSettings(settings: CashSettingsDTO): Promise<CashSettingsDTO> {
+    return this.http.request<CashSettingsDTO>("PUT", "/cashier/settings", {
+      body: settings,
       auth: true,
     })
   }

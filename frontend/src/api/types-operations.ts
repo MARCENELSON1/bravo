@@ -275,6 +275,12 @@ export interface CashReportDTO {
   movements: CashMovementRowDTO[]
   cash_in_total: number // Σ ingresos de efectivo
   cash_out_total: number // Σ sangrías + pagos en efectivo
+  blind: boolean // arqueo ciego: el esperado va enmascarado mientras OPEN
+}
+
+export interface CashSettingsDTO {
+  require_open_cash_session: boolean
+  blind_cash_count: boolean
 }
 
 export interface TipsReportRowDTO {
