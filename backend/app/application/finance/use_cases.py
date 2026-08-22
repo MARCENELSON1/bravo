@@ -206,6 +206,23 @@ def _build_finance_kpis(cur: AdvisorKpis, prev: AdvisorKpis | None) -> list[Fina
     ]
 
 
+class FinanceCommissionsReadModel(ABC):
+    """Comisiones de pasarela cobradas en la ventana + lo cobrado neto de ellas
+    (sobre cobros CONFIRMED/INFLOW). Scopeado por ``tenant_id`` (RLS + filtro).
+    Sin tasas cargadas → (0, bruto). Eje de cobranza, ortogonal al margen de IVA."""
+
+    @abstractmethod
+    async def fees_and_net(
+        self,
+        tenant_id: str,
+        *,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> tuple[int, int]:
+        """Devuelve (comisiones_total, cobrado_neto) en unidad mínima."""
+        ...
+
+
 class GetFinanceOverview:
     """Un solo payload para la Pantalla Finanzas: KPIs vitales con comparativo,
     diagnósticos y margen por producto."""
@@ -216,12 +233,14 @@ class GetFinanceOverview:
         products: GetProductPerformance,
         settings: AdvisorSettingsRepository,
         inventory: InventoryValueReadModel,
+        commissions: FinanceCommissionsReadModel,
         tenant_context: TenantContext,
     ) -> None:
         self._advisor = advisor
         self._products = products
         self._settings = settings
         self._inventory = inventory
+        self._commissions = commissions
         self._tenant_context = tenant_context
 
     async def execute(
@@ -238,6 +257,9 @@ class GetFinanceOverview:
         )
         settings = await self._settings.get(tenant_id)
         inventory_value = await self._inventory.total_value(tenant_id)
+        commissions, collected_net = await self._commissions.fees_and_net(
+            tenant_id, since=since, until=until
+        )
         kpis = _build_finance_kpis(report.kpis, report.previous)
         kpis.append(_revpash_kpi(report.kpis, report.previous, settings))
         kpis.append(_turnover_kpi(report.kpis, inventory_value))
@@ -269,6 +291,8 @@ class GetFinanceOverview:
             ],
             summary=report.summary,
             projection=_project_month_end(report.kpis, since, until),
+            commissions_amount=commissions,
+            collected_net_amount=collected_net,
         )
 
 

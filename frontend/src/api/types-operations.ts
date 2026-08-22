@@ -327,6 +327,10 @@ export interface FinanceOverviewDTO {
   product_margins: ProductMarginDTO[]
   summary: string | null
   projection: FinanceProjectionDTO | null
+  // Comisiones de pasarela en la ventana + lo cobrado neto de ellas. Línea
+  // separada (eje de cobranza), no se mezcla con el margen. 0 si no hay tasas.
+  commissions_amount: number
+  collected_net_amount: number
 }
 
 export interface ExpenseCategoryRowDTO {

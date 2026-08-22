@@ -68,6 +68,11 @@ class FinanceOverview:
     product_margins: list[ProductMargin]
     summary: str | None
     projection: FinanceProjection | None = None  # solo en el mes en curso
+    # Comisiones de pasarela en la ventana + lo cobrado neto de ellas. Línea
+    # SEPARADA (eje de cobranza), NO se mezcla con el margen (eje de IVA/2B) para
+    # no doble-contar. Sin tasas cargadas → commissions=0 y collected_net=bruto.
+    commissions_amount: int = 0
+    collected_net_amount: int = 0
 
 
 @dataclass(frozen=True)

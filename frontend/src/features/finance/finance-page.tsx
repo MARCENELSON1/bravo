@@ -187,6 +187,25 @@ function FinanceBody({
         })}
       </section>
 
+      {/* Comisiones de cobro — línea SEPARADA del margen (eje de cobranza), para
+          no doble-contar con el IVA. Solo si hay tasas cargadas. */}
+      {data.commissions_amount > 0 ? (
+        <GlassCard className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Comisiones de cobro (pasarelas)</p>
+            <p className="text-xl font-bold tabular-nums text-destructive">
+              −{formatMoney(data.commissions_amount, data.currency)}
+            </p>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Cobrado neto de comisiones:{" "}
+            <span className="font-semibold text-foreground">
+              {formatMoney(data.collected_net_amount, data.currency)}
+            </span>
+          </p>
+        </GlassCard>
+      ) : null}
+
       {/* NIVEL 3 + 4b — gastos que cambiaron + donut de distribución */}
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <ExpenseChanges rows={breakdown.data?.rows ?? []} currency={data.currency} />
