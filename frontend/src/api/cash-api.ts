@@ -1,5 +1,7 @@
 import type { HttpClient } from "@/api/http-client"
 import type {
+  CashMovementKind,
+  CashMovementResponseDTO,
   CashReportDTO,
   CashSessionDTO,
   TipPayoutDTO,
@@ -58,6 +60,19 @@ export class CashApi {
   payTip(waiterId: string, amount: number): Promise<TipPayoutDTO> {
     return this.http.request<TipPayoutDTO>("POST", "/cashier/tips/payout", {
       body: { waiter_id: waiterId, amount },
+      auth: true,
+    })
+  }
+
+  // Registrar un movimiento manual de cajón (sangría / ingreso / pago en efectivo)
+  // sobre la caja abierta. Ajusta el esperado del arqueo.
+  registerMovement(
+    kind: CashMovementKind,
+    amount: number,
+    reason?: string | null
+  ): Promise<CashMovementResponseDTO> {
+    return this.http.request<CashMovementResponseDTO>("POST", "/cashier/movements", {
+      body: { kind, amount, reason: reason ?? null },
       auth: true,
     })
   }

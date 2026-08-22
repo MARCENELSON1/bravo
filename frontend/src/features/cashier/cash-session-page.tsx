@@ -2,7 +2,11 @@ import { Fragment, useState } from "react"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
-import type { CashReportDTO, PaymentMethod } from "@/api/types-operations"
+import type {
+  CashMovementKind,
+  CashReportDTO,
+  PaymentMethod,
+} from "@/api/types-operations"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { GradientHeading } from "@/components/ui/gradient-heading"
@@ -12,6 +16,7 @@ import {
   useCloseCashSession,
   useCurrentCashSession,
   useOpenCashSession,
+  useRegisterCashMovement,
 } from "@/hooks/use-cash"
 import { formatMoney } from "@/lib/money"
 
@@ -21,6 +26,18 @@ const METHOD_LABELS: Record<PaymentMethod, string> = {
   TRANSFER: "Transferencia",
   MERCADOPAGO: "MercadoPago",
   QR: "QR",
+}
+
+const MOVEMENT_KINDS: { kind: CashMovementKind; label: string }[] = [
+  { kind: "DROP", label: "Sangría" },
+  { kind: "DEPOSIT", label: "Ingreso" },
+  { kind: "PAYOUT", label: "Pago" },
+]
+
+const MOVEMENT_LABELS: Record<CashMovementKind, string> = {
+  DROP: "Sangría",
+  DEPOSIT: "Ingreso de efectivo",
+  PAYOUT: "Pago en efectivo",
 }
 
 function signedMoney(amount: number, currency: string): string {
@@ -48,7 +65,10 @@ export function CashSessionPage() {
       ) : closedReport ? (
         <ClosedArqueo report={closedReport} onDone={() => setClosedReport(null)} />
       ) : session.data ? (
-        <OpenSession report={session.data} onClosed={setClosedReport} />
+        <>
+          <OpenSession report={session.data} onClosed={setClosedReport} />
+          <CashMovements report={session.data} />
+        </>
       ) : (
         <OpenForm />
       )}
@@ -177,6 +197,109 @@ function OpenSession({
         <Button onClick={submit} disabled={close.isPending}>
           {close.isPending ? "Cerrando…" : "Cerrar caja"}
         </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+function CashMovements({ report }: { report: CashReportDTO }) {
+  const register = useRegisterCashMovement()
+  const [kind, setKind] = useState<CashMovementKind>("DROP")
+  const [amount, setAmount] = useState("")
+  const [reason, setReason] = useState("")
+
+  const submit = () => {
+    const minor = Math.round(Number(amount || 0) * 100)
+    if (!Number.isFinite(minor) || minor <= 0) {
+      toast.error("Ingresá un monto válido.")
+      return
+    }
+    register.mutate(
+      { kind, amount: minor, reason: reason.trim() || null },
+      {
+        onSuccess: () => {
+          toast.success("Movimiento registrado.")
+          setAmount("")
+          setReason("")
+        },
+        onError: (error) =>
+          toast.error(isApiError(error) ? error.message : "No pudimos registrar el movimiento."),
+      }
+    )
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Movimientos de caja</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <p className="text-xs text-muted-foreground">
+          Sangrías, ingresos de efectivo y pagos desde el cajón. Ajustan el esperado del arqueo
+          (no son ventas ni egresos del resultado).
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {MOVEMENT_KINDS.map((m) => (
+            <Button
+              key={m.kind}
+              size="sm"
+              variant={kind === m.kind ? "default" : "outline"}
+              onClick={() => setKind(m.kind)}
+            >
+              {m.label}
+            </Button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            type="number"
+            min={0}
+            step="0.01"
+            inputMode="decimal"
+            placeholder="0.00"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="max-w-[9rem]"
+          />
+          <Input
+            placeholder="Motivo (opcional)"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className="max-w-[14rem] flex-1"
+          />
+          <Button onClick={submit} disabled={register.isPending}>
+            Registrar
+          </Button>
+        </div>
+
+        {report.movements.length > 0 ? (
+          <div className="flex flex-col gap-1 border-t pt-3">
+            {report.movements.map((mv) => (
+              <div key={mv.id} className="flex items-center justify-between gap-3 text-sm">
+                <span className="truncate">
+                  {MOVEMENT_LABELS[mv.kind]}
+                  {mv.reason ? (
+                    <span className="text-muted-foreground"> · {mv.reason}</span>
+                  ) : null}
+                </span>
+                <span
+                  className={
+                    "shrink-0 tabular-nums " +
+                    (mv.signed_amount < 0 ? "text-red-600" : "text-emerald-600")
+                  }
+                >
+                  {signedMoney(mv.signed_amount, report.currency)}
+                </span>
+              </div>
+            ))}
+            <div className="mt-1 flex items-center justify-between border-t pt-2 text-xs text-muted-foreground">
+              <span>
+                Ingresos {formatMoney(report.cash_in_total, report.currency)} · Salidas{" "}
+                {formatMoney(report.cash_out_total, report.currency)}
+              </span>
+            </div>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   )

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import type { PaymentMethod } from "@/api/types-operations"
+import type { CashMovementKind, PaymentMethod } from "@/api/types-operations"
 import { useServices } from "@/services/services-context"
 
 // The currently open register's live arqueo (null when none is open).
@@ -60,6 +60,18 @@ export function usePayTip() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["tips-report"] })
       void queryClient.invalidateQueries({ queryKey: ["expenses"] })
+      void queryClient.invalidateQueries({ queryKey: ["cash-session"] })
+    },
+  })
+}
+
+export function useRegisterCashMovement() {
+  const { cashApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (vars: { kind: CashMovementKind; amount: number; reason?: string | null }) =>
+      cashApi.registerMovement(vars.kind, vars.amount, vars.reason),
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["cash-session"] })
     },
   })

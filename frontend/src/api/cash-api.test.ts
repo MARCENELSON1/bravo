@@ -68,4 +68,19 @@ describe("CashApi", () => {
     expect(path).toBe("/cashier/tips/payout")
     expect(options).toMatchObject({ body: { waiter_id: "w1", amount: 5000 }, auth: true })
   })
+
+  it("registers a cash-drawer movement", async () => {
+    const request = vi.fn().mockResolvedValue({ id: "m1", kind: "DROP" })
+    const api = new CashApi({ request } as unknown as HttpClient)
+
+    await api.registerMovement("DROP", 5000, "a caja fuerte")
+
+    const [method, path, options] = request.mock.calls[0]
+    expect(method).toBe("POST")
+    expect(path).toBe("/cashier/movements")
+    expect(options).toMatchObject({
+      body: { kind: "DROP", amount: 5000, reason: "a caja fuerte" },
+      auth: true,
+    })
+  })
 })
