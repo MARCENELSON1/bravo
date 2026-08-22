@@ -22,6 +22,7 @@ from app.application.analytics.use_cases import (
     GetRevenueDaily,
     GetRevenueSummary,
 )
+from app.application.cashier.settings import GetCashSettings, UpdateCashSettings
 from app.application.cashier.tips import GetTipsReport, PayTips
 from app.application.cashier.use_cases import (
     CloseCashSession,
@@ -198,6 +199,9 @@ from app.infrastructure.persistence.cash_movement_repo import (
 )
 from app.infrastructure.persistence.cash_policy_repo import SqlAlchemyCashSessionPolicy
 from app.infrastructure.persistence.cash_repo import SqlAlchemyCashSessionRepository
+from app.infrastructure.persistence.cash_settings_repo import (
+    SqlAlchemyCashSettingsRepository,
+)
 from app.infrastructure.persistence.cost_history_repo import (
     SqlAlchemyIngredientCostHistoryReadModel,
 )
@@ -684,6 +688,9 @@ class Container(containers.DeclarativeContainer):
     cash_movement_repository = providers.Factory(
         SqlAlchemyCashMovementRepository, session_factory=db.provided.session
     )
+    cash_settings_repository = providers.Factory(
+        SqlAlchemyCashSettingsRepository, session_factory=db.provided.session
+    )
     cash_session_policy = providers.Factory(
         SqlAlchemyCashSessionPolicy, session_factory=db.provided.session
     )
@@ -711,6 +718,17 @@ class Container(containers.DeclarativeContainer):
         cash=cash_session_repository,
         payments=payment_repository,
         movements=cash_movement_repository,
+        settings=cash_settings_repository,
+        tenant_context=tenant_context,
+    )
+    get_cash_settings = providers.Factory(
+        GetCashSettings,
+        settings=cash_settings_repository,
+        tenant_context=tenant_context,
+    )
+    update_cash_settings = providers.Factory(
+        UpdateCashSettings,
+        settings=cash_settings_repository,
         tenant_context=tenant_context,
     )
     close_cash_session = providers.Factory(

@@ -43,6 +43,11 @@ class TenantORM(Base):
     require_open_cash_session: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="false"
     )
+    # Arqueo ciego: al cerrar caja, el cajero cuenta SIN ver el esperado (la
+    # diferencia sale honesta). OFF por default (paridad).
+    blind_cash_count: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
