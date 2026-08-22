@@ -118,6 +118,7 @@ from app.application.product.use_cases import (
     UpdateProductPrice,
 )
 from app.application.reporting.dashboard import GetDashboardSummary
+from app.application.reporting.exports import ExportReport
 from app.application.reporting.staff import GetStaffReport
 from app.application.reservation.use_cases import (
     CancelReservation,
@@ -244,6 +245,9 @@ from app.infrastructure.persistence.product_pricing_repo import (
 from app.infrastructure.persistence.product_repo import SqlAlchemyProductRepository
 from app.infrastructure.persistence.recipe_repo import SqlAlchemyRecipeRepository
 from app.infrastructure.persistence.refresh_token_repo import SqlAlchemyRefreshTokenRepository
+from app.infrastructure.persistence.report_export_repo import (
+    SqlAlchemyReportExportReadModel,
+)
 from app.infrastructure.persistence.reservation_repo import (
     SqlAlchemyReservationRepository,
 )
@@ -857,6 +861,12 @@ class Container(containers.DeclarativeContainer):
     )
     get_staff_report = providers.Factory(
         GetStaffReport, read_model=staff_report_read_model, tenant_context=tenant_context
+    )
+    report_export_read_model = providers.Factory(
+        SqlAlchemyReportExportReadModel, session_factory=db.provided.session
+    )
+    export_report = providers.Factory(
+        ExportReport, read_model=report_export_read_model, tenant_context=tenant_context
     )
     # --- Fase 14: propinas por mozo (reporte + liquidación como egreso) ---
     tips_read_model = providers.Factory(
