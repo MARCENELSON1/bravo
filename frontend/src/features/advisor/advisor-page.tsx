@@ -17,7 +17,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Spinner } from "@/components/ui/spinner"
-import { CommissionRatesCard } from "@/features/finance/commission-rates-card"
 import {
   useAdvisorReport,
   useAdvisorSettings,
@@ -359,8 +358,6 @@ export function AdvisorPage() {
         </div>
         {controls}
       </header>
-
-      <CommissionRatesCard />
 
       {body}
     </div>

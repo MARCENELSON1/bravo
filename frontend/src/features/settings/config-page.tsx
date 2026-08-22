@@ -27,6 +27,7 @@ import { IntegrationsPanel } from "@/features/integrations/integrations-page"
 import { useEdgePeek } from "@/lib/edge-peek"
 import { setReduceMotion, useReduceMotion } from "@/lib/reduce-motion"
 import { setThemeAnimated } from "@/lib/theme-transition"
+import { CommissionRatesCard } from "@/features/finance/commission-rates-card"
 import { cn } from "@/lib/utils"
 
 const THEME_OPTIONS = [
@@ -430,6 +431,15 @@ export function ConfigPage() {
                     <LiveSwitch checked={reduceMotion} onChange={setReduceMotion} />
                   </Row>
                 </>
+              ) : null}
+
+              {/* Comisiones: única fila funcional de Caja y pagos por ahora.
+                  Vive acá y no en el Asesor porque afecta también al Inicio y a
+                  Finanzas: es un dato del negocio, no un parámetro de una pantalla. */}
+              {tab === "caja" ? (
+                <div className="py-4">
+                  <CommissionRatesCard />
+                </div>
               ) : null}
 
               {/* Filas placeholder de la sección */}
