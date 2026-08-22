@@ -18,6 +18,7 @@ import { ProductsApi } from "@/api/products-api"
 import { RealtimeApi } from "@/api/realtime-api"
 import { ReportsApi } from "@/api/reports-api"
 import { ReservationsApi } from "@/api/reservations-api"
+import { SectorsApi } from "@/api/sectors-api"
 import { TablesApi } from "@/api/tables-api"
 import { TimeClockApi } from "@/api/timeclock-api"
 import { API_BASE_URL } from "@/lib/env"
@@ -51,6 +52,7 @@ export function ServicesProvider({
       realtimeApi: new RealtimeApi(http),
       reportsApi: new ReportsApi(http),
       reservationsApi: new ReservationsApi(http),
+      sectorsApi: new SectorsApi(http),
       tablesApi: new TablesApi(http),
       timeClockApi: new TimeClockApi(http),
     }

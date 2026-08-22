@@ -16,6 +16,7 @@ import type { ProductsApi } from "@/api/products-api"
 import type { RealtimeApi } from "@/api/realtime-api"
 import type { ReportsApi } from "@/api/reports-api"
 import type { ReservationsApi } from "@/api/reservations-api"
+import type { SectorsApi } from "@/api/sectors-api"
 import type { TablesApi } from "@/api/tables-api"
 import type { TimeClockApi } from "@/api/timeclock-api"
 
@@ -39,6 +40,7 @@ export interface Services {
   realtimeApi: RealtimeApi
   reportsApi: ReportsApi
   reservationsApi: ReservationsApi
+  sectorsApi: SectorsApi
   tablesApi: TablesApi
   timeClockApi: TimeClockApi
 }

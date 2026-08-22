@@ -28,6 +28,7 @@ import { useEdgePeek } from "@/lib/edge-peek"
 import { setReduceMotion, useReduceMotion } from "@/lib/reduce-motion"
 import { setThemeAnimated } from "@/lib/theme-transition"
 import { CommissionRatesCard } from "@/features/finance/commission-rates-card"
+import { SectorsManager } from "@/features/settings/sectors-manager"
 import { cn } from "@/lib/utils"
 
 const THEME_OPTIONS = [
@@ -442,8 +443,22 @@ export function ConfigPage() {
                 </div>
               ) : null}
 
-              {/* Filas placeholder de la sección */}
-              {SECTIONS[tab].map((r) => {
+              {/* Salones: CRUD real de sectores + asignación de mesas. */}
+              {tab === "salones" ? (
+                <div className="py-4">
+                  <SectorsManager />
+                </div>
+              ) : null}
+
+              {/* Filas placeholder de la sección (en Salones, las de Sectores y
+                  Mesas ya son reales arriba → se ocultan). */}
+              {SECTIONS[tab]
+                .filter(
+                  (r) =>
+                    tab !== "salones" ||
+                    (r.label !== "Sectores" && r.label !== "Mesas y cubiertos")
+                )
+                .map((r) => {
                 const value = rowValue(r)
                 return (
                   <Row key={r.label} label={r.label} required={r.required} desc={r.desc}>

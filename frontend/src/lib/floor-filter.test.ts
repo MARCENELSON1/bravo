@@ -41,6 +41,8 @@ const table = (
   status: ord ? "OCCUPIED" : "FREE",
   active_order: ord,
   session: sess,
+  sector_id: null,
+  capacity: null,
 })
 
 const tables = [
