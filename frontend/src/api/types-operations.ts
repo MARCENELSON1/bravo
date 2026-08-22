@@ -82,6 +82,15 @@ export interface TableDTO {
   number: number
   name: string | null
   active: boolean
+  sector_id: string | null
+  capacity: number | null
+}
+
+export interface SectorDTO {
+  id: string
+  name: string
+  color: string | null
+  sort_order: number
 }
 
 export interface CreateTableResponse {
@@ -148,6 +157,9 @@ export interface FloorTableDTO {
   active_order: OrderDTO | null
   // Additive session view (state/timer/pax); null → table free or no session.
   session: FloorSessionDTO | null
+  // The table's sector (for grouping free tables too) + capacity. null → unassigned.
+  sector_id: string | null
+  capacity: number | null
 }
 
 export interface SessionResponseDTO {

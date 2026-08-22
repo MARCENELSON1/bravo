@@ -22,3 +22,18 @@ export function useCreateTable() {
     },
   })
 }
+
+export function useUpdateTable() {
+  const { tablesApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (vars: {
+      tableId: string
+      patch: { sector_id?: string | null; capacity?: number | null }
+    }) => tablesApi.update(vars.tableId, vars.patch),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["tables"] })
+      void queryClient.invalidateQueries({ queryKey: ["floor"] })
+    },
+  })
+}

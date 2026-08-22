@@ -36,6 +36,8 @@ const table = (ord: OrderDTO | null, sess: FloorSessionDTO | null): FloorTableDT
   status: ord ? "OCCUPIED" : "FREE",
   active_order: ord,
   session: sess,
+  sector_id: null,
+  capacity: null,
 })
 
 describe("floorView", () => {
