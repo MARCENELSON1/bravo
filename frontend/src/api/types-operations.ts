@@ -122,12 +122,40 @@ export interface CreateOrderResponse {
   order_id: string
 }
 
+export type SessionState =
+  | "OPEN"
+  | "IN_KITCHEN"
+  | "TO_SERVE"
+  | "SERVED"
+  | "TO_CHARGE"
+  | "CLOSED"
+
+export interface FloorSessionDTO {
+  id: string
+  state: SessionState // derived live from the visit's orders + signals
+  state_since: string | null // ISO-8601; the floor timer runs from here, not created_at
+  pax: number | null
+  waiter_id: string | null
+  waiter_name: string | null
+  sector_id: string | null
+}
+
 export interface FloorTableDTO {
   id: string
   number: number
   name: string | null
   status: "FREE" | "OCCUPIED"
   active_order: OrderDTO | null
+  // Additive session view (state/timer/pax); null → table free or no session.
+  session: FloorSessionDTO | null
+}
+
+export interface SessionResponseDTO {
+  id: string
+  table_id: string
+  status: string
+  pax: number | null
+  waiter_id: string | null
 }
 
 export interface BatchOrderItemInput {
