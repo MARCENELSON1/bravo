@@ -9,7 +9,7 @@ describe("AuthApi.login", () => {
 
   it("sends the tenant slug as client_id and stores the access token", async () => {
     const request = vi.fn().mockResolvedValue({ access_token: "abc", token_type: "bearer" })
-    const http: HttpClient = { request }
+    const http: HttpClient = { request, download: vi.fn() }
     const api = new AuthApi(http)
 
     await api.login("mi-bar", "owner@bar.com", "secret123")
