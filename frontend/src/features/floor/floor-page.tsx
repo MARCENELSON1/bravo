@@ -14,30 +14,44 @@ import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { useFloor } from "@/hooks/use-floor"
 import { useCreateOrder } from "@/hooks/use-orders"
+import { useRequestBill } from "@/hooks/use-sessions"
 import { useCreateTable } from "@/hooks/use-tables"
-import { filterFloor } from "@/lib/floor-filter"
+import { filterFloor, type FloorChip } from "@/lib/floor-filter"
+import { floorView, type FloorView } from "@/lib/floor-session"
 import { kdsDelay } from "@/lib/kds"
 import { formatMoney } from "@/lib/money"
 
-const ORDER_STATUS_LABELS: Record<string, string> = {
-  OPEN: "Abierta",
-  SENT: "En cocina",
-  PREPARING: "Preparando",
-  READY: "Lista",
-  SERVED: "Servida",
-}
+const CHIPS: { key: FloorChip; label: string }[] = [
+  { key: "all", label: "Todas" },
+  { key: "to_serve", label: "Para servir" },
+  { key: "to_charge", label: "A cobrar" },
+  { key: "mine", label: "Mis mesas" },
+  { key: "free", label: "Libres" },
+]
 
-function cardClass(order: FloorTableDTO["active_order"]): string {
+// Card tone by derived state — attention states pop, "libre" stays neutral (no
+// green, per the spec).
+function cardClass(view: FloorView): string {
   const base = "cursor-pointer transition-colors "
-  if (!order) return base + "hover:bg-muted/50"
-  if (order.status === "SERVED") return base + "border-emerald-500/60 bg-emerald-50/40 dark:bg-emerald-500/10"
-  return base + "border-primary/50 bg-muted/40"
+  switch (view.state) {
+    case "FREE":
+      return base + "hover:bg-muted/50"
+    case "TO_SERVE":
+      return base + "border-amber-500/70 bg-amber-50/50 dark:bg-amber-500/10"
+    case "TO_CHARGE":
+      return base + "border-primary/70 bg-primary/10"
+    case "SERVED":
+      return base + "border-emerald-500/60 bg-emerald-50/40 dark:bg-emerald-500/10"
+    default:
+      return base + "border-primary/40 bg-muted/40"
+  }
 }
 
 export function FloorPage() {
   const floor = useFloor()
   const createOrder = useCreateOrder()
   const createTable = useCreateTable()
+  const requestBill = useRequestBill()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
@@ -45,7 +59,9 @@ export function FloorPage() {
   const canManage = session?.role === "OWNER" || session?.role === "MANAGER"
   const [newNumber, setNewNumber] = useState("")
   const [search, setSearch] = useState("")
-  const [onlyToCharge, setOnlyToCharge] = useState(() => searchParams.get("cobrar") === "1")
+  const [chip, setChip] = useState<FloorChip>(() =>
+    searchParams.get("cobrar") === "1" ? "to_charge" : "all"
+  )
   const [now, setNow] = useState(() => Date.now())
 
   // Tick so the per-table waiting timers stay current between refetches.
@@ -64,6 +80,13 @@ export function FloorPage() {
       onSuccess: (res) => navigate(`/app/orders/${res.order_id}`),
       onError: (error) =>
         toast.error(isApiError(error) ? error.message : "No pudimos abrir la comanda."),
+    })
+  }
+
+  const askForBill = (sessionId: string) => {
+    requestBill.mutate(sessionId, {
+      onError: (error) =>
+        toast.error(isApiError(error) ? error.message : "No pudimos pedir la cuenta."),
     })
   }
 
@@ -88,7 +111,7 @@ export function FloorPage() {
   }
 
   const tables = floor.data ?? []
-  const visible = filterFloor(tables, search, onlyToCharge)
+  const visible = filterFloor(tables, search, chip, session?.userId)
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
@@ -97,7 +120,7 @@ export function FloorPage() {
           Mesas
         </GradientHeading>
         <p className="text-sm text-muted-foreground">
-          En vivo: libre / ocupada / a cobrar. Tocá una mesa para abrir su comanda.
+          En vivo: para servir / a cobrar / en cocina. Tocá una mesa para abrir su comanda.
         </p>
       </header>
 
@@ -118,19 +141,25 @@ export function FloorPage() {
       ) : null}
 
       {tables.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-2">
           <Input
             placeholder="Buscar mesa…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="max-w-[12rem]"
           />
-          <Button
-            variant={onlyToCharge ? "default" : "outline"}
-            onClick={() => setOnlyToCharge((v) => !v)}
-          >
-            Solo a cobrar
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {CHIPS.map((c) => (
+              <Button
+                key={c.key}
+                size="sm"
+                variant={chip === c.key ? "default" : "outline"}
+                onClick={() => setChip(c.key)}
+              >
+                {c.label}
+              </Button>
+            ))}
+          </div>
         </div>
       ) : null}
 
@@ -145,26 +174,68 @@ export function FloorPage() {
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {visible.map((t) => {
+            const view = floorView(t)
             const order = t.active_order
-            const delay = order ? kdsDelay(order.created_at, now) : null
-            const serving = order?.status === "SERVED"
+            const delay = view.since ? kdsDelay(view.since, now) : null
+            const canBill =
+              t.session != null && view.state !== "TO_CHARGE" && view.state !== "FREE"
             return (
-              <Card key={t.id} onClick={() => openTable(t)} className={cardClass(order)}>
+              <Card key={t.id} onClick={() => openTable(t)} className={cardClass(view)}>
                 <CardContent className="flex flex-col items-center justify-center gap-1 py-5">
-                  <span className="font-heading text-2xl font-medium">{t.number}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-heading text-2xl font-medium">{t.number}</span>
+                    {view.pax ? (
+                      <span className="text-xs text-muted-foreground">· {view.pax}p</span>
+                    ) : null}
+                  </div>
                   {t.name ? (
                     <span className="text-xs text-muted-foreground">{t.name}</span>
                   ) : null}
-                  {order ? (
+                  {view.state !== "FREE" ? (
                     <>
-                      <Badge variant="secondary" className="mt-1">
-                        {serving ? "A cobrar" : (ORDER_STATUS_LABELS[order.status] ?? order.status)}
+                      <Badge
+                        variant={view.attention ? "default" : "secondary"}
+                        className="mt-1"
+                      >
+                        {view.label}
                       </Badge>
-                      <span className="text-xs font-medium">
-                        {formatMoney(order.total_amount, order.currency)}
-                      </span>
+                      {order ? (
+                        <span className="text-xs font-medium">
+                          {formatMoney(order.total_amount, order.currency)}
+                        </span>
+                      ) : null}
+                      {view.waiterName ? (
+                        <span className="text-[11px] text-muted-foreground">
+                          {view.waiterName}
+                        </span>
+                      ) : null}
                       {delay ? (
-                        <span className="text-[11px] text-muted-foreground">{delay.minutes}′</span>
+                        <span
+                          className={
+                            "text-[11px] " +
+                            (view.attention && delay.level === "late"
+                              ? "font-medium text-destructive"
+                              : view.attention && delay.level === "warn"
+                                ? "font-medium text-amber-600 dark:text-amber-400"
+                                : "text-muted-foreground")
+                          }
+                        >
+                          {delay.minutes}′
+                        </span>
+                      ) : null}
+                      {canBill ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="mt-1 h-6 px-2 text-[11px]"
+                          disabled={requestBill.isPending}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            askForBill(t.session!.id)
+                          }}
+                        >
+                          Pedir cuenta
+                        </Button>
                       ) : null}
                     </>
                   ) : (
