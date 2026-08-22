@@ -138,6 +138,49 @@ async def test_cash_movements_adjust_arqueo(client):
     assert len(closed.json()["movements"]) == 3
 
 
+async def test_blind_cash_count_masks_expected_until_close(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="ciego", email="o@ciego.com")
+    h = _auth(tokens)
+
+    # Default: both flags OFF.
+    s = (await http.get("/api/v1/cashier/settings", headers=h)).json()
+    assert s == {"require_open_cash_session": False, "blind_cash_count": False}
+
+    # Turn blind arqueo ON.
+    put = await http.put(
+        "/api/v1/cashier/settings",
+        json={"require_open_cash_session": False, "blind_cash_count": True},
+        headers=h,
+    )
+    assert put.status_code == 200, put.text
+    assert put.json()["blind_cash_count"] is True
+
+    session_id = (
+        await http.post(
+            "/api/v1/cashier/session/open", json={"opening_float_amount": 50000}, headers=h
+        )
+    ).json()["id"]
+
+    # While OPEN + blind: the esperado is masked (0) so the cashier counts blind.
+    body = (await http.get("/api/v1/cashier/session/current", headers=h)).json()
+    assert body["blind"] is True
+    assert body["expected_total"] == 0
+    assert all(line["expected"] == 0 for line in body["lines"])
+
+    # Closing reveals the real esperado + honest difference (float 50000, count 49000).
+    closed = await http.post(
+        f"/api/v1/cashier/session/{session_id}/close",
+        json={"counted": {"CASH": 49000}},
+        headers=h,
+    )
+    assert closed.status_code == 200, closed.text
+    cbody = closed.json()
+    cash = next(line for line in cbody["lines"] if line["method"] == "CASH")
+    assert cash["expected"] == 50000  # revealed at close
+    assert cbody["difference_total"] == -1000
+
+
 async def test_refund_excludes_payment_from_arqueo(client):
     http, fake_email = client
     tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="owner@resto.com")

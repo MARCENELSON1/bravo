@@ -14,6 +14,7 @@ from app.domain.cashier.repository import (
     CashMovementRepository,
     CashSessionRepository,
 )
+from app.domain.cashier.settings import CashSettingsRepository
 from app.domain.cashier.value_objects import CashMovementKind, CashSessionStatus
 from app.domain.identity.ports import TenantContext
 from app.domain.payment.repository import PaymentRepository
@@ -52,24 +53,28 @@ def _build_report(
     expected: dict[str, int],
     tips: dict[str, int],
     movements: list[CashMovement],
+    blind: bool = False,
 ) -> CashReport:
     counted = {c.method.value: c.counted.amount for c in session.counts}
     closed = session.status is CashSessionStatus.CLOSED
+    # Blind arqueo: while OPEN, mask the sale-derived esperado so the cashier
+    # counts without a target. Closing reveals it (+ the difference).
+    mask = blind and not closed
     methods = sorted(set(expected) | set(counted))
     lines = [
         CashReportLine(
             method=m,
-            expected=expected.get(m, 0),
-            tips=tips.get(m, 0),
+            expected=0 if mask else expected.get(m, 0),
+            tips=0 if mask else tips.get(m, 0),
             counted=counted.get(m, 0) if closed else None,
             difference=(counted.get(m, 0) - expected.get(m, 0)) if closed else None,
         )
         for m in methods
     ]
-    expected_total = sum(expected.values())
+    expected_total = 0 if mask else sum(expected.values())
     counted_total = sum(counted.values()) if closed else None
     difference_total = (
-        counted_total - expected_total if counted_total is not None else None
+        counted_total - sum(expected.values()) if counted_total is not None else None
     )
     cash_in = sum(mv.amount.amount for mv in movements if mv.kind.is_inflow)
     cash_out = sum(mv.amount.amount for mv in movements if not mv.kind.is_inflow)
@@ -84,7 +89,7 @@ def _build_report(
         expected_total=expected_total,
         counted_total=counted_total,
         difference_total=difference_total,
-        tips_total=sum(tips.values()),
+        tips_total=0 if mask else sum(tips.values()),
         movements=[
             CashMovementRow(
                 id=mv.id,
@@ -98,6 +103,7 @@ def _build_report(
         ],
         cash_in_total=cash_in,
         cash_out_total=cash_out,
+        blind=blind,
     )
 
 
@@ -149,11 +155,13 @@ class GetCurrentCashReport:
         cash: CashSessionRepository,
         payments: PaymentRepository,
         movements: CashMovementRepository,
+        settings: CashSettingsRepository,
         tenant_context: TenantContext,
     ) -> None:
         self._cash = cash
         self._payments = payments
         self._movements = movements
+        self._settings = settings
         self._tenant_context = tenant_context
 
     async def execute(self, *, tenant_id: str) -> CashReport | None:
@@ -163,7 +171,10 @@ class GetCurrentCashReport:
             return None
         movements = await self._movements.list_for_session(tenant_id, session.id)
         expected, tips = await _arqueo_inputs(session, self._payments, movements)
-        return _build_report(session, expected, tips, movements)
+        cash_settings = await self._settings.get(tenant_id)
+        return _build_report(
+            session, expected, tips, movements, blind=cash_settings.blind_cash_count
+        )
 
 
 class RegisterCashMovement:

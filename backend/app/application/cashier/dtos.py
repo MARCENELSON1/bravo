@@ -50,3 +50,6 @@ class CashReport:
     movements: list[CashMovementRow] = field(default_factory=list)
     cash_in_total: int = 0  # Σ ingresos de efectivo
     cash_out_total: int = 0  # Σ sangrías + pagos en efectivo
+    # Arqueo ciego: mientras la caja está OPEN el esperado se enmascara (0) para
+    # que el cajero cuente a ciegas. Al cerrar se revela con la diferencia.
+    blind: bool = False

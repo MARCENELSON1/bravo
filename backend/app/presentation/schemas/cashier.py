@@ -57,6 +57,17 @@ class CashReportResponse(BaseModel):
     movements: list[CashMovementRowResponse] = []
     cash_in_total: int = 0
     cash_out_total: int = 0
+    blind: bool = False  # arqueo ciego: el esperado va enmascarado mientras OPEN
+
+
+class CashSettingsRequest(BaseModel):
+    require_open_cash_session: bool = False
+    blind_cash_count: bool = False
+
+
+class CashSettingsResponse(BaseModel):
+    require_open_cash_session: bool
+    blind_cash_count: bool
 
 
 class CashMovementRequest(BaseModel):

@@ -6,6 +6,7 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
 from app.application.cashier.dtos import CashReport
+from app.application.cashier.settings import GetCashSettings, UpdateCashSettings
 from app.application.cashier.tips import GetTipsReport, PayTips, TipsReport
 from app.application.cashier.use_cases import (
     CloseCashSession,
@@ -25,6 +26,8 @@ from app.presentation.schemas.cashier import (
     CashReportLineResponse,
     CashReportResponse,
     CashSessionResponse,
+    CashSettingsRequest,
+    CashSettingsResponse,
     CloseCashSessionRequest,
     OpenCashSessionRequest,
     TipPayoutRequest,
@@ -83,6 +86,7 @@ def _report_response(report: CashReport) -> CashReportResponse:
         ],
         cash_in_total=report.cash_in_total,
         cash_out_total=report.cash_out_total,
+        blind=report.blind,
     )
 
 
@@ -153,6 +157,40 @@ async def register_movement(
         signed_amount=movement.signed_amount,
         currency=movement.amount.currency,
         reason=movement.reason,
+    )
+
+
+_SETTINGS_ROLES = (Role.OWNER, Role.MANAGER)
+
+
+@router.get("/settings", response_model=CashSettingsResponse)
+@inject
+async def get_settings(
+    identity: AccessClaims = Depends(require_roles(*_SETTINGS_ROLES)),
+    use_case: GetCashSettings = Depends(Provide[Container.get_cash_settings]),
+) -> CashSettingsResponse:
+    settings = await use_case.execute(tenant_id=identity.tenant_id)
+    return CashSettingsResponse(
+        require_open_cash_session=settings.require_open_cash_session,
+        blind_cash_count=settings.blind_cash_count,
+    )
+
+
+@router.put("/settings", response_model=CashSettingsResponse)
+@inject
+async def update_settings(
+    body: CashSettingsRequest,
+    identity: AccessClaims = Depends(require_roles(*_SETTINGS_ROLES)),
+    use_case: UpdateCashSettings = Depends(Provide[Container.update_cash_settings]),
+) -> CashSettingsResponse:
+    settings = await use_case.execute(
+        tenant_id=identity.tenant_id,
+        require_open_cash_session=body.require_open_cash_session,
+        blind_cash_count=body.blind_cash_count,
+    )
+    return CashSettingsResponse(
+        require_open_cash_session=settings.require_open_cash_session,
+        blind_cash_count=settings.blind_cash_count,
     )
 
 
