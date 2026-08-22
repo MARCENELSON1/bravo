@@ -51,6 +51,8 @@ def _floor_row(row: FloorTable) -> FloorTableResponse:
             if session is not None
             else None
         ),
+        sector_id=row.table.sector_id,
+        capacity=row.table.capacity,
     )
 
 

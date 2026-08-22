@@ -34,6 +34,7 @@ from app.presentation.api.v1 import (
     realtime,
     reports,
     reservations,
+    sectors,
     tables,
     tax,
     tenants,
@@ -74,6 +75,7 @@ def create_app() -> FastAPI:
     app.include_router(ping.router, prefix="/api/v1")
     app.include_router(me.router, prefix="/api/v1")
     app.include_router(tables.router, prefix="/api/v1")
+    app.include_router(sectors.router, prefix="/api/v1")
     app.include_router(products.router, prefix="/api/v1")
     app.include_router(orders.router, prefix="/api/v1")
     app.include_router(kds.router, prefix="/api/v1")

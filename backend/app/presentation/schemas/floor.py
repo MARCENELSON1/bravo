@@ -30,6 +30,9 @@ class FloorTableResponse(BaseModel):
     active_order: OrderResponse | None = None
     # Additive session view (state/timer/pax); None → table free or no session.
     session: FloorSessionResponse | None = None
+    # The table's sector (for grouping free tables too) + capacity. None → unassigned.
+    sector_id: str | None = None
+    capacity: int | None = None
 
 
 class OpenSessionRequest(BaseModel):
