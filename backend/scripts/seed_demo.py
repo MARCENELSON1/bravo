@@ -420,13 +420,23 @@ async def main() -> None:
                                    "Compra semanal", d.replace(hour=9)))
             d += timedelta(days=7)
 
-        # Problema 3: merma alta y recurrente en langostinos.
+        # Problema 3: merma alta y recurrente en langostinos. La merma DEBE llevar
+        # costo unitario o el sistema no puede valorizarla y el KPI muestra 0%.
         d = TODAY - timedelta(days=60)
         while d < TODAY:
             stock_rows.append((nid(), tenant, ing["Langostinos"][0], "OUT", "WASTE",
-                               random.randint(2, 5), None, None, None,
+                               random.randint(2, 5), None, ing["Langostinos"][1], CUR,
                                "Descarte por cadena de frío", d.replace(hour=23)))
             d += timedelta(days=random.randint(4, 8))
+        # Merma de fondo en otros insumos: un local real descarta un poco de todo.
+        d = TODAY - timedelta(days=DAYS)
+        while d < TODAY:
+            for iname in random.sample(["Tomate", "Verdeo y hierbas", "Papa", "Burrata",
+                                        "Salmón fresco", "Crema de leche"], 2):
+                stock_rows.append((nid(), tenant, ing[iname][0], "OUT", "WASTE",
+                                   random.randint(1, 4), None, ing[iname][1], CUR,
+                                   "Merma de servicio", d.replace(hour=23, minute=30)))
+            d += timedelta(days=random.randint(2, 4))
 
         # ── egresos ──────────────────────────────────────────────────────
         d = TODAY - timedelta(days=DAYS)
