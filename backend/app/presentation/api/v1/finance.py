@@ -86,6 +86,8 @@ def _overview_response(o: FinanceOverview) -> FinanceOverviewResponse:
             if o.projection is not None
             else None
         ),
+        commissions_amount=o.commissions_amount,
+        collected_net_amount=o.collected_net_amount,
     )
 
 

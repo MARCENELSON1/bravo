@@ -117,6 +117,10 @@ export function AnalyticsPage() {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold text-foreground">Mix de medios de pago</h2>
+        <p className="-mt-1 text-xs text-muted-foreground">
+          Montos en bruto (antes de comisiones de pasarela). Lo cobrado neto de comisiones lo ves
+          en Finanzas y en el Inicio.
+        </p>
         <div className="overflow-hidden rounded-xl border border-border">
           {mix.data && mix.data.length > 0 ? (
             <Table>

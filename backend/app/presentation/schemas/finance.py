@@ -47,6 +47,8 @@ class FinanceOverviewResponse(BaseModel):
     product_margins: list[ProductMarginResponse]
     summary: str | None
     projection: FinanceProjectionResponse | None = None
+    commissions_amount: int = 0
+    collected_net_amount: int = 0
 
 
 class ProductSaleLineResponse(BaseModel):

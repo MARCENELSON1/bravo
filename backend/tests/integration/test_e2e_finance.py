@@ -4,10 +4,32 @@ KPIs vitales, comparativo, diagnósticos y margen por producto."""
 from __future__ import annotations
 
 from tests.integration.test_e2e_auth import _onboard_verify_login
+from tests.integration.test_e2e_payments import _make_order
 
 
 def _auth(tokens: dict) -> dict:
     return {"Authorization": f"Bearer {tokens['access_token']}"}
+
+
+async def test_finance_overview_reports_commissions(client):
+    """Comisiones (línea separada): cargada una tasa por método, /finance/overview
+    expone el total de comisiones y lo cobrado neto — sin tocar el margen (2B)."""
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="fin", email="o@fin.com"))
+    await http.put(
+        "/api/v1/payments/fee-rates",
+        json={"rates": [{"method": "CARD", "fee_bps": 300}]},  # 3%
+        headers=h,
+    )
+    order_id = await _make_order(http, h)  # total 300000
+    await http.post(
+        f"/api/v1/orders/{order_id}/payments",
+        json={"method": "CARD", "amount": 200000},
+        headers=h,
+    )
+    o = (await http.get("/api/v1/finance/overview", headers=h)).json()
+    assert o["commissions_amount"] == 6000  # 3% de 200000
+    assert o["collected_net_amount"] == 194000  # lo que queda tras comisión
 
 
 async def _sell_with_recipe(http, h, *, price: int, qty: int, cost_per_kg: int) -> None:

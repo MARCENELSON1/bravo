@@ -13,6 +13,7 @@ from app.application.finance.dtos import (
 )
 from app.application.finance.use_cases import (
     ExpenseBreakdownReadModel,
+    FinanceCommissionsReadModel,
     FinanceProductDetailReadModel,
     InventoryValueReadModel,
     RecentMovementsReadModel,
@@ -25,6 +26,7 @@ from app.infrastructure.persistence.models import (
     SaleFactORM,
     TenantORM,
 )
+from app.infrastructure.persistence.payment_columns import net_collected_col
 
 
 def _net_line(row: SaleFactORM) -> int:
@@ -48,6 +50,38 @@ async def _tenant_currency(session, tenant_id: str) -> str:
 
 # Las cantidades de insumo se guardan en milésimas de la unidad base.
 _QUANTITY_SCALE = 1000
+
+
+class SqlAlchemyFinanceCommissionsReadModel(FinanceCommissionsReadModel):
+    """Σ fee_amount y Σ neto cobrado (net_collected_col) sobre cobros
+    CONFIRMED/INFLOW en la ventana — mismo predicado que el hero del Home, para
+    que cuadren. Tenant-scoped; solo lectura."""
+
+    def __init__(self, session_factory: SessionFactory) -> None:
+        self._session_factory = session_factory
+
+    async def fees_and_net(
+        self,
+        tenant_id: str,
+        *,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> tuple[int, int]:
+        async with self._session_factory() as session:
+            stmt = select(
+                func.coalesce(func.sum(PaymentORM.fee_amount), 0),
+                func.coalesce(func.sum(net_collected_col()), 0),
+            ).where(
+                PaymentORM.tenant_id == tenant_id,
+                PaymentORM.direction == PaymentDirection.INFLOW.value,
+                PaymentORM.status == PaymentStatus.CONFIRMED.value,
+            )
+            if since is not None:
+                stmt = stmt.where(PaymentORM.created_at >= since)
+            if until is not None:
+                stmt = stmt.where(PaymentORM.created_at <= until)
+            fees, net = (await session.execute(stmt)).one()
+            return int(fees), int(net)
 
 
 class SqlAlchemyInventoryValueReadModel(InventoryValueReadModel):

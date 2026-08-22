@@ -204,6 +204,7 @@ from app.infrastructure.persistence.dashboard_repo import SqlAlchemyDashboardRea
 from app.infrastructure.persistence.database import Database
 from app.infrastructure.persistence.finance_repo import (
     SqlAlchemyExpenseBreakdownReadModel,
+    SqlAlchemyFinanceCommissionsReadModel,
     SqlAlchemyFinanceProductDetailReadModel,
     SqlAlchemyInventoryValueReadModel,
     SqlAlchemyRecentMovementsReadModel,
@@ -1158,12 +1159,16 @@ class Container(containers.DeclarativeContainer):
     inventory_value_read_model = providers.Factory(
         SqlAlchemyInventoryValueReadModel, session_factory=db.provided.session
     )
+    finance_commissions_read_model = providers.Factory(
+        SqlAlchemyFinanceCommissionsReadModel, session_factory=db.provided.session
+    )
     get_finance_overview = providers.Factory(
         GetFinanceOverview,
         advisor=get_advisor_report,
         products=get_product_performance,
         settings=advisor_settings_repository,
         inventory=inventory_value_read_model,
+        commissions=finance_commissions_read_model,
         tenant_context=tenant_context,
     )
     finance_product_detail_read_model = providers.Factory(
