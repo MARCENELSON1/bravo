@@ -83,4 +83,25 @@ describe("CashApi", () => {
       auth: true,
     })
   })
+
+  it("reads and updates cash settings", async () => {
+    const request = vi.fn().mockResolvedValue({
+      require_open_cash_session: false,
+      blind_cash_count: true,
+    })
+    const api = new CashApi({ request } as unknown as HttpClient)
+
+    await api.settings()
+    expect(request.mock.calls[0][0]).toBe("GET")
+    expect(request.mock.calls[0][1]).toBe("/cashier/settings")
+
+    await api.updateSettings({ require_open_cash_session: false, blind_cash_count: true })
+    const [method, path, options] = request.mock.calls[1]
+    expect(method).toBe("PUT")
+    expect(path).toBe("/cashier/settings")
+    expect(options).toMatchObject({
+      body: { require_open_cash_session: false, blind_cash_count: true },
+      auth: true,
+    })
+  })
 })

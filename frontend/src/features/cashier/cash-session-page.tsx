@@ -159,6 +159,7 @@ function OpenSession({
     )
   }
 
+  const blind = report.blind
   return (
     <Card>
       <CardHeader>
@@ -170,30 +171,46 @@ function OpenSession({
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-3 gap-y-2 text-sm">
+        {blind ? (
+          <p className="rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+            Arqueo ciego: contá sin ver el esperado. La diferencia se revela al cerrar.
+          </p>
+        ) : null}
+        <div
+          className={
+            "grid items-center gap-x-3 gap-y-2 text-sm " +
+            (blind ? "grid-cols-[1fr_auto]" : "grid-cols-[1fr_auto_auto]")
+          }
+        >
           <span className="text-xs font-medium text-muted-foreground">Medio</span>
-          <span className="text-right text-xs font-medium text-muted-foreground">Esperado</span>
+          {blind ? null : (
+            <span className="text-right text-xs font-medium text-muted-foreground">Esperado</span>
+          )}
           <span className="text-right text-xs font-medium text-muted-foreground">Contado</span>
           {report.lines.map((line) => (
             <Row
               key={line.method}
               label={METHOD_LABELS[line.method]}
-              expected={formatMoney(line.expected, report.currency)}
+              expected={blind ? null : formatMoney(line.expected, report.currency)}
               value={counted[line.method] ?? ""}
               onChange={(v) => setMethod(line.method, v)}
             />
           ))}
         </div>
-        <div className="flex items-center justify-between border-t pt-3 text-sm font-medium">
-          <span>Esperado total</span>
-          <span>{formatMoney(report.expected_total, report.currency)}</span>
-        </div>
-        {report.tips_total > 0 ? (
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Propinas (incluidas; para repartir)</span>
-            <span>{formatMoney(report.tips_total, report.currency)}</span>
-          </div>
-        ) : null}
+        {blind ? null : (
+          <>
+            <div className="flex items-center justify-between border-t pt-3 text-sm font-medium">
+              <span>Esperado total</span>
+              <span>{formatMoney(report.expected_total, report.currency)}</span>
+            </div>
+            {report.tips_total > 0 ? (
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Propinas (incluidas; para repartir)</span>
+                <span>{formatMoney(report.tips_total, report.currency)}</span>
+              </div>
+            ) : null}
+          </>
+        )}
         <Button onClick={submit} disabled={close.isPending}>
           {close.isPending ? "Cerrando…" : "Cerrar caja"}
         </Button>
@@ -312,14 +329,16 @@ function Row({
   onChange,
 }: {
   label: string
-  expected: string
+  expected: string | null
   value: string
   onChange: (value: string) => void
 }) {
   return (
     <>
       <span>{label}</span>
-      <span className="text-right tabular-nums text-muted-foreground">{expected}</span>
+      {expected !== null ? (
+        <span className="text-right tabular-nums text-muted-foreground">{expected}</span>
+      ) : null}
       <Input
         type="number"
         min={0}
