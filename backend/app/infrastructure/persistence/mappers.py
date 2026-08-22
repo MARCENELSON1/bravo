@@ -47,6 +47,8 @@ from app.domain.reservation.entities import Reservation
 from app.domain.reservation.value_objects import ReservationStatus, ServiceTurn
 from app.domain.shared.money import Money
 from app.domain.table.entities import Table
+from app.domain.table_session.entities import Sector, TableSession
+from app.domain.table_session.value_objects import SessionOrigin, SessionStatus
 from app.domain.tenant.entities import Tenant
 from app.domain.timeclock.entities import Shift
 from app.domain.timeclock.value_objects import ShiftSource, ShiftStatus
@@ -73,10 +75,12 @@ from app.infrastructure.persistence.models import (
     RecipeORM,
     RefreshTokenORM,
     ReservationORM,
+    SectorORM,
     ShiftORM,
     StockMovementORM,
     SupplierORM,
     TableORM,
+    TableSessionORM,
     TaxCredentialORM,
     TenantORM,
     UserORM,
@@ -288,6 +292,8 @@ def table_to_domain(row: TableORM) -> Table:
         number=row.number,
         name=row.name,
         active=row.active,
+        sector_id=row.sector_id,
+        capacity=row.capacity,
         created_at=row.created_at,
     )
 
@@ -299,6 +305,71 @@ def table_to_orm(table: Table) -> TableORM:
         number=table.number,
         name=table.name,
         active=table.active,
+        sector_id=table.sector_id,
+        capacity=table.capacity,
+    )
+
+
+def sector_to_domain(row: SectorORM) -> Sector:
+    return Sector(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        name=row.name,
+        color=row.color,
+        sort_order=row.sort_order,
+        created_at=row.created_at,
+    )
+
+
+def sector_to_orm(sector: Sector) -> SectorORM:
+    return SectorORM(
+        id=sector.id,
+        tenant_id=sector.tenant_id,
+        name=sector.name,
+        color=sector.color,
+        sort_order=sector.sort_order,
+    )
+
+
+def table_session_to_domain(row: TableSessionORM) -> TableSession:
+    return TableSession(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        table_id=row.table_id,
+        status=SessionStatus(row.status),
+        origin=SessionOrigin(row.origin),
+        pax=row.pax,
+        waiter_id=row.waiter_id,
+        opened_at=row.opened_at,
+        first_item_at=row.first_item_at,
+        fired_at=row.fired_at,
+        ready_at=row.ready_at,
+        bill_requested_at=row.bill_requested_at,
+        closed_at=row.closed_at,
+        merged_into_id=row.merged_into_id,
+        customer_id=row.customer_id,
+        notes=row.notes,
+    )
+
+
+def table_session_to_orm(session: TableSession) -> TableSessionORM:
+    return TableSessionORM(
+        id=session.id,
+        tenant_id=session.tenant_id,
+        table_id=session.table_id,
+        status=session.status.value,
+        origin=session.origin.value,
+        pax=session.pax,
+        waiter_id=session.waiter_id,
+        opened_at=session.opened_at,
+        first_item_at=session.first_item_at,
+        fired_at=session.fired_at,
+        ready_at=session.ready_at,
+        bill_requested_at=session.bill_requested_at,
+        closed_at=session.closed_at,
+        merged_into_id=session.merged_into_id,
+        customer_id=session.customer_id,
+        notes=session.notes,
     )
 
 
@@ -342,6 +413,7 @@ def order_to_domain(row: OrderORM, item_rows: list[OrderItemORM]) -> Order:
         waiter_id=row.waiter_id,
         currency=row.currency,
         status=OrderStatus(row.status),
+        session_id=row.session_id,
         items=[
             OrderItem(
                 id=item.id,
@@ -368,6 +440,7 @@ def order_to_orm(order: Order) -> OrderORM:
         table_id=order.table_id,
         waiter_id=order.waiter_id,
         status=order.status.value,
+        session_id=order.session_id,
         currency=order.currency,
     )
 

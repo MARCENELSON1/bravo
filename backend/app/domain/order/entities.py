@@ -65,6 +65,9 @@ class Order:
     status: OrderStatus = OrderStatus.OPEN
     items: list[OrderItem] = field(default_factory=list)
     created_at: datetime | None = None
+    # table_sessions (cimiento): la comanda cuelga de la sesión de mesa (1:N). None
+    # en órdenes previas → fallback al comportamiento actual (paridad).
+    session_id: str | None = None
 
     # --- item editing (only while the item is still PENDING) ----------------
 
