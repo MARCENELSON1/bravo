@@ -75,6 +75,7 @@ from app.domain.shared.exceptions import (
     UnsupportedCurrency,
 )
 from app.domain.table.exceptions import TableNotFound
+from app.domain.table_session.exceptions import SessionNotFound
 from app.domain.tenant.exceptions import TenantAlreadyExists, TenantNotFound
 from app.domain.timeclock.exceptions import (
     InvalidPresenceDevice,
@@ -117,6 +118,7 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (InvalidEmail, 422),
     # Fase 2 — comandas/productos/mesas + Money
     (TableNotFound, 404),
+    (SessionNotFound, 404),
     (ProductNotFound, 404),
     (OrderNotFound, 404),
     (InactiveProduct, 409),

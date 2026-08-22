@@ -1,6 +1,6 @@
 """Unit: round-trip de los mappers de la sesión de mesa (cimiento table_sessions)."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.domain.table_session.entities import Sector, TableSession
 from app.domain.table_session.value_objects import SessionOrigin, SessionStatus
@@ -19,7 +19,7 @@ def test_table_session_roundtrip():
         table_id="tb1",
         pax=4,
         waiter_id="w1",
-        opened_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        opened_at=datetime(2026, 1, 1, tzinfo=UTC),
     )
     back = table_session_to_domain(table_session_to_orm(s))
     assert back.id == "s1"

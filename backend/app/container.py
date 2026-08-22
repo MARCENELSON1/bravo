@@ -129,6 +129,11 @@ from app.application.reservation.use_cases import (
     UpdateReservation,
 )
 from app.application.table.use_cases import CreateTable, ListTables
+from app.application.table_session.use_cases import (
+    OpenSession,
+    RequestBill,
+    SetSessionPax,
+)
 from app.application.timeclock.presence import (
     GetPresenceChallenge,
     PunchWithPresence,
@@ -236,6 +241,9 @@ from app.infrastructure.persistence.stock_movement_repo import (
 )
 from app.infrastructure.persistence.supplier_repo import SqlAlchemySupplierRepository
 from app.infrastructure.persistence.table_repo import SqlAlchemyTableRepository
+from app.infrastructure.persistence.table_session_repo import (
+    SqlAlchemyTableSessionRepository,
+)
 from app.infrastructure.persistence.tax_credentials_repo import (
     SqlAlchemyTaxCredentialRepository,
 )
@@ -313,6 +321,9 @@ class Container(containers.DeclarativeContainer):
     )
     table_repository = providers.Factory(
         SqlAlchemyTableRepository, session_factory=db.provided.session
+    )
+    table_session_repository = providers.Factory(
+        SqlAlchemyTableSessionRepository, session_factory=db.provided.session
     )
     product_repository = providers.Factory(
         SqlAlchemyProductRepository, session_factory=db.provided.session
@@ -492,6 +503,7 @@ class Container(containers.DeclarativeContainer):
         orders=order_repository,
         tables=table_repository,
         tenants=tenant_repository,
+        sessions=table_session_repository,
         tenant_context=tenant_context,
         event_bus=event_bus,
     )
@@ -499,6 +511,24 @@ class Container(containers.DeclarativeContainer):
         GetFloor,
         tables=table_repository,
         orders=order_repository,
+        sessions=table_session_repository,
+        users=user_repository,
+        tenant_context=tenant_context,
+    )
+    open_session = providers.Factory(
+        OpenSession,
+        sessions=table_session_repository,
+        tables=table_repository,
+        tenant_context=tenant_context,
+    )
+    set_session_pax = providers.Factory(
+        SetSessionPax,
+        sessions=table_session_repository,
+        tenant_context=tenant_context,
+    )
+    request_bill = providers.Factory(
+        RequestBill,
+        sessions=table_session_repository,
         tenant_context=tenant_context,
     )
     get_order = providers.Factory(
