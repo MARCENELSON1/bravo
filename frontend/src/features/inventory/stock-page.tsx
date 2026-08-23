@@ -283,7 +283,10 @@ function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
       <SheetContent>
         <SheetHeader>
           <SheetTitle>Comprar {ingredient.name}</SheetTitle>
-          <SheetDescription>Suma stock y actualiza el costo (último costo).</SheetDescription>
+          <SheetDescription>
+            Suma stock y actualiza el costo por promedio ponderado (lo mezcla con lo que ya
+            tenías, para que una compra cara puntual no infle el food cost).
+          </SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-3 px-4 pb-4">
           <Input

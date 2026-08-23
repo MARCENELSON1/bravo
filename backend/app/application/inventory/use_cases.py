@@ -9,6 +9,7 @@ from __future__ import annotations
 from uuid import uuid4
 
 from app.domain.identity.ports import TenantContext
+from app.domain.inventory.costing import weighted_unit_cost
 from app.domain.inventory.entities import Ingredient, StockMovement, Supplier
 from app.domain.inventory.exceptions import (
     IngredientNotFound,
@@ -144,8 +145,11 @@ class UpdateIngredient:
 
 
 class RegisterPurchase:
-    """Restock an ingredient: IN movement that raises stock and updates the
-    unit cost (last-cost policy)."""
+    """Restock an ingredient: IN movement that raises stock and updates the unit
+    cost by **weighted average (PPP)** — blends the stock you already had (at its
+    cost) with what you bought (at its price), so a one-off expensive purchase
+    doesn't inflate the whole food cost. With no prior stock it degrades to the
+    purchase price (= last-cost). The movement still records the real price."""
 
     def __init__(
         self,
@@ -185,10 +189,15 @@ class RegisterPurchase:
             direction=MovementDirection.IN,
             reason=MovementReason.PURCHASE,
             qty=qty,
-            unit_cost=unit_cost,
+            unit_cost=unit_cost,  # el movimiento guarda el PRECIO REAL de la compra
+        )
+        # PPP: el costo del insumo = promedio ponderado del stock previo + la compra.
+        # Se calcula con el stock ANTES de aplicar el IN (por eso va antes de apply).
+        new_cost = weighted_unit_cost(
+            ingredient.stock_qty, ingredient.unit_cost, qty, unit_cost
         )
         ingredient.apply(movement)
-        ingredient.set_cost(unit_cost)
+        ingredient.set_cost(new_cost)
         await self._movements.add(movement)
         await self._ingredients.save(ingredient)
         return ingredient
