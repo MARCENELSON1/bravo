@@ -26,4 +26,15 @@ describe("CustomersApi", () => {
     expect(path).toBe("/customers")
     expect(options).toMatchObject({ body: { name: "Ana", phone: "1122334455" }, auth: true })
   })
+
+  it("fetches history and stats", async () => {
+    const request = vi.fn().mockResolvedValue({})
+    const api = new CustomersApi({ request } as unknown as HttpClient)
+
+    await api.history("c1")
+    expect(request.mock.calls[0][1]).toBe("/customers/c1/history")
+
+    await api.stats()
+    expect(request.mock.calls[1][1]).toBe("/customers/stats")
+  })
 })

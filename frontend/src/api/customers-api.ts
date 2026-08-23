@@ -25,6 +25,21 @@ export interface CustomerHistoryDTO {
   last_visit_at: string | null // ISO-8601
 }
 
+export interface CustomerStatsRowDTO {
+  customer_id: string
+  name: string
+  phone: string | null
+  visits: number
+  total_spent: number // minor units
+  first_visit_at: string | null // ISO-8601
+  last_visit_at: string | null // ISO-8601
+}
+
+export interface CustomerStatsDTO {
+  currency: string
+  rows: CustomerStatsRowDTO[]
+}
+
 // CRM (Fase 12): clientes del local. Manual por ahora; segmentos + acciones vienen
 // después. El contacto es por wa.me (deep link, sin proveedor).
 export class CustomersApi {
@@ -55,5 +70,9 @@ export class CustomersApi {
     return this.http.request<CustomerHistoryDTO>("GET", `/customers/${id}/history`, {
       auth: true,
     })
+  }
+
+  stats(): Promise<CustomerStatsDTO> {
+    return this.http.request<CustomerStatsDTO>("GET", "/customers/stats", { auth: true })
   }
 }

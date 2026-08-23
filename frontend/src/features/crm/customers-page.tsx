@@ -17,6 +17,7 @@ import {
   useDeleteCustomer,
   useUpdateCustomer,
 } from "@/hooks/use-customers"
+import { CustomerSegmentsView } from "@/features/crm/customer-segments-view"
 import { formatMoney } from "@/lib/money"
 import { waLink } from "@/lib/wa"
 
@@ -52,6 +53,8 @@ export function CustomersPage() {
           onSaved={() => setAdding(false)}
         />
       ) : null}
+
+      <CustomerSegmentsView />
 
       <Input
         placeholder="Buscar por nombre o teléfono…"
