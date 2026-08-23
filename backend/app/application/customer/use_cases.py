@@ -175,6 +175,46 @@ class CustomerHistory:
     last_visit_at: datetime | None
 
 
+@dataclass(frozen=True)
+class CustomerStats:
+    """Per-customer purchase aggregates for segmenting. Only attributed orders
+    count (nothing inferred); ``visits == 0`` → sin compras registradas."""
+
+    customer_id: str
+    name: str
+    phone: str | None
+    visits: int
+    total_spent: int  # minor units
+    first_visit_at: datetime | None
+    last_visit_at: datetime | None
+
+
+@dataclass(frozen=True)
+class CustomerStatsReport:
+    currency: str
+    rows: list[CustomerStats]
+
+
+class CustomerStatsReadModel(ABC):
+    """Per-customer purchase aggregates for the whole tenant. Scoped by
+    ``tenant_id`` (RLS + explicit filter); read-only."""
+
+    @abstractmethod
+    async def list_stats(self, tenant_id: str) -> CustomerStatsReport: ...
+
+
+class GetCustomerStats:
+    def __init__(
+        self, read_model: CustomerStatsReadModel, tenant_context: TenantContext
+    ) -> None:
+        self._read_model = read_model
+        self._tenant_context = tenant_context
+
+    async def execute(self, *, tenant_id: str) -> CustomerStatsReport:
+        self._tenant_context.set(tenant_id)
+        return await self._read_model.list_stats(tenant_id)
+
+
 class CustomerHistoryReadModel(ABC):
     """Aggregates a customer's attributed sales. Scoped by ``tenant_id`` (RLS +
     explicit filter); read-only."""

@@ -37,6 +37,7 @@ from app.application.customer.use_cases import (
     DeleteCustomer,
     GetCustomer,
     GetCustomerHistory,
+    GetCustomerStats,
     ListCustomers,
     UpdateCustomer,
 )
@@ -222,6 +223,9 @@ from app.infrastructure.persistence.customer_history_repo import (
     SqlAlchemyCustomerHistoryReadModel,
 )
 from app.infrastructure.persistence.customer_repo import SqlAlchemyCustomerRepository
+from app.infrastructure.persistence.customer_stats_repo import (
+    SqlAlchemyCustomerStatsReadModel,
+)
 from app.infrastructure.persistence.dashboard_repo import SqlAlchemyDashboardReadModel
 from app.infrastructure.persistence.database import Database
 from app.infrastructure.persistence.finance_repo import (
@@ -613,6 +617,14 @@ class Container(containers.DeclarativeContainer):
         GetCustomerHistory,
         customers=customer_repository,
         read_model=customer_history_read_model,
+        tenant_context=tenant_context,
+    )
+    customer_stats_read_model = providers.Factory(
+        SqlAlchemyCustomerStatsReadModel, session_factory=db.provided.session
+    )
+    get_customer_stats = providers.Factory(
+        GetCustomerStats,
+        read_model=customer_stats_read_model,
         tenant_context=tenant_context,
     )
     get_order = providers.Factory(
