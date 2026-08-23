@@ -7,6 +7,10 @@ import { useAuth } from "@/auth/auth-context"
 import { AnimatedNumber } from "@/components/ui/animated-number"
 import { GlassCard } from "@/components/ui/glass-card"
 import { dailyVerdict } from "@/features/dashboard/daily-verdict"
+import {
+  CashSnapshot,
+  SalonSnapshot,
+} from "@/features/dashboard/operational-snapshots"
 import { RequiresAttention } from "@/features/dashboard/requires-attention"
 import { tomorrowTask } from "@/features/dashboard/tomorrow-task"
 import { RecentMovements } from "@/features/finance/recent-movements"
@@ -142,6 +146,12 @@ export function DashboardPage() {
 
       {/* Requiere tu atención — la franja operativa (mesas / caja / stock / clientes) */}
       <RequiresAttention />
+
+      {/* Snapshots operativos: salón en vivo + estado de la caja del día */}
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <SalonSnapshot />
+        <CashSnapshot />
+      </section>
 
       {/* NIVEL 2 — Los 3 números que lo explican */}
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
