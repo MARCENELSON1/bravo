@@ -63,6 +63,7 @@ class PurchaseRequest(BaseModel):
     unit_cost_amount: int = Field(gt=0)
     # None = no toca la clasificación de IVA del insumo (un restock no la pisa).
     price_includes_tax: bool | None = None
+    supplier_id: str | None = None  # proveedor de la compra (opcional)
 
 
 class WasteRequest(BaseModel):
@@ -73,13 +74,33 @@ class WasteRequest(BaseModel):
 class CreateSupplierRequest(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     contact: str | None = Field(default=None, max_length=255)
+    phone: str | None = Field(default=None, max_length=32)
+    notes: str | None = Field(default=None, max_length=500)
+
+
+class UpdateSupplierRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    contact: str | None = Field(default=None, max_length=255)
+    phone: str | None = Field(default=None, max_length=32)
+    notes: str | None = Field(default=None, max_length=500)
+    active: bool = True
 
 
 class SupplierResponse(BaseModel):
     id: str
     name: str
     contact: str | None
+    phone: str | None = None
+    notes: str | None = None
     active: bool
+
+
+class SupplierPurchasesResponse(BaseModel):
+    supplier_id: str
+    currency: str
+    total_spent: int  # minor units
+    purchase_count: int
+    last_purchase_at: str | None = None  # ISO-8601
 
 
 class CreateSupplierResponse(BaseModel):

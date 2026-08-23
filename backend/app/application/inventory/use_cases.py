@@ -6,6 +6,9 @@ Postgres RLS applies. Quantities are integers in milésimas of the base unit.
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from datetime import datetime
 from uuid import uuid4
 
 from app.domain.identity.ports import TenantContext
@@ -16,6 +19,7 @@ from app.domain.inventory.exceptions import (
     InvalidQuantity,
     InvalidUnitCost,
     PreparationNotFound,
+    SupplierNotFound,
 )
 from app.domain.inventory.recipe import Recipe, RecipeItem
 from app.domain.inventory.recipe_conversion import assert_convertible
@@ -155,10 +159,12 @@ class RegisterPurchase:
         self,
         ingredients: IngredientRepository,
         movements: StockMovementRepository,
+        suppliers: SupplierRepository,
         tenant_context: TenantContext,
     ) -> None:
         self._ingredients = ingredients
         self._movements = movements
+        self._suppliers = suppliers
         self._tenant_context = tenant_context
 
     async def execute(
@@ -169,6 +175,7 @@ class RegisterPurchase:
         qty: int,
         unit_cost_amount: int,
         price_includes_tax: bool | None = None,
+        supplier_id: str | None = None,
     ) -> Ingredient:
         self._tenant_context.set(tenant_id)
         ingredient = await self._ingredients.get_by_id(tenant_id, ingredient_id)
@@ -178,6 +185,9 @@ class RegisterPurchase:
             raise InvalidQuantity()
         if unit_cost_amount <= 0:
             raise InvalidUnitCost()
+        if supplier_id is not None:
+            if await self._suppliers.get_by_id(tenant_id, supplier_id) is None:
+                raise SupplierNotFound()
         # Solo reclasifica el IVA si el usuario lo indica; un restock no lo pisa.
         if price_includes_tax is not None:
             ingredient.cost_includes_tax = price_includes_tax
@@ -190,6 +200,7 @@ class RegisterPurchase:
             reason=MovementReason.PURCHASE,
             qty=qty,
             unit_cost=unit_cost,  # el movimiento guarda el PRECIO REAL de la compra
+            supplier_id=supplier_id,
         )
         # PPP: el costo del insumo = promedio ponderado del stock previo + la compra.
         # Se calcula con el stock ANTES de aplicar el IN (por eso va antes de apply).
@@ -254,6 +265,14 @@ class ListLowStock:
         return await self._ingredients.list_below_min(tenant_id)
 
 
+def _supplier_phone(phone: str | None) -> str | None:
+    """Solo dígitos (para el deep-link wa.me). Vacío → None."""
+    if phone is None:
+        return None
+    digits = "".join(c for c in phone if c.isdigit())
+    return digits or None
+
+
 class CreateSupplier:
     def __init__(
         self, suppliers: SupplierRepository, tenant_context: TenantContext
@@ -262,13 +281,57 @@ class CreateSupplier:
         self._tenant_context = tenant_context
 
     async def execute(
-        self, *, tenant_id: str, name: str, contact: str | None = None
+        self,
+        *,
+        tenant_id: str,
+        name: str,
+        contact: str | None = None,
+        phone: str | None = None,
+        notes: str | None = None,
     ) -> Supplier:
         self._tenant_context.set(tenant_id)
         supplier = Supplier(
-            id=str(uuid4()), tenant_id=tenant_id, name=name, contact=contact
+            id=str(uuid4()),
+            tenant_id=tenant_id,
+            name=name,
+            contact=contact,
+            phone=_supplier_phone(phone),
+            notes=notes,
         )
         await self._suppliers.add(supplier)
+        return supplier
+
+
+class UpdateSupplier:
+    """Editar los datos de un proveedor (contacto/teléfono/notas/activo)."""
+
+    def __init__(
+        self, suppliers: SupplierRepository, tenant_context: TenantContext
+    ) -> None:
+        self._suppliers = suppliers
+        self._tenant_context = tenant_context
+
+    async def execute(
+        self,
+        *,
+        tenant_id: str,
+        supplier_id: str,
+        name: str,
+        contact: str | None,
+        phone: str | None,
+        notes: str | None,
+        active: bool,
+    ) -> Supplier:
+        self._tenant_context.set(tenant_id)
+        supplier = await self._suppliers.get_by_id(tenant_id, supplier_id)
+        if supplier is None:
+            raise SupplierNotFound()
+        supplier.name = name
+        supplier.contact = contact
+        supplier.phone = _supplier_phone(phone)
+        supplier.notes = notes
+        supplier.active = active
+        await self._suppliers.save(supplier)
         return supplier
 
 
@@ -282,6 +345,43 @@ class ListSuppliers:
     async def execute(self, *, tenant_id: str, active_only: bool = False) -> list[Supplier]:
         self._tenant_context.set(tenant_id)
         return await self._suppliers.list(tenant_id, active_only=active_only)
+
+
+@dataclass(frozen=True)
+class SupplierPurchases:
+    """Resumen de compras a un proveedor: cuánto le compraste, en cuántas compras
+    y la última. Sobre movimientos PURCHASE con ese proveedor."""
+
+    supplier_id: str
+    currency: str
+    total_spent: int  # minor units
+    purchase_count: int
+    last_purchase_at: datetime | None
+
+
+class SupplierPurchasesReadModel(ABC):
+    """Agregado de compras por proveedor. Scopeado por ``tenant_id``; solo lectura."""
+
+    @abstractmethod
+    async def summary(self, tenant_id: str, supplier_id: str) -> SupplierPurchases: ...
+
+
+class GetSupplierPurchases:
+    def __init__(
+        self,
+        suppliers: SupplierRepository,
+        read_model: SupplierPurchasesReadModel,
+        tenant_context: TenantContext,
+    ) -> None:
+        self._suppliers = suppliers
+        self._read_model = read_model
+        self._tenant_context = tenant_context
+
+    async def execute(self, *, tenant_id: str, supplier_id: str) -> SupplierPurchases:
+        self._tenant_context.set(tenant_id)
+        if await self._suppliers.get_by_id(tenant_id, supplier_id) is None:
+            raise SupplierNotFound()
+        return await self._read_model.summary(tenant_id, supplier_id)
 
 
 class SetRecipe:

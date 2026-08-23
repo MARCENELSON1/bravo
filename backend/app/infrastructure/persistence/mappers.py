@@ -713,6 +713,8 @@ def supplier_to_domain(row: SupplierORM) -> Supplier:
         tenant_id=row.tenant_id,
         name=row.name,
         contact=row.contact,
+        phone=row.phone,
+        notes=row.notes,
         active=row.active,
         created_at=row.created_at,
     )
@@ -724,6 +726,8 @@ def supplier_to_orm(supplier: Supplier) -> SupplierORM:
         tenant_id=supplier.tenant_id,
         name=supplier.name,
         contact=supplier.contact,
+        phone=supplier.phone,
+        notes=supplier.notes,
         active=supplier.active,
     )
 
@@ -744,6 +748,7 @@ def stock_movement_to_domain(row: StockMovementORM) -> StockMovement:
         order_id=row.order_id,
         unit_cost=unit_cost,
         note=row.note,
+        supplier_id=row.supplier_id,
         created_at=row.created_at,
     )
 
@@ -760,6 +765,7 @@ def stock_movement_to_orm(movement: StockMovement) -> StockMovementORM:
         unit_cost_amount=movement.unit_cost.amount if movement.unit_cost else None,
         unit_cost_currency=movement.unit_cost.currency if movement.unit_cost else None,
         note=movement.note,
+        supplier_id=movement.supplier_id,
     )
 
 

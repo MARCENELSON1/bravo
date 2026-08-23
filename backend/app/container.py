@@ -78,6 +78,7 @@ from app.application.inventory.use_cases import (
     CreateIngredient,
     CreateSupplier,
     GetRecipe,
+    GetSupplierPurchases,
     ListIngredients,
     ListLowStock,
     ListSuppliers,
@@ -85,6 +86,7 @@ from app.application.inventory.use_cases import (
     RegisterWaste,
     SetRecipe,
     UpdateIngredient,
+    UpdateSupplier,
 )
 from app.application.invoice.connect_afip import (
     ConnectAfip,
@@ -286,6 +288,9 @@ from app.infrastructure.persistence.shift_repo import SqlAlchemyShiftRepository
 from app.infrastructure.persistence.staff_report_repo import SqlAlchemyStaffReportReadModel
 from app.infrastructure.persistence.stock_movement_repo import (
     SqlAlchemyStockMovementRepository,
+)
+from app.infrastructure.persistence.supplier_purchases_repo import (
+    SqlAlchemySupplierPurchasesReadModel,
 )
 from app.infrastructure.persistence.supplier_repo import SqlAlchemySupplierRepository
 from app.infrastructure.persistence.table_repo import SqlAlchemyTableRepository
@@ -1103,6 +1108,7 @@ class Container(containers.DeclarativeContainer):
         RegisterPurchase,
         ingredients=ingredient_repository,
         movements=stock_movement_repository,
+        suppliers=supplier_repository,
         tenant_context=tenant_context,
     )
     register_waste = providers.Factory(
@@ -1117,8 +1123,20 @@ class Container(containers.DeclarativeContainer):
     create_supplier = providers.Factory(
         CreateSupplier, suppliers=supplier_repository, tenant_context=tenant_context
     )
+    update_supplier = providers.Factory(
+        UpdateSupplier, suppliers=supplier_repository, tenant_context=tenant_context
+    )
     list_suppliers = providers.Factory(
         ListSuppliers, suppliers=supplier_repository, tenant_context=tenant_context
+    )
+    supplier_purchases_read_model = providers.Factory(
+        SqlAlchemySupplierPurchasesReadModel, session_factory=db.provided.session
+    )
+    get_supplier_purchases = providers.Factory(
+        GetSupplierPurchases,
+        suppliers=supplier_repository,
+        read_model=supplier_purchases_read_model,
+        tenant_context=tenant_context,
     )
     set_recipe = providers.Factory(
         SetRecipe,
