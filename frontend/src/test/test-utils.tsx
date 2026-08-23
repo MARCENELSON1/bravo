@@ -41,6 +41,7 @@ export function renderWithProviders(
     cashApi: {} as unknown as Services["cashApi"],
     financeApi: {} as unknown as Services["financeApi"],
     copilotApi: {} as unknown as Services["copilotApi"],
+    customersApi: {} as unknown as Services["customersApi"],
     floorApi: {} as unknown as Services["floorApi"],
     integrationsApi: {} as unknown as Services["integrationsApi"],
     inventoryApi: {} as unknown as Services["inventoryApi"],

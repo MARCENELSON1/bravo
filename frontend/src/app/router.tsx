@@ -11,6 +11,7 @@ import { TipsPage } from "@/features/cashier/tips-page"
 import { CopilotPage } from "@/features/copilot/copilot-page"
 import { ConfigPage } from "@/features/settings/config-page"
 import { FinancePage } from "@/features/finance/finance-page"
+import { CustomersPage } from "@/features/crm/customers-page"
 import { ReportsPage } from "@/features/reports/reports-page"
 import { FloorPage } from "@/features/floor/floor-page"
 import { AcceptInvitationPage } from "@/features/identity/accept-invitation-page"
@@ -58,6 +59,7 @@ export const router = createBrowserRouter([
               { path: "/app/floor", element: <FloorPage /> },
               { path: "/app/orders/:orderId", element: <OrderPage /> },
               { path: "/app/reservations", element: <ReservationsPage /> },
+              { path: "/app/clientes", element: <CustomersPage /> },
             ],
           },
           {

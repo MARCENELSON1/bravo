@@ -6,6 +6,7 @@ import { AnalyticsApi } from "@/api/analytics-api"
 import { AuthApi } from "@/api/auth-api"
 import { CashApi } from "@/api/cash-api"
 import { CopilotApi } from "@/api/copilot-api"
+import { CustomersApi } from "@/api/customers-api"
 import { FinanceApi } from "@/api/finance-api"
 import { FloorApi } from "@/api/floor-api"
 import { FetchHttpClient } from "@/api/http-client"
@@ -42,6 +43,7 @@ export function ServicesProvider({
       authApi: new AuthApi(http),
       cashApi: new CashApi(http),
       copilotApi: new CopilotApi(http),
+      customersApi: new CustomersApi(http),
       floorApi: new FloorApi(http),
       integrationsApi: new IntegrationsApi(http),
       inventoryApi: new InventoryApi(http),
