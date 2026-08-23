@@ -676,13 +676,15 @@ def ingredient_to_domain(row: IngredientORM) -> Ingredient:
         id=row.id,
         tenant_id=row.tenant_id,
         name=row.name,
-        unit=UnitOfMeasure(row.unit),
+        # Lectura tolerante: una unidad legacy inválida degrada a UNIT en vez de
+        # romper todo el listado/food-cost (los writes siguen estrictos).
+        unit=UnitOfMeasure.parse(row.unit),
         stock_qty=row.stock_qty,
         min_qty=row.min_qty,
         unit_cost=Money(row.unit_cost_amount, row.unit_cost_currency),
         yield_pct=row.yield_pct,
         cost_includes_tax=row.cost_includes_tax,
-        recipe_unit=UnitOfMeasure(row.recipe_unit) if row.recipe_unit else None,
+        recipe_unit=UnitOfMeasure.parse(row.recipe_unit) if row.recipe_unit else None,
         active=row.active,
         created_at=row.created_at,
     )
