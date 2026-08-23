@@ -74,6 +74,30 @@ export function classifyCustomers(
   })
 }
 
+// Acciones para hoy: máx N clientes a contactar, por plata en juego. v1 = los "en
+// riesgo" (venían y dejaron de venir), ordenados por gasto histórico (lo que está
+// en juego), excluyendo a los que optaron por no-contactar o ya contactados
+// hace poco, y solo si tienen teléfono (si no, no hay wa.me). Honesto: nunca
+// sugiere a alguien sin datos ni infla la lista para llegar a N.
+export function todaysActions(
+  rows: CustomerStatsRowDTO[],
+  optOutIds: Set<string>,
+  recentIds: Set<string>,
+  nowMs: number,
+  limit = 3
+): SegmentedCustomer[] {
+  return classifyCustomers(rows, nowMs)
+    .filter(
+      (c) =>
+        c.segment === "en_riesgo" &&
+        Boolean(c.phone) &&
+        !optOutIds.has(c.customer_id) &&
+        !recentIds.has(c.customer_id)
+    )
+    .sort((a, b) => b.total_spent - a.total_spent)
+    .slice(0, limit)
+}
+
 export interface Coverage {
   withPurchases: number
   total: number

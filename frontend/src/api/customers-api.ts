@@ -40,6 +40,13 @@ export interface CustomerStatsDTO {
   rows: CustomerStatsRowDTO[]
 }
 
+export interface ContactResultDTO {
+  currency: string
+  contacted: number
+  returned: number
+  revenue: number // minor units
+}
+
 // CRM (Fase 12): clientes del local. Manual por ahora; segmentos + acciones vienen
 // después. El contacto es por wa.me (deep link, sin proveedor).
 export class CustomersApi {
@@ -74,5 +81,28 @@ export class CustomersApi {
 
   stats(): Promise<CustomerStatsDTO> {
     return this.http.request<CustomerStatsDTO>("GET", "/customers/stats", { auth: true })
+  }
+
+  logContact(id: string, reason: string): Promise<void> {
+    return this.http.request<void>("POST", `/customers/${id}/contact`, {
+      auth: true,
+      body: { reason },
+    })
+  }
+
+  recentContacts(days = 7): Promise<{ customer_ids: string[] }> {
+    return this.http.request<{ customer_ids: string[] }>(
+      "GET",
+      `/customers/contacts?days=${days}`,
+      { auth: true }
+    )
+  }
+
+  contactResult(days = 30): Promise<ContactResultDTO> {
+    return this.http.request<ContactResultDTO>(
+      "GET",
+      `/customers/contact-result?days=${days}`,
+      { auth: true }
+    )
   }
 }
