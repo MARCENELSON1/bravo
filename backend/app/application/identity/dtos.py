@@ -21,6 +21,9 @@ class OnboardTenantInput:
     owner_email: str
     owner_password: str
     owner_name: str | None = None
+    # ISO-3166 alpha-2. Drives the tenant's fiscal/locale spine; defaults to AR
+    # so an onboarding that omits it behaves exactly as today (parity).
+    country: str = "AR"
 
 
 @dataclass(frozen=True)

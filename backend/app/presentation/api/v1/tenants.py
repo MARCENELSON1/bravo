@@ -28,6 +28,7 @@ async def onboarding(
             owner_email=body.owner_email,
             owner_password=body.owner_password,
             owner_name=body.owner_name,
+            country=body.country,
         )
     )
     return OnboardingResponse(

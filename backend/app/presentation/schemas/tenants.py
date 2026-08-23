@@ -9,6 +9,8 @@ class OnboardingRequest(BaseModel):
     owner_email: EmailStr
     owner_password: str = Field(min_length=8, max_length=128)
     owner_name: str | None = Field(default=None, max_length=120)
+    # ISO-3166 alpha-2; drives the fiscal/locale spine. Defaults to AR (parity).
+    country: str = Field(default="AR", min_length=2, max_length=2, pattern=r"^[A-Za-z]{2}$")
 
 
 class OnboardingResponse(BaseModel):
