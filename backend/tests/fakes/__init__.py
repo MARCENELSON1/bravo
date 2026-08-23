@@ -59,6 +59,22 @@ class FakeTenantRepository(TenantRepository):
     async def add(self, tenant: Tenant) -> None:
         self.by_id[tenant.id] = tenant
 
+    async def update_fiscal_address(
+        self,
+        tenant_id: str,
+        *,
+        street: str | None,
+        city: str | None,
+        state: str | None,
+        zip_code: str | None,
+    ) -> None:
+        tenant = self.by_id.get(tenant_id)
+        if tenant is not None:
+            tenant.fiscal_street = street
+            tenant.fiscal_city = city
+            tenant.fiscal_state = state
+            tenant.fiscal_zip = zip_code
+
 
 class FakeUserRepository(UserRepository):
     def __init__(self) -> None:

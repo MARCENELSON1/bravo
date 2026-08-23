@@ -17,3 +17,21 @@ class OnboardingResponse(BaseModel):
     tenant_id: str
     user_id: str
     message: str
+
+
+class FiscalAddressRequest(BaseModel):
+    street: str | None = Field(default=None, max_length=160)
+    city: str | None = Field(default=None, max_length=80)
+    state: str | None = Field(default=None, max_length=40)
+    zip: str | None = Field(default=None, max_length=16)
+
+
+class FiscalSettingsResponse(BaseModel):
+    country: str
+    currency: str
+    tax_regime: str
+    tax_engine: str
+    street: str | None = None
+    city: str | None = None
+    state: str | None = None
+    zip: str | None = None

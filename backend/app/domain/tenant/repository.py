@@ -14,3 +14,14 @@ class TenantRepository(ABC):
 
     @abstractmethod
     async def add(self, tenant: Tenant) -> None: ...
+
+    @abstractmethod
+    async def update_fiscal_address(
+        self,
+        tenant_id: str,
+        *,
+        street: str | None,
+        city: str | None,
+        state: str | None,
+        zip_code: str | None,
+    ) -> None: ...

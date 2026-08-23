@@ -161,6 +161,10 @@ from app.application.table_session.use_cases import (
     SetSessionPax,
 )
 from app.application.tax.quote_order_tax import QuoteOrderTax
+from app.application.tenant.fiscal import (
+    GetTenantFiscalSettings,
+    UpdateTenantFiscalAddress,
+)
 from app.application.timeclock.presence import (
     GetPresenceChallenge,
     PunchWithPresence,
@@ -1037,6 +1041,12 @@ class Container(containers.DeclarativeContainer):
         tenants=tenant_repository,
         resolver=tax_calculator_resolver,
         tenant_context=tenant_context,
+    )
+    get_tenant_fiscal_settings = providers.Factory(
+        GetTenantFiscalSettings, tenants=tenant_repository
+    )
+    update_tenant_fiscal_address = providers.Factory(
+        UpdateTenantFiscalAddress, tenants=tenant_repository
     )
     get_order_invoice = providers.Factory(
         GetOrderInvoice, invoices=invoice_repository, tenant_context=tenant_context

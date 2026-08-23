@@ -5,10 +5,35 @@ from fastapi import APIRouter, Depends, status
 
 from app.application.identity.dtos import OnboardTenantInput
 from app.application.identity.onboard_tenant import OnboardTenant
+from app.application.tenant.fiscal import GetTenantFiscalSettings, UpdateTenantFiscalAddress
 from app.container import Container
-from app.presentation.schemas.tenants import OnboardingRequest, OnboardingResponse
+from app.domain.identity.tokens import AccessClaims
+from app.domain.tenant.entities import Tenant
+from app.domain.user.value_objects import Role
+from app.presentation.rbac import require_roles
+from app.presentation.schemas.tenants import (
+    FiscalAddressRequest,
+    FiscalSettingsResponse,
+    OnboardingRequest,
+    OnboardingResponse,
+)
 
 router = APIRouter(prefix="/tenants", tags=["tenants"])
+
+_FISCAL_ROLES = (Role.OWNER, Role.MANAGER)
+
+
+def _fiscal_response(tenant: Tenant) -> FiscalSettingsResponse:
+    return FiscalSettingsResponse(
+        country=tenant.country,
+        currency=tenant.currency,
+        tax_regime=tenant.tax_regime.value,
+        tax_engine=tenant.tax_engine.value,
+        street=tenant.fiscal_street,
+        city=tenant.fiscal_city,
+        state=tenant.fiscal_state,
+        zip=tenant.fiscal_zip,
+    )
 
 
 @router.post(
@@ -36,3 +61,32 @@ async def onboarding(
         user_id=result.user_id,
         message="Comercio creado. Te enviamos un email para verificar tu cuenta.",
     )
+
+
+@router.get("/fiscal-settings", response_model=FiscalSettingsResponse)
+@inject
+async def get_fiscal_settings(
+    identity: AccessClaims = Depends(require_roles(*_FISCAL_ROLES)),
+    use_case: GetTenantFiscalSettings = Depends(Provide[Container.get_tenant_fiscal_settings]),
+) -> FiscalSettingsResponse:
+    """Régimen fiscal + moneda + dirección del local (para el motor de impuestos)."""
+    tenant = await use_case.execute(tenant_id=identity.tenant_id)
+    return _fiscal_response(tenant)
+
+
+@router.put("/fiscal-address", response_model=FiscalSettingsResponse)
+@inject
+async def update_fiscal_address(
+    body: FiscalAddressRequest,
+    identity: AccessClaims = Depends(require_roles(*_FISCAL_ROLES)),
+    use_case: UpdateTenantFiscalAddress = Depends(Provide[Container.update_tenant_fiscal_address]),
+) -> FiscalSettingsResponse:
+    """Setear la dirección fiscal del local (la usa TaxJar para calcular por zona)."""
+    tenant = await use_case.execute(
+        tenant_id=identity.tenant_id,
+        street=body.street,
+        city=body.city,
+        state=body.state,
+        zip_code=body.zip,
+    )
+    return _fiscal_response(tenant)
