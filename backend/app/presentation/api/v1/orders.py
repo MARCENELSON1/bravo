@@ -3,6 +3,7 @@ from __future__ import annotations
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, status
 
+from app.application.customer.use_cases import AssignOrderCustomer
 from app.application.order.dtos import BatchOrderItemInput
 from app.application.order.use_cases import (
     AddOrderItem,
@@ -25,6 +26,7 @@ from app.domain.order.entities import Order
 from app.domain.user.value_objects import Role
 from app.presentation.deps import current_identity
 from app.presentation.rbac import require_roles
+from app.presentation.schemas.customers import AssignCustomerRequest
 from app.presentation.schemas.orders import (
     AddOrderItemRequest,
     AddOrderItemsBatchRequest,
@@ -69,6 +71,7 @@ def order_to_response(order: Order) -> OrderResponse:
         ],
         total_amount=order.total().amount,
         created_at=order.created_at.isoformat() if order.created_at else None,
+        customer_id=order.customer_id,
     )
 
 
@@ -106,6 +109,22 @@ async def get_order(
     use_case: GetOrder = Depends(Provide[Container.get_order]),
 ) -> OrderResponse:
     order = await use_case.execute(tenant_id=identity.tenant_id, order_id=order_id)
+    return order_to_response(order)
+
+
+@router.put("/{order_id}/customer", response_model=OrderResponse)
+@inject
+async def assign_customer(
+    order_id: str,
+    body: AssignCustomerRequest,
+    identity: AccessClaims = Depends(require_roles(*_FLOOR_ROLES)),
+    use_case: AssignOrderCustomer = Depends(Provide[Container.assign_order_customer]),
+) -> OrderResponse:
+    """Atribuir (o desatribuir con customer_id=null) el cliente de la comanda,
+    para que se acumule su historial de compras."""
+    order = await use_case.execute(
+        tenant_id=identity.tenant_id, order_id=order_id, customer_id=body.customer_id
+    )
     return order_to_response(order)
 
 

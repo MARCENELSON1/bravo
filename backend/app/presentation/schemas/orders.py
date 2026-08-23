@@ -72,3 +72,5 @@ class OrderResponse(BaseModel):
     total_amount: int
     # ISO-8601; lets the KDS show how long an order has been waiting.
     created_at: str | None = None
+    # CRM: cliente atribuido a la comanda (None → sin atribuir).
+    customer_id: str | None = None

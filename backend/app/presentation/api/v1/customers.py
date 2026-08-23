@@ -7,6 +7,7 @@ from app.application.customer.use_cases import (
     CreateCustomer,
     DeleteCustomer,
     GetCustomer,
+    GetCustomerHistory,
     ListCustomers,
     UpdateCustomer,
 )
@@ -15,7 +16,11 @@ from app.domain.customer.entities import Customer
 from app.domain.identity.tokens import AccessClaims
 from app.domain.user.value_objects import Role
 from app.presentation.rbac import require_roles
-from app.presentation.schemas.customers import CustomerRequest, CustomerResponse
+from app.presentation.schemas.customers import (
+    CustomerHistoryResponse,
+    CustomerRequest,
+    CustomerResponse,
+)
 
 router = APIRouter(prefix="/customers", tags=["customers"])
 
@@ -55,6 +60,25 @@ async def get_customer(
 ) -> CustomerResponse:
     return _response(
         await use_case.execute(tenant_id=identity.tenant_id, customer_id=customer_id)
+    )
+
+
+@router.get("/{customer_id}/history", response_model=CustomerHistoryResponse)
+@inject
+async def customer_history(
+    customer_id: str,
+    identity: AccessClaims = Depends(require_roles(*_VIEW_ROLES)),
+    use_case: GetCustomerHistory = Depends(Provide[Container.get_customer_history]),
+) -> CustomerHistoryResponse:
+    """Historial de compras del cliente: visitas + total gastado + última visita,
+    solo sobre comandas explícitamente atribuidas (nada inferido)."""
+    h = await use_case.execute(tenant_id=identity.tenant_id, customer_id=customer_id)
+    return CustomerHistoryResponse(
+        customer_id=h.customer_id,
+        currency=h.currency,
+        visits=h.visits,
+        total_spent=h.total_spent,
+        last_visit_at=h.last_visit_at.isoformat() if h.last_visit_at else None,
     )
 
 

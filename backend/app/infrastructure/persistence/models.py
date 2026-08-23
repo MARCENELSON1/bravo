@@ -292,6 +292,8 @@ class OrderORM(Base):
     status: Mapped[str] = mapped_column(String(20), default="OPEN", index=True)
     # table_sessions (cimiento): la comanda cuelga de la sesión (1:N). Nullable → paridad.
     session_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True, index=True)
+    # CRM: cliente atribuido a la comanda (para el historial de compras). Nullable.
+    customer_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True, index=True)
     currency: Mapped[str] = mapped_column(String(3))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

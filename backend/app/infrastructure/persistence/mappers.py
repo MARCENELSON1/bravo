@@ -417,6 +417,7 @@ def order_to_domain(row: OrderORM, item_rows: list[OrderItemORM]) -> Order:
         currency=row.currency,
         status=OrderStatus(row.status),
         session_id=row.session_id,
+        customer_id=row.customer_id,
         items=[
             OrderItem(
                 id=item.id,
@@ -444,6 +445,7 @@ def order_to_orm(order: Order) -> OrderORM:
         waiter_id=order.waiter_id,
         status=order.status.value,
         session_id=order.session_id,
+        customer_id=order.customer_id,
         currency=order.currency,
     )
 

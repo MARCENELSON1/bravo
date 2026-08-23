@@ -18,3 +18,15 @@ class CustomerResponse(BaseModel):
     email: str | None = None
     notes: str | None = None
     no_contactar: bool = False
+
+
+class CustomerHistoryResponse(BaseModel):
+    customer_id: str
+    currency: str
+    visits: int
+    total_spent: int  # minor units
+    last_visit_at: str | None = None  # ISO-8601
+
+
+class AssignCustomerRequest(BaseModel):
+    customer_id: str | None = None  # None → desatribuir
