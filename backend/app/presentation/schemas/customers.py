@@ -45,3 +45,18 @@ class CustomerStatsRowResponse(BaseModel):
 class CustomerStatsResponse(BaseModel):
     currency: str
     rows: list[CustomerStatsRowResponse]
+
+
+class LogContactRequest(BaseModel):
+    reason: str = Field(default="manual", max_length=40)
+
+
+class ContactResultResponse(BaseModel):
+    currency: str
+    contacted: int
+    returned: int
+    revenue: int  # minor units
+
+
+class RecentContactsResponse(BaseModel):
+    customer_ids: list[str]

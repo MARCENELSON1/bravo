@@ -3,6 +3,11 @@ from __future__ import annotations
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query, status
 
+from app.application.contact.use_cases import (
+    GetContactResult,
+    GetRecentContacts,
+    LogContact,
+)
 from app.application.customer.use_cases import (
     CreateCustomer,
     DeleteCustomer,
@@ -18,11 +23,14 @@ from app.domain.identity.tokens import AccessClaims
 from app.domain.user.value_objects import Role
 from app.presentation.rbac import require_roles
 from app.presentation.schemas.customers import (
+    ContactResultResponse,
     CustomerHistoryResponse,
     CustomerRequest,
     CustomerResponse,
     CustomerStatsResponse,
     CustomerStatsRowResponse,
+    LogContactRequest,
+    RecentContactsResponse,
 )
 
 router = APIRouter(prefix="/customers", tags=["customers"])
@@ -81,6 +89,32 @@ async def customer_stats(
     )
 
 
+@router.get("/contacts", response_model=RecentContactsResponse)
+@inject
+async def recent_contacts(
+    days: int = Query(default=7, ge=1, le=90),
+    identity: AccessClaims = Depends(require_roles(*_VIEW_ROLES)),
+    use_case: GetRecentContacts = Depends(Provide[Container.get_recent_contacts]),
+) -> RecentContactsResponse:
+    """Clientes contactados en los últimos ``days`` días (para no re-sugerirlos)."""
+    ids = await use_case.execute(tenant_id=identity.tenant_id, days=days)
+    return RecentContactsResponse(customer_ids=ids)
+
+
+@router.get("/contact-result", response_model=ContactResultResponse)
+@inject
+async def contact_result(
+    days: int = Query(default=30, ge=1, le=365),
+    identity: AccessClaims = Depends(require_roles(*_VIEW_ROLES)),
+    use_case: GetContactResult = Depends(Provide[Container.get_contact_result]),
+) -> ContactResultResponse:
+    """Loop de resultado: contactaste N, volvieron M, gastaron $X (últimos días)."""
+    r = await use_case.execute(tenant_id=identity.tenant_id, days=days)
+    return ContactResultResponse(
+        currency=r.currency, contacted=r.contacted, returned=r.returned, revenue=r.revenue
+    )
+
+
 @router.get("/{customer_id}", response_model=CustomerResponse)
 @inject
 async def get_customer(
@@ -109,6 +143,23 @@ async def customer_history(
         visits=h.visits,
         total_spent=h.total_spent,
         last_visit_at=h.last_visit_at.isoformat() if h.last_visit_at else None,
+    )
+
+
+@router.post("/{customer_id}/contact", status_code=status.HTTP_204_NO_CONTENT)
+@inject
+async def log_contact(
+    customer_id: str,
+    body: LogContactRequest,
+    identity: AccessClaims = Depends(require_roles(*_VIEW_ROLES)),
+    use_case: LogContact = Depends(Provide[Container.log_contact]),
+) -> None:
+    """Marcar que contactaste al cliente (tras escribirle) → alimenta el loop."""
+    await use_case.execute(
+        tenant_id=identity.tenant_id,
+        customer_id=customer_id,
+        contacted_by=identity.user_id,
+        reason=body.reason,
     )
 
 
