@@ -104,6 +104,14 @@ class Settings(BaseSettings):
     # AFIP); "afip" usa WSAA + WSFEv1 reales. AFIP_ENV: homologación vs prod.
     invoicing_provider: str = "fake"
     afip_env: str = "homo"
+
+    # Sales tax US (Fase 2 internacionalización). "off" = régimen tax-inclusive
+    # nativo (AR/IVA), nada que sumar al cobrar; "taxjar" = tasa real por
+    # jurisdicción vía la API de TaxJar (modelo added). Token/env solo del entorno,
+    # nunca logueado. TAXJAR_SANDBOX apunta al entorno de pruebas.
+    tax_calc_provider: Literal["off", "taxjar"] = "off"
+    taxjar_api_token: str = ""
+    taxjar_sandbox: bool = True
     # Public URL MercadoPago posts notifications to (a tunnel in dev, the API
     # host in prod). Empty → rely on the dashboard-configured webhook.
     mp_notification_url: str = ""
