@@ -7,6 +7,7 @@ import { useAuth } from "@/auth/auth-context"
 import { AnimatedNumber } from "@/components/ui/animated-number"
 import { GlassCard } from "@/components/ui/glass-card"
 import { dailyVerdict } from "@/features/dashboard/daily-verdict"
+import { RequiresAttention } from "@/features/dashboard/requires-attention"
 import { tomorrowTask } from "@/features/dashboard/tomorrow-task"
 import { RecentMovements } from "@/features/finance/recent-movements"
 import { useDashboard } from "@/hooks/use-dashboard"
@@ -138,6 +139,9 @@ export function DashboardPage() {
           </p>
         ) : null}
       </GlassCard>
+
+      {/* Requiere tu atención — la franja operativa (mesas / caja / stock / clientes) */}
+      <RequiresAttention />
 
       {/* NIVEL 2 — Los 3 números que lo explican */}
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
