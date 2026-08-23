@@ -8,11 +8,11 @@ the tax-inclusive calculator (no crash) until its adapter lands.
 
 from __future__ import annotations
 
-from app.domain.tax.ports import TaxCalculator
+from app.domain.tax.ports import TaxCalculator, TaxEngineResolver
 from app.domain.tenant.regional import TaxEngine
 
 
-class EngineTaxCalculatorResolver:
+class EngineTaxCalculatorResolver(TaxEngineResolver):
     def __init__(self, *, taxjar: TaxCalculator, included: TaxCalculator) -> None:
         self._by_engine: dict[TaxEngine, TaxCalculator] = {
             TaxEngine.TAXJAR: taxjar,

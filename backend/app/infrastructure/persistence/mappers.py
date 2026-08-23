@@ -105,6 +105,10 @@ def tenant_to_domain(row: TenantORM) -> Tenant:
         locale=row.locale,
         timezone=row.timezone,
         tax_engine=TaxEngine(row.tax_engine),
+        fiscal_street=row.fiscal_street,
+        fiscal_city=row.fiscal_city,
+        fiscal_state=row.fiscal_state,
+        fiscal_zip=row.fiscal_zip,
         created_at=row.created_at,
     )
 
@@ -121,6 +125,10 @@ def tenant_to_orm(tenant: Tenant) -> TenantORM:
         locale=tenant.locale,
         timezone=tenant.timezone,
         tax_engine=tenant.tax_engine.value,
+        fiscal_street=tenant.fiscal_street,
+        fiscal_city=tenant.fiscal_city,
+        fiscal_state=tenant.fiscal_state,
+        fiscal_zip=tenant.fiscal_zip,
     )
 
 

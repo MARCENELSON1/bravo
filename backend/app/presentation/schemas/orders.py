@@ -74,3 +74,15 @@ class OrderResponse(BaseModel):
     created_at: str | None = None
     # CRM: cliente atribuido a la comanda (None → sin atribuir).
     customer_id: str | None = None
+
+
+class TaxQuoteResponse(BaseModel):
+    """Sales tax to add on an order (minor units). For AR/IVA tax is 0 (included);
+    for US it comes from the tax engine (TaxJar) by the tenant's fiscal address."""
+
+    subtotal_amount: int
+    tax_amount: int
+    total_amount: int
+    currency: str
+    rate_bps: int
+    jurisdiction: str | None = None

@@ -20,6 +20,7 @@ from app.application.order.use_cases import (
     SetItemQuantity,
     TransferOrder,
 )
+from app.application.tax.quote_order_tax import QuoteOrderTax
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
 from app.domain.order.entities import Order
@@ -36,6 +37,7 @@ from app.presentation.schemas.orders import (
     OrderItemResponse,
     OrderResponse,
     SetItemQuantityRequest,
+    TaxQuoteResponse,
     TransferOrderRequest,
 )
 
@@ -110,6 +112,26 @@ async def get_order(
 ) -> OrderResponse:
     order = await use_case.execute(tenant_id=identity.tenant_id, order_id=order_id)
     return order_to_response(order)
+
+
+@router.get("/{order_id}/tax-quote", response_model=TaxQuoteResponse)
+@inject
+async def tax_quote(
+    order_id: str,
+    identity: AccessClaims = Depends(current_identity),
+    use_case: QuoteOrderTax = Depends(Provide[Container.quote_order_tax]),
+) -> TaxQuoteResponse:
+    """Sales tax to add on this order for the tenant's regime (read-only).
+    AR/IVA → 0 (included); US/TaxJar → the rate by the tenant's fiscal address."""
+    quote = await use_case.execute(tenant_id=identity.tenant_id, order_id=order_id)
+    return TaxQuoteResponse(
+        subtotal_amount=quote.subtotal.amount,
+        tax_amount=quote.tax.amount,
+        total_amount=quote.total.amount,
+        currency=quote.total.currency,
+        rate_bps=quote.rate_bps,
+        jurisdiction=quote.jurisdiction,
+    )
 
 
 @router.put("/{order_id}/customer", response_model=OrderResponse)
