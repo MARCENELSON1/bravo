@@ -36,6 +36,8 @@ class StockMovement:
     order_id: str | None = None
     unit_cost: Money | None = None
     note: str | None = None
+    # Proveedor de la compra (solo en PURCHASE; para "qué le comprás a cada uno").
+    supplier_id: str | None = None
     created_at: datetime | None = None
 
     def __post_init__(self) -> None:
@@ -102,11 +104,14 @@ class Ingredient:
 
 @dataclass
 class Supplier:
-    """A supplier (proveedor) of ingredients, scoped to a tenant."""
+    """A supplier (proveedor) of ingredients, scoped to a tenant. ``contact`` es
+    la persona/dato libre; ``phone`` va en dígitos (para el deep-link wa.me)."""
 
     id: str
     tenant_id: str
     name: str
     contact: str | None = None
+    phone: str | None = None
+    notes: str | None = None
     active: bool = True
     created_at: datetime | None = None

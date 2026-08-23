@@ -13,12 +13,14 @@ from app.application.inventory.preparations import (
 from app.application.inventory.use_cases import (
     CreateIngredient,
     CreateSupplier,
+    GetSupplierPurchases,
     ListIngredients,
     ListLowStock,
     ListSuppliers,
     RegisterPurchase,
     RegisterWaste,
     UpdateIngredient,
+    UpdateSupplier,
 )
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
@@ -40,8 +42,10 @@ from app.presentation.schemas.inventory import (
     PurchaseRequest,
     RecipeItemSchema,
     SavePreparationRequest,
+    SupplierPurchasesResponse,
     SupplierResponse,
     UpdateIngredientRequest,
+    UpdateSupplierRequest,
     WasteRequest,
 )
 
@@ -95,7 +99,12 @@ def _ingredient_response(ingredient: Ingredient) -> IngredientResponse:
 
 def _supplier_response(supplier: Supplier) -> SupplierResponse:
     return SupplierResponse(
-        id=supplier.id, name=supplier.name, contact=supplier.contact, active=supplier.active
+        id=supplier.id,
+        name=supplier.name,
+        contact=supplier.contact,
+        phone=supplier.phone,
+        notes=supplier.notes,
+        active=supplier.active,
     )
 
 
@@ -174,6 +183,7 @@ async def register_purchase(
         qty=body.qty,
         unit_cost_amount=body.unit_cost_amount,
         price_includes_tax=body.price_includes_tax,
+        supplier_id=body.supplier_id,
     )
     return _ingredient_response(ingredient)
 
@@ -342,9 +352,50 @@ async def create_supplier(
     use_case: CreateSupplier = Depends(Provide[Container.create_supplier]),
 ) -> CreateSupplierResponse:
     supplier = await use_case.execute(
-        tenant_id=identity.tenant_id, name=body.name, contact=body.contact
+        tenant_id=identity.tenant_id,
+        name=body.name,
+        contact=body.contact,
+        phone=body.phone,
+        notes=body.notes,
     )
     return CreateSupplierResponse(supplier_id=supplier.id)
+
+
+@router.put("/suppliers/{supplier_id}", response_model=SupplierResponse)
+@inject
+async def update_supplier(
+    supplier_id: str,
+    body: UpdateSupplierRequest,
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: UpdateSupplier = Depends(Provide[Container.update_supplier]),
+) -> SupplierResponse:
+    supplier = await use_case.execute(
+        tenant_id=identity.tenant_id,
+        supplier_id=supplier_id,
+        name=body.name,
+        contact=body.contact,
+        phone=body.phone,
+        notes=body.notes,
+        active=body.active,
+    )
+    return _supplier_response(supplier)
+
+
+@router.get("/suppliers/{supplier_id}/purchases", response_model=SupplierPurchasesResponse)
+@inject
+async def supplier_purchases(
+    supplier_id: str,
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: GetSupplierPurchases = Depends(Provide[Container.get_supplier_purchases]),
+) -> SupplierPurchasesResponse:
+    s = await use_case.execute(tenant_id=identity.tenant_id, supplier_id=supplier_id)
+    return SupplierPurchasesResponse(
+        supplier_id=s.supplier_id,
+        currency=s.currency,
+        total_spent=s.total_spent,
+        purchase_count=s.purchase_count,
+        last_purchase_at=s.last_purchase_at.isoformat() if s.last_purchase_at else None,
+    )
 
 
 @router.get("/suppliers", response_model=list[SupplierResponse])

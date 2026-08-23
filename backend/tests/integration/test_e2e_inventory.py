@@ -119,6 +119,70 @@ async def test_create_and_list_supplier(client):
     assert rows[0]["contact"] == "ventas@molino.com"
 
 
+async def test_supplier_enrichment_and_purchases(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="prov", email="o@prov.com")
+    h = _auth(tokens)
+
+    # Alta con teléfono → se normaliza a dígitos (para wa.me).
+    sid = (
+        await http.post(
+            "/api/v1/inventory/suppliers",
+            json={"name": "Verdulería", "phone": "+54 11 5555-1234", "notes": "reparte martes"},
+            headers=h,
+        )
+    ).json()["supplier_id"]
+    row = (await http.get("/api/v1/inventory/suppliers", headers=h)).json()[0]
+    assert row["phone"] == "541155551234"  # solo dígitos
+
+    # Editar (contacto/activo).
+    upd = await http.put(
+        f"/api/v1/inventory/suppliers/{sid}",
+        json={"name": "Verdulería Central", "phone": "1155551234", "active": True},
+        headers=h,
+    )
+    assert upd.status_code == 200, upd.text
+    assert upd.json()["name"] == "Verdulería Central"
+    assert upd.json()["phone"] == "1155551234"
+
+    # Sin compras → resumen en cero.
+    empty = (await http.get(f"/api/v1/inventory/suppliers/{sid}/purchases", headers=h)).json()
+    assert empty["purchase_count"] == 0
+    assert empty["total_spent"] == 0
+
+    # Comprar 2 kg (2000 milésimas) a $50000/kg a ese proveedor → gasto 100000.
+    iid = (await _new_ingredient(http, h))["ingredient_id"]
+    r = await http.post(
+        f"/api/v1/inventory/ingredients/{iid}/purchase",
+        json={"qty": 2000, "unit_cost_amount": 50000, "supplier_id": sid},
+        headers=h,
+    )
+    assert r.status_code == 200, r.text
+
+    summary = (await http.get(f"/api/v1/inventory/suppliers/{sid}/purchases", headers=h)).json()
+    assert summary["purchase_count"] == 1
+    assert summary["total_spent"] == 100000  # 2 kg × 50000
+    assert summary["last_purchase_at"] is not None
+
+
+async def test_purchase_with_unknown_supplier_404(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="prov2", email="o@prov2.com")
+    h = _auth(tokens)
+    iid = (await _new_ingredient(http, h))["ingredient_id"]
+    bad = await http.post(
+        f"/api/v1/inventory/ingredients/{iid}/purchase",
+        json={
+            "qty": 1000,
+            "unit_cost_amount": 50000,
+            "supplier_id": "00000000-0000-0000-0000-000000000000",
+        },
+        headers=h,
+    )
+    assert bad.status_code == 404
+    assert bad.json()["code"] == "supplier_not_found"
+
+
 async def test_set_and_get_recipe_opt_in(client):
     http, fake_email = client
     tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
