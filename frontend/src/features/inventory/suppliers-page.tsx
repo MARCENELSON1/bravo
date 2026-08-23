@@ -2,8 +2,10 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
+import type { SupplierDTO } from "@/api/types-inventory"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { GlassCard } from "@/components/ui/glass-card"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Input } from "@/components/ui/input"
 import {
@@ -16,20 +18,20 @@ import {
 } from "@/components/ui/sheet"
 import { Spinner } from "@/components/ui/spinner"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { useCreateSupplier, useSuppliers } from "@/hooks/use-inventory"
+  useCreateSupplier,
+  useSupplierPurchases,
+  useSuppliers,
+} from "@/hooks/use-inventory"
+import { formatMoney } from "@/lib/money"
+import { waLink } from "@/lib/wa"
 
 function CreateSupplierSheet() {
   const create = useCreateSupplier()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState("")
   const [contact, setContact] = useState("")
+  const [phone, setPhone] = useState("")
+  const [notes, setNotes] = useState("")
 
   const submit = () => {
     if (!name.trim()) {
@@ -37,12 +39,19 @@ function CreateSupplierSheet() {
       return
     }
     create.mutate(
-      { name: name.trim(), contact: contact.trim() || null },
+      {
+        name: name.trim(),
+        contact: contact.trim() || null,
+        phone: phone.trim() || null,
+        notes: notes.trim() || null,
+      },
       {
         onSuccess: () => {
           toast.success("Proveedor creado.")
           setName("")
           setContact("")
+          setPhone("")
+          setNotes("")
           setOpen(false)
         },
         onError: (error) =>
@@ -59,15 +68,22 @@ function CreateSupplierSheet() {
       <SheetContent>
         <SheetHeader>
           <SheetTitle>Nuevo proveedor</SheetTitle>
-          <SheetDescription>Quién te abastece (teléfono, email o referencia).</SheetDescription>
+          <SheetDescription>Quién te abastece — con teléfono lo contactás por WhatsApp.</SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-3 px-4 pb-4">
           <Input placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
           <Input
-            placeholder="Contacto (opcional)"
+            placeholder="Contacto (persona / email)"
             value={contact}
             onChange={(e) => setContact(e.target.value)}
           />
+          <Input
+            placeholder="Teléfono (con código país)"
+            inputMode="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+          <Input placeholder="Notas" value={notes} onChange={(e) => setNotes(e.target.value)} />
           <Button onClick={submit} disabled={create.isPending}>
             {create.isPending ? "Creando…" : "Crear proveedor"}
           </Button>
@@ -77,8 +93,76 @@ function CreateSupplierSheet() {
   )
 }
 
+function SupplierRow({ supplier }: { supplier: SupplierDTO }) {
+  const [showPurchases, setShowPurchases] = useState(false)
+  const purchases = useSupplierPurchases(showPurchases ? supplier.id : null)
+  const link = waLink(supplier.phone, `Hola! Te escribo de parte del local.`)
+
+  return (
+    <GlassCard className="flex flex-col gap-2 p-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-foreground">{supplier.name}</span>
+            {!supplier.active ? (
+              <Badge variant="secondary" className="text-xs font-normal">
+                Inactivo
+              </Badge>
+            ) : null}
+          </div>
+          {supplier.contact ? (
+            <p className="text-sm text-muted-foreground">{supplier.contact}</p>
+          ) : null}
+          {supplier.phone ? (
+            <p className="text-sm text-muted-foreground">{supplier.phone}</p>
+          ) : null}
+          {supplier.notes ? (
+            <p className="truncate text-xs text-muted-foreground">{supplier.notes}</p>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="ghost" onClick={() => setShowPurchases((v) => !v)}>
+            {showPurchases ? "Ocultar" : "Compras"}
+          </Button>
+          {link ? (
+            <a href={link} target="_blank" rel="noopener noreferrer">
+              <Button size="sm" variant="outline">
+                WhatsApp
+              </Button>
+            </a>
+          ) : null}
+        </div>
+      </div>
+      {showPurchases ? (
+        <div className="border-t pt-2 text-sm">
+          {purchases.isPending ? (
+            <span className="text-muted-foreground">Cargando…</span>
+          ) : purchases.data && purchases.data.purchase_count > 0 ? (
+            <span className="text-foreground">
+              <span className="font-medium">{purchases.data.purchase_count}</span>{" "}
+              {purchases.data.purchase_count === 1 ? "compra" : "compras"} ·{" "}
+              <span className="font-medium">
+                {formatMoney(purchases.data.total_spent, purchases.data.currency)}
+              </span>{" "}
+              en total
+              {purchases.data.last_purchase_at
+                ? ` · última: ${purchases.data.last_purchase_at.slice(0, 10)}`
+                : ""}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">
+              Todavía no registraste compras a este proveedor. Al comprar un insumo, elegilo.
+            </span>
+          )}
+        </div>
+      ) : null}
+    </GlassCard>
+  )
+}
+
 export function SuppliersPage() {
   const suppliers = useSuppliers()
+  const rows = suppliers.data ?? []
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
@@ -87,45 +171,28 @@ export function SuppliersPage() {
           <GradientHeading size="md" weight="bold">
             Proveedores
           </GradientHeading>
-          <p className="text-sm text-muted-foreground">Tus fuentes de abastecimiento.</p>
+          <p className="text-sm text-muted-foreground">
+            Tus fuentes de abastecimiento — contactalos y mirá qué le comprás a cada uno.
+          </p>
         </div>
         <CreateSupplierSheet />
       </header>
 
-      <div className="overflow-hidden rounded-xl border border-border">
-        {suppliers.isPending ? (
-          <div className="flex justify-center p-10">
-            <Spinner className="size-5 text-muted-foreground" />
-          </div>
-        ) : suppliers.data && suppliers.data.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Contacto</TableHead>
-                <TableHead className="text-right">Estado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {suppliers.data.map((s) => (
-                <TableRow key={s.id}>
-                  <TableCell className="font-medium">{s.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{s.contact ?? "—"}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant={s.active ? "default" : "secondary"}>
-                      {s.active ? "Activo" : "Inactivo"}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
-            Todavía no cargaste proveedores.
-          </p>
-        )}
-      </div>
+      {suppliers.isPending ? (
+        <div className="flex justify-center p-10">
+          <Spinner className="size-5 text-muted-foreground" />
+        </div>
+      ) : rows.length === 0 ? (
+        <p className="rounded-xl border border-border bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
+          Todavía no cargaste proveedores.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {rows.map((s) => (
+            <SupplierRow key={s.id} supplier={s} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

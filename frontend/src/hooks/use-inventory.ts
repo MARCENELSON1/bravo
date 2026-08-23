@@ -7,6 +7,7 @@ import type {
   SavePreparationBody,
   SetRecipeBody,
   UpdateIngredientBody,
+  UpdateSupplierBody,
   WasteBody,
 } from "@/api/types-inventory"
 import { useServices } from "@/services/services-context"
@@ -92,6 +93,25 @@ export function useCreateSupplier() {
   return useMutation({
     mutationFn: (body: CreateSupplierBody) => inventoryApi.createSupplier(body),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["suppliers"] }),
+  })
+}
+
+export function useUpdateSupplier() {
+  const { inventoryApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (vars: { id: string; body: UpdateSupplierBody }) =>
+      inventoryApi.updateSupplier(vars.id, vars.body),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["suppliers"] }),
+  })
+}
+
+export function useSupplierPurchases(id: string | null) {
+  const { inventoryApi } = useServices()
+  return useQuery({
+    queryKey: ["supplier-purchases", id],
+    queryFn: () => inventoryApi.supplierPurchases(id as string),
+    enabled: Boolean(id),
   })
 }
 

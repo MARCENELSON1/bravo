@@ -14,6 +14,8 @@ import type {
   SavePreparationBody,
   SetRecipeBody,
   SupplierDTO,
+  SupplierPurchasesDTO,
+  UpdateSupplierBody,
   UpdateIngredientBody,
   WasteBody,
 } from "@/api/types-inventory"
@@ -84,6 +86,21 @@ export class InventoryApi {
       body,
       auth: true,
     })
+  }
+
+  updateSupplier(id: string, body: UpdateSupplierBody): Promise<SupplierDTO> {
+    return this.http.request<SupplierDTO>("PUT", `/inventory/suppliers/${id}`, {
+      body,
+      auth: true,
+    })
+  }
+
+  supplierPurchases(id: string): Promise<SupplierPurchasesDTO> {
+    return this.http.request<SupplierPurchasesDTO>(
+      "GET",
+      `/inventory/suppliers/${id}/purchases`,
+      { auth: true }
+    )
   }
 
   getRecipe(productId: string): Promise<RecipeDTO> {

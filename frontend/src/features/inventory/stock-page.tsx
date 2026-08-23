@@ -38,6 +38,7 @@ import {
   useIngredients,
   useLowStock,
   usePurchase,
+  useSuppliers,
   useUpdateIngredient,
   useWaste,
 } from "@/hooks/use-inventory"
@@ -229,9 +230,11 @@ function CreateIngredientSheet() {
 
 function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
   const purchase = usePurchase()
+  const suppliers = useSuppliers()
   const [open, setOpen] = useState(false)
   const [qty, setQty] = useState("")
   const [cost, setCost] = useState("")
+  const [supplierId, setSupplierId] = useState("")
   // Tri-estado: `undefined` = "no tocar la clasificación de IVA del insumo" (una
   // compra no reclasifica). Solo se envía si el usuario la cambia en esta compra;
   // así una compra no revierte una reclasificación hecha en Editar. Se muestra la
@@ -257,6 +260,7 @@ function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
           qty: q,
           unit_cost_amount: unitCost,
           ...(inclVat !== undefined ? { price_includes_tax: inclVat } : {}),
+          ...(supplierId ? { supplier_id: supplierId } : {}),
         },
       },
       {
@@ -265,6 +269,7 @@ function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
           setQty("")
           setCost("")
           setInclVat(undefined)
+          setSupplierId("")
           setOpen(false)
         },
         onError: (error) =>
@@ -305,6 +310,20 @@ function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
             value={cost}
             onChange={(e) => setCost(e.target.value)}
           />
+          <select
+            value={supplierId}
+            onChange={(e) => setSupplierId(e.target.value)}
+            className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
+          >
+            <option value="">Proveedor (opcional)</option>
+            {(suppliers.data ?? [])
+              .filter((s) => s.active)
+              .map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+          </select>
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
