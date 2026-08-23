@@ -30,6 +30,11 @@ from app.application.cashier.use_cases import (
     OpenCashSession,
     RegisterCashMovement,
 )
+from app.application.contact.use_cases import (
+    GetContactResult,
+    GetRecentContacts,
+    LogContact,
+)
 from app.application.copilot.ask import AskCopilot
 from app.application.customer.use_cases import (
     AssignOrderCustomer,
@@ -212,6 +217,12 @@ from app.infrastructure.persistence.cash_policy_repo import SqlAlchemyCashSessio
 from app.infrastructure.persistence.cash_repo import SqlAlchemyCashSessionRepository
 from app.infrastructure.persistence.cash_settings_repo import (
     SqlAlchemyCashSettingsRepository,
+)
+from app.infrastructure.persistence.contact_repo import (
+    SqlAlchemyContactLogRepository,
+)
+from app.infrastructure.persistence.contact_result_repo import (
+    SqlAlchemyContactResultReadModel,
 )
 from app.infrastructure.persistence.cost_history_repo import (
     SqlAlchemyIngredientCostHistoryReadModel,
@@ -625,6 +636,28 @@ class Container(containers.DeclarativeContainer):
     get_customer_stats = providers.Factory(
         GetCustomerStats,
         read_model=customer_stats_read_model,
+        tenant_context=tenant_context,
+    )
+    contact_log_repository = providers.Factory(
+        SqlAlchemyContactLogRepository, session_factory=db.provided.session
+    )
+    contact_result_read_model = providers.Factory(
+        SqlAlchemyContactResultReadModel, session_factory=db.provided.session
+    )
+    log_contact = providers.Factory(
+        LogContact,
+        contacts=contact_log_repository,
+        customers=customer_repository,
+        tenant_context=tenant_context,
+    )
+    get_recent_contacts = providers.Factory(
+        GetRecentContacts,
+        contacts=contact_log_repository,
+        tenant_context=tenant_context,
+    )
+    get_contact_result = providers.Factory(
+        GetContactResult,
+        read_model=contact_result_read_model,
         tenant_context=tenant_context,
     )
     get_order = providers.Factory(

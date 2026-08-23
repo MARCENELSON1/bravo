@@ -898,3 +898,25 @@ class CustomerORM(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+class ContactLogORM(Base):
+    """Bitácora de contactos a clientes (CRM, loop de resultado). Datos del
+    cliente → RLS."""
+
+    __tablename__ = "contact_log"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    customer_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False),
+        ForeignKey("customers.id", ondelete="CASCADE"),
+        index=True,
+    )
+    reason: Mapped[str] = mapped_column(String(40))
+    contacted_by: Mapped[str] = mapped_column(Uuid(as_uuid=False))
+    contacted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
