@@ -32,9 +32,11 @@ from app.application.cashier.use_cases import (
 )
 from app.application.copilot.ask import AskCopilot
 from app.application.customer.use_cases import (
+    AssignOrderCustomer,
     CreateCustomer,
     DeleteCustomer,
     GetCustomer,
+    GetCustomerHistory,
     ListCustomers,
     UpdateCustomer,
 )
@@ -215,6 +217,9 @@ from app.infrastructure.persistence.cost_history_repo import (
 )
 from app.infrastructure.persistence.credentials_repo import (
     SqlAlchemyPaymentCredentialRepository,
+)
+from app.infrastructure.persistence.customer_history_repo import (
+    SqlAlchemyCustomerHistoryReadModel,
 )
 from app.infrastructure.persistence.customer_repo import SqlAlchemyCustomerRepository
 from app.infrastructure.persistence.dashboard_repo import SqlAlchemyDashboardReadModel
@@ -594,6 +599,21 @@ class Container(containers.DeclarativeContainer):
     )
     delete_customer = providers.Factory(
         DeleteCustomer, customers=customer_repository, tenant_context=tenant_context
+    )
+    assign_order_customer = providers.Factory(
+        AssignOrderCustomer,
+        orders=order_repository,
+        customers=customer_repository,
+        tenant_context=tenant_context,
+    )
+    customer_history_read_model = providers.Factory(
+        SqlAlchemyCustomerHistoryReadModel, session_factory=db.provided.session
+    )
+    get_customer_history = providers.Factory(
+        GetCustomerHistory,
+        customers=customer_repository,
+        read_model=customer_history_read_model,
+        tenant_context=tenant_context,
     )
     get_order = providers.Factory(
         GetOrder, orders=order_repository, tenant_context=tenant_context

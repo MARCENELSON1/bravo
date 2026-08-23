@@ -68,6 +68,9 @@ class Order:
     # table_sessions (cimiento): la comanda cuelga de la sesión de mesa (1:N). None
     # en órdenes previas → fallback al comportamiento actual (paridad).
     session_id: str | None = None
+    # CRM: cliente atribuido a la comanda (para el historial de compras). None → sin
+    # atribuir (no cuenta a ningún cliente; nada se infla).
+    customer_id: str | None = None
 
     # --- item editing (only while the item is still PENDING) ----------------
 
