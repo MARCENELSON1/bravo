@@ -17,6 +17,7 @@ import {
   useDeleteCustomer,
   useUpdateCustomer,
 } from "@/hooks/use-customers"
+import { CustomerActionsView } from "@/features/crm/customer-actions-view"
 import { CustomerSegmentsView } from "@/features/crm/customer-segments-view"
 import { formatMoney } from "@/lib/money"
 import { waLink } from "@/lib/wa"
@@ -53,6 +54,8 @@ export function CustomersPage() {
           onSaved={() => setAdding(false)}
         />
       ) : null}
+
+      <CustomerActionsView />
 
       <CustomerSegmentsView />
 

@@ -16,6 +16,35 @@ export function useCustomerStats() {
   return useQuery({ queryKey: ["customer-stats"], queryFn: () => customersApi.stats() })
 }
 
+export function useRecentContacts(days = 7) {
+  const { customersApi } = useServices()
+  return useQuery({
+    queryKey: ["recent-contacts", days],
+    queryFn: () => customersApi.recentContacts(days),
+  })
+}
+
+export function useContactResult(days = 30) {
+  const { customersApi } = useServices()
+  return useQuery({
+    queryKey: ["contact-result", days],
+    queryFn: () => customersApi.contactResult(days),
+  })
+}
+
+export function useLogContact() {
+  const { customersApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (vars: { id: string; reason: string }) =>
+      customersApi.logContact(vars.id, vars.reason),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["recent-contacts"] })
+      void queryClient.invalidateQueries({ queryKey: ["contact-result"] })
+    },
+  })
+}
+
 export function useCustomerHistory(id: string | null) {
   const { customersApi } = useServices()
   return useQuery({

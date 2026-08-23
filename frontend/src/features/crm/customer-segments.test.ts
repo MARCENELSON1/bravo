@@ -4,6 +4,7 @@ import type { CustomerStatsRowDTO } from "@/api/customers-api"
 import {
   classifyCustomers,
   coverage,
+  todaysActions,
 } from "@/features/crm/customer-segments"
 
 const NOW = Date.parse("2026-08-23T00:00:00Z")
@@ -70,6 +71,42 @@ describe("classifyCustomers", () => {
     ]
     const big = classifyCustomers(rows, NOW).find((c) => c.customer_id === "big")!
     expect(big.segment).toBe("en_riesgo")
+  })
+})
+
+describe("todaysActions", () => {
+  const atRisk = (id: string, spent: number, phone: string | null = "111") =>
+    row({
+      customer_id: id,
+      visits: 3,
+      total_spent: spent,
+      phone,
+      first_visit_at: daysAgo(200),
+      last_visit_at: daysAgo(60),
+    })
+
+  it("prioriza a los en-riesgo por plata en juego (gasto), top N", () => {
+    const rows = [atRisk("a", 10_000), atRisk("b", 90_000), atRisk("c", 50_000)]
+    const out = todaysActions(rows, new Set(), new Set(), NOW, 2)
+    expect(out.map((c) => c.customer_id)).toEqual(["b", "c"])
+  })
+
+  it("excluye opt-out, ya-contactados y sin teléfono", () => {
+    const rows = [
+      atRisk("optout", 100_000),
+      atRisk("reciente", 90_000),
+      atRisk("sintel", 80_000, null),
+      atRisk("ok", 10_000),
+    ]
+    const out = todaysActions(rows, new Set(["optout"]), new Set(["reciente"]), NOW)
+    expect(out.map((c) => c.customer_id)).toEqual(["ok"])
+  })
+
+  it("no infla la lista: si no hay en-riesgo, no sugiere a nadie", () => {
+    const rows = [
+      row({ customer_id: "nuevo", visits: 1, total_spent: 5000, phone: "1", first_visit_at: daysAgo(3), last_visit_at: daysAgo(3) }),
+    ]
+    expect(todaysActions(rows, new Set(), new Set(), NOW)).toHaveLength(0)
   })
 })
 
