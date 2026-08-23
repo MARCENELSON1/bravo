@@ -46,6 +46,7 @@ export interface PurchaseBody {
   qty: number
   unit_cost_amount: number
   price_includes_tax?: boolean // ¿el costo de compra incluye IVA? default true
+  supplier_id?: string | null // proveedor de la compra (opcional)
 }
 
 export interface WasteBody {
@@ -57,12 +58,32 @@ export interface SupplierDTO {
   id: string
   name: string
   contact: string | null
+  phone: string | null
+  notes: string | null
   active: boolean
 }
 
 export interface CreateSupplierBody {
   name: string
   contact?: string | null
+  phone?: string | null
+  notes?: string | null
+}
+
+export interface UpdateSupplierBody {
+  name: string
+  contact?: string | null
+  phone?: string | null
+  notes?: string | null
+  active: boolean
+}
+
+export interface SupplierPurchasesDTO {
+  supplier_id: string
+  currency: string
+  total_spent: number // minor units
+  purchase_count: number
+  last_purchase_at: string | null // ISO-8601
 }
 
 export interface CreateSupplierResponse {
