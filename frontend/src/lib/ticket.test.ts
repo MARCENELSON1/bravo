@@ -25,6 +25,7 @@ const order = (items: OrderItemDTO[]): OrderDTO => ({
   items,
   total_amount: 0,
   created_at: null,
+  customer_id: null,
 })
 
 describe("ticketHtml", () => {
@@ -98,6 +99,7 @@ describe("receiptHtml", () => {
     items: [item],
     total_amount: 300000,
     created_at: null,
+    customer_id: null,
   }
 
   it("renders items, the total and how it was paid", () => {

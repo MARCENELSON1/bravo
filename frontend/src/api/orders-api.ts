@@ -32,6 +32,14 @@ export class OrdersApi {
     })
   }
 
+  // CRM: atribuir (o desatribuir con null) el cliente de la comanda.
+  assignCustomer(orderId: string, customerId: string | null): Promise<OrderDTO> {
+    return this.http.request<OrderDTO>("PUT", `/orders/${orderId}/customer`, {
+      body: { customer_id: customerId },
+      auth: true,
+    })
+  }
+
   addItem(
     orderId: string,
     itemId: string,
