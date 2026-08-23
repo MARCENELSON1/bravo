@@ -8,6 +8,7 @@ from app.application.customer.use_cases import (
     DeleteCustomer,
     GetCustomer,
     GetCustomerHistory,
+    GetCustomerStats,
     ListCustomers,
     UpdateCustomer,
 )
@@ -20,6 +21,8 @@ from app.presentation.schemas.customers import (
     CustomerHistoryResponse,
     CustomerRequest,
     CustomerResponse,
+    CustomerStatsResponse,
+    CustomerStatsRowResponse,
 )
 
 router = APIRouter(prefix="/customers", tags=["customers"])
@@ -49,6 +52,33 @@ async def list_customers(
 ) -> list[CustomerResponse]:
     rows = await use_case.execute(tenant_id=identity.tenant_id, search=search)
     return [_response(c) for c in rows]
+
+
+# /stats va ANTES de /{customer_id} — si no, "stats" matchea como customer_id.
+@router.get("/stats", response_model=CustomerStatsResponse)
+@inject
+async def customer_stats(
+    identity: AccessClaims = Depends(require_roles(*_VIEW_ROLES)),
+    use_case: GetCustomerStats = Depends(Provide[Container.get_customer_stats]),
+) -> CustomerStatsResponse:
+    """Agregados de compra por cliente (para segmentar): visitas, total gastado,
+    primera y última visita — solo sobre comandas atribuidas (nada inferido)."""
+    report = await use_case.execute(tenant_id=identity.tenant_id)
+    return CustomerStatsResponse(
+        currency=report.currency,
+        rows=[
+            CustomerStatsRowResponse(
+                customer_id=r.customer_id,
+                name=r.name,
+                phone=r.phone,
+                visits=r.visits,
+                total_spent=r.total_spent,
+                first_visit_at=r.first_visit_at.isoformat() if r.first_visit_at else None,
+                last_visit_at=r.last_visit_at.isoformat() if r.last_visit_at else None,
+            )
+            for r in report.rows
+        ],
+    )
 
 
 @router.get("/{customer_id}", response_model=CustomerResponse)

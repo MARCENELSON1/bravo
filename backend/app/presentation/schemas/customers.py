@@ -30,3 +30,18 @@ class CustomerHistoryResponse(BaseModel):
 
 class AssignCustomerRequest(BaseModel):
     customer_id: str | None = None  # None → desatribuir
+
+
+class CustomerStatsRowResponse(BaseModel):
+    customer_id: str
+    name: str
+    phone: str | None = None
+    visits: int
+    total_spent: int  # minor units
+    first_visit_at: str | None = None  # ISO-8601
+    last_visit_at: str | None = None  # ISO-8601
+
+
+class CustomerStatsResponse(BaseModel):
+    currency: str
+    rows: list[CustomerStatsRowResponse]

@@ -107,6 +107,35 @@ async def test_customer_crud_and_search(client):
     assert [c["name"] for c in remaining] == ["Ana Gómez"]
 
 
+async def test_customer_stats_aggregate(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="seg", email="o@seg.com")
+    h = _auth(tokens)
+
+    fiel = (await http.post("/api/v1/customers", json={"name": "Fiel"}, headers=h)).json()["id"]
+    await http.post("/api/v1/customers", json={"name": "Sin compras"}, headers=h)
+
+    order_id = await _make_order(http, h)  # 300000
+    await http.post(
+        f"/api/v1/orders/{order_id}/payments",
+        json={"method": "CASH", "amount": 300000},
+        headers=h,
+    )
+    await http.put(f"/api/v1/orders/{order_id}/customer", json={"customer_id": fiel}, headers=h)
+
+    stats = (await http.get("/api/v1/customers/stats", headers=h)).json()
+    assert stats["currency"] == "ARS"
+    by_id = {r["customer_id"]: r for r in stats["rows"]}
+    assert len(by_id) == 2  # ambos clientes aparecen (cobertura visible)
+    assert by_id[fiel]["visits"] == 1
+    assert by_id[fiel]["total_spent"] == 300000
+    assert by_id[fiel]["first_visit_at"] is not None
+    # El cliente sin compras aparece con ceros (no se lo esconde ni se infla).
+    no_buy = next(r for r in stats["rows"] if r["name"] == "Sin compras")
+    assert no_buy["visits"] == 0
+    assert no_buy["total_spent"] == 0
+
+
 async def test_customer_not_found(client):
     http, fake_email = client
     tokens = await _onboard_verify_login(http, fake_email, slug="crm2", email="o@crm2.com")
