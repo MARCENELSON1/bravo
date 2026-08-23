@@ -160,6 +160,7 @@ from app.application.table_session.use_cases import (
     RequestBill,
     SetSessionPax,
 )
+from app.application.tax.quote_order_tax import QuoteOrderTax
 from app.application.timeclock.presence import (
     GetPresenceChallenge,
     PunchWithPresence,
@@ -314,6 +315,9 @@ from app.infrastructure.security.fernet_cipher import FernetTokenCipher
 from app.infrastructure.security.hasher import Argon2Hasher
 from app.infrastructure.security.tenant_context import ContextVarTenantContext
 from app.infrastructure.security.token_service import JwtTokenService
+from app.infrastructure.tax.resolver import EngineTaxCalculatorResolver
+from app.infrastructure.tax.simple_calculators import IncludedTaxCalculator
+from app.infrastructure.tax.taxjar_calculator import TaxJarCalculator
 from app.infrastructure.timeclock.hmac_presence import HmacPresenceToken
 from app.infrastructure.timeclock.no_presence import NoPresence
 
@@ -1011,6 +1015,28 @@ class Container(containers.DeclarativeContainer):
     )
     list_invoices = providers.Factory(
         ListInvoices, invoices=invoice_repository, tenant_context=tenant_context
+    )
+
+    # Sales tax (Fase 2). The resolver holds both calculators; QuoteOrderTax picks
+    # by tenant.tax_engine. TaxJar is constructed with the env token but only
+    # invoked for TAXJAR-engine tenants → AR tenants never touch it (parity).
+    included_tax_calculator = providers.Singleton(IncludedTaxCalculator)
+    taxjar_calculator = providers.Singleton(
+        TaxJarCalculator,
+        api_token=config.provided.taxjar_api_token,
+        sandbox=config.provided.taxjar_sandbox,
+    )
+    tax_calculator_resolver = providers.Singleton(
+        EngineTaxCalculatorResolver,
+        taxjar=taxjar_calculator,
+        included=included_tax_calculator,
+    )
+    quote_order_tax = providers.Factory(
+        QuoteOrderTax,
+        orders=order_repository,
+        tenants=tenant_repository,
+        resolver=tax_calculator_resolver,
+        tenant_context=tenant_context,
     )
     get_order_invoice = providers.Factory(
         GetOrderInvoice, invoices=invoice_repository, tenant_context=tenant_context

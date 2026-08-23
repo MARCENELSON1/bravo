@@ -22,4 +22,10 @@ class Tenant:
     locale: str = "es-AR"
     timezone: str = "America/Argentina/Buenos_Aires"
     tax_engine: TaxEngine = TaxEngine.NONE
+    # Fiscal address (point of sale) — only needed by a tax engine that resolves
+    # the rate by address (US/TaxJar). NULL for AR tenants (parity).
+    fiscal_street: str | None = None
+    fiscal_city: str | None = None
+    fiscal_state: str | None = None
+    fiscal_zip: str | None = None
     created_at: datetime | None = None
