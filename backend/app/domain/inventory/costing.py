@@ -28,6 +28,33 @@ def effective_unit_cost(unit_cost: Money, yield_pct: int) -> Money:
     )
 
 
+def weighted_unit_cost(
+    stock_before: int,
+    cost_before: Money,
+    purchased_qty: int,
+    purchase_price: Money,
+) -> Money:
+    """Nuevo costo unitario tras una compra, por PROMEDIO PONDERADO (PPP): mezcla
+    el stock que ya tenías (a su costo) con lo comprado (a su precio), pesando por
+    cantidad. Reemplaza al "último precio" para que una compra cara puntual no
+    infle el food cost de todo.
+
+        nuevo = (stock_prev × costo_prev + qty × precio) / (stock_prev + qty)
+
+    ``stock_before``/``purchased_qty`` van en milésimas (el factor se cancela).
+    Sin stock previo (≤ 0) el promedio no tiene sentido → cae al precio de compra
+    (= último precio). Mismo idiom entero/round que el resto del costeo."""
+    if cost_before.currency != purchase_price.currency:
+        raise CurrencyMismatch()
+    total_qty = stock_before + purchased_qty
+    if stock_before <= 0 or total_qty <= 0:
+        return purchase_price
+    blended = (
+        stock_before * cost_before.amount + purchased_qty * purchase_price.amount
+    ) / total_qty
+    return Money(round(blended), purchase_price.currency)
+
+
 def net_effective_unit_cost(
     unit_cost: Money, yield_pct: int, cost_includes_tax: bool, vat_bps: int
 ) -> Money:

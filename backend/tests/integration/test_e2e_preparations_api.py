@@ -11,7 +11,7 @@ def _auth(tokens: dict) -> dict:
     return {"Authorization": f"Bearer {tokens['access_token']}"}
 
 
-async def _ingredient(http, h, name: str, unit_cost_amount: int) -> str:
+async def _ingredient(http, h, name: str, unit_cost_amount: int, stock_qty: int = 100000) -> str:
     resp = await http.post(
         "/api/v1/inventory/ingredients",
         json={
@@ -19,7 +19,7 @@ async def _ingredient(http, h, name: str, unit_cost_amount: int) -> str:
             "unit": "KG",
             "min_qty": 0,
             "unit_cost_amount": unit_cost_amount,
-            "stock_qty": 100000,
+            "stock_qty": stock_qty,
         },
         headers=h,
     )
@@ -47,7 +47,9 @@ async def _food_cost_row(http, h, product_id: str) -> dict:
 async def test_preparation_food_cost_propagates_on_ingredient_cost_change(client):
     http, fake_email = client
     h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
-    tomate = await _ingredient(http, h, "Tomate", unit_cost_amount=1000)  # 1000/u
+    # Stock 0 → la compra fija el costo (PPP cae a precio de compra), así se ve la
+    # propagación del cambio de costo a través de la preparación (150 → 300).
+    tomate = await _ingredient(http, h, "Tomate", unit_cost_amount=1000, stock_qty=0)
 
     # Salsa fileto: 2.0 de tomate por tanda, rinde 2.0 → 1000/u.
     prep = await http.post(
@@ -429,12 +431,13 @@ async def test_recipe_version_increments_on_save(client):
     assert got.json()["version"] == 2
 
 
-async def test_replacement_cost_is_last_purchase_with_history(client):
-    """Fase 2D T1.4: el costo de reposición = último precio (ya default); una compra
-    más cara sube el food cost, y queda en el histórico del insumo."""
+async def test_purchase_cost_is_weighted_average_with_history(client):
+    """PPP: una compra más cara sube el food cost por PROMEDIO PONDERADO (no salta
+    al último precio); el histórico del insumo igual guarda el precio real."""
     http, fake_email = client
     h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
-    ing = await _ingredient(http, h, "Carne", unit_cost_amount=100000)  # 1000/kg
+    # 1 kg en stock a $100000/kg.
+    ing = await _ingredient(http, h, "Carne", unit_cost_amount=100000, stock_qty=1000)
     pid = await _product(http, h, "Plato", 300000)
     await http.put(
         f"/api/v1/products/{pid}/recipe",
@@ -442,15 +445,16 @@ async def test_replacement_cost_is_last_purchase_with_history(client):
         headers=h,
     )
     assert await _food_cost(http, h, pid) == 100000
-    # Compra a mayor precio → último costo (reposición) → food cost sube.
+    # Compra de 1 kg a $200000 → PPP con lo que había: (100000 + 200000)/2 = 150000.
     r = await http.post(
         f"/api/v1/inventory/ingredients/{ing}/purchase",
         json={"qty": 1000, "unit_cost_amount": 200000},
         headers=h,
     )
     assert r.status_code == 200, r.text
-    assert await _food_cost(http, h, pid) == 200000
-    # El histórico registra la compra (la creación del insumo no es una compra).
+    assert r.json()["unit_cost_amount"] == 150000  # promedio, no 200000
+    assert await _food_cost(http, h, pid) == 150000
+    # El histórico registra el precio REAL de la compra (no el promedio).
     hist = (
         await http.get(f"/api/v1/inventory/ingredients/{ing}/cost-history", headers=h)
     ).json()

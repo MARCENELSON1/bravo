@@ -59,7 +59,8 @@ async def test_purchase_raises_stock_and_updates_cost(client):
     assert purchased.status_code == 200, purchased.text
     body = purchased.json()
     assert body["stock_qty"] == 8000  # 5000 + 3000
-    assert body["unit_cost_amount"] == 60000  # last-cost policy
+    # PPP: (5000×50000 + 3000×60000) / 8000 = 53750 — no salta a 60000, promedia.
+    assert body["unit_cost_amount"] == 53750
 
 
 async def test_waste_lowers_stock(client):
