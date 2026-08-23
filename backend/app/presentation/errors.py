@@ -22,6 +22,7 @@ from app.domain.copilot.exceptions import (
     CopilotQueryError,
     UnsafeQuery,
 )
+from app.domain.customer.exceptions import CustomerNotFound
 from app.domain.errors import DomainError
 from app.domain.identity.exceptions import (
     ExpiredToken,
@@ -120,6 +121,7 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (TableNotFound, 404),
     (SessionNotFound, 404),
     (SectorNotFound, 404),
+    (CustomerNotFound, 404),
     (ProductNotFound, 404),
     (OrderNotFound, 404),
     (InactiveProduct, 409),

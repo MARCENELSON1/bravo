@@ -31,6 +31,13 @@ from app.application.cashier.use_cases import (
     RegisterCashMovement,
 )
 from app.application.copilot.ask import AskCopilot
+from app.application.customer.use_cases import (
+    CreateCustomer,
+    DeleteCustomer,
+    GetCustomer,
+    ListCustomers,
+    UpdateCustomer,
+)
 from app.application.finance.snapshots import RebuildFinanceSnapshots
 from app.application.finance.use_cases import (
     GetExpenseBreakdown,
@@ -209,6 +216,7 @@ from app.infrastructure.persistence.cost_history_repo import (
 from app.infrastructure.persistence.credentials_repo import (
     SqlAlchemyPaymentCredentialRepository,
 )
+from app.infrastructure.persistence.customer_repo import SqlAlchemyCustomerRepository
 from app.infrastructure.persistence.dashboard_repo import SqlAlchemyDashboardReadModel
 from app.infrastructure.persistence.database import Database
 from app.infrastructure.persistence.finance_repo import (
@@ -347,6 +355,9 @@ class Container(containers.DeclarativeContainer):
     )
     sector_repository = providers.Factory(
         SqlAlchemySectorRepository, session_factory=db.provided.session
+    )
+    customer_repository = providers.Factory(
+        SqlAlchemyCustomerRepository, session_factory=db.provided.session
     )
     product_repository = providers.Factory(
         SqlAlchemyProductRepository, session_factory=db.provided.session
@@ -568,6 +579,21 @@ class Container(containers.DeclarativeContainer):
     )
     delete_sector = providers.Factory(
         DeleteSector, sectors=sector_repository, tenant_context=tenant_context
+    )
+    list_customers = providers.Factory(
+        ListCustomers, customers=customer_repository, tenant_context=tenant_context
+    )
+    get_customer = providers.Factory(
+        GetCustomer, customers=customer_repository, tenant_context=tenant_context
+    )
+    create_customer = providers.Factory(
+        CreateCustomer, customers=customer_repository, tenant_context=tenant_context
+    )
+    update_customer = providers.Factory(
+        UpdateCustomer, customers=customer_repository, tenant_context=tenant_context
+    )
+    delete_customer = providers.Factory(
+        DeleteCustomer, customers=customer_repository, tenant_context=tenant_context
     )
     get_order = providers.Factory(
         GetOrder, orders=order_repository, tenant_context=tenant_context

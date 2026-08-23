@@ -9,6 +9,7 @@ from __future__ import annotations
 from app.domain.advisor.entities import AdvisorSettings
 from app.domain.cashier.entities import CashCount, CashMovement, CashSession
 from app.domain.cashier.value_objects import CashMovementKind, CashSessionStatus
+from app.domain.customer.entities import Customer
 from app.domain.identity.tokens import (
     AuthAuditEntry,
     AuthEvent,
@@ -60,6 +61,7 @@ from app.infrastructure.persistence.models import (
     CashCountORM,
     CashMovementORM,
     CashSessionORM,
+    CustomerORM,
     EmailVerificationTokenORM,
     IngredientORM,
     InvitationORM,
@@ -961,6 +963,31 @@ def cash_movement_to_orm(movement: CashMovement) -> CashMovementORM:
         currency=movement.amount.currency,
         reason=movement.reason,
         created_by=movement.created_by,
+    )
+
+
+def customer_to_domain(row: CustomerORM) -> Customer:
+    return Customer(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        name=row.name,
+        phone=row.phone,
+        email=row.email,
+        notes=row.notes,
+        no_contactar=row.no_contactar,
+        created_at=row.created_at,
+    )
+
+
+def customer_to_orm(customer: Customer) -> CustomerORM:
+    return CustomerORM(
+        id=customer.id,
+        tenant_id=customer.tenant_id,
+        name=customer.name,
+        phone=customer.phone,
+        email=customer.email,
+        notes=customer.notes,
+        no_contactar=customer.no_contactar,
     )
 
 
