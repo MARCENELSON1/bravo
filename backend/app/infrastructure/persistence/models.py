@@ -874,3 +874,25 @@ class FinanceDailySnapshotORM(Base):
     )
     orders_count: Mapped[int] = mapped_column(Integer, default=0)
     units_sold: Mapped[int] = mapped_column(BigInteger, default=0)
+
+
+class CustomerORM(Base):
+    """Cliente del local (CRM, Fase 12). Manual por ahora; el matcheo automático
+    y los segmentos son slices posteriores. Datos del cliente → RLS."""
+
+    __tablename__ = "customers"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    no_contactar: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
