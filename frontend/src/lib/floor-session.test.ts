@@ -17,6 +17,7 @@ const order = (status: OrderDTO["status"], createdAt: string | null = null): Ord
   items: [],
   total_amount: 0,
   created_at: createdAt,
+  customer_id: null,
 })
 
 const session = (state: SessionState, since: string | null = null): FloorSessionDTO => ({

@@ -125,6 +125,7 @@ export interface OrderDTO {
   items: OrderItemDTO[]
   total_amount: number
   created_at: string | null // ISO-8601; used by the KDS waiting timer
+  customer_id: string | null // CRM: cliente atribuido a la comanda
 }
 
 export interface CreateOrderResponse {

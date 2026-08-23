@@ -17,6 +17,14 @@ export interface CustomerInput {
   no_contactar?: boolean
 }
 
+export interface CustomerHistoryDTO {
+  customer_id: string
+  currency: string
+  visits: number
+  total_spent: number // minor units
+  last_visit_at: string | null // ISO-8601
+}
+
 // CRM (Fase 12): clientes del local. Manual por ahora; segmentos + acciones vienen
 // después. El contacto es por wa.me (deep link, sin proveedor).
 export class CustomersApi {
@@ -41,5 +49,11 @@ export class CustomersApi {
 
   remove(id: string): Promise<void> {
     return this.http.request<void>("DELETE", `/customers/${id}`, { auth: true })
+  }
+
+  history(id: string): Promise<CustomerHistoryDTO> {
+    return this.http.request<CustomerHistoryDTO>("GET", `/customers/${id}/history`, {
+      auth: true,
+    })
   }
 }

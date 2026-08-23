@@ -12,10 +12,12 @@ import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import {
   useCreateCustomer,
+  useCustomerHistory,
   useCustomers,
   useDeleteCustomer,
   useUpdateCustomer,
 } from "@/hooks/use-customers"
+import { formatMoney } from "@/lib/money"
 import { waLink } from "@/lib/wa"
 
 export function CustomersPage() {
@@ -100,57 +102,91 @@ function CustomerRow({
   onEdit: () => void
 }) {
   const del = useDeleteCustomer()
+  const [showHistory, setShowHistory] = useState(false)
+  const history = useCustomerHistory(showHistory ? customer.id : null)
   const link = customer.no_contactar ? null : waLink(customer.phone, `Hola ${customer.name}!`)
 
   return (
-    <GlassCard className="flex flex-wrap items-center gap-3 p-4">
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-foreground">{customer.name}</span>
-          {customer.no_contactar ? (
-            <Badge variant="secondary" className="text-xs font-normal">
-              No contactar
-            </Badge>
+    <GlassCard className="flex flex-col gap-2 p-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-foreground">{customer.name}</span>
+            {customer.no_contactar ? (
+              <Badge variant="secondary" className="text-xs font-normal">
+                No contactar
+              </Badge>
+            ) : null}
+          </div>
+          {customer.phone ? (
+            <p className="text-sm text-muted-foreground">{customer.phone}</p>
+          ) : null}
+          {customer.notes ? (
+            <p className="truncate text-xs text-muted-foreground">{customer.notes}</p>
           ) : null}
         </div>
-        {customer.phone ? (
-          <p className="text-sm text-muted-foreground">{customer.phone}</p>
-        ) : null}
-        {customer.notes ? (
-          <p className="truncate text-xs text-muted-foreground">{customer.notes}</p>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="ghost" onClick={() => setShowHistory((v) => !v)}>
+            {showHistory ? "Ocultar" : "Historial"}
+          </Button>
+          {link ? (
+            <a href={link} target="_blank" rel="noopener noreferrer">
+              <Button size="sm" variant="outline">
+                WhatsApp
+              </Button>
+            </a>
+          ) : null}
+          {canManage ? (
+            <>
+              <Button size="sm" variant="ghost" onClick={onEdit}>
+                Editar
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-destructive"
+                disabled={del.isPending}
+                onClick={() => {
+                  if (!window.confirm(`¿Borrar a ${customer.name}?`)) return
+                  del.mutate(customer.id, {
+                    onError: (e) =>
+                      toast.error(isApiError(e) ? e.message : "No pudimos borrar el cliente."),
+                  })
+                }}
+              >
+                Borrar
+              </Button>
+            </>
+          ) : null}
+        </div>
       </div>
-      <div className="flex items-center gap-2">
-        {link ? (
-          <a href={link} target="_blank" rel="noopener noreferrer">
-            <Button size="sm" variant="outline">
-              WhatsApp
-            </Button>
-          </a>
-        ) : null}
-        {canManage ? (
-          <>
-            <Button size="sm" variant="ghost" onClick={onEdit}>
-              Editar
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-destructive"
-              disabled={del.isPending}
-              onClick={() => {
-                if (!window.confirm(`¿Borrar a ${customer.name}?`)) return
-                del.mutate(customer.id, {
-                  onError: (e) =>
-                    toast.error(isApiError(e) ? e.message : "No pudimos borrar el cliente."),
-                })
-              }}
-            >
-              Borrar
-            </Button>
-          </>
-        ) : null}
-      </div>
+      {showHistory ? (
+        <div className="border-t pt-2 text-sm">
+          {history.isPending ? (
+            <span className="text-muted-foreground">Cargando…</span>
+          ) : history.data ? (
+            history.data.visits === 0 ? (
+              <span className="text-muted-foreground">
+                Todavía no le atribuiste ninguna compra. Asignalo a una comanda al cobrar.
+              </span>
+            ) : (
+              <span className="text-foreground">
+                <span className="font-medium">{history.data.visits}</span>{" "}
+                {history.data.visits === 1 ? "visita" : "visitas"} ·{" "}
+                <span className="font-medium">
+                  {formatMoney(history.data.total_spent, history.data.currency)}
+                </span>{" "}
+                gastados
+                {history.data.last_visit_at
+                  ? ` · última: ${history.data.last_visit_at.slice(0, 10)}`
+                  : ""}
+              </span>
+            )
+          ) : (
+            <span className="text-muted-foreground">No pudimos cargar el historial.</span>
+          )}
+        </div>
+      ) : null}
     </GlassCard>
   )
 }

@@ -11,6 +11,15 @@ export function useCustomers(search?: string) {
   })
 }
 
+export function useCustomerHistory(id: string | null) {
+  const { customersApi } = useServices()
+  return useQuery({
+    queryKey: ["customer-history", id],
+    queryFn: () => customersApi.history(id as string),
+    enabled: Boolean(id),
+  })
+}
+
 function useInvalidateCustomers() {
   const queryClient = useQueryClient()
   return () => void queryClient.invalidateQueries({ queryKey: ["customers"] })

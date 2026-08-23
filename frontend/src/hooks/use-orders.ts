@@ -25,6 +25,18 @@ export function useCreateOrder() {
   return useMutation({ mutationFn: (tableId: string) => ordersApi.create(tableId, newId()) })
 }
 
+export function useAssignCustomer(orderId: string) {
+  const { ordersApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (customerId: string | null) => ordersApi.assignCustomer(orderId, customerId),
+    onSuccess: (order) => {
+      queryClient.setQueryData(["order", orderId], order)
+      void queryClient.invalidateQueries({ queryKey: ["customer-history"] })
+    },
+  })
+}
+
 interface AddItemVars {
   id: string
   productId: string

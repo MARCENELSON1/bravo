@@ -20,10 +20,12 @@ import {
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { ProductGrid } from "@/features/orders/product-grid"
+import { useCustomers } from "@/hooks/use-customers"
 import { useFloor } from "@/hooks/use-floor"
 import { useIssueInvoice, useOrderInvoice } from "@/hooks/use-invoices"
 import {
   useAddItem,
+  useAssignCustomer,
   useMergeOrders,
   useOrder,
   useRemoveItem,
@@ -173,6 +175,8 @@ export function OrderPage() {
         </Link>
       </header>
 
+      <OrderCustomer order={data} />
+
       {canAddRound ? (
         <Card>
           <CardHeader>
@@ -284,6 +288,91 @@ export function OrderPage() {
 
       {canInvoice && data.status === "PAID" ? <FacturaSection order={data} /> : null}
     </div>
+  )
+}
+
+// CRM: atribuir la comanda a un cliente para que sume a su historial de compras.
+function OrderCustomer({ order }: { order: OrderDTO }) {
+  const customers = useCustomers()
+  const assign = useAssignCustomer(order.id)
+  const [search, setSearch] = useState("")
+
+  const all = customers.data ?? []
+  const current = order.customer_id ? all.find((c) => c.id === order.customer_id) : null
+  const q = search.trim().toLowerCase()
+  const matches = q
+    ? all
+        .filter(
+          (c) => c.name.toLowerCase().includes(q) || (c.phone ?? "").includes(q)
+        )
+        .slice(0, 5)
+    : []
+
+  const set = (customerId: string | null) =>
+    assign.mutate(customerId, {
+      onSuccess: () => setSearch(""),
+      onError: (e) =>
+        toast.error(isApiError(e) ? e.message : "No pudimos asignar el cliente."),
+    })
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Cliente</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2">
+        {order.customer_id ? (
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm text-foreground">
+              {current ? current.name : "Cliente asignado"}
+            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-destructive"
+              disabled={assign.isPending}
+              onClick={() => set(null)}
+            >
+              Quitar
+            </Button>
+          </div>
+        ) : (
+          <>
+            <Input
+              placeholder="Buscar cliente por nombre o teléfono…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {matches.length > 0 ? (
+              <div className="flex flex-col divide-y divide-border rounded-md border border-border">
+                {matches.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    disabled={assign.isPending}
+                    onClick={() => set(c.id)}
+                    className="flex items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent/50"
+                  >
+                    <span>{c.name}</span>
+                    {c.phone ? (
+                      <span className="text-xs text-muted-foreground">{c.phone}</span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            ) : q ? (
+              <p className="text-xs text-muted-foreground">
+                No hay clientes que coincidan. Cargalos en Clientes.
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Asigná un cliente para sumar esta compra a su historial (opcional).
+              </p>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 

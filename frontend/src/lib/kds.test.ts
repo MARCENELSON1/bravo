@@ -48,6 +48,7 @@ describe("kdsTickets", () => {
     items,
     total_amount: 0,
     created_at: null,
+    customer_id: null,
   })
 
   it("keeps only active items of the requested station", () => {
