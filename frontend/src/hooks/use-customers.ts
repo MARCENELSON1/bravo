@@ -11,6 +11,11 @@ export function useCustomers(search?: string) {
   })
 }
 
+export function useCustomerStats() {
+  const { customersApi } = useServices()
+  return useQuery({ queryKey: ["customer-stats"], queryFn: () => customersApi.stats() })
+}
+
 export function useCustomerHistory(id: string | null) {
   const { customersApi } = useServices()
   return useQuery({
