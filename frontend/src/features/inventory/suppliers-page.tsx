@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
@@ -21,54 +21,67 @@ import {
   useCreateSupplier,
   useSupplierPurchases,
   useSuppliers,
+  useUpdateSupplier,
 } from "@/hooks/use-inventory"
 import { formatMoney } from "@/lib/money"
 import { waLink } from "@/lib/wa"
 
-function CreateSupplierSheet() {
+function SupplierFormSheet({
+  supplier,
+  trigger,
+}: {
+  supplier?: SupplierDTO
+  trigger: ReactNode
+}) {
   const create = useCreateSupplier()
+  const update = useUpdateSupplier()
+  const editing = supplier != null
   const [open, setOpen] = useState(false)
-  const [name, setName] = useState("")
-  const [contact, setContact] = useState("")
-  const [phone, setPhone] = useState("")
-  const [notes, setNotes] = useState("")
+  const [name, setName] = useState(supplier?.name ?? "")
+  const [contact, setContact] = useState(supplier?.contact ?? "")
+  const [phone, setPhone] = useState(supplier?.phone ?? "")
+  const [notes, setNotes] = useState(supplier?.notes ?? "")
+  const pending = create.isPending || update.isPending
 
   const submit = () => {
     if (!name.trim()) {
       toast.error("Ingresá un nombre.")
       return
     }
-    create.mutate(
-      {
-        name: name.trim(),
-        contact: contact.trim() || null,
-        phone: phone.trim() || null,
-        notes: notes.trim() || null,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Proveedor creado.")
-          setName("")
-          setContact("")
-          setPhone("")
-          setNotes("")
-          setOpen(false)
-        },
-        onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos crear el proveedor."),
+    const body = {
+      name: name.trim(),
+      contact: contact.trim() || null,
+      phone: phone.trim() || null,
+      notes: notes.trim() || null,
+    }
+    const onError = (error: unknown) =>
+      toast.error(isApiError(error) ? error.message : "No pudimos guardar el proveedor.")
+    const onSuccess = () => {
+      toast.success(editing ? "Proveedor actualizado." : "Proveedor creado.")
+      setOpen(false)
+      if (!editing) {
+        setName("")
+        setContact("")
+        setPhone("")
+        setNotes("")
       }
-    )
+    }
+    if (editing) {
+      update.mutate({ id: supplier.id, body: { ...body, active: supplier.active } }, { onSuccess, onError })
+    } else {
+      create.mutate(body, { onSuccess, onError })
+    }
   }
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button>Nuevo proveedor</Button>
-      </SheetTrigger>
+      <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Nuevo proveedor</SheetTitle>
-          <SheetDescription>Quién te abastece — con teléfono lo contactás por WhatsApp.</SheetDescription>
+          <SheetTitle>{editing ? `Editar ${supplier.name}` : "Nuevo proveedor"}</SheetTitle>
+          <SheetDescription>
+            Quién te abastece — con teléfono lo contactás por WhatsApp.
+          </SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-3 px-4 pb-4">
           <Input placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
@@ -84,8 +97,8 @@ function CreateSupplierSheet() {
             onChange={(e) => setPhone(e.target.value)}
           />
           <Input placeholder="Notas" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          <Button onClick={submit} disabled={create.isPending}>
-            {create.isPending ? "Creando…" : "Crear proveedor"}
+          <Button onClick={submit} disabled={pending}>
+            {pending ? "Guardando…" : editing ? "Guardar" : "Crear proveedor"}
           </Button>
         </div>
       </SheetContent>
@@ -96,7 +109,10 @@ function CreateSupplierSheet() {
 function SupplierRow({ supplier }: { supplier: SupplierDTO }) {
   const [showPurchases, setShowPurchases] = useState(false)
   const purchases = useSupplierPurchases(showPurchases ? supplier.id : null)
-  const link = waLink(supplier.phone, `Hola! Te escribo de parte del local.`)
+  // Preferí el teléfono estructurado; si no hay, caé a los dígitos del contacto
+  // (proveedores viejos con el teléfono en el campo libre). waLink filtra: un email
+  // en contacto no tiene dígitos → sin botón (correcto).
+  const link = waLink(supplier.phone ?? supplier.contact, "Hola! Te escribo de parte del local.")
 
   return (
     <GlassCard className="flex flex-col gap-2 p-4">
@@ -124,6 +140,14 @@ function SupplierRow({ supplier }: { supplier: SupplierDTO }) {
           <Button size="sm" variant="ghost" onClick={() => setShowPurchases((v) => !v)}>
             {showPurchases ? "Ocultar" : "Compras"}
           </Button>
+          <SupplierFormSheet
+            supplier={supplier}
+            trigger={
+              <Button size="sm" variant="ghost">
+                Editar
+              </Button>
+            }
+          />
           {link ? (
             <a href={link} target="_blank" rel="noopener noreferrer">
               <Button size="sm" variant="outline">
@@ -175,7 +199,7 @@ export function SuppliersPage() {
             Tus fuentes de abastecimiento — contactalos y mirá qué le comprás a cada uno.
           </p>
         </div>
-        <CreateSupplierSheet />
+        <SupplierFormSheet trigger={<Button>Nuevo proveedor</Button>} />
       </header>
 
       {suppliers.isPending ? (
