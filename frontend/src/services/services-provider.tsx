@@ -21,6 +21,7 @@ import { ReportsApi } from "@/api/reports-api"
 import { ReservationsApi } from "@/api/reservations-api"
 import { SectorsApi } from "@/api/sectors-api"
 import { TablesApi } from "@/api/tables-api"
+import { TenantsApi } from "@/api/tenants-api"
 import { TimeClockApi } from "@/api/timeclock-api"
 import { API_BASE_URL } from "@/lib/env"
 import { ServicesContext } from "@/services/services-context"
@@ -56,6 +57,7 @@ export function ServicesProvider({
       reservationsApi: new ReservationsApi(http),
       sectorsApi: new SectorsApi(http),
       tablesApi: new TablesApi(http),
+      tenantsApi: new TenantsApi(http),
       timeClockApi: new TimeClockApi(http),
     }
   }, [value])
