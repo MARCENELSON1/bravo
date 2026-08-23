@@ -32,6 +32,17 @@ export const buttonVariants = cva(
         "icon-lg": "size-9",
       },
     },
+    // Affordance de los botones "ghost" de TEXTO (acciones secundarias tipo
+    // Compras/Editar): un borde sutil en reposo para que se lean como botón y no
+    // como texto suelto. Los ghost de ÍCONO (size icon*) quedan sin borde a
+    // propósito (nav, toggles, cerrar) — no se listan acá.
+    compoundVariants: [
+      {
+        variant: "ghost",
+        size: ["default", "sm", "xs", "lg"],
+        className: "border-border dark:border-input",
+      },
+    ],
     defaultVariants: {
       variant: "default",
       size: "default",
