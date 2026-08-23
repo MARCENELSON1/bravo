@@ -123,8 +123,8 @@ class SqlAlchemyFoodCostReadModel(FoodCostReadModel):
             # Fase 2C: factor de conversión unidad de receta → unidad base por insumo.
             factor_by_ingredient = {
                 r.id: conversion_factor(
-                    UnitOfMeasure(r.unit),
-                    UnitOfMeasure(r.recipe_unit) if r.recipe_unit else None,
+                    UnitOfMeasure.parse(r.unit),
+                    UnitOfMeasure.parse(r.recipe_unit) if r.recipe_unit else None,
                 )
                 for r in ingredient_rows
             }

@@ -36,6 +36,36 @@ class UnitOfMeasure(StrEnum):
     L = "L"
     UNIT = "UNIT"
 
+    @classmethod
+    def parse(cls, value: str) -> UnitOfMeasure:
+        """Tolerant reader for a STORED unit: normalizes case + common Spanish
+        aliases, and falls back to ``UNIT`` for anything unknown (legacy/seed
+        rows like "dosis"/"porción"). Never raises → reads never 500 on bad data.
+
+        Writes stay strict (``UnitOfMeasure(value)`` at create) so no new bad
+        unit enters; this only keeps reads (food cost, listado) robust."""
+        key = (value or "").strip().upper()
+        if key in _UNIT_MEMBERS:
+            return cls(key)
+        return _UNIT_ALIASES.get(key, cls.UNIT)
+
+
+_UNIT_MEMBERS = {u.value for u in UnitOfMeasure}
+# Alias comunes (español) → unidad base. Lo desconocido cae a UNIT (ver parse).
+_UNIT_ALIASES: dict[str, UnitOfMeasure] = {
+    "KILO": UnitOfMeasure.KG, "KILOS": UnitOfMeasure.KG,
+    "KILOGRAMO": UnitOfMeasure.KG, "KILOGRAMOS": UnitOfMeasure.KG, "KGS": UnitOfMeasure.KG,
+    "GRAMO": UnitOfMeasure.G, "GRAMOS": UnitOfMeasure.G, "GR": UnitOfMeasure.G,
+    "GRS": UnitOfMeasure.G, "GRAMS": UnitOfMeasure.G,
+    "LITRO": UnitOfMeasure.L, "LITROS": UnitOfMeasure.L, "LT": UnitOfMeasure.L,
+    "LTS": UnitOfMeasure.L, "LITER": UnitOfMeasure.L,
+    "MILILITRO": UnitOfMeasure.ML, "MILILITROS": UnitOfMeasure.ML, "CC": UnitOfMeasure.ML,
+    "UNIDAD": UnitOfMeasure.UNIT, "UNIDADES": UnitOfMeasure.UNIT, "UNID": UnitOfMeasure.UNIT,
+    "U": UnitOfMeasure.UNIT, "UN": UnitOfMeasure.UNIT,
+    "PORCION": UnitOfMeasure.UNIT, "PORCIÓN": UnitOfMeasure.UNIT,
+    "DOSIS": UnitOfMeasure.UNIT, "PLATO": UnitOfMeasure.UNIT,
+}
+
 
 class MovementDirection(StrEnum):
     """Whether a stock movement adds to (IN) or removes from (OUT) stock."""
