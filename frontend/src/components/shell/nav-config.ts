@@ -2,6 +2,7 @@ import type { ComponentType } from "react"
 import {
   Boxes,
   Calculator,
+  CalendarCheck,
   ChefHat,
   Clock,
   Coffee,
@@ -48,8 +49,14 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Finanzas", to: "/app/finanzas", icon: LineChart, roles: ["OWNER", "MANAGER"] },
   {
     label: "Clientes",
-    to: "/app/reservations",
+    to: "/app/clientes",
     icon: Users,
+    roles: ["OWNER", "MANAGER", "WAITER", "CASHIER"],
+  },
+  {
+    label: "Reservas",
+    to: "/app/reservations",
+    icon: CalendarCheck,
     roles: ["OWNER", "MANAGER", "WAITER", "CASHIER"],
   },
   { label: "Productos", to: "/app/products", icon: Package, roles: ["OWNER", "MANAGER"] },
