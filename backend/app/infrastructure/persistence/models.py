@@ -48,6 +48,20 @@ class TenantORM(Base):
     blind_cash_count: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="false"
     )
+    # Regional/fiscal spine (Fase 0 internacionalización). Defaults AR → paridad
+    # total para los tenants existentes; los resolvers leen estos campos por tenant.
+    tax_regime: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="AR_AFIP"
+    )
+    locale: Mapped[str] = mapped_column(
+        String(10), nullable=False, server_default="es-AR"
+    )
+    timezone: Mapped[str] = mapped_column(
+        String(40), nullable=False, server_default="America/Argentina/Buenos_Aires"
+    )
+    tax_engine: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="NONE"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

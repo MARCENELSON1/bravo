@@ -51,6 +51,7 @@ from app.domain.table.entities import Table
 from app.domain.table_session.entities import Sector, TableSession
 from app.domain.table_session.value_objects import SessionOrigin, SessionStatus
 from app.domain.tenant.entities import Tenant
+from app.domain.tenant.regional import TaxEngine, TaxRegime
 from app.domain.timeclock.entities import Shift
 from app.domain.timeclock.value_objects import ShiftSource, ShiftStatus
 from app.domain.user.entities import User
@@ -100,6 +101,10 @@ def tenant_to_domain(row: TenantORM) -> Tenant:
         country=row.country,
         currency=row.currency,
         standard_workday_minutes=row.standard_workday_minutes,
+        tax_regime=TaxRegime(row.tax_regime),
+        locale=row.locale,
+        timezone=row.timezone,
+        tax_engine=TaxEngine(row.tax_engine),
         created_at=row.created_at,
     )
 
@@ -112,6 +117,10 @@ def tenant_to_orm(tenant: Tenant) -> TenantORM:
         country=tenant.country,
         currency=tenant.currency,
         standard_workday_minutes=tenant.standard_workday_minutes,
+        tax_regime=tenant.tax_regime.value,
+        locale=tenant.locale,
+        timezone=tenant.timezone,
+        tax_engine=tenant.tax_engine.value,
     )
 
 

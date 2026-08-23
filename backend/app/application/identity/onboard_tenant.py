@@ -16,6 +16,7 @@ from app.domain.identity.ports import (
 from app.domain.identity.tokens import AuthAuditEntry, AuthEvent, EmailVerificationToken
 from app.domain.tenant.entities import Tenant
 from app.domain.tenant.exceptions import TenantAlreadyExists
+from app.domain.tenant.regional import regional_defaults
 from app.domain.tenant.repository import TenantRepository
 from app.domain.user.entities import User
 from app.domain.user.repository import UserRepository
@@ -54,7 +55,19 @@ class OnboardTenant:
         if await self._tenants.get_by_slug(slug) is not None:
             raise TenantAlreadyExists()
         email = Email(data.owner_email)  # validates format → InvalidEmail on bad input
-        tenant = Tenant(id=str(uuid4()), slug=slug, name=data.tenant_name.strip())
+        country = (data.country or "AR").strip().upper()
+        defaults = regional_defaults(country)
+        tenant = Tenant(
+            id=str(uuid4()),
+            slug=slug,
+            name=data.tenant_name.strip(),
+            country=country,
+            currency=defaults.currency,
+            tax_regime=defaults.tax_regime,
+            locale=defaults.locale,
+            timezone=defaults.timezone,
+            tax_engine=defaults.tax_engine,
+        )
         await self._tenants.add(tenant)
         self._tenant_context.set(tenant.id)
         now = utcnow()
