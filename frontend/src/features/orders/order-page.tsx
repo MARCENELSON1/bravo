@@ -35,6 +35,7 @@ import {
   useTransferOrder,
 } from "@/hooks/use-orders"
 import { useOrderPayments, useRefundPayment, useRegisterPayment } from "@/hooks/use-payments"
+import { useOrderTaxQuote } from "@/hooks/use-tenant"
 import { useProducts } from "@/hooks/use-products"
 import { useTables } from "@/hooks/use-tables"
 import {
@@ -263,10 +264,11 @@ export function OrderPage() {
           ) : (
             <p className="text-sm text-muted-foreground">Sin ítems todavía.</p>
           )}
-          <div className="mt-3 flex items-center justify-between border-t pt-3 text-sm font-medium">
-            <span>Total</span>
-            <span>{formatMoney(data.total_amount, data.currency)}</span>
-          </div>
+          <OrderTotalBreakdown
+            orderId={data.id}
+            subtotal={data.total_amount}
+            currency={data.currency}
+          />
         </CardContent>
       </Card>
 
@@ -595,6 +597,45 @@ function FacturaSection({ order }: { order: OrderDTO }) {
   )
 }
 
+// El total del ticket: con desglose de impuesto cuando hay sales tax a sumar
+// (US); si el impuesto es 0 (AR/IVA incluido) muestra sólo "Total" como siempre.
+function OrderTotalBreakdown({
+  orderId,
+  subtotal,
+  currency,
+}: {
+  orderId: string
+  subtotal: number
+  currency: string
+}) {
+  const quote = useOrderTaxQuote(orderId, subtotal)
+  const q = quote.data
+  if (!q || q.tax_amount <= 0) {
+    return (
+      <div className="mt-3 flex items-center justify-between border-t pt-3 text-sm font-medium">
+        <span>Total</span>
+        <span>{formatMoney(subtotal, currency)}</span>
+      </div>
+    )
+  }
+  return (
+    <div className="mt-3 space-y-1 border-t pt-3 text-sm">
+      <div className="flex items-center justify-between text-muted-foreground">
+        <span>Subtotal</span>
+        <span>{formatMoney(q.subtotal_amount, currency)}</span>
+      </div>
+      <div className="flex items-center justify-between text-muted-foreground">
+        <span>Impuesto ({(q.rate_bps / 100).toFixed(2)}%)</span>
+        <span>{formatMoney(q.tax_amount, currency)}</span>
+      </div>
+      <div className="flex items-center justify-between font-medium text-foreground">
+        <span>Total</span>
+        <span>{formatMoney(q.total_amount, currency)}</span>
+      </div>
+    </div>
+  )
+}
+
 function CobroSection({
   order,
   tableLabel,
@@ -616,11 +657,15 @@ function CobroSection({
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
 
+  const taxQuote = useOrderTaxQuote(order.id, order.total_amount)
+  // Lo que se cobra es el total CON impuesto (US); en AR el tax es 0 → total ==
+  // subtotal, así que el restante queda idéntico a hoy (paridad).
+  const chargeableTotal = taxQuote.data?.total_amount ?? order.total_amount
   const list = payments.data ?? []
   const confirmed = list
     .filter((p) => p.direction === "INFLOW" && p.status === "CONFIRMED")
     .reduce((sum, p) => sum + p.amount, 0)
-  const remaining = Math.max(order.total_amount - confirmed, 0)
+  const remaining = Math.max(chargeableTotal - confirmed, 0)
   const isPaid = order.status === "PAID"
   const splitAmount = sumLineItems(order.items, selected)
 

@@ -11,6 +11,17 @@ export function useFiscalSettings() {
   })
 }
 
+// El impuesto a sumar sobre una orden. Se re-consulta cuando cambia el total
+// (la key incluye totalAmount). Deshabilitado si la orden está vacía.
+export function useOrderTaxQuote(orderId: string, totalAmount: number) {
+  const { ordersApi } = useServices()
+  return useQuery({
+    queryKey: ["order-tax-quote", orderId, totalAmount],
+    queryFn: () => ordersApi.taxQuote(orderId),
+    enabled: totalAmount > 0,
+  })
+}
+
 export function useUpdateFiscalAddress() {
   const { tenantsApi } = useServices()
   const queryClient = useQueryClient()

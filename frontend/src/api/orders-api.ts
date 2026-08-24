@@ -5,6 +5,7 @@ import type {
   OrderDTO,
   Station,
 } from "@/api/types-operations"
+import type { TaxQuoteDTO } from "@/api/types-tenant"
 
 export type OrderAction = "preparing" | "ready" | "served" | "cancel"
 // Per-item bump/recall along the kitchen lifecycle.
@@ -23,6 +24,11 @@ export class OrdersApi {
 
   get(id: string): Promise<OrderDTO> {
     return this.http.request<OrderDTO>("GET", `/orders/${id}`, { auth: true })
+  }
+
+  // Impuesto a sumar sobre la orden (sales tax US vía TaxJar; 0 en AR/IVA).
+  taxQuote(id: string): Promise<TaxQuoteDTO> {
+    return this.http.request<TaxQuoteDTO>("GET", `/orders/${id}/tax-quote`, { auth: true })
   }
 
   create(tableId: string, id?: string): Promise<CreateOrderResponse> {
