@@ -697,9 +697,17 @@ function CobroSection({
       toast.error("La propina no es válida.")
       return
     }
+    // El impuesto de ESTE cobro: sólo cuando se paga el total con impuesto de una
+    // sola vez (no split, sin monto manual, sin cobros previos). Parcial/split → 0
+    // (queda como follow-up; consistente con que el split hoy es pre-tax).
+    const q = taxQuote.data
+    const taxForCharge =
+      !splitMode && !amount.trim() && confirmed === 0 && q && q.tax_amount > 0
+        ? q.tax_amount
+        : 0
     setCheckoutUrl(null)
     registerPayment.mutate(
-      { method, amount: minor, tip: tipMinor },
+      { method, amount: minor, tip: tipMinor, tax: taxForCharge },
       {
         onSuccess: (payment) => {
           setAmount("")

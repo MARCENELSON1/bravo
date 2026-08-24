@@ -30,6 +30,9 @@ class Payment:
     # Propina cobrada encima del ``amount`` (minor units, misma moneda). No es
     # ingreso del local: no entra en sale_facts, solo en el arqueo de caja.
     tip_amount: int = 0
+    # Sales tax (US) incluido dentro de ``amount`` (a diferencia de la propina, que
+    # va encima). Es la porción que se le debe al fisco. 0 en AR/IVA (paridad).
+    tax_amount: int = 0
     # Comisiones (cimiento): lo que la pasarela retiene (``fee_amount``) y lo que
     # realmente queda en la cuenta (``net_amount = amount − fee``). ``net_amount``
     # None → se lee como ``amount`` (paridad; sin comisión cargada). Eje financiero

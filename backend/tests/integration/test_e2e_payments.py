@@ -70,6 +70,40 @@ async def test_monto_invalido_rechazado(client):
     assert bad.status_code == 422
 
 
+async def test_payment_records_tax_and_finance_reports_it(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="ustax", email="o@ustax.com")
+    h = _auth(tokens)
+    order_id = await _make_order(http, h)  # subtotal 300000
+
+    # Cobro con sales tax incluido en amount (subtotal 300000 + tax 32250).
+    r = await http.post(
+        f"/api/v1/orders/{order_id}/payments",
+        json={"method": "CASH", "amount": 332250, "tax": 32250},
+        headers=h,
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["tax_amount"] == 32250
+
+    # El reporte de tax cobrado lo suma (lo que se le debe al fisco).
+    tc = await http.get("/api/v1/finance/tax-collected", headers=h)
+    assert tc.status_code == 200, tc.text
+    assert tc.json()["amount"] == 32250
+
+
+async def test_payment_tax_cannot_exceed_amount(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="ustax2", email="o@ustax2.com")
+    h = _auth(tokens)
+    order_id = await _make_order(http, h)
+    r = await http.post(
+        f"/api/v1/orders/{order_id}/payments",
+        json={"method": "CASH", "amount": 100000, "tax": 200000},
+        headers=h,
+    )
+    assert r.status_code >= 400, r.text
+
+
 async def test_egreso_y_listado(client):
     http, fake_email = client
     tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")

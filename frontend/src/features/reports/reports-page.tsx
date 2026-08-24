@@ -7,7 +7,7 @@ import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Spinner } from "@/components/ui/spinner"
 import { useProductPerformance, useRevenueDaily } from "@/hooks/use-analytics"
 import { useDashboard } from "@/hooks/use-dashboard"
-import { useExpenseBreakdown } from "@/hooks/use-finance"
+import { useExpenseBreakdown, useTaxCollected } from "@/hooks/use-finance"
 import { FINANCE_RANGES, rangeWindow, type FinanceRange } from "@/lib/finance-range"
 import { formatMoney } from "@/lib/money"
 
@@ -39,6 +39,7 @@ export function ReportsPage() {
         <ExpensesByCategory window={window} />
       </div>
       <TopProducts window={window} />
+      <TaxToRemit window={window} />
       <AccountantExport window={window} />
     </div>
   )
@@ -149,6 +150,27 @@ function ExpensesByCategory({ window }: { window: Win }) {
           </div>
         </div>
       )}
+    </GlassCard>
+  )
+}
+
+// Sales tax cobrado (a remitir). Sólo se muestra si hay algo (US); en AR el
+// impuesto va incluido en el precio y no se cobra aparte → no aparece (paridad).
+function TaxToRemit({ window }: { window: Win }) {
+  const q = useTaxCollected({ from: window.from, to: window.to })
+  const d = q.data
+  if (!d || d.amount <= 0) return null
+  return (
+    <GlassCard className="flex items-center justify-between gap-4 p-6">
+      <div>
+        <h2 className="text-base font-semibold text-foreground">Sales tax cobrado</h2>
+        <p className="text-sm text-muted-foreground">
+          Lo que cobraste de impuesto en el período — a remitir al fisco (no es ganancia).
+        </p>
+      </div>
+      <span className="shrink-0 text-2xl font-bold tabular-nums text-foreground">
+        {formatMoney(d.amount, d.currency)}
+      </span>
     </GlassCard>
   )
 }

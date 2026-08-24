@@ -47,6 +47,7 @@ from app.application.customer.use_cases import (
     UpdateCustomer,
 )
 from app.application.finance.snapshots import RebuildFinanceSnapshots
+from app.application.finance.tax_collected import GetTaxCollected
 from app.application.finance.use_cases import (
     GetExpenseBreakdown,
     GetFinanceOverview,
@@ -252,6 +253,7 @@ from app.infrastructure.persistence.finance_repo import (
     SqlAlchemyFinanceProductDetailReadModel,
     SqlAlchemyInventoryValueReadModel,
     SqlAlchemyRecentMovementsReadModel,
+    SqlAlchemyTaxCollectedReadModel,
 )
 from app.infrastructure.persistence.finance_snapshot_repo import (
     SqlAlchemyFinanceSnapshotRepository,
@@ -1357,6 +1359,14 @@ class Container(containers.DeclarativeContainer):
         settings=advisor_settings_repository,
         inventory=inventory_value_read_model,
         commissions=finance_commissions_read_model,
+        tenant_context=tenant_context,
+    )
+    tax_collected_read_model = providers.Factory(
+        SqlAlchemyTaxCollectedReadModel, session_factory=db.provided.session
+    )
+    get_tax_collected = providers.Factory(
+        GetTaxCollected,
+        read_model=tax_collected_read_model,
         tenant_context=tenant_context,
     )
     finance_product_detail_read_model = providers.Factory(
