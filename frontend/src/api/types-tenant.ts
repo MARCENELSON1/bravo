@@ -16,3 +16,14 @@ export interface FiscalAddressInput {
   state: string | null
   zip: string | null
 }
+
+// Impuesto a sumar sobre una orden (minor units). AR/IVA → tax 0 (incluido);
+// US → lo devuelve el motor (TaxJar) según la dirección fiscal del local.
+export interface TaxQuoteDTO {
+  subtotal_amount: number
+  tax_amount: number
+  total_amount: number
+  currency: string
+  rate_bps: number
+  jurisdiction: string | null
+}
