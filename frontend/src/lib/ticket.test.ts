@@ -119,4 +119,22 @@ describe("receiptHtml", () => {
     const noTip = receiptHtml(order, "Mesa 5", "28/06 21:00", [])
     expect(noTip).not.toContain("Propina")
   })
+
+  it("breaks out subtotal/impuesto/total when there's sales tax (US)", () => {
+    const html = receiptHtml(order, "Mesa 5", "28/06 21:00", [], 0, {
+      subtotal: 300000,
+      amount: 32250,
+      total: 332250,
+      rateBps: 1075,
+    })
+    expect(html).toContain("Subtotal")
+    expect(html).toContain("Impuesto (10.75%)")
+    expect(html).toContain("TOTAL")
+  })
+
+  it("prints a single total when there's no tax (parity)", () => {
+    const html = receiptHtml(order, "Mesa 5", "28/06 21:00", [])
+    expect(html).not.toContain("Impuesto")
+    expect(html).not.toContain("Subtotal")
+  })
 })
