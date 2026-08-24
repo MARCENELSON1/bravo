@@ -763,7 +763,17 @@ function CobroSection({
       amount: p.amount,
     }))
     const tipTotal = confirmedInflows.reduce((sum, p) => sum + p.tip_amount, 0)
-    printTicket(receiptHtml(order, tableLabel, printedAt, paid, tipTotal))
+    const q = taxQuote.data
+    const tax =
+      q && q.tax_amount > 0
+        ? {
+            subtotal: q.subtotal_amount,
+            amount: q.tax_amount,
+            total: q.total_amount,
+            rateBps: q.rate_bps,
+          }
+        : null
+    printTicket(receiptHtml(order, tableLabel, printedAt, paid, tipTotal, tax))
   }
 
   const hasConfirmed = list.some(

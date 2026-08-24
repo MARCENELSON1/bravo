@@ -57,14 +57,25 @@ export interface ReceiptPaymentLine {
   amount: number // minor units
 }
 
+// Desglose de sales tax (US). Todo en minor units. rateBps en puntos básicos.
+export interface ReceiptTax {
+  subtotal: number
+  amount: number
+  total: number
+  rateBps: number
+}
+
 // Pure: a non-fiscal receipt (recibo) for the customer — items + total + how it
-// was paid. Not an AFIP comprobante; that's the invoice flow.
+// was paid. Not an AFIP comprobante; that's the invoice flow. When `tax` carries
+// a positive amount (US), the total is broken out Subtotal/Impuesto/Total; with
+// no tax (AR/IVA included) it prints a single TOTAL as before (parity).
 export function receiptHtml(
   order: OrderDTO,
   tableLabel: string,
   printedAt: string,
   payments: ReceiptPaymentLine[],
-  tipAmount = 0
+  tipAmount = 0,
+  tax: ReceiptTax | null = null
 ): string {
   const lines = order.items
     .map(
@@ -84,11 +95,18 @@ export function receiptHtml(
     tipAmount > 0
       ? `<div class="line">Propina<span class="amt">${formatMoney(tipAmount, order.currency)}</span></div>`
       : ""
+  const totalBlock =
+    tax && tax.amount > 0
+      ? `<div class="line">Subtotal<span class="amt">${formatMoney(tax.subtotal, order.currency)}</span></div>` +
+        `<div class="line">Impuesto (${(tax.rateBps / 100).toFixed(2)}%)` +
+        `<span class="amt">${formatMoney(tax.amount, order.currency)}</span></div>` +
+        `<div class="station">TOTAL<span class="amt">${formatMoney(tax.total, order.currency)}</span></div>`
+      : `<div class="station">TOTAL<span class="amt">${formatMoney(order.total_amount, order.currency)}</span></div>`
   return (
     `<div class="ticket"><div class="head">${escapeHtml(tableLabel)}</div>` +
     `<div class="meta">RECIBO NO FISCAL · ${escapeHtml(printedAt)}</div>` +
     `${lines}` +
-    `<div class="station">TOTAL<span class="amt">${formatMoney(order.total_amount, order.currency)}</span></div>` +
+    `${totalBlock}` +
     `${tip}` +
     `${paid}` +
     `</div>`
