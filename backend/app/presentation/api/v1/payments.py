@@ -36,6 +36,7 @@ def payment_to_response(payment: Payment) -> PaymentResponse:
         method=payment.method.value,
         amount=payment.amount.amount,
         tip_amount=payment.tip_amount,
+        tax_amount=payment.tax_amount,
         currency=payment.amount.currency,
         status=payment.status.value,
         category=payment.category,
@@ -94,6 +95,7 @@ async def register_payment(
         method=body.method.value,
         amount=body.amount,
         tip=body.tip,
+        tax=body.tax,
     )
     return payment_to_response(payment)
 

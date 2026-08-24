@@ -87,6 +87,11 @@ class ExpenseBreakdownResponse(BaseModel):
     rows: list[ExpenseCategoryRowResponse]
 
 
+class TaxCollectedResponse(BaseModel):
+    currency: str
+    amount: int  # sales tax cobrado en la ventana (minor units), a remitir
+
+
 class MovementResponse(BaseModel):
     occurred_at: str
     kind: str  # IN | OUT

@@ -11,6 +11,7 @@ from app.application.finance.dtos import (
     ProductDetail,
     ProductSaleLine,
 )
+from app.application.finance.tax_collected import TaxCollected, TaxCollectedReadModel
 from app.application.finance.use_cases import (
     ExpenseBreakdownReadModel,
     FinanceCommissionsReadModel,
@@ -82,6 +83,35 @@ class SqlAlchemyFinanceCommissionsReadModel(FinanceCommissionsReadModel):
                 stmt = stmt.where(PaymentORM.created_at <= until)
             fees, net = (await session.execute(stmt)).one()
             return int(fees), int(net)
+
+
+class SqlAlchemyTaxCollectedReadModel(TaxCollectedReadModel):
+    """Σ tax_amount sobre cobros CONFIRMED/INFLOW en la ventana (el sales tax
+    cobrado, a remitir al fisco). 0 en AR. Tenant-scoped; solo lectura."""
+
+    def __init__(self, session_factory: SessionFactory) -> None:
+        self._session_factory = session_factory
+
+    async def total(
+        self,
+        tenant_id: str,
+        *,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> TaxCollected:
+        async with self._session_factory() as session:
+            stmt = select(func.coalesce(func.sum(PaymentORM.tax_amount), 0)).where(
+                PaymentORM.tenant_id == tenant_id,
+                PaymentORM.direction == PaymentDirection.INFLOW.value,
+                PaymentORM.status == PaymentStatus.CONFIRMED.value,
+            )
+            if since is not None:
+                stmt = stmt.where(PaymentORM.created_at >= since)
+            if until is not None:
+                stmt = stmt.where(PaymentORM.created_at <= until)
+            amount = int((await session.execute(stmt)).scalar_one())
+            currency = await _tenant_currency(session, tenant_id)
+            return TaxCollected(amount=amount, currency=currency)
 
 
 class SqlAlchemyInventoryValueReadModel(InventoryValueReadModel):

@@ -4,6 +4,7 @@ import type {
   FinanceOverviewDTO,
   MovementDTO,
   ProductDetailDTO,
+  TaxCollectedDTO,
 } from "@/api/types-operations"
 
 export interface FinanceQuery {
@@ -42,6 +43,15 @@ export class FinanceApi {
     return this.http.request<ExpenseBreakdownDTO>(
       "GET",
       `/finance/expenses/breakdown${this.qs(query)}`,
+      { auth: true }
+    )
+  }
+
+  // Sales tax cobrado en la ventana (lo que se le debe al fisco; 0 en AR).
+  taxCollected(query: FinanceQuery = {}): Promise<TaxCollectedDTO> {
+    return this.http.request<TaxCollectedDTO>(
+      "GET",
+      `/finance/tax-collected${this.qs(query)}`,
       { auth: true }
     )
   }

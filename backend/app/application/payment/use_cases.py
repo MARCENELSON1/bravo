@@ -89,10 +89,19 @@ class RegisterPayment:
         self._fee_rates = fee_rates
 
     async def execute(
-        self, *, tenant_id: str, order_id: str, method: str, amount: int, tip: int = 0
+        self,
+        *,
+        tenant_id: str,
+        order_id: str,
+        method: str,
+        amount: int,
+        tip: int = 0,
+        tax: int = 0,
     ) -> Payment:
         self._tenant_context.set(tenant_id)
-        if amount <= 0 or tip < 0:
+        # ``tax`` is the sales-tax portion INCLUDED in ``amount`` (not on top like
+        # tip), so it can't be negative nor exceed the charge.
+        if amount <= 0 or tip < 0 or tax < 0 or tax > amount:
             raise InvalidPaymentAmount()
         order = await self._orders.get_by_id(tenant_id, order_id)
         if order is None:
@@ -123,6 +132,7 @@ class RegisterPayment:
             order_id=order_id,
             cash_session_id=open_session.id if open_session else None,
             tip_amount=tip,
+            tax_amount=tax,
             fee_amount=fee,
             net_amount=amount - fee,
         )

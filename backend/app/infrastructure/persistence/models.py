@@ -361,6 +361,7 @@ class PaymentORM(Base):
     # Propina cobrada encima del ``amount`` de la venta (0 si no hubo). No es
     # ingreso del local: solo cuenta para el arqueo de caja.
     tip_amount: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    tax_amount: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     # Comisiones: retención de la pasarela y neto que queda. net_amount NULL → se
     # lee como amount (COALESCE) → paridad para pagos previos / sin comisión.
     fee_amount: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")

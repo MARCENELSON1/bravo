@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.application.finance.dtos import ExpenseBreakdown, FinanceOverview, ProductDetail
 from app.application.finance.snapshots import RebuildFinanceSnapshots
+from app.application.finance.tax_collected import GetTaxCollected
 from app.application.finance.use_cases import (
     GetExpenseBreakdown,
     GetFinanceOverview,
@@ -29,6 +30,7 @@ from app.presentation.schemas.finance import (
     ProductDetailResponse,
     ProductMarginResponse,
     ProductSaleLineResponse,
+    TaxCollectedResponse,
 )
 
 router = APIRouter(prefix="/finance", tags=["finance"])
@@ -179,6 +181,20 @@ async def get_expense_breakdown(
             for r in b.rows
         ],
     )
+
+
+@router.get("/tax-collected", response_model=TaxCollectedResponse)
+@inject
+async def get_tax_collected(
+    since: datetime | None = Query(default=None, alias="from"),
+    until: datetime | None = Query(default=None, alias="to"),
+    identity: AccessClaims = Depends(require_roles(*_FINANCE_ROLES)),
+    use_case: GetTaxCollected = Depends(Provide[Container.get_tax_collected]),
+) -> TaxCollectedResponse:
+    """Sales tax cobrado en ``[from, to)`` — lo que el local le debe al fisco
+    (0 en AR: los cobros no llevan impuesto separado)."""
+    t = await use_case.execute(tenant_id=identity.tenant_id, since=since, until=until)
+    return TaxCollectedResponse(currency=t.currency, amount=t.amount)
 
 
 @router.get("/movements", response_model=list[MovementResponse])

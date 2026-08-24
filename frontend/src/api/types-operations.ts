@@ -191,6 +191,7 @@ export interface PaymentDTO {
   method: PaymentMethod
   amount: number // minor units (e.g. centavos)
   tip_amount: number // propina cobrada encima del amount (minor units)
+  tax_amount: number // sales tax cobrado DENTRO del amount (minor units), a remitir
   currency: string
   status: PaymentStatus
   category: string | null
@@ -200,10 +201,16 @@ export interface PaymentDTO {
   checkout_url: string | null
 }
 
+export interface TaxCollectedDTO {
+  currency: string
+  amount: number // sales tax cobrado en la ventana (minor units), a remitir
+}
+
 export interface RegisterPaymentBody {
   method: PaymentMethod
   amount: number // minor units
   tip?: number // propina encima del amount (minor units); 0 si no se manda
+  tax?: number // sales tax incluido en amount (minor units); 0 si no se manda
 }
 
 export interface RegisterExpenseBody {

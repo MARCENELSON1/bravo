@@ -13,6 +13,15 @@ export function useFinanceOverview(query: FinanceQuery) {
   })
 }
 
+// Sales tax cobrado en la ventana (lo que se le debe al fisco; 0 en AR).
+export function useTaxCollected(query: FinanceQuery = {}) {
+  const { financeApi } = useServices()
+  return useQuery({
+    queryKey: ["finance-tax-collected", query.from ?? null, query.to ?? null],
+    queryFn: () => financeApi.taxCollected(query),
+  })
+}
+
 // Egresos por categoría (donut + "3 gastos que más cambiaron").
 export function useExpenseBreakdown(query: FinanceQuery) {
   const { financeApi } = useServices()
