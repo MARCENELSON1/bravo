@@ -12,6 +12,7 @@ from app.domain.identity.ports import TenantContext
 from app.domain.shared.ports import TokenCipher
 from app.domain.tax.credentials import TaxJarCredential
 from app.domain.tax.credentials_repository import TaxJarCredentialRepository
+from app.domain.tax.ports import TaxCredentialValidator
 
 
 class ConnectTaxJar:
@@ -19,14 +20,18 @@ class ConnectTaxJar:
         self,
         credentials: TaxJarCredentialRepository,
         cipher: TokenCipher,
+        validator: TaxCredentialValidator,
         tenant_context: TenantContext,
     ) -> None:
         self._credentials = credentials
         self._cipher = cipher
+        self._validator = validator
         self._tenant_context = tenant_context
 
     async def execute(self, *, tenant_id: str, api_token: str, sandbox: bool = True) -> None:
         self._tenant_context.set(tenant_id)
+        # Verify the token works before storing it, so "connected" is never a lie.
+        await self._validator.verify(api_token=api_token, sandbox=sandbox)
         existing = await self._credentials.get_by_tenant(tenant_id)
         credential = TaxJarCredential(
             id=existing.id if existing is not None else str(uuid4()),
