@@ -92,6 +92,12 @@ class TaxCollectedResponse(BaseModel):
     amount: int  # sales tax cobrado en la ventana (minor units), a remitir
 
 
+class TaxReportRunResponse(BaseModel):
+    pending: int  # ventas que estaban por reportar en esta corrida
+    sent: int  # reportadas OK al proveedor (TaxJar)
+    failed: int  # fallaron y quedan para reintentar en la próxima corrida
+
+
 class MovementResponse(BaseModel):
     occurred_at: str
     kind: str  # IN | OUT

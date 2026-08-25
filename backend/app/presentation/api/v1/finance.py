@@ -14,6 +14,7 @@ from app.application.finance.use_cases import (
     GetProductDetail,
     GetRecentMovements,
 )
+from app.application.tax.reporting import ReportPendingTaxSales
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
 from app.domain.user.value_objects import Role
@@ -31,6 +32,7 @@ from app.presentation.schemas.finance import (
     ProductMarginResponse,
     ProductSaleLineResponse,
     TaxCollectedResponse,
+    TaxReportRunResponse,
 )
 
 router = APIRouter(prefix="/finance", tags=["finance"])
@@ -195,6 +197,20 @@ async def get_tax_collected(
     (0 en AR: los cobros no llevan impuesto separado)."""
     t = await use_case.execute(tenant_id=identity.tenant_id, since=since, until=until)
     return TaxCollectedResponse(currency=t.currency, amount=t.amount)
+
+
+@router.post("/tax/report-pending", response_model=TaxReportRunResponse)
+@inject
+async def report_pending_tax(
+    limit: int = Query(default=100, ge=1, le=500),
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: ReportPendingTaxSales = Depends(Provide[Container.report_pending_tax_sales]),
+) -> TaxReportRunResponse:
+    """Reporta al proveedor (TaxJar AutoFile) las ventas con sales tax cobrado que
+    aún no se enviaron; las que fallan quedan para reintentar. No-op en AR (el
+    outbox está vacío). Pensado para dispararse por scheduler o a mano."""
+    run = await use_case.execute(tenant_id=identity.tenant_id, limit=limit)
+    return TaxReportRunResponse(pending=run.pending, sent=run.sent, failed=run.failed)
 
 
 @router.get("/movements", response_model=list[MovementResponse])
