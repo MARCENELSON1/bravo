@@ -668,11 +668,15 @@ function CobroSection({
   const remaining = Math.max(chargeableTotal - confirmed, 0)
   const isPaid = order.status === "PAID"
   const splitAmount = sumLineItems(order.items, selected)
+  // Impuesto proporcional del split: la tasa efectiva de la orden aplicada al
+  // subtotal seleccionado. 0 en AR (rate 0) → el split queda pre-tax como antes.
+  const taxRateBps = taxQuote.data?.rate_bps ?? 0
+  const splitTax = Math.round((splitAmount * taxRateBps) / 10000)
 
   // What the cashier types is in pesos; the API works in minor units. In split
   // mode the amount comes from the selected items instead.
   const computeCharge = (): number => {
-    if (splitMode) return splitAmount
+    if (splitMode) return splitAmount + splitTax
     if (amount.trim()) return Math.round(Number(amount) * 100)
     return remaining
   }
@@ -701,8 +705,9 @@ function CobroSection({
     // sola vez (no split, sin monto manual, sin cobros previos). Parcial/split → 0
     // (queda como follow-up; consistente con que el split hoy es pre-tax).
     const q = taxQuote.data
-    const taxForCharge =
-      !splitMode && !amount.trim() && confirmed === 0 && q && q.tax_amount > 0
+    const taxForCharge = splitMode
+      ? splitTax
+      : !amount.trim() && confirmed === 0 && q && q.tax_amount > 0
         ? q.tax_amount
         : 0
     setCheckoutUrl(null)
@@ -905,10 +910,27 @@ function CobroSection({
                     <span>{formatMoney(it.unit_price_amount * it.quantity, order.currency)}</span>
                   </label>
                 ))}
-                <div className="mt-1 flex justify-between border-t pt-1 font-medium">
-                  <span>Seleccionado</span>
-                  <span>{formatMoney(splitAmount, order.currency)}</span>
-                </div>
+                {splitTax > 0 ? (
+                  <>
+                    <div className="mt-1 flex justify-between border-t pt-1 text-muted-foreground">
+                      <span>Seleccionado</span>
+                      <span>{formatMoney(splitAmount, order.currency)}</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Impuesto ({(taxRateBps / 100).toFixed(2)}%)</span>
+                      <span>{formatMoney(splitTax, order.currency)}</span>
+                    </div>
+                    <div className="flex justify-between font-medium">
+                      <span>Total</span>
+                      <span>{formatMoney(splitAmount + splitTax, order.currency)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="mt-1 flex justify-between border-t pt-1 font-medium">
+                    <span>Seleccionado</span>
+                    <span>{formatMoney(splitAmount, order.currency)}</span>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex flex-wrap items-center gap-2">
