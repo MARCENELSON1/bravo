@@ -162,7 +162,7 @@ from app.application.table_session.use_cases import (
     SetSessionPax,
 )
 from app.application.tax.quote_order_tax import QuoteOrderTax
-from app.application.tax.reporting import ReportPendingTaxSales
+from app.application.tax.reporting import GetTaxReportStatus, ReportPendingTaxSales
 from app.application.tax.taxjar_connection import (
     ConnectTaxJar,
     DisconnectTaxJar,
@@ -313,7 +313,10 @@ from app.infrastructure.persistence.table_session_repo import (
 from app.infrastructure.persistence.tax_credentials_repo import (
     SqlAlchemyTaxCredentialRepository,
 )
-from app.infrastructure.persistence.tax_report_repo import SqlAlchemyTaxReportLedger
+from app.infrastructure.persistence.tax_report_repo import (
+    SqlAlchemyTaxReportLedger,
+    SqlAlchemyTaxReportStatusReadModel,
+)
 from app.infrastructure.persistence.taxjar_credentials_repo import (
     SqlAlchemyTaxJarCredentialRepository,
 )
@@ -1084,6 +1087,14 @@ class Container(containers.DeclarativeContainer):
         orders=order_repository,
         payments=payment_repository,
         tenants=tenant_repository,
+        tenant_context=tenant_context,
+    )
+    tax_report_status_read_model = providers.Factory(
+        SqlAlchemyTaxReportStatusReadModel, session_factory=db.provided.session
+    )
+    get_tax_report_status = providers.Factory(
+        GetTaxReportStatus,
+        read_model=tax_report_status_read_model,
         tenant_context=tenant_context,
     )
     connect_taxjar = providers.Factory(

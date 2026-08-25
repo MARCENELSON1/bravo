@@ -6,10 +6,15 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-from app.application.tax.reporting import PendingTaxReport, TaxReportLedger
+from app.application.tax.reporting import (
+    PendingTaxReport,
+    TaxReportLedger,
+    TaxReportStatus,
+    TaxReportStatusReadModel,
+)
 from app.infrastructure.persistence.database import SessionFactory
 from app.infrastructure.persistence.models import TaxReportORM
 
@@ -69,3 +74,27 @@ class SqlAlchemyTaxReportLedger(TaxReportLedger):
                     last_error=error,
                 )
             )
+
+
+class SqlAlchemyTaxReportStatusReadModel(TaxReportStatusReadModel):
+    """Cuenta el outbox por estado para el dueño. Tenant-scoped; solo lectura."""
+
+    def __init__(self, session_factory: SessionFactory) -> None:
+        self._session_factory = session_factory
+
+    async def status(self, tenant_id: str) -> TaxReportStatus:
+        async with self._session_factory() as session:
+            rows = (
+                await session.execute(
+                    select(TaxReportORM.status, func.count())
+                    .where(TaxReportORM.tenant_id == tenant_id)
+                    .group_by(TaxReportORM.status)
+                )
+            ).all()
+        counts = {status: int(n) for status, n in rows}
+        failed = counts.get("FAILED", 0)
+        return TaxReportStatus(
+            pending=counts.get("PENDING", 0) + failed,
+            failed=failed,
+            sent=counts.get("SENT", 0),
+        )

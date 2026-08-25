@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { toast } from "sonner"
 
 import { AccountantExport } from "@/features/finance/accountant-export"
 import { Button } from "@/components/ui/button"
@@ -7,7 +8,12 @@ import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Spinner } from "@/components/ui/spinner"
 import { useProductPerformance, useRevenueDaily } from "@/hooks/use-analytics"
 import { useDashboard } from "@/hooks/use-dashboard"
-import { useExpenseBreakdown, useTaxCollected } from "@/hooks/use-finance"
+import {
+  useExpenseBreakdown,
+  useReportPendingTax,
+  useTaxCollected,
+  useTaxReportStatus,
+} from "@/hooks/use-finance"
 import { FINANCE_RANGES, rangeWindow, type FinanceRange } from "@/lib/finance-range"
 import { formatMoney } from "@/lib/money"
 
@@ -40,6 +46,7 @@ export function ReportsPage() {
       </div>
       <TopProducts window={window} />
       <TaxToRemit window={window} />
+      <TaxReportStatusCard />
       <AccountantExport window={window} />
     </div>
   )
@@ -171,6 +178,63 @@ function TaxToRemit({ window }: { window: Win }) {
       <span className="shrink-0 text-2xl font-bold tabular-nums text-foreground">
         {formatMoney(d.amount, d.currency)}
       </span>
+    </GlassCard>
+  )
+}
+
+// Estado del reporte al fisco (TaxJar AutoFile) + "Reportar ahora". Solo aparece
+// si hay algo en el outbox → en AR no se ve (paridad).
+function TaxReportStatusCard() {
+  const q = useTaxReportStatus()
+  const run = useReportPendingTax()
+  const d = q.data
+  if (!d || d.pending + d.sent === 0) return null
+
+  const report = () => {
+    run.mutate(undefined, {
+      onSuccess: (r) => {
+        if (r.failed > 0) {
+          toast.error(
+            `Reportadas ${r.sent}. ${r.failed} con error — reintentá o revisá TaxJar.`
+          )
+        } else {
+          toast.success(
+            r.sent > 0 ? `Reportadas ${r.sent} ventas a TaxJar.` : "No había ventas por reportar."
+          )
+        }
+      },
+      onError: () => toast.error("No pudimos reportar ahora. Probá de nuevo."),
+    })
+  }
+
+  return (
+    <GlassCard className="flex items-center justify-between gap-4 p-6">
+      <div>
+        <h2 className="text-base font-semibold text-foreground">Reporte al fisco (TaxJar)</h2>
+        <p className="text-sm text-muted-foreground">
+          {d.pending > 0
+            ? `${d.pending} venta${d.pending === 1 ? "" : "s"} por reportar${
+                d.failed > 0 ? ` — ${d.failed} con error` : ""
+              }.`
+            : `Todo reportado. ${d.sent} venta${d.sent === 1 ? "" : "s"} presentada${
+                d.sent === 1 ? "" : "s"
+              }.`}
+        </p>
+        {d.failed > 0 ? (
+          <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
+            Las fallidas se reintentan. Si persisten, revisá que TaxJar esté conectado en Config.
+          </p>
+        ) : null}
+      </div>
+      {d.pending > 0 ? (
+        <Button onClick={report} disabled={run.isPending} className="shrink-0">
+          {run.isPending ? "Reportando…" : "Reportar ahora"}
+        </Button>
+      ) : (
+        <span className="shrink-0 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+          Al día
+        </span>
+      )}
     </GlassCard>
   )
 }

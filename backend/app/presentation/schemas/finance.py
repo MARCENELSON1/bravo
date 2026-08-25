@@ -98,6 +98,12 @@ class TaxReportRunResponse(BaseModel):
     failed: int  # fallaron y quedan para reintentar en la próxima corrida
 
 
+class TaxReportStatusResponse(BaseModel):
+    pending: int  # ventas por reportar (nunca enviadas + último intento fallado)
+    failed: int  # subset con último intento fallado (necesitan atención)
+    sent: int  # ya reportadas al fisco
+
+
 class MovementResponse(BaseModel):
     occurred_at: str
     kind: str  # IN | OUT

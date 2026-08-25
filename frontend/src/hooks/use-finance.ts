@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import type { FinanceQuery } from "@/api/finance-api"
 import { useServices } from "@/services/services-context"
@@ -19,6 +19,27 @@ export function useTaxCollected(query: FinanceQuery = {}) {
   return useQuery({
     queryKey: ["finance-tax-collected", query.from ?? null, query.to ?? null],
     queryFn: () => financeApi.taxCollected(query),
+  })
+}
+
+// Estado del outbox de reportes al fisco (por reportar / fallidas / reportadas).
+export function useTaxReportStatus() {
+  const { financeApi } = useServices()
+  return useQuery({
+    queryKey: ["finance-tax-report-status"],
+    queryFn: () => financeApi.taxReportStatus(),
+  })
+}
+
+// "Reportar ahora": dispara el drain y refresca el estado + el tax cobrado.
+export function useReportPendingTax() {
+  const { financeApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => financeApi.reportPendingTax(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["finance-tax-report-status"] })
+    },
   })
 }
 

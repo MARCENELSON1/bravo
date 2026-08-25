@@ -94,10 +94,19 @@ async def test_report_pending_without_connection_fails_safely(client):
     )
     assert pay.status_code == 201, pay.text
 
+    # El dueño ve la venta por reportar (aún ninguna fallada).
+    st = await http.get("/api/v1/finance/tax/report-status", headers=h)
+    assert st.status_code == 200, st.text
+    assert st.json() == {"pending": 1, "failed": 0, "sent": 0}
+
     # Sin cuenta conectada, el drain NO reporta (no hay red): la fila queda fallada.
     run = await http.post("/api/v1/finance/tax/report-pending", headers=h)
     assert run.status_code == 200, run.text
     assert run.json() == {"pending": 1, "sent": 0, "failed": 1}
+
+    # El status ahora marca la fila como fallada (sigue por reportar).
+    st2 = await http.get("/api/v1/finance/tax/report-status", headers=h)
+    assert st2.json() == {"pending": 1, "failed": 1, "sent": 0}
 
 
 async def test_report_pending_is_noop_in_ar(client):

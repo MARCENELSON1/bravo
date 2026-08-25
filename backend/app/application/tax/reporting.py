@@ -46,6 +46,22 @@ class TaxReportRun:
     failed: int
 
 
+@dataclass(frozen=True)
+class TaxReportStatus:
+    """Snapshot of the outbox for the owner: how many sales still need reporting
+    (``pending`` = never sent + last-attempt-failed), how many of those failed
+    (need attention — e.g. TaxJar not connected), and how many are already filed."""
+
+    pending: int
+    failed: int
+    sent: int
+
+
+class TaxReportStatusReadModel(ABC):
+    @abstractmethod
+    async def status(self, tenant_id: str) -> TaxReportStatus: ...
+
+
 class TaxReportLedger(ABC):
     """Durable outbox of taxable sales to report. Tenant-scoped."""
 
@@ -140,3 +156,18 @@ class ReportPendingTaxSales:
             address=_fiscal_address(tenant),
             occurred_at=row.occurred_at,
         )
+
+
+class GetTaxReportStatus:
+    """Read-only: the outbox snapshot for the owner (por reportar / fallidas / ya
+    reportadas). All-zeros in AR (empty outbox) → parity."""
+
+    def __init__(
+        self, read_model: TaxReportStatusReadModel, tenant_context: TenantContext
+    ) -> None:
+        self._read_model = read_model
+        self._tenant_context = tenant_context
+
+    async def execute(self, *, tenant_id: str) -> TaxReportStatus:
+        self._tenant_context.set(tenant_id)
+        return await self._read_model.status(tenant_id)

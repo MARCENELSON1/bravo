@@ -206,6 +206,20 @@ export interface TaxCollectedDTO {
   amount: number // sales tax cobrado en la ventana (minor units), a remitir
 }
 
+// Estado del outbox de reportes al fisco (TaxJar AutoFile). Todo 0 en AR.
+export interface TaxReportStatusDTO {
+  pending: number // ventas por reportar (nunca enviadas + último intento fallado)
+  failed: number // subset con último intento fallado (necesitan atención)
+  sent: number // ya reportadas
+}
+
+// Resultado de una corrida del drain (reportar ahora).
+export interface TaxReportRunDTO {
+  pending: number
+  sent: number
+  failed: number
+}
+
 export interface RegisterPaymentBody {
   method: PaymentMethod
   amount: number // minor units

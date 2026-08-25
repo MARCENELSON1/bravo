@@ -5,6 +5,8 @@ import type {
   MovementDTO,
   ProductDetailDTO,
   TaxCollectedDTO,
+  TaxReportRunDTO,
+  TaxReportStatusDTO,
 } from "@/api/types-operations"
 
 export interface FinanceQuery {
@@ -54,6 +56,20 @@ export class FinanceApi {
       `/finance/tax-collected${this.qs(query)}`,
       { auth: true }
     )
+  }
+
+  // Estado del outbox de reportes al fisco (por reportar / fallidas / reportadas).
+  taxReportStatus(): Promise<TaxReportStatusDTO> {
+    return this.http.request<TaxReportStatusDTO>("GET", "/finance/tax/report-status", {
+      auth: true,
+    })
+  }
+
+  // Dispara el reporte de las ventas pendientes a TaxJar (AutoFile).
+  reportPendingTax(): Promise<TaxReportRunDTO> {
+    return this.http.request<TaxReportRunDTO>("POST", "/finance/tax/report-pending", {
+      auth: true,
+    })
   }
 
   // Últimos movimientos (cobros + egresos) en la ventana.

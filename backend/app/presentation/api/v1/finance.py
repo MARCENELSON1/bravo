@@ -14,7 +14,7 @@ from app.application.finance.use_cases import (
     GetProductDetail,
     GetRecentMovements,
 )
-from app.application.tax.reporting import ReportPendingTaxSales
+from app.application.tax.reporting import GetTaxReportStatus, ReportPendingTaxSales
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
 from app.domain.user.value_objects import Role
@@ -33,6 +33,7 @@ from app.presentation.schemas.finance import (
     ProductSaleLineResponse,
     TaxCollectedResponse,
     TaxReportRunResponse,
+    TaxReportStatusResponse,
 )
 
 router = APIRouter(prefix="/finance", tags=["finance"])
@@ -211,6 +212,18 @@ async def report_pending_tax(
     outbox está vacío). Pensado para dispararse por scheduler o a mano."""
     run = await use_case.execute(tenant_id=identity.tenant_id, limit=limit)
     return TaxReportRunResponse(pending=run.pending, sent=run.sent, failed=run.failed)
+
+
+@router.get("/tax/report-status", response_model=TaxReportStatusResponse)
+@inject
+async def get_tax_report_status(
+    identity: AccessClaims = Depends(require_roles(*_FINANCE_ROLES)),
+    use_case: GetTaxReportStatus = Depends(Provide[Container.get_tax_report_status]),
+) -> TaxReportStatusResponse:
+    """Estado del outbox de reportes al fisco: por reportar / fallidas / ya
+    reportadas. Todo 0 en AR (outbox vacío)."""
+    s = await use_case.execute(tenant_id=identity.tenant_id)
+    return TaxReportStatusResponse(pending=s.pending, failed=s.failed, sent=s.sent)
 
 
 @router.get("/movements", response_model=list[MovementResponse])
