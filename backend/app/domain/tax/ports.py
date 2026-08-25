@@ -53,3 +53,12 @@ class TaxReporterResolver(ABC):
 
     @abstractmethod
     async def reporter_for(self, tenant_id: str) -> TaxReporter | None: ...
+
+
+class TaxCredentialValidator(ABC):
+    """Verifies a tax-provider API token actually works before we store it, so
+    "connected" is never a lie. Raises ``InvalidTaxProviderCredential`` for a bad
+    token and ``TaxProviderUnavailable`` when the provider can't be reached."""
+
+    @abstractmethod
+    async def verify(self, *, api_token: str, sandbox: bool) -> None: ...

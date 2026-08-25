@@ -52,6 +52,20 @@ function ConnectForm({ connected, sandbox }: { connected: boolean; sandbox: bool
           Conectá la cuenta de TaxJar de tu local para que presente y remita las
           declaraciones de sales tax (AutoFile). El reporte se hace bajo tu propia cuenta.
         </p>
+        {!connected ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            ¿No tenés el token? Lo generás en{" "}
+            <a
+              href="https://app.taxjar.com/account#api-access"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-foreground underline underline-offset-2"
+            >
+              TaxJar → Account → API access
+            </a>
+            . Verificamos el token al conectar.
+          </p>
+        ) : null}
         <div className="mt-2 flex flex-wrap gap-2 text-xs">
           <span
             className={

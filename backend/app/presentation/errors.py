@@ -77,6 +77,10 @@ from app.domain.shared.exceptions import (
 )
 from app.domain.table.exceptions import TableNotFound
 from app.domain.table_session.exceptions import SectorNotFound, SessionNotFound
+from app.domain.tax.exceptions import (
+    InvalidTaxProviderCredential,
+    TaxProviderUnavailable,
+)
 from app.domain.tenant.exceptions import TenantAlreadyExists, TenantNotFound
 from app.domain.timeclock.exceptions import (
     InvalidPresenceDevice,
@@ -146,6 +150,9 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (InvoiceNotFound, 404),
     (OrderNotInvoiceable, 409),
     (TaxGatewayNotConnected, 409),
+    # Internacionalización US — conexión de TaxJar
+    (InvalidTaxProviderCredential, 422),
+    (TaxProviderUnavailable, 502),
     # Fase 5 — fichaje
     (ShiftNotFound, 404),
     (ShiftAlreadyOpen, 409),

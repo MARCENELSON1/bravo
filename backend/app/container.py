@@ -335,6 +335,7 @@ from app.infrastructure.tax.reporter_resolver import DbTaxJarReporterResolver
 from app.infrastructure.tax.resolver import EngineTaxCalculatorResolver
 from app.infrastructure.tax.simple_calculators import IncludedTaxCalculator
 from app.infrastructure.tax.taxjar_calculator import TaxJarCalculator
+from app.infrastructure.tax.taxjar_validator import TaxJarCredentialValidator
 from app.infrastructure.timeclock.hmac_presence import HmacPresenceToken
 from app.infrastructure.timeclock.no_presence import NoPresence
 
@@ -1074,6 +1075,8 @@ class Container(containers.DeclarativeContainer):
         credentials=taxjar_credential_repository,
         cipher=token_cipher,
     )
+    # Verifica el token contra TaxJar antes de guardarlo (que "conectado" no mienta).
+    taxjar_credential_validator = providers.Singleton(TaxJarCredentialValidator)
     report_pending_tax_sales = providers.Factory(
         ReportPendingTaxSales,
         ledger=tax_report_ledger,
@@ -1087,6 +1090,7 @@ class Container(containers.DeclarativeContainer):
         ConnectTaxJar,
         credentials=taxjar_credential_repository,
         cipher=token_cipher,
+        validator=taxjar_credential_validator,
         tenant_context=tenant_context,
     )
     get_taxjar_connection = providers.Factory(
