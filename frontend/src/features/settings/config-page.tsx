@@ -30,6 +30,7 @@ import { setThemeAnimated } from "@/lib/theme-transition"
 import { CommissionRatesCard } from "@/features/finance/commission-rates-card"
 import { CashSettingsCard } from "@/features/settings/cash-settings-card"
 import { FiscalAddressCard } from "@/features/settings/fiscal-address-card"
+import { TaxJarConnectionCard } from "@/features/settings/taxjar-connection-card"
 import { SectorsManager } from "@/features/settings/sectors-manager"
 import { cn } from "@/lib/utils"
 
@@ -458,6 +459,7 @@ export function ConfigPage() {
               {tab === "negocio" ? (
                 <div className="py-4">
                   <FiscalAddressCard />
+                  <TaxJarConnectionCard />
                 </div>
               ) : null}
 

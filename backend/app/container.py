@@ -163,6 +163,11 @@ from app.application.table_session.use_cases import (
 )
 from app.application.tax.quote_order_tax import QuoteOrderTax
 from app.application.tax.reporting import ReportPendingTaxSales
+from app.application.tax.taxjar_connection import (
+    ConnectTaxJar,
+    DisconnectTaxJar,
+    GetTaxJarConnection,
+)
 from app.application.tenant.fiscal import (
     GetTenantFiscalSettings,
     UpdateTenantFiscalAddress,
@@ -309,6 +314,9 @@ from app.infrastructure.persistence.tax_credentials_repo import (
     SqlAlchemyTaxCredentialRepository,
 )
 from app.infrastructure.persistence.tax_report_repo import SqlAlchemyTaxReportLedger
+from app.infrastructure.persistence.taxjar_credentials_repo import (
+    SqlAlchemyTaxJarCredentialRepository,
+)
 from app.infrastructure.persistence.tenant_repo import SqlAlchemyTenantRepository
 from app.infrastructure.persistence.tips_repo import (
     SqlAlchemyTipPayoutRepository,
@@ -323,10 +331,10 @@ from app.infrastructure.security.fernet_cipher import FernetTokenCipher
 from app.infrastructure.security.hasher import Argon2Hasher
 from app.infrastructure.security.tenant_context import ContextVarTenantContext
 from app.infrastructure.security.token_service import JwtTokenService
+from app.infrastructure.tax.reporter_resolver import DbTaxJarReporterResolver
 from app.infrastructure.tax.resolver import EngineTaxCalculatorResolver
 from app.infrastructure.tax.simple_calculators import IncludedTaxCalculator
 from app.infrastructure.tax.taxjar_calculator import TaxJarCalculator
-from app.infrastructure.tax.taxjar_reporter import TaxJarReporter
 from app.infrastructure.timeclock.hmac_presence import HmacPresenceToken
 from app.infrastructure.timeclock.no_presence import NoPresence
 
@@ -1054,21 +1062,41 @@ class Container(containers.DeclarativeContainer):
         resolver=tax_calculator_resolver,
         tenant_context=tenant_context,
     )
-    # Reporte de sales tax al proveedor (TaxJar AutoFile). El drain recorre el
-    # outbox y reporta con transaction_id = order_id (idempotente). Solo lo usan
-    # tenants con engine de reporte; en AR el outbox está vacío → no-op.
-    taxjar_reporter = providers.Singleton(
-        TaxJarReporter,
-        api_token=config.provided.taxjar_api_token,
-        sandbox=config.provided.taxjar_sandbox,
+    # Reporte de sales tax al proveedor (TaxJar AutoFile). Per-tenant: el reporter
+    # se construye con el token PROPIO del tenant (credencial cifrada), nunca con
+    # una cuenta de plataforma. El drain recorre el outbox y reporta con
+    # transaction_id = order_id (idempotente). En AR el outbox está vacío → no-op.
+    taxjar_credential_repository = providers.Factory(
+        SqlAlchemyTaxJarCredentialRepository, session_factory=db.provided.session
+    )
+    taxjar_reporter_resolver = providers.Factory(
+        DbTaxJarReporterResolver,
+        credentials=taxjar_credential_repository,
+        cipher=token_cipher,
     )
     report_pending_tax_sales = providers.Factory(
         ReportPendingTaxSales,
         ledger=tax_report_ledger,
-        reporter=taxjar_reporter,
+        resolver=taxjar_reporter_resolver,
         orders=order_repository,
         payments=payment_repository,
         tenants=tenant_repository,
+        tenant_context=tenant_context,
+    )
+    connect_taxjar = providers.Factory(
+        ConnectTaxJar,
+        credentials=taxjar_credential_repository,
+        cipher=token_cipher,
+        tenant_context=tenant_context,
+    )
+    get_taxjar_connection = providers.Factory(
+        GetTaxJarConnection,
+        credentials=taxjar_credential_repository,
+        tenant_context=tenant_context,
+    )
+    disconnect_taxjar = providers.Factory(
+        DisconnectTaxJar,
+        credentials=taxjar_credential_repository,
         tenant_context=tenant_context,
     )
     get_tenant_fiscal_settings = providers.Factory(

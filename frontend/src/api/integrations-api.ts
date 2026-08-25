@@ -1,6 +1,7 @@
 import type { HttpClient } from "@/api/http-client"
 import type { AfipConnectBody, AfipConnectionDTO } from "@/api/types-invoicing"
 import type { MpConnectionDTO } from "@/api/types-operations"
+import type { TaxJarConnectBody, TaxJarConnectionDTO } from "@/api/types-tenant"
 
 // Data client for provider connections: MercadoPago (Fase 3.5, OAuth) and AFIP
 // (Fase 4, per-tenant cert/key).
@@ -35,5 +36,17 @@ export class IntegrationsApi {
 
   disconnectAfip(): Promise<void> {
     return this.http.request<void>("DELETE", "/integrations/afip", { auth: true })
+  }
+
+  getTaxJarStatus(): Promise<TaxJarConnectionDTO> {
+    return this.http.request<TaxJarConnectionDTO>("GET", "/integrations/taxjar", { auth: true })
+  }
+
+  connectTaxJar(body: TaxJarConnectBody): Promise<void> {
+    return this.http.request<void>("PUT", "/integrations/taxjar", { body, auth: true })
+  }
+
+  disconnectTaxJar(): Promise<void> {
+    return this.http.request<void>("DELETE", "/integrations/taxjar", { auth: true })
   }
 }
