@@ -11,14 +11,34 @@ export type Lang = "es" | "en"
 export const SUPPORTED_LANGS: Lang[] = ["es", "en"]
 export const LANG_STORAGE_KEY = "wellnod:lang"
 
-function storedLang(): Lang {
-  try {
-    const saved = localStorage.getItem(LANG_STORAGE_KEY)
-    if (saved === "es" || saved === "en") return saved
-  } catch {
-    // storage no disponible: usamos el default
-  }
+/**
+ * Idioma inicial en la entrada pública (pre-login), por prioridad:
+ *   1. Elección explícita del usuario (persistida) → gana siempre.
+ *   2. Navegador en inglés (`en-*`) → inglés (un usuario US entra y ve inglés).
+ *   3. Cualquier otro caso → español (paridad; AR y navegadores desconocidos).
+ * (Adentro de la app, cuando se exponga, mandará el `locale` del tenant.)
+ * Función pura para poder testearla sin tocar el navegador.
+ */
+export function pickInitialLang(saved: string | null, browserLang: string | undefined): Lang {
+  if (saved === "es" || saved === "en") return saved
+  if ((browserLang ?? "").toLowerCase().startsWith("en")) return "en"
   return "es"
+}
+
+function initialLang(): Lang {
+  let saved: string | null = null
+  try {
+    saved = localStorage.getItem(LANG_STORAGE_KEY)
+  } catch {
+    // storage no disponible
+  }
+  let browserLang: string | undefined
+  try {
+    browserLang = navigator.language
+  } catch {
+    // navigator no disponible
+  }
+  return pickInitialLang(saved, browserLang)
 }
 
 void i18n.use(initReactI18next).init({
@@ -26,7 +46,7 @@ void i18n.use(initReactI18next).init({
     es: { translation: es },
     en: { translation: en },
   },
-  lng: storedLang(),
+  lng: initialLang(),
   fallbackLng: "es",
   interpolation: { escapeValue: false }, // React ya escapa
   react: { useSuspense: false },
