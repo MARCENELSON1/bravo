@@ -7,7 +7,7 @@ from app.application.tax.reporting import (
 )
 from app.domain.payment.value_objects import PaymentDirection, PaymentStatus
 from app.domain.shared.money import Money
-from app.domain.tax.ports import TaxReporter
+from app.domain.tax.ports import TaxReporter, TaxReporterResolver
 from app.domain.tax.value_objects import TaxSale
 from app.domain.tenant.entities import Tenant
 from app.domain.tenant.regional import TaxEngine, TaxRegime
@@ -89,6 +89,16 @@ class _FakeReporter(TaxReporter):
         return f"ext-{sale.transaction_id}"
 
 
+class _FakeResolver(TaxReporterResolver):
+    """Returns the tenant's reporter, or None when TaxJar isn't connected."""
+
+    def __init__(self, reporter: TaxReporter | None) -> None:
+        self._reporter = reporter
+
+    async def reporter_for(self, tenant_id: str) -> TaxReporter | None:
+        return self._reporter
+
+
 def _tenant() -> Tenant:
     return Tenant(
         id="t1",
@@ -106,7 +116,7 @@ def _tenant() -> Tenant:
 def _use_case(ledger, reporter, orders, payments):
     return ReportPendingTaxSales(
         ledger=ledger,
-        reporter=reporter,
+        resolver=_FakeResolver(reporter),
         orders=orders,
         payments=payments,
         tenants=_FakeTenants(_tenant()),
@@ -162,3 +172,19 @@ async def test_empty_outbox_is_noop():
     ).execute(tenant_id="t1")
     assert (run.pending, run.sent, run.failed) == (0, 0, 0)
     assert reporter.reported == []
+
+
+async def test_not_connected_marks_rows_failed_without_filing():
+    # Tenant hasn't connected TaxJar → resolver returns None → every pending row
+    # fails (visible, retryable), never filed under a shared platform account.
+    ledger = _FakeLedger(
+        [PendingTaxReport(id="r1", order_id="o1", occurred_at="2026-08-25T00:00:00")]
+    )
+    orders = _FakeOrders({"o1": _StubOrder("o1", Money(10000, "USD"))})
+    payments = _FakePayments({"o1": [_StubPayment(1075)]})
+
+    run = await _use_case(ledger, None, orders, payments).execute(tenant_id="t1")
+
+    assert (run.pending, run.sent, run.failed) == (1, 0, 1)
+    assert ledger.sent == {}
+    assert "taxjar_not_connected" in ledger.failed["r1"]

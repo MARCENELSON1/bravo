@@ -50,6 +50,7 @@ from app.domain.shared.money import Money
 from app.domain.table.entities import Table
 from app.domain.table_session.entities import Sector, TableSession
 from app.domain.table_session.value_objects import SessionOrigin, SessionStatus
+from app.domain.tax.credentials import TaxJarCredential
 from app.domain.tenant.entities import Tenant
 from app.domain.tenant.regional import TaxEngine, TaxRegime
 from app.domain.timeclock.entities import Shift
@@ -86,6 +87,7 @@ from app.infrastructure.persistence.models import (
     TableORM,
     TableSessionORM,
     TaxCredentialORM,
+    TaxJarCredentialORM,
     TenantORM,
     UserORM,
 )
@@ -668,6 +670,26 @@ def tax_credential_to_orm(credential: TaxCredential) -> TaxCredentialORM:
         point_of_sale=credential.point_of_sale,
         fiscal_condition=credential.fiscal_condition.value,
         live_mode=credential.live_mode,
+    )
+
+
+def taxjar_credential_to_domain(row: TaxJarCredentialORM) -> TaxJarCredential:
+    return TaxJarCredential(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        api_token=row.api_token,
+        sandbox=row.sandbox,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+def taxjar_credential_to_orm(credential: TaxJarCredential) -> TaxJarCredentialORM:
+    return TaxJarCredentialORM(
+        id=credential.id,
+        tenant_id=credential.tenant_id,
+        api_token=credential.api_token,
+        sandbox=credential.sandbox,
     )
 
 

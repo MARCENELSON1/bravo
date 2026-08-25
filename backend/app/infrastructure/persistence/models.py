@@ -507,6 +507,28 @@ class TaxReportORM(Base):
     )
 
 
+class TaxJarCredentialORM(Base):
+    """Credencial de TaxJar por tenant (su propia cuenta, para reportar/AutoFile).
+    El token se guarda cifrado (TEXT). Una por tenant. Datos sensibles → RLS."""
+
+    __tablename__ = "taxjar_credentials"
+    __table_args__ = (UniqueConstraint("tenant_id", name="uq_taxjar_credentials_tenant"),)
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    # API token stored encrypted (TEXT — no length cap).
+    api_token: Mapped[str] = mapped_column(String)
+    sandbox: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
 # --- Fase 5: fichaje (shifts, tenant-scoped) -------------------------------
 
 

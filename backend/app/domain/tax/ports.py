@@ -41,3 +41,15 @@ class TaxReporter(ABC):
 
     @abstractmethod
     async def report_sale(self, sale: TaxSale) -> str: ...
+
+
+class TaxReporterResolver(ABC):
+    """Builds the reporter for a tenant from its **own** TaxJar credential.
+
+    AutoFile files under the taxpayer's account, so reporting is strictly
+    per-tenant: returns ``None`` when the tenant hasn't connected TaxJar (there
+    is nothing to file under, and never a fallback to a shared platform account).
+    """
+
+    @abstractmethod
+    async def reporter_for(self, tenant_id: str) -> TaxReporter | None: ...

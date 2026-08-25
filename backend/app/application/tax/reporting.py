@@ -23,7 +23,7 @@ from app.domain.order.repository import OrderRepository
 from app.domain.payment.repository import PaymentRepository
 from app.domain.payment.value_objects import PaymentDirection, PaymentStatus
 from app.domain.shared.money import Money
-from app.domain.tax.ports import TaxReporter
+from app.domain.tax.ports import TaxReporterResolver
 from app.domain.tax.value_objects import FiscalAddress, TaxSale
 from app.domain.tenant.repository import TenantRepository
 
@@ -77,6 +77,11 @@ def _fiscal_address(tenant) -> FiscalAddress:  # noqa: ANN001 (domain Tenant)
 class ReportPendingTaxSales:
     """Drain the outbox: report each pending taxable sale to the provider.
 
+    The reporter is resolved from the tenant's **own** TaxJar credential (AutoFile
+    files under the taxpayer). If the tenant hasn't connected TaxJar the resolver
+    returns ``None`` and every pending row is marked failed with a clear reason —
+    visible and retryable once they connect, never filed under a shared account.
+
     Per-row isolation is the whole point — a provider outage or one malformed
     sale marks that row failed (stays retryable) without stopping the rest. AR
     tenants have an empty outbox, so this returns all-zeros (parity)."""
@@ -84,14 +89,14 @@ class ReportPendingTaxSales:
     def __init__(
         self,
         ledger: TaxReportLedger,
-        reporter: TaxReporter,
+        resolver: TaxReporterResolver,
         orders: OrderRepository,
         payments: PaymentRepository,
         tenants: TenantRepository,
         tenant_context: TenantContext,
     ) -> None:
         self._ledger = ledger
-        self._reporter = reporter
+        self._resolver = resolver
         self._orders = orders
         self._payments = payments
         self._tenants = tenants
@@ -103,10 +108,13 @@ class ReportPendingTaxSales:
         sent = 0
         failed = 0
         tenant = await self._tenants.get_by_id(tenant_id)
+        reporter = await self._resolver.reporter_for(tenant_id)
         for row in pending:
             try:
+                if reporter is None:
+                    raise RuntimeError("taxjar_not_connected")
                 sale = await self._build_sale(tenant_id, tenant, row)
-                external_id = await self._reporter.report_sale(sale)
+                external_id = await reporter.report_sale(sale)
                 await self._ledger.mark_sent(row.id, external_id)
                 sent += 1
             except Exception as exc:  # noqa: BLE001 — isolate one bad sale / outage

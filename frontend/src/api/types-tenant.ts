@@ -27,3 +27,15 @@ export interface TaxQuoteDTO {
   rate_bps: number
   jurisdiction: string | null
 }
+
+// Conexión de la cuenta de TaxJar del local (para reportar/AutoFile). Per-tenant:
+// cada local conecta su propia cuenta; el token se guarda cifrado en el backend.
+export interface TaxJarConnectionDTO {
+  connected: boolean
+  sandbox: boolean | null // null cuando no está conectado
+}
+
+export interface TaxJarConnectBody {
+  api_token: string
+  sandbox: boolean
+}
