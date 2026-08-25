@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import logging
 from uuid import uuid4
 
 from app.application.analytics.ports import SalesProjector
 from app.application.inventory.ports import InventoryConsumer
+from app.application.tax.reporting import TaxReportLedger
 from app.domain.cashier.exceptions import NoOpenCashSession
 from app.domain.cashier.policy import CashSessionPolicy
 from app.domain.cashier.repository import CashSessionRepository
@@ -29,6 +31,8 @@ from app.domain.shared.money import Money
 from app.domain.tenant.exceptions import TenantNotFound
 from app.domain.tenant.repository import TenantRepository
 
+logger = logging.getLogger(__name__)
+
 
 async def _settle_order(
     payments: PaymentRepository,
@@ -37,22 +41,27 @@ async def _settle_order(
     order_id: str,
     inventory: InventoryConsumer | None = None,
     sales: SalesProjector | None = None,
+    tax_outbox: TaxReportLedger | None = None,
 ) -> None:
     """Mark the order PAID once confirmed INFLOW payments cover its total.
 
-    On the PAID transition, fire the optional post-paid collaborators (both
-    idempotent, both behind a port, neither blocks the cobro): discount the
-    recipe's stock (``inventory``) and project the canonical sale facts (``sales``).
+    On the PAID transition, fire the optional post-paid collaborators (all
+    idempotent, all behind a port, none blocks the cobro): discount the recipe's
+    stock (``inventory``), project the canonical sale facts (``sales``), and — only
+    if any sales tax was actually collected — enqueue the sale to report to the
+    tax provider (``tax_outbox``). The ``tax > 0`` gate keeps AR untouched: it
+    never collects tax, so nothing is ever enqueued (perfect parity).
     """
     order = await orders.get_by_id(tenant_id, order_id)
     if order is None:
         return
     confirmed = await payments.list_by_order(tenant_id, order_id)
-    paid = sum(
-        p.amount.amount
+    inflow_confirmed = [
+        p
         for p in confirmed
         if p.direction is PaymentDirection.INFLOW and p.status is PaymentStatus.CONFIRMED
-    )
+    ]
+    paid = sum(p.amount.amount for p in inflow_confirmed)
     if paid >= order.total().amount and order.status is not OrderStatus.PAID:
         order.mark_paid()
         await orders.save(order)
@@ -60,6 +69,13 @@ async def _settle_order(
             await inventory.consume_for_order(tenant_id, order_id)
         if sales is not None:
             await sales.project_order(tenant_id, order_id)
+        if tax_outbox is not None and sum(p.tax_amount for p in inflow_confirmed) > 0:
+            # Secondary to the cobro: a reporting bug must never break a charge,
+            # so failures are logged and left for the drain to retry.
+            try:
+                await tax_outbox.enqueue(tenant_id, order_id)
+            except Exception:  # noqa: BLE001
+                logger.warning("tax report enqueue failed for order %s", order_id, exc_info=True)
 
 
 class RegisterPayment:
@@ -77,6 +93,7 @@ class RegisterPayment:
         cash: CashSessionRepository | None = None,
         policy: CashSessionPolicy | None = None,
         fee_rates: PaymentFeeRateRepository | None = None,
+        tax_outbox: TaxReportLedger | None = None,
     ) -> None:
         self._payments = payments
         self._orders = orders
@@ -87,6 +104,7 @@ class RegisterPayment:
         self._cash = cash
         self._policy = policy
         self._fee_rates = fee_rates
+        self._tax_outbox = tax_outbox
 
     async def execute(
         self,
@@ -139,7 +157,13 @@ class RegisterPayment:
         payment = await self._gateway.charge(payment=payment)
         await self._payments.add(payment)
         await _settle_order(
-            self._payments, self._orders, tenant_id, order.id, self._inventory, self._sales
+            self._payments,
+            self._orders,
+            tenant_id,
+            order.id,
+            self._inventory,
+            self._sales,
+            self._tax_outbox,
         )
         return payment
 
@@ -250,6 +274,7 @@ class ConfirmGatewayPayment:
         tenant_context: TenantContext,
         inventory: InventoryConsumer | None = None,
         sales: SalesProjector | None = None,
+        tax_outbox: TaxReportLedger | None = None,
     ) -> None:
         self._payments = payments
         self._orders = orders
@@ -258,6 +283,7 @@ class ConfirmGatewayPayment:
         self._tenant_context = tenant_context
         self._inventory = inventory
         self._sales = sales
+        self._tax_outbox = tax_outbox
 
     async def execute(
         self,
@@ -305,6 +331,7 @@ class ConfirmGatewayPayment:
                     payment.order_id,
                     self._inventory,
                     self._sales,
+                    self._tax_outbox,
                 )
         elif status.status is PaymentStatus.FAILED:
             payment.fail()

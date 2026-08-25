@@ -41,6 +41,7 @@ _TABLES = [
     "shifts",
     "invoices",
     "tax_credentials",
+    "tax_reports",
     "payment_credentials",
     "payments",
     "order_items",

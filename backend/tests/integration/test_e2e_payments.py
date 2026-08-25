@@ -104,6 +104,51 @@ async def test_payment_tax_cannot_exceed_amount(client):
     assert r.status_code >= 400, r.text
 
 
+async def test_paid_order_with_tax_is_enqueued_to_report(client, admin_engine: AsyncEngine):
+    """Al pasar a PAID con sales tax cobrado, la venta se encola en el outbox
+    (tax_reports, PENDING) para reportar a TaxJar — una vez por comanda."""
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="ustax3", email="o@ustax3.com")
+    h = _auth(tokens)
+    order_id = await _make_order(http, h)  # subtotal 300000
+    r = await http.post(
+        f"/api/v1/orders/{order_id}/payments",
+        json={"method": "CASH", "amount": 332250, "tax": 32250},
+        headers=h,
+    )
+    assert r.status_code == 201, r.text
+    assert (await http.get(f"/api/v1/orders/{order_id}", headers=h)).json()["status"] == "PAID"
+
+    async with admin_engine.begin() as conn:
+        rows = (
+            await conn.execute(text("SELECT order_id, status FROM tax_reports"))
+        ).all()
+    assert len(rows) == 1
+    assert str(rows[0][0]) == order_id
+    assert rows[0][1] == "PENDING"
+
+
+async def test_paid_order_without_tax_is_not_enqueued(client, admin_engine: AsyncEngine):
+    """Paridad AR: un cobro sin sales tax (Σtax == 0) NO toca el outbox."""
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="artax", email="o@artax.com")
+    h = _auth(tokens)
+    order_id = await _make_order(http, h)  # subtotal 300000
+    r = await http.post(
+        f"/api/v1/orders/{order_id}/payments",
+        json={"method": "CASH", "amount": 300000},
+        headers=h,
+    )
+    assert r.status_code == 201, r.text
+    assert (await http.get(f"/api/v1/orders/{order_id}", headers=h)).json()["status"] == "PAID"
+
+    async with admin_engine.begin() as conn:
+        count = (
+            await conn.execute(text("SELECT count(*) FROM tax_reports"))
+        ).scalar_one()
+    assert count == 0
+
+
 async def test_egreso_y_listado(client):
     http, fake_email = client
     tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")

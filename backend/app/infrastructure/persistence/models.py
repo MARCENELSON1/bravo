@@ -478,6 +478,35 @@ class TaxCredentialORM(Base):
     )
 
 
+class TaxReportORM(Base):
+    """Outbox de ventas con sales tax cobrado, a reportar al proveedor (TaxJar
+    AutoFile). Una fila por comanda que cobró impuesto; idempotente por
+    (tenant, order). Vacía en AR (nunca se cobra tax). Datos de plata → RLS."""
+
+    __tablename__ = "tax_reports"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "order_id", name="uq_tax_reports_tenant_order"),
+    )
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    order_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
+    # PENDING (por enviar) | SENT (reportado) | FAILED (último intento falló, se reintenta)
+    status: Mapped[str] = mapped_column(String(20), index=True, server_default="PENDING")
+    provider: Mapped[str] = mapped_column(String(20), server_default="TAXJAR")
+    external_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    attempts: Mapped[int] = mapped_column(Integer, server_default="0")
+    last_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
 # --- Fase 5: fichaje (shifts, tenant-scoped) -------------------------------
 
 

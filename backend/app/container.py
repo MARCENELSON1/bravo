@@ -162,6 +162,7 @@ from app.application.table_session.use_cases import (
     SetSessionPax,
 )
 from app.application.tax.quote_order_tax import QuoteOrderTax
+from app.application.tax.reporting import ReportPendingTaxSales
 from app.application.tenant.fiscal import (
     GetTenantFiscalSettings,
     UpdateTenantFiscalAddress,
@@ -307,6 +308,7 @@ from app.infrastructure.persistence.table_session_repo import (
 from app.infrastructure.persistence.tax_credentials_repo import (
     SqlAlchemyTaxCredentialRepository,
 )
+from app.infrastructure.persistence.tax_report_repo import SqlAlchemyTaxReportLedger
 from app.infrastructure.persistence.tenant_repo import SqlAlchemyTenantRepository
 from app.infrastructure.persistence.tips_repo import (
     SqlAlchemyTipPayoutRepository,
@@ -324,6 +326,7 @@ from app.infrastructure.security.token_service import JwtTokenService
 from app.infrastructure.tax.resolver import EngineTaxCalculatorResolver
 from app.infrastructure.tax.simple_calculators import IncludedTaxCalculator
 from app.infrastructure.tax.taxjar_calculator import TaxJarCalculator
+from app.infrastructure.tax.taxjar_reporter import TaxJarReporter
 from app.infrastructure.timeclock.hmac_presence import HmacPresenceToken
 from app.infrastructure.timeclock.no_presence import NoPresence
 
@@ -791,6 +794,11 @@ class Container(containers.DeclarativeContainer):
     payment_repository = providers.Factory(
         SqlAlchemyPaymentRepository, session_factory=db.provided.session
     )
+    # Outbox de reportes de sales tax (TaxJar AutoFile). Se enqueue en la
+    # transición a PAID solo si se cobró tax (>0) → vacío en AR (paridad).
+    tax_report_ledger = providers.Factory(
+        SqlAlchemyTaxReportLedger, session_factory=db.provided.session
+    )
     # --- Fase 14: caja / arqueo Z ---
     cash_session_repository = providers.Factory(
         SqlAlchemyCashSessionRepository, session_factory=db.provided.session
@@ -927,6 +935,7 @@ class Container(containers.DeclarativeContainer):
         cash=cash_session_repository,
         policy=cash_session_policy,
         fee_rates=payment_fee_rate_repository,
+        tax_outbox=tax_report_ledger,
     )
     confirm_gateway_payment = providers.Factory(
         ConfirmGatewayPayment,
@@ -937,6 +946,7 @@ class Container(containers.DeclarativeContainer):
         tenant_context=tenant_context,
         inventory=consume_recipes_for_order,
         sales=project_order_sales,
+        tax_outbox=tax_report_ledger,
     )
     register_expense = providers.Factory(
         RegisterExpense,
@@ -1042,6 +1052,23 @@ class Container(containers.DeclarativeContainer):
         orders=order_repository,
         tenants=tenant_repository,
         resolver=tax_calculator_resolver,
+        tenant_context=tenant_context,
+    )
+    # Reporte de sales tax al proveedor (TaxJar AutoFile). El drain recorre el
+    # outbox y reporta con transaction_id = order_id (idempotente). Solo lo usan
+    # tenants con engine de reporte; en AR el outbox está vacío → no-op.
+    taxjar_reporter = providers.Singleton(
+        TaxJarReporter,
+        api_token=config.provided.taxjar_api_token,
+        sandbox=config.provided.taxjar_sandbox,
+    )
+    report_pending_tax_sales = providers.Factory(
+        ReportPendingTaxSales,
+        ledger=tax_report_ledger,
+        reporter=taxjar_reporter,
+        orders=order_repository,
+        payments=payment_repository,
+        tenants=tenant_repository,
         tenant_context=tenant_context,
     )
     get_tenant_fiscal_settings = providers.Factory(
