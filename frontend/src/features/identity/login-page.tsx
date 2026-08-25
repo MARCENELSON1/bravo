@@ -1,29 +1,22 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { useTranslation } from "react-i18next"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { Check } from "lucide-react"
 
 import { isApiError } from "@/api/api-error"
 import { AuthLayout } from "@/components/auth/auth-layout"
 import { FormError } from "@/components/form-error"
+import { LanguageSwitcher } from "@/components/language-switcher"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useLogin } from "@/hooks/use-login"
 import { cn } from "@/lib/utils"
 
-const schema = z.object({
-  slug: z
-    .string()
-    .min(2, "Ingresá el comercio")
-    .regex(/^[a-z0-9-]+$/, "Solo minúsculas, números y guiones"),
-  email: z.email("Email inválido"),
-  password: z.string().min(1, "Ingresá tu contraseña"),
-})
-
-type LoginValues = z.infer<typeof schema>
+type LoginValues = { slug: string; email: string; password: string }
 
 // "Recordarme": guarda solo el usuario (comercio + email) en el navegador para
 // pre-cargarlo la próxima vez. Nunca se guarda la contraseña.
@@ -44,6 +37,7 @@ function readRemembered(): { slug: string; email: string } | null {
 }
 
 export function LoginPage() {
+  const { t } = useTranslation()
   const login = useLogin()
   const navigate = useNavigate()
   const location = useLocation()
@@ -51,6 +45,19 @@ export function LoginPage() {
   const [needsVerification, setNeedsVerification] = useState(false)
   const [remembered] = useState(readRemembered)
   const [remember, setRemember] = useState(remembered !== null)
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        slug: z
+          .string()
+          .min(2, t("login.errors.slugRequired"))
+          .regex(/^[a-z0-9-]+$/, t("login.errors.slugFormat")),
+        email: z.email(t("login.errors.emailInvalid")),
+        password: z.string().min(1, t("login.errors.passwordRequired")),
+      }),
+    [t]
+  )
 
   const {
     register,
@@ -88,28 +95,31 @@ export function LoginPage() {
           setNeedsVerification(true)
           return
         }
-        setServerError(isApiError(error) ? error.message : "No pudimos iniciar sesión.")
+        setServerError(isApiError(error) ? error.message : t("login.genericError"))
       },
     })
   })
 
   return (
     <AuthLayout
-      title="Iniciar sesión"
-      description="Ingresá con el comercio y tu cuenta."
+      title={t("login.title")}
+      description={t("login.description")}
       footer={
         <span>
-          ¿No tenés cuenta?{" "}
+          {t("login.noAccount")}{" "}
           <Link to="/onboarding" className="font-medium text-foreground underline underline-offset-4">
-            Crear comercio
+            {t("login.createBusiness")}
           </Link>
         </span>
       }
     >
+      <div className="mb-4 flex justify-end">
+        <LanguageSwitcher />
+      </div>
       <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor="slug">Comercio</FieldLabel>
+            <FieldLabel htmlFor="slug">{t("login.business")}</FieldLabel>
             <Input
               id="slug"
               autoCapitalize="none"
@@ -121,7 +131,7 @@ export function LoginPage() {
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <FieldLabel htmlFor="email">{t("login.email")}</FieldLabel>
             <Input
               id="email"
               type="email"
@@ -133,7 +143,7 @@ export function LoginPage() {
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="password">Contraseña</FieldLabel>
+            <FieldLabel htmlFor="password">{t("login.password")}</FieldLabel>
             <Input
               id="password"
               type="password"
@@ -167,7 +177,7 @@ export function LoginPage() {
               )}
             />
           </span>
-          Recordar mi información de inicio de sesión
+          {t("login.remember")}
         </button>
 
         {needsVerification ? (
@@ -175,8 +185,7 @@ export function LoginPage() {
             role="alert"
             className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-foreground"
           >
-            Tenés que verificar tu email antes de ingresar. Revisá tu casilla y seguí el
-            enlace que te enviamos.
+            {t("login.needsVerification")}
           </div>
         ) : null}
 
@@ -187,7 +196,7 @@ export function LoginPage() {
           className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/90"
           disabled={login.isPending}
         >
-          {login.isPending ? "Ingresando…" : "Ingresar"}
+          {login.isPending ? t("login.submitting") : t("login.submit")}
         </Button>
       </form>
     </AuthLayout>
