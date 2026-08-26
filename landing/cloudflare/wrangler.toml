@@ -1,0 +1,10 @@
+name = "wellnod-geo"
+main = "geo-worker.js"
+compatibility_date = "2024-11-01"
+account_id = "202b2af4ea08a3398bf315a91da0d82b"
+
+# El Worker corre en toda la zona pero se auto-filtra: solo actúa en "/" (decide la
+# región y redirige al humano de otro país a /en/); el resto pasa directo al origen.
+routes = [
+  { pattern = "wellnod.com/*", zone_name = "wellnod.com" },
+]
