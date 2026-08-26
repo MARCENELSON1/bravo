@@ -9,6 +9,7 @@ class PlanTier(StrEnum):
 
     BASIC = "BASIC"
     PRO = "PRO"
+    ENTERPRISE = "ENTERPRISE"
 
 
 class BillingRegion(StrEnum):

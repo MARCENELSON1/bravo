@@ -22,6 +22,11 @@ from app.application.analytics.use_cases import (
     GetRevenueDaily,
     GetRevenueSummary,
 )
+from app.application.billing.platform_use_cases import (
+    DeletePlan,
+    ListAllPlans,
+    SavePlan,
+)
 from app.application.billing.use_cases import (
     CancelSubscription,
     GetSubscription,
@@ -850,6 +855,10 @@ class Container(containers.DeclarativeContainer):
         mercadopago=mercadopago_billing_gateway,
     )
     list_plans = providers.Factory(ListPlans, plans=plan_repository)
+    # Panel de plataforma: gestión del catálogo global de planes (super-admin).
+    list_all_plans = providers.Factory(ListAllPlans, plans=plan_repository)
+    save_plan = providers.Factory(SavePlan, plans=plan_repository)
+    delete_plan = providers.Factory(DeletePlan, plans=plan_repository)
     get_subscription = providers.Factory(
         GetSubscription,
         subscriptions=subscription_repository,

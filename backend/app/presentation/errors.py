@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from app.domain.advisor.exceptions import InvalidAdvisorSettings
 from app.domain.billing.exceptions import (
     InvalidBillingWebhook,
+    InvalidPlanFeature,
     InvalidSubscriptionTransition,
     PlanNotFound,
     RailNotAllowedForRegion,
@@ -168,6 +169,7 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (RailNotAllowedForRegion, 409),
     (InvalidSubscriptionTransition, 409),
     (InvalidBillingWebhook, 401),
+    (InvalidPlanFeature, 422),
     # Fase 5 — fichaje
     (ShiftNotFound, 404),
     (ShiftAlreadyOpen, 409),

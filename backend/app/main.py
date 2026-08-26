@@ -32,6 +32,7 @@ from app.presentation.api.v1 import (
     orders,
     payments,
     ping,
+    platform,
     products,
     realtime,
     reports,
@@ -95,6 +96,7 @@ def create_app() -> FastAPI:
     app.include_router(invoices.router, prefix="/api/v1")
     app.include_router(tax.router, prefix="/api/v1")
     app.include_router(taxjar.router, prefix="/api/v1")
+    app.include_router(platform.router, prefix="/api/v1")
     app.include_router(timeclock.router, prefix="/api/v1")
     app.include_router(inventory.router, prefix="/api/v1")
     app.include_router(reservations.router, prefix="/api/v1")

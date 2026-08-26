@@ -34,3 +34,8 @@ class SubscriptionAlreadyActive(DomainError):
 class InvalidBillingWebhook(DomainError):
     code = "invalid_billing_webhook"
     message = "La notificación de billing no es válida."
+
+
+class InvalidPlanFeature(DomainError):
+    code = "invalid_plan_feature"
+    message = "El plan incluye una capacidad que no existe en el catálogo."
