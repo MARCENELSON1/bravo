@@ -136,7 +136,10 @@ class HandleBillingWebhook:
         """Devuelve si hubo un cambio que persistir. Cada rama es idempotente."""
         changed = False
         if event.type is BillingEventType.ACTIVATED:
-            if subscription.external_ref is None:
+            # Al activar, la pasarela nos da el id DURABLE de la suscripción
+            # (Stripe sub_…), que reemplaza el del checkout (cs_…) para cancelar
+            # y correlacionar eventos futuros.
+            if subscription.external_ref != event.external_ref:
                 subscription.external_ref = event.external_ref
                 changed = True
             if subscription.status in (
