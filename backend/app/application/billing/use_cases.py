@@ -76,6 +76,7 @@ class StartSubscriptionCheckout:
         success_url: str,
         cancel_url: str,
         payer_email: str | None = None,
+        trial_days: int = 0,
     ) -> str:
         self._tenant_context.set(tenant_id)
         plan = await self._plans.get_by_id(plan_id)
@@ -101,6 +102,7 @@ class StartSubscriptionCheckout:
             success_url=success_url,
             cancel_url=cancel_url,
             payer_email=payer_email,
+            trial_days=trial_days,
         )
         subscription.external_ref = session.external_ref
         if existing is not None:

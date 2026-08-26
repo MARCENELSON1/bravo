@@ -76,6 +76,27 @@ async def test_start_checkout_creates_preapproval():
     assert body["auto_recurring"]["transaction_amount"] == 5000.0  # 500000 centavos → 5000 pesos
     assert body["auto_recurring"]["currency_id"] == "ARS"
     assert body["auto_recurring"]["frequency_type"] == "months"
+    # Sin trial_days no se manda free_trial.
+    assert "free_trial" not in body["auto_recurring"]
+
+
+async def test_start_checkout_with_trial_adds_free_trial():
+    captured: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"id": "pre_1", "init_point": "https://mp/x"})
+
+    await _gw(httpx.MockTransport(handler)).start_checkout(
+        subscription=_sub(),
+        plan=_plan(),
+        success_url="https://ok",
+        cancel_url="https://no",
+        payer_email="dueño@bar.com",
+        trial_days=30,
+    )
+    free_trial = captured["body"]["auto_recurring"]["free_trial"]
+    assert free_trial == {"frequency": 30, "frequency_type": "days"}
 
 
 async def test_start_checkout_requires_payer_email():

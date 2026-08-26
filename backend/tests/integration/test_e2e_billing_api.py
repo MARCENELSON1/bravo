@@ -32,7 +32,7 @@ class _FakeGateway(BillingGateway):
     def __init__(self) -> None:
         self.event: BillingEvent | None = None
 
-    async def start_checkout(self, *, subscription, plan, success_url, cancel_url, payer_email=None):  # noqa: ANN001, E501
+    async def start_checkout(self, *, subscription, plan, success_url, cancel_url, payer_email=None, trial_days=0):  # noqa: ANN001, E501
         return CheckoutSession(url="https://pay/redirect", external_ref="ext-1")
 
     async def cancel(self, *, external_ref: str) -> None:

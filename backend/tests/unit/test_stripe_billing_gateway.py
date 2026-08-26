@@ -73,6 +73,28 @@ async def test_start_checkout_posts_subscription_session():
     # La metadata lleva el tenant en la sesión Y en la suscripción (para webhooks).
     assert form["metadata[tenant_id]"] == ["t1"]
     assert form["subscription_data[metadata][tenant_id]"] == ["t1"]
+    # Sin trial_days no se manda período de prueba.
+    assert "subscription_data[trial_period_days]" not in form
+
+
+async def test_start_checkout_with_trial_sets_trial_and_requires_card():
+    captured: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["form"] = parse_qs(request.content.decode())
+        return httpx.Response(200, json={"id": "cs_1", "url": "https://checkout/x"})
+
+    await _gateway(httpx.MockTransport(handler)).start_checkout(
+        subscription=_sub(),
+        plan=_plan(),
+        success_url="https://ok",
+        cancel_url="https://no",
+        trial_days=30,
+    )
+    form = captured["form"]
+    assert form["subscription_data[trial_period_days]"] == ["30"]
+    # Tarjeta obligatoria upfront (no if_required).
+    assert form["payment_method_collection"] == ["always"]
 
 
 async def test_cancel_deletes_subscription():

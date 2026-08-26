@@ -127,6 +127,9 @@ class Settings(BaseSettings):
     # URLs de retorno del checkout hosteado (a dónde vuelve el usuario tras pagar).
     billing_success_url: str = ""
     billing_cancel_url: str = ""
+    # Prueba gratis con tarjeta upfront: días de trial antes del primer cobro.
+    # Aplica a los dos rieles (Stripe trial_period_days / MercadoPago free_trial).
+    billing_trial_days: int = 30
 
     # Fichaje por presencia (Fase 5.5). "hmac" = QR/código rotativo firmado;
     # "off" = deshabilitado. El secreto de firma cae al jwt_secret si no se setea.

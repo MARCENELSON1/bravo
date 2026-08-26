@@ -70,9 +70,10 @@ class _FakeGateway(BillingGateway):
         self.cancel_calls: list[str] = []
 
     async def start_checkout(  # noqa: ANN001
-        self, *, subscription, plan, success_url, cancel_url, payer_email=None
+        self, *, subscription, plan, success_url, cancel_url, payer_email=None, trial_days=0
     ):
         self.checkout_calls.append(subscription.rail)
+        self.last_trial_days = trial_days
         return CheckoutSession(url="https://pay/x", external_ref="ext-123")
 
     async def cancel(self, *, external_ref: str) -> None:
@@ -138,6 +139,15 @@ async def test_checkout_ar_plan_uses_mercadopago_rail():
     # El riel (y la pasarela) los fija la región del plan: AR → MercadoPago.
     assert resolver.rails == [BillingRail.MERCADOPAGO]
     assert subs.added.rail is BillingRail.MERCADOPAGO
+
+
+async def test_checkout_forwards_trial_days_to_gateway():
+    gw = _FakeGateway()
+    uc = StartSubscriptionCheckout(_FakePlans(_plan()), _FakeSubs(), _FakeResolver(gw), _NoopCtx())
+    await uc.execute(
+        tenant_id="t1", plan_id="plan1", success_url="s", cancel_url="c", trial_days=30
+    )
+    assert gw.last_trial_days == 30
 
 
 async def test_checkout_rejected_when_already_active():

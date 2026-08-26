@@ -68,6 +68,7 @@ class StripeBillingGateway(BillingGateway):
         success_url: str,
         cancel_url: str,
         payer_email: str | None = None,
+        trial_days: int = 0,
     ) -> CheckoutSession:
         data = {
             "mode": "subscription",
@@ -83,6 +84,14 @@ class StripeBillingGateway(BillingGateway):
             "subscription_data[metadata][tenant_id]": subscription.tenant_id,
             "subscription_data[metadata][subscription_id]": subscription.id,
         }
+        if trial_days > 0:
+            # Prueba con tarjeta upfront: Checkout pide el medio de pago por
+            # default (no seteamos payment_method_collection=if_required, que lo
+            # haría opcional); lo dejamos explícito en "always" para fijar la
+            # intención. El primer cobro se difiere trial_days y al vencer Stripe
+            # cobra el monto completo (webhook customer.subscription.updated=active).
+            data["subscription_data[trial_period_days]"] = str(trial_days)
+            data["payment_method_collection"] = "always"
         if payer_email:
             data["customer_email"] = payer_email
         async with self._client() as client:

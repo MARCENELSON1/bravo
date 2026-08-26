@@ -96,6 +96,7 @@ async def start_checkout(
         payer_email=profile.email,
         success_url=config.billing_success_url,
         cancel_url=config.billing_cancel_url,
+        trial_days=config.billing_trial_days,
     )
     return CheckoutResponse(url=url)
 

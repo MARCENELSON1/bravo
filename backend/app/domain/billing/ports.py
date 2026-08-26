@@ -21,12 +21,15 @@ class BillingGateway(ABC):
         success_url: str,
         cancel_url: str,
         payer_email: str | None = None,
+        trial_days: int = 0,
     ) -> CheckoutSession:
         """Inicia un checkout hosteado para la suscripción y devuelve la URL de
         pago + la referencia en la pasarela. La metadata lleva el ``tenant_id`` y
         el id de la suscripción (para resolver el tenant en el webhook).
         ``payer_email`` es opcional para Stripe (pre-llena el checkout) pero
-        obligatorio para MercadoPago Preapproval."""
+        obligatorio para MercadoPago Preapproval. ``trial_days`` > 0 arranca la
+        suscripción con un período de prueba (tarjeta pedida upfront igual; el
+        primer cobro se difiere ese número de días)."""
 
     @abstractmethod
     async def cancel(self, *, external_ref: str) -> None:

@@ -67,23 +67,34 @@ class MercadoPagoPreapprovalGateway(BillingGateway):
         success_url: str,
         cancel_url: str,
         payer_email: str | None = None,
+        trial_days: int = 0,
     ) -> CheckoutSession:
         if not payer_email:
             raise ValueError("payer_email es obligatorio para MercadoPago Preapproval")
         frequency, frequency_type = _FREQUENCY[plan.interval]
+        auto_recurring: dict = {
+            "frequency": frequency,
+            "frequency_type": frequency_type,
+            # MercadoPago usa unidades mayores (pesos), no centavos.
+            "transaction_amount": plan.price.amount / 100,
+            "currency_id": plan.price.currency,
+        }
+        if trial_days > 0:
+            # Forma 1 (sin plan asociado): free_trial dentro del auto_recurring.
+            # La tarjeta se captura igual en el init_point al autorizar; el primer
+            # cobro se difiere trial_days. Si MP no respetara el trial en este
+            # flujo, el fallback es la Forma 2 (preapproval_plan con free_trial).
+            auto_recurring["free_trial"] = {
+                "frequency": trial_days,
+                "frequency_type": "days",
+            }
         body = {
             "reason": f"Wellnod {plan.tier.value}",
             "external_reference": f"{subscription.tenant_id}:{subscription.id}",
             "payer_email": payer_email,
             "back_url": success_url,
             "status": "pending",
-            "auto_recurring": {
-                "frequency": frequency,
-                "frequency_type": frequency_type,
-                # MercadoPago usa unidades mayores (pesos), no centavos.
-                "transaction_amount": plan.price.amount / 100,
-                "currency_id": plan.price.currency,
-            },
+            "auto_recurring": auto_recurring,
         }
         async with self._client() as client:
             resp = await client.post("/preapproval", json=body)
