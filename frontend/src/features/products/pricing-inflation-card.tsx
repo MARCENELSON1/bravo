@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 
 import { apiErrorText } from "@/api/translate-error"
 import type { PricingRowDTO } from "@/api/types-operations"
+import { dateLocale } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/ui/glass-card"
 import { Input } from "@/components/ui/input"
@@ -197,7 +198,7 @@ function PriceEditor({
           <ul className="flex flex-col gap-1 text-xs tabular-nums text-muted-foreground">
             {[...history.data.changes].reverse().map((c, i) => (
               <li key={i} className="flex justify-between gap-2">
-                <span>{new Date(c.changed_at).toLocaleDateString("es-AR")}</span>
+                <span>{new Date(c.changed_at).toLocaleDateString(dateLocale())}</span>
                 <span>
                   {c.old_price_amount != null
                     ? `${formatMoney(c.old_price_amount, currency)} → `

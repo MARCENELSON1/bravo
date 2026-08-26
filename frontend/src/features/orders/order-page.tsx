@@ -5,6 +5,7 @@ import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
 import { apiErrorText } from "@/api/translate-error"
+import { dateLocale } from "@/lib/format"
 import type { DocType } from "@/api/types-invoicing"
 import type { OrderDTO, PaymentMethod, ProductDTO } from "@/api/types-operations"
 import { useAuth } from "@/auth/auth-context"
@@ -153,7 +154,7 @@ export function OrderPage() {
   }
 
   const printComanda = () => {
-    const printedAt = new Date().toLocaleString("es-AR", {
+    const printedAt = new Date().toLocaleString(dateLocale(), {
       day: "2-digit",
       month: "2-digit",
       hour: "2-digit",
@@ -776,7 +777,7 @@ function CobroSection({
   }
 
   const printReceipt = () => {
-    const printedAt = new Date().toLocaleString("es-AR", {
+    const printedAt = new Date().toLocaleString(dateLocale(), {
       day: "2-digit",
       month: "2-digit",
       hour: "2-digit",

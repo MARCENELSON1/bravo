@@ -2,11 +2,12 @@ import { useTranslation } from "react-i18next"
 
 import type { MovementDTO } from "@/api/types-operations"
 import { GlassCard } from "@/components/ui/glass-card"
+import { dateLocale } from "@/lib/format"
 import { formatMoney } from "@/lib/money"
 
 function timeLabel(iso: string): string {
   const d = new Date(iso)
-  return d.toLocaleString("es-AR", {
+  return d.toLocaleString(dateLocale(), {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",

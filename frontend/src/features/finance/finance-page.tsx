@@ -3,6 +3,7 @@ import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import type { FinanceKpiDTO, FinanceOverviewDTO } from "@/api/types-operations"
+import { dateLocale } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/ui/glass-card"
 import { GradientHeading } from "@/components/ui/gradient-heading"
@@ -325,7 +326,7 @@ function ProductRow({
           ) : detail.data && detail.data.lines.length > 0 ? (
             detail.data.lines.map((line) => (
               <div key={line.order_id} className="flex items-center justify-between py-0.5">
-                <span>{new Date(line.occurred_at).toLocaleDateString("es-AR")}</span>
+                <span>{new Date(line.occurred_at).toLocaleDateString(dateLocale())}</span>
                 <span className="tabular-nums">
                   {line.quantity}× · {formatMoney(line.margin_amount, currency)}
                 </span>

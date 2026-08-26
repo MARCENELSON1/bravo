@@ -4,6 +4,7 @@ import { ArrowLeft, Check } from "lucide-react"
 import { toast } from "sonner"
 
 import { apiErrorText } from "@/api/translate-error"
+import { dateLocale } from "@/lib/format"
 import type { BillingPlanDTO } from "@/api/types-billing"
 import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/ui/glass-card"
@@ -106,7 +107,7 @@ export function SubscriptionPage() {
                 })}
                 {sub.current_period_end
                   ? t("billing.renewsOn", {
-                      date: new Date(sub.current_period_end).toLocaleDateString(),
+                      date: new Date(sub.current_period_end).toLocaleDateString(dateLocale()),
                     })
                   : ""}
               </p>
