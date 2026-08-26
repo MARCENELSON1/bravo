@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { QRCodeSVG } from "qrcode.react"
+import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router-dom"
 
 import { usePresenceChallenge } from "@/hooks/use-timeclock"
@@ -10,6 +11,7 @@ import { readStoredDeviceToken, secondsUntil, storeDeviceToken } from "@/lib/pre
 // authenticated as a device via a token the OWNER provisions (URL `?device=`).
 // Responsive: fills the screen on a mounted monitor and on a phone/tablet alike.
 export function PresenceDisplayPage() {
+  const { t } = useTranslation()
   const [params] = useSearchParams()
   const fromUrl = params.get("device")
   // Derive the token (URL on first open, else the persisted one) — no effect
@@ -31,20 +33,21 @@ export function PresenceDisplayPage() {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-8 bg-background px-6 py-10 text-center">
       <div className="flex flex-col gap-1">
-        <span className="font-heading text-2xl font-semibold sm:text-3xl">Fichaje</span>
+        <span className="font-heading text-2xl font-semibold sm:text-3xl">
+          {t("timeclock.display.title")}
+        </span>
         <span className="text-sm text-muted-foreground">
-          Escaneá el QR o ingresá el código desde tu celular.
+          {t("timeclock.display.subtitle")}
         </span>
       </div>
 
       {!deviceToken ? (
         <p className="max-w-sm text-balance text-muted-foreground">
-          Este dispositivo no está configurado. Pedile al dueño el enlace de fichaje
-          (Personal → Dispositivo de fichaje) y abrilo en esta pantalla.
+          {t("timeclock.display.notConfigured")}
         </p>
       ) : challenge.isError ? (
         <p className="max-w-sm text-balance text-destructive">
-          No pudimos validar este dispositivo. Volvé a abrir el enlace de fichaje.
+          {t("timeclock.display.validationError")}
         </p>
       ) : challenge.data ? (
         <>
@@ -56,12 +59,16 @@ export function PresenceDisplayPage() {
             />
           </div>
           <div className="flex flex-col items-center gap-1">
-            <span className="text-xs uppercase tracking-wider text-muted-foreground">Código</span>
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              {t("timeclock.display.codeLabel")}
+            </span>
             <span className="font-mono text-4xl font-bold tracking-[0.3em] sm:text-5xl">
               {challenge.data.code}
             </span>
             <span className="text-xs text-muted-foreground">
-              Cambia en {secondsUntil(challenge.data.expires_at, now)} s
+              {t("timeclock.display.changesIn", {
+                seconds: secondsUntil(challenge.data.expires_at, now),
+              })}
             </span>
           </div>
         </>

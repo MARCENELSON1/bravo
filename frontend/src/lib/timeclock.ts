@@ -36,12 +36,6 @@ export function formatDateTime(iso: string): string {
   })
 }
 
-export const SHIFT_SOURCE_LABELS: Record<string, string> = {
-  SELF: "Propio",
-  PRESENCE: "Presencial",
-  MANAGER: "Corrección",
-}
-
 // Minutes elapsed between an ISO instant and now (never negative).
 export function minutesSince(iso: string, now: number): number {
   return Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60000))

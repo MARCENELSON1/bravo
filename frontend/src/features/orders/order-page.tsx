@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type { DocType } from "@/api/types-invoicing"
 import type { OrderDTO, PaymentMethod, ProductDTO } from "@/api/types-operations"
 import { useAuth } from "@/auth/auth-context"
@@ -50,18 +52,15 @@ import { formatMoney } from "@/lib/money"
 import { bumpUsage } from "@/lib/product-usage"
 import { printTicket, receiptHtml, ticketHtml } from "@/lib/ticket"
 
-const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: "CASH", label: "Efectivo" },
-  { value: "CARD", label: "Tarjeta" },
-  { value: "TRANSFER", label: "Transferencia" },
-  { value: "MERCADOPAGO", label: "MercadoPago (link/QR)" },
-  { value: "QR", label: "QR" },
-]
+// El label se resuelve en el consumidor con t(`orders.paymentMethods.${value}`);
+// el código (CASH/CARD/…) es dato estable, no cambia por idioma.
+const PAYMENT_METHODS: PaymentMethod[] = ["CASH", "CARD", "TRANSFER", "MERCADOPAGO", "QR"]
 const CHARGE_ROLES = ["CASHIER", "MANAGER", "OWNER"]
 const EDIT_ROLES = ["WAITER", "MANAGER", "OWNER"]
 const INVOICE_ROLES = ["OWNER", "MANAGER"]
 
 export function OrderPage() {
+  const { t } = useTranslation()
   const { orderId = "" } = useParams()
   const { session } = useAuth()
   const role = session?.role ?? ""
@@ -91,9 +90,9 @@ export function OrderPage() {
   useEffect(() => {
     // Fires once when the webhook flips the order to PAID while we were waiting.
     if (isPaid && awaitingOnline) {
-      toast.success("¡Cobro confirmado! La comanda quedó pagada.")
+      toast.success(t("orders.toasts.chargeConfirmed"))
     }
-  }, [isPaid, awaitingOnline])
+  }, [isPaid, awaitingOnline, t])
 
   if (order.isPending) {
     return (
@@ -106,9 +105,9 @@ export function OrderPage() {
   if (order.isError || !order.data) {
     return (
       <div className="mx-auto max-w-md p-10 text-center text-sm text-muted-foreground">
-        No encontramos la comanda.{" "}
+        {t("orders.notFound")}{" "}
         <Link to="/app/floor" className="underline underline-offset-4">
-          Volver
+          {t("orders.backToFloor")}
         </Link>
       </div>
     )
@@ -119,8 +118,9 @@ export function OrderPage() {
   // when it's OPEN. Only a PAID/CANCELLED order is closed to new items.
   const canAddRound = canEdit && !isPaid && data.status !== "CANCELLED"
   const pendingCount = data.items.filter((it) => it.status === "PENDING").length
-  const tableNumber = tables.data?.find((t) => t.id === data.table_id)?.number
-  const tableLabel = tableNumber != null ? `Mesa ${tableNumber}` : "Comanda"
+  const tableNumber = tables.data?.find((tbl) => tbl.id === data.table_id)?.number
+  const tableLabel =
+    tableNumber != null ? t("orders.table", { number: tableNumber }) : t("orders.orderFallback")
 
   const handleAdd = (product: ProductDTO, quantity: number) => {
     bumpUsage(product.id) // learn favorites for the grid ranking
@@ -136,7 +136,7 @@ export function OrderPage() {
       },
       {
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos agregar el ítem."),
+          toast.error(apiErrorText(error, t, t("orders.errors.addItemFailed"))),
       }
     )
   }
@@ -144,11 +144,11 @@ export function OrderPage() {
   const send = () => {
     sendOrder.mutate(orderId, {
       onSuccess: () => {
-        toast.success("Ítems marchados a su estación.")
+        toast.success(t("orders.toasts.itemsMarched"))
         navigate("/app/floor")
       },
       onError: (error) =>
-        toast.error(isApiError(error) ? error.message : "No pudimos marchar la comanda."),
+        toast.error(apiErrorText(error, t, t("orders.errors.marchFailed"))),
     })
   }
 
@@ -159,20 +159,29 @@ export function OrderPage() {
       hour: "2-digit",
       minute: "2-digit",
     })
-    printTicket(ticketHtml(data, tableLabel, printedAt))
+    printTicket(
+      ticketHtml(data, tableLabel, printedAt, undefined, {
+        stations: {
+          KITCHEN: t("orders.ticket.stations.KITCHEN"),
+          BAR: t("orders.ticket.stations.BAR"),
+        },
+        empty: t("orders.ticket.empty"),
+      }),
+      t("orders.ticket.windowTitle")
+    )
   }
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex items-center justify-between gap-2">
         <GradientHeading size="md" weight="bold">
-          Comanda
+          {t("orders.heading")}
         </GradientHeading>
         <Link
           to="/app/floor"
           className="text-sm text-muted-foreground underline underline-offset-4"
         >
-          ← Mesas
+          {t("orders.backToTables")}
         </Link>
       </header>
 
@@ -181,7 +190,9 @@ export function OrderPage() {
       {canAddRound ? (
         <Card>
           <CardHeader>
-            <CardTitle>{data.status === "OPEN" ? "Agregar ítem" : "Agregar otra ronda"}</CardTitle>
+            <CardTitle>
+              {data.status === "OPEN" ? t("orders.addItem") : t("orders.addRound")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ProductGrid products={products.data ?? []} onAdd={handleAdd} />
@@ -192,10 +203,10 @@ export function OrderPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-2">
-            <span>Ítems · {data.status}</span>
+            <span>{t("orders.itemsTitle", { status: data.status })}</span>
             {canEdit && data.items.length > 0 ? (
               <Button variant="outline" size="sm" onClick={printComanda}>
-                Imprimir
+                {t("orders.print")}
               </Button>
             ) : null}
           </CardTitle>
@@ -244,9 +255,7 @@ export function OrderPage() {
                           removeItem.mutate(it.id, {
                             onError: (error) =>
                               toast.error(
-                                isApiError(error)
-                                  ? error.message
-                                  : "No pudimos quitar el ítem."
+                                apiErrorText(error, t, t("orders.errors.removeItemFailed"))
                               ),
                           })
                         }
@@ -262,7 +271,7 @@ export function OrderPage() {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">Sin ítems todavía.</p>
+            <p className="text-sm text-muted-foreground">{t("orders.noItems")}</p>
           )}
           <OrderTotalBreakdown
             orderId={data.id}
@@ -274,7 +283,11 @@ export function OrderPage() {
 
       {canAddRound ? (
         <Button onClick={send} disabled={sendOrder.isPending || pendingCount === 0}>
-          {sendOrder.isPending ? "Marchando…" : `Marchar${pendingCount > 0 ? ` (${pendingCount})` : ""}`}
+          {sendOrder.isPending
+            ? t("orders.marching")
+            : pendingCount > 0
+              ? t("orders.marchCount", { count: pendingCount })
+              : t("orders.march")}
         </Button>
       ) : null}
 
@@ -295,6 +308,7 @@ export function OrderPage() {
 
 // CRM: atribuir la comanda a un cliente para que sume a su historial de compras.
 function OrderCustomer({ order }: { order: OrderDTO }) {
+  const { t } = useTranslation()
   const customers = useCustomers()
   const assign = useAssignCustomer(order.id)
   const [search, setSearch] = useState("")
@@ -314,19 +328,19 @@ function OrderCustomer({ order }: { order: OrderDTO }) {
     assign.mutate(customerId, {
       onSuccess: () => setSearch(""),
       onError: (e) =>
-        toast.error(isApiError(e) ? e.message : "No pudimos asignar el cliente."),
+        toast.error(apiErrorText(e, t, t("orders.errors.customerAssignFailed"))),
     })
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Cliente</CardTitle>
+        <CardTitle>{t("orders.customer")}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         {order.customer_id ? (
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm text-foreground">
-              {current ? current.name : "Cliente asignado"}
+              {current ? current.name : t("orders.customerAssigned")}
             </span>
             <Button
               size="sm"
@@ -335,13 +349,13 @@ function OrderCustomer({ order }: { order: OrderDTO }) {
               disabled={assign.isPending}
               onClick={() => set(null)}
             >
-              Quitar
+              {t("orders.remove")}
             </Button>
           </div>
         ) : (
           <>
             <Input
-              placeholder="Buscar cliente por nombre o teléfono…"
+              placeholder={t("orders.customerSearchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -363,13 +377,9 @@ function OrderCustomer({ order }: { order: OrderDTO }) {
                 ))}
               </div>
             ) : q ? (
-              <p className="text-xs text-muted-foreground">
-                No hay clientes que coincidan. Cargalos en Clientes.
-              </p>
+              <p className="text-xs text-muted-foreground">{t("orders.noCustomers")}</p>
             ) : (
-              <p className="text-xs text-muted-foreground">
-                Asigná un cliente para sumar esta compra a su historial (opcional).
-              </p>
+              <p className="text-xs text-muted-foreground">{t("orders.customerHint")}</p>
             )}
           </>
         )}
@@ -381,6 +391,7 @@ function OrderCustomer({ order }: { order: OrderDTO }) {
 // Move this order to a free table, or join another occupied table into it. Both
 // read the live floor so the cashier/waiter picks a real target.
 function TableMoveSection({ order }: { order: OrderDTO }) {
+  const { t } = useTranslation()
   const floor = useFloor()
   const transfer = useTransferOrder(order.id)
   const merge = useMergeOrders(order.id)
@@ -388,20 +399,20 @@ function TableMoveSection({ order }: { order: OrderDTO }) {
   const [mergeFrom, setMergeFrom] = useState("")
 
   const tables = floor.data ?? []
-  const freeTables = tables.filter((t) => !t.active_order && t.id !== order.table_id)
+  const freeTables = tables.filter((tbl) => !tbl.active_order && tbl.id !== order.table_id)
   const otherOccupied = tables.filter(
-    (t) => t.active_order && t.active_order.id !== order.id
+    (tbl) => tbl.active_order && tbl.active_order.id !== order.id
   )
 
   const doMove = () => {
     if (!moveTo) return
     transfer.mutate(moveTo, {
       onSuccess: () => {
-        toast.success("Mesa cambiada.")
+        toast.success(t("orders.toasts.tableChanged"))
         setMoveTo("")
       },
       onError: (error) =>
-        toast.error(isApiError(error) ? error.message : "No pudimos mover la mesa."),
+        toast.error(apiErrorText(error, t, t("orders.errors.moveFailed"))),
     })
   }
 
@@ -409,11 +420,11 @@ function TableMoveSection({ order }: { order: OrderDTO }) {
     if (!mergeFrom) return
     merge.mutate(mergeFrom, {
       onSuccess: () => {
-        toast.success("Mesas unidas.")
+        toast.success(t("orders.toasts.tablesMerged"))
         setMergeFrom("")
       },
       onError: (error) =>
-        toast.error(isApiError(error) ? error.message : "No pudimos unir las mesas."),
+        toast.error(apiErrorText(error, t, t("orders.errors.mergeFailed"))),
     })
   }
 
@@ -423,7 +434,7 @@ function TableMoveSection({ order }: { order: OrderDTO }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Mesa</CardTitle>
+        <CardTitle>{t("orders.tableSection")}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
@@ -431,18 +442,18 @@ function TableMoveSection({ order }: { order: OrderDTO }) {
             className={selectClass}
             value={moveTo}
             onChange={(e) => setMoveTo(e.target.value)}
-            aria-label="Mover a mesa libre"
+            aria-label={t("orders.moveToFreeTable")}
           >
-            <option value="">Mover a mesa…</option>
-            {freeTables.map((t) => (
-              <option key={t.id} value={t.id}>
-                Mesa {t.number}
-                {t.name ? ` (${t.name})` : ""}
+            <option value="">{t("orders.moveToTablePlaceholder")}</option>
+            {freeTables.map((tbl) => (
+              <option key={tbl.id} value={tbl.id}>
+                {t("orders.table", { number: tbl.number })}
+                {tbl.name ? ` (${tbl.name})` : ""}
               </option>
             ))}
           </select>
           <Button variant="outline" onClick={doMove} disabled={!moveTo || transfer.isPending}>
-            Mover
+            {t("orders.move")}
           </Button>
         </div>
         <div className="flex items-center gap-2">
@@ -450,23 +461,21 @@ function TableMoveSection({ order }: { order: OrderDTO }) {
             className={selectClass}
             value={mergeFrom}
             onChange={(e) => setMergeFrom(e.target.value)}
-            aria-label="Unir otra mesa acá"
+            aria-label={t("orders.mergeTableHere")}
           >
-            <option value="">Unir otra mesa acá…</option>
-            {otherOccupied.map((t) => (
-              <option key={t.id} value={t.active_order!.id}>
-                Mesa {t.number}
-                {t.name ? ` (${t.name})` : ""}
+            <option value="">{t("orders.mergeTablePlaceholder")}</option>
+            {otherOccupied.map((tbl) => (
+              <option key={tbl.id} value={tbl.active_order!.id}>
+                {t("orders.table", { number: tbl.number })}
+                {tbl.name ? ` (${tbl.name})` : ""}
               </option>
             ))}
           </select>
           <Button variant="outline" onClick={doMerge} disabled={!mergeFrom || merge.isPending}>
-            Unir
+            {t("orders.merge")}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Unir trae los ítems de la otra mesa a esta y libera la de origen.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("orders.mergeHint")}</p>
       </CardContent>
     </Card>
   )
@@ -481,6 +490,7 @@ const INVOICE_DOC_TYPES: { value: DocType; label: string }[] = [
 // Shown on a paid comanda (OWNER/MANAGER): emits the AFIP comprobante or, if one
 // already exists, shows its CAE. The A/B/C type is derived server-side.
 function FacturaSection({ order }: { order: OrderDTO }) {
+  const { t } = useTranslation()
   const invoice = useOrderInvoice(order.id)
   const issue = useIssueInvoice(order.id)
   const [docType, setDocType] = useState<DocType>("CONSUMIDOR_FINAL")
@@ -490,21 +500,24 @@ function FacturaSection({ order }: { order: OrderDTO }) {
     const needsDoc = docType !== "CONSUMIDOR_FINAL"
     const number = needsDoc ? docNumber.trim() : "0"
     if (needsDoc && !/^\d{7,11}$/.test(number)) {
-      toast.error("Ingresá un CUIT/DNI válido (solo números).")
+      toast.error(t("orders.toasts.invalidDoc"))
       return
     }
     issue.mutate(
       { doc_type: docType, doc_number: number },
       {
         onSuccess: (inv) => {
-          if (inv.status === "AUTHORIZED") toast.success(`Factura autorizada · CAE ${inv.cae}`)
+          if (inv.status === "AUTHORIZED")
+            toast.success(t("orders.toasts.invoiceAuthorized", { cae: inv.cae }))
           else
             toast.error(
-              `ARCA rechazó el comprobante${inv.rejection ? `: ${inv.rejection}` : "."}`
+              inv.rejection
+                ? t("orders.toasts.invoiceRejectedReason", { reason: inv.rejection })
+                : t("orders.toasts.invoiceRejected")
             )
         },
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos emitir la factura."),
+          toast.error(apiErrorText(error, t, t("orders.errors.issueFailed"))),
       }
     )
   }
@@ -525,7 +538,7 @@ function FacturaSection({ order }: { order: OrderDTO }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>Facturación</span>
+            <span>{t("orders.invoicing")}</span>
             <Badge>{INVOICE_STATUS_LABELS.AUTHORIZED}</Badge>
           </CardTitle>
         </CardHeader>
@@ -537,12 +550,12 @@ function FacturaSection({ order }: { order: OrderDTO }) {
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">CAE</span>
+            <span className="text-muted-foreground">{t("orders.cae")}</span>
             <span className="font-mono text-xs">{existing.cae}</span>
           </div>
           {existing.cae_expiration ? (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Vencimiento CAE</span>
+              <span className="text-muted-foreground">{t("orders.caeExpiration")}</span>
               <span>{existing.cae_expiration}</span>
             </div>
           ) : null}
@@ -554,13 +567,14 @@ function FacturaSection({ order }: { order: OrderDTO }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Facturar</CardTitle>
+        <CardTitle>{t("orders.invoice")}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {existing && existing.status === "REJECTED" ? (
           <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
-            ARCA rechazó el último intento
-            {existing.rejection ? `: ${existing.rejection}` : "."} Probá de nuevo.
+            {existing.rejection
+              ? t("orders.invoiceLastRejectedReason", { reason: existing.rejection })
+              : t("orders.invoiceLastRejected")}
           </p>
         ) : null}
         <div className="flex items-end gap-2">
@@ -587,11 +601,9 @@ function FacturaSection({ order }: { order: OrderDTO }) {
           ) : null}
         </div>
         <Button onClick={emitir} disabled={issue.isPending}>
-          {issue.isPending ? "Emitiendo…" : "Emitir factura"}
+          {issue.isPending ? t("orders.issuing") : t("orders.issueInvoice")}
         </Button>
-        <p className="text-xs text-muted-foreground">
-          Necesitás ARCA conectado en Integraciones. El tipo (A/B/C) se determina solo.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("orders.invoiceHint")}</p>
       </CardContent>
     </Card>
   )
@@ -608,12 +620,13 @@ function OrderTotalBreakdown({
   subtotal: number
   currency: string
 }) {
+  const { t } = useTranslation()
   const quote = useOrderTaxQuote(orderId, subtotal)
   const q = quote.data
   if (!q || q.tax_amount <= 0) {
     return (
       <div className="mt-3 flex items-center justify-between border-t pt-3 text-sm font-medium">
-        <span>Total</span>
+        <span>{t("orders.total")}</span>
         <span>{formatMoney(subtotal, currency)}</span>
       </div>
     )
@@ -621,15 +634,15 @@ function OrderTotalBreakdown({
   return (
     <div className="mt-3 space-y-1 border-t pt-3 text-sm">
       <div className="flex items-center justify-between text-muted-foreground">
-        <span>Subtotal</span>
+        <span>{t("orders.subtotal")}</span>
         <span>{formatMoney(q.subtotal_amount, currency)}</span>
       </div>
       <div className="flex items-center justify-between text-muted-foreground">
-        <span>Impuesto ({(q.rate_bps / 100).toFixed(2)}%)</span>
+        <span>{t("orders.taxLine", { rate: (q.rate_bps / 100).toFixed(2) })}</span>
         <span>{formatMoney(q.tax_amount, currency)}</span>
       </div>
       <div className="flex items-center justify-between font-medium text-foreground">
-        <span>Total</span>
+        <span>{t("orders.total")}</span>
         <span>{formatMoney(q.total_amount, currency)}</span>
       </div>
     </div>
@@ -645,6 +658,7 @@ function CobroSection({
   tableLabel: string
   onPendingOnline: () => void
 }) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const payments = useOrderPayments(order.id)
   const registerPayment = useRegisterPayment(order.id)
@@ -693,12 +707,12 @@ function CobroSection({
   const cobrar = () => {
     const minor = computeCharge()
     if (!Number.isFinite(minor) || minor < 1) {
-      toast.error("Ingresá un monto válido.")
+      toast.error(t("orders.toasts.invalidAmount"))
       return
     }
     const tipMinor = tip.trim() ? Math.round(Number(tip) * 100) : 0
     if (!Number.isFinite(tipMinor) || tipMinor < 0) {
-      toast.error("La propina no es válida.")
+      toast.error(t("orders.toasts.invalidTip"))
       return
     }
     // El impuesto de ESTE cobro: sólo cuando se paga el total con impuesto de una
@@ -722,21 +736,21 @@ function CobroSection({
           if (payment.status === "PENDING" && payment.checkout_url) {
             setCheckoutUrl(payment.checkout_url)
             onPendingOnline()
-            toast.info("Generamos el link de pago. Compartilo o que escaneen el QR.")
+            toast.info(t("orders.toasts.paymentLinkGenerated"))
           } else {
-            toast.success("Cobro registrado.")
+            toast.success(t("orders.toasts.chargeRegistered"))
           }
         },
         onError: (error) => {
           // Guarda B3: si el local exige caja abierta y no la hay, el back devuelve
           // 409 → ofrecemos abrir la caja en vez de solo mostrar el error.
           if (isApiError(error) && error.code === "no_open_cash_session") {
-            toast.error(error.message, {
-              action: { label: "Abrir caja", onClick: () => navigate("/app/caja") },
+            toast.error(apiErrorText(error, t, error.message), {
+              action: { label: t("orders.openCashRegister"), onClick: () => navigate("/app/caja") },
             })
             return
           }
-          toast.error(isApiError(error) ? error.message : "No pudimos registrar el cobro.")
+          toast.error(apiErrorText(error, t, t("orders.errors.chargeFailed")))
         },
       }
     )
@@ -744,20 +758,20 @@ function CobroSection({
 
   const doRefund = (paymentId: string) => {
     refundPayment.mutate(paymentId, {
-      onSuccess: () => toast.success("Pago anulado."),
+      onSuccess: () => toast.success(t("orders.toasts.paymentRefunded")),
       onError: (error) =>
-        toast.error(isApiError(error) ? error.message : "No pudimos anular el pago."),
+        toast.error(apiErrorText(error, t, t("orders.errors.refundFailed"))),
     })
   }
 
   const doReopen = () => {
-    if (!window.confirm("¿Reabrir la comanda? Se revierte la venta y el stock consumido.")) {
+    if (!window.confirm(t("orders.toasts.reopenConfirm"))) {
       return
     }
     reopenOrder.mutate(undefined, {
-      onSuccess: () => toast.success("Comanda reabierta. Acordate de anular los cobros."),
+      onSuccess: () => toast.success(t("orders.toasts.orderReopened")),
       onError: (error) =>
-        toast.error(isApiError(error) ? error.message : "No pudimos reabrir la comanda."),
+        toast.error(apiErrorText(error, t, t("orders.errors.reopenFailed"))),
     })
   }
 
@@ -772,7 +786,7 @@ function CobroSection({
       (p) => p.direction === "INFLOW" && p.status === "CONFIRMED"
     )
     const paid = confirmedInflows.map((p) => ({
-      label: PAYMENT_METHODS.find((m) => m.value === p.method)?.label ?? p.method,
+      label: t(`orders.paymentMethods.${p.method}`),
       amount: p.amount,
     }))
     const tipTotal = confirmedInflows.reduce((sum, p) => sum + p.tip_amount, 0)
@@ -786,7 +800,16 @@ function CobroSection({
             rateBps: q.rate_bps,
           }
         : null
-    printTicket(receiptHtml(order, tableLabel, printedAt, paid, tipTotal, tax))
+    printTicket(
+      receiptHtml(order, tableLabel, printedAt, paid, tipTotal, tax, {
+        nonFiscal: t("orders.ticket.nonFiscal"),
+        subtotal: t("orders.ticket.subtotal"),
+        tax: (rate) => t("orders.ticket.taxRate", { rate }),
+        total: t("orders.ticket.total"),
+        tip: t("orders.ticket.tip"),
+      }),
+      t("orders.ticket.windowTitle")
+    )
   }
 
   const hasConfirmed = list.some(
@@ -797,11 +820,11 @@ function CobroSection({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Cobrar</span>
+          <span>{t("orders.charge")}</span>
           <span className="flex items-center gap-2">
             {hasConfirmed ? (
               <Button variant="outline" size="sm" onClick={printReceipt}>
-                Recibo
+                {t("orders.receipt")}
               </Button>
             ) : null}
             {isPaid ? (
@@ -811,12 +834,12 @@ function CobroSection({
                 onClick={doReopen}
                 disabled={reopenOrder.isPending}
               >
-                Reabrir
+                {t("orders.reopen")}
               </Button>
             ) : null}
             {isPaid ? (
               <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                Pagada
+                {t("orders.paid")}
               </span>
             ) : null}
           </span>
@@ -828,7 +851,7 @@ function CobroSection({
             {list.map((p) => (
               <li key={p.id} className="flex items-center justify-between py-1.5">
                 <span className="text-muted-foreground">
-                  {PAYMENT_METHODS.find((m) => m.value === p.method)?.label ?? p.method}
+                  {t(`orders.paymentMethods.${p.method}`)}
                 </span>
                 <span className="flex items-center gap-2">
                   {formatMoney(p.amount, p.currency)}
@@ -842,10 +865,10 @@ function CobroSection({
                     }
                   >
                     {p.status === "CONFIRMED"
-                      ? "confirmado"
+                      ? t("orders.paymentStatus.confirmed")
                       : p.status === "REFUNDED"
-                        ? "anulado"
-                        : "pendiente"}
+                        ? t("orders.paymentStatus.refunded")
+                        : t("orders.paymentStatus.pending")}
                   </span>
                   {p.direction === "INFLOW" && p.status === "CONFIRMED" ? (
                     <Button
@@ -855,7 +878,7 @@ function CobroSection({
                       disabled={refundPayment.isPending}
                       onClick={() => doRefund(p.id)}
                     >
-                      Anular
+                      {t("orders.cancelPayment")}
                     </Button>
                   ) : null}
                 </span>
@@ -866,7 +889,7 @@ function CobroSection({
 
         {!isPaid ? (
           <div className="flex items-center justify-between text-sm font-medium">
-            <span>Restante</span>
+            <span>{t("orders.remaining")}</span>
             <span>{formatMoney(remaining, order.currency)}</span>
           </div>
         ) : null}
@@ -876,13 +899,13 @@ function CobroSection({
             <div className="flex flex-wrap gap-2">
               {PAYMENT_METHODS.map((m) => (
                 <Button
-                  key={m.value}
+                  key={m}
                   type="button"
                   size="sm"
-                  variant={method === m.value ? "default" : "outline"}
-                  onClick={() => setMethod(m.value)}
+                  variant={method === m ? "default" : "outline"}
+                  onClick={() => setMethod(m)}
                 >
-                  {m.label}
+                  {t(`orders.paymentMethods.${m}`)}
                 </Button>
               ))}
             </div>
@@ -892,7 +915,7 @@ function CobroSection({
               onClick={() => setSplitMode((s) => !s)}
               className="self-start text-xs text-muted-foreground underline underline-offset-4"
             >
-              {splitMode ? "← Cobrar un monto" : "Dividir por ítem"}
+              {splitMode ? t("orders.chargeAnAmount") : t("orders.splitByItem")}
             </button>
 
             {splitMode ? (
@@ -913,21 +936,21 @@ function CobroSection({
                 {splitTax > 0 ? (
                   <>
                     <div className="mt-1 flex justify-between border-t pt-1 text-muted-foreground">
-                      <span>Seleccionado</span>
+                      <span>{t("orders.selected")}</span>
                       <span>{formatMoney(splitAmount, order.currency)}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Impuesto ({(taxRateBps / 100).toFixed(2)}%)</span>
+                      <span>{t("orders.taxLine", { rate: (taxRateBps / 100).toFixed(2) })}</span>
                       <span>{formatMoney(splitTax, order.currency)}</span>
                     </div>
                     <div className="flex justify-between font-medium">
-                      <span>Total</span>
+                      <span>{t("orders.total")}</span>
                       <span>{formatMoney(splitAmount + splitTax, order.currency)}</span>
                     </div>
                   </>
                 ) : (
                   <div className="mt-1 flex justify-between border-t pt-1 font-medium">
-                    <span>Seleccionado</span>
+                    <span>{t("orders.selected")}</span>
                     <span>{formatMoney(splitAmount, order.currency)}</span>
                   </div>
                 )}
@@ -958,7 +981,7 @@ function CobroSection({
             )}
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Propina</span>
+              <span className="text-xs text-muted-foreground">{t("orders.tip")}</span>
               <Input
                 type="number"
                 min={0}
@@ -976,7 +999,7 @@ function CobroSection({
             >
               {registerPayment.isPending
                 ? "…"
-                : `Cobrar ${formatMoney(computeCharge(), order.currency)}`}
+                : t("orders.chargeAmount", { amount: formatMoney(computeCharge(), order.currency) })}
             </Button>
           </div>
         ) : null}
@@ -984,11 +1007,11 @@ function CobroSection({
         {checkoutUrl && !isPaid ? (
           <div className="flex flex-col gap-2 rounded-md border border-dashed p-3 text-sm">
             <p className="text-muted-foreground">
-              Pago online generado. Esperando confirmación de MercadoPago…
+              {t("orders.onlinePaymentWaiting")}
             </p>
             <Button asChild variant="outline">
               <a href={checkoutUrl} target="_blank" rel="noreferrer">
-                Abrir checkout / QR
+                {t("orders.openCheckout")}
               </a>
             </Button>
             <Spinner className="size-4 self-center text-muted-foreground" />

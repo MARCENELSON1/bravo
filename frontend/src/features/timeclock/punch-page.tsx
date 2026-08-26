@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import { Button } from "@/components/ui/button"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Input } from "@/components/ui/input"
@@ -12,6 +13,7 @@ import { isScannerSupported } from "@/lib/presence"
 // display, or scan its QR with the camera. Either way the punch belongs to the
 // logged-in user (source=PRESENCE). The topbar toggle stays as the quick path.
 export function PunchPage() {
+  const { t } = useTranslation()
   const punch = usePresencePunch()
   const [code, setCode] = useState("")
   const [scanning, setScanning] = useState(false)
@@ -20,16 +22,20 @@ export function PunchPage() {
   const doPunch = (presented: string) => {
     const value = presented.trim()
     if (!value) {
-      toast.error("Ingresá el código de fichaje.")
+      toast.error(t("timeclock.punch.emptyCode"))
       return
     }
     punch.mutate(value, {
       onSuccess: (shift) => {
-        toast.success(shift.status === "OPEN" ? "Entrada registrada." : "Salida registrada.")
+        toast.success(
+          shift.status === "OPEN"
+            ? t("timeclock.punch.clockedIn")
+            : t("timeclock.punch.clockedOut")
+        )
         setCode("")
       },
       onError: (error) =>
-        toast.error(isApiError(error) ? error.message : "No pudimos registrar el fichaje."),
+        toast.error(apiErrorText(error, t, t("timeclock.punch.punchError"))),
     })
   }
   // Keep a stable ref to the latest handler so the scanner effect depends only
@@ -73,7 +79,7 @@ export function PunchPage() {
           }
         }, 400)
       } catch {
-        toast.error("No pudimos abrir la cámara. Ingresá el código a mano.")
+        toast.error(t("timeclock.punch.cameraError"))
         setScanning(false)
       }
     }
@@ -82,18 +88,18 @@ export function PunchPage() {
     return () => {
       stopped = true
       if (timer) clearInterval(timer)
-      if (stream) stream.getTracks().forEach((t) => t.stop())
+      if (stream) stream.getTracks().forEach((track) => track.stop())
     }
-  }, [scanning])
+  }, [scanning, t])
 
   return (
     <div className="mx-auto flex max-w-sm flex-col gap-6 px-6 py-10">
       <div className="flex flex-col gap-1">
         <GradientHeading size="md" weight="bold">
-          Fichar
+          {t("timeclock.punch.title")}
         </GradientHeading>
         <p className="text-sm text-muted-foreground">
-          Ingresá el código de la pantalla del local o escaneá el QR.
+          {t("timeclock.punch.subtitle")}
         </p>
       </div>
 
@@ -101,18 +107,18 @@ export function PunchPage() {
         <Input
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
-          placeholder="Código (p. ej. 4F7K2Q)"
+          placeholder={t("timeclock.punch.codePlaceholder")}
           autoCapitalize="characters"
           autoComplete="off"
           className="text-center font-mono text-lg tracking-[0.3em]"
         />
         <Button onClick={() => doPunch(code)} disabled={punch.isPending}>
-          {punch.isPending ? "Fichando…" : "Fichar"}
+          {punch.isPending ? t("timeclock.punch.submitting") : t("timeclock.punch.submit")}
         </Button>
 
         {isScannerSupported() ? (
           <Button variant="outline" onClick={() => setScanning((s) => !s)}>
-            {scanning ? "Detener cámara" : "Escanear con cámara"}
+            {scanning ? t("timeclock.punch.stopScan") : t("timeclock.punch.scan")}
           </Button>
         ) : null}
 

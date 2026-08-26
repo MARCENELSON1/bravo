@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type { ItemAction } from "@/api/orders-api"
 import type { Station } from "@/api/types-operations"
 import { Button } from "@/components/ui/button"
@@ -32,6 +33,7 @@ export function StationBoard({
   title: string
   subtitle: string
 }) {
+  const { t } = useTranslation()
   const kds = useKdsOrders(station)
   const tables = useTables()
   const advance = useAdvanceItem()
@@ -49,7 +51,7 @@ export function StationBoard({
   // Chime when an item appears that we hadn't seen (skips the first load).
   useEffect(() => {
     if (!kds.data) return
-    const ids = new Set(tickets.map((t) => t.item.id))
+    const ids = new Set(tickets.map((ticket) => ticket.item.id))
     if (seen.current.size > 0 && [...ids].some((id) => !seen.current.has(id))) {
       playNewOrderChime()
     }
@@ -59,7 +61,7 @@ export function StationBoard({
   }, [kds.data])
 
   const tableNumber = (tableId: string): string => {
-    const found = tables.data?.find((t) => t.id === tableId)
+    const found = tables.data?.find((table) => table.id === tableId)
     return found ? String(found.number) : "—"
   }
 
@@ -68,7 +70,7 @@ export function StationBoard({
       { orderId, itemId, action },
       {
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No se pudo actualizar el ítem."),
+          toast.error(apiErrorText(error, t, t("kds.errors.itemUpdateFailed"))),
       }
     )
   }
@@ -86,17 +88,17 @@ export function StationBoard({
         <Spinner />
       ) : tickets.length > 0 ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {tickets.map((t) => {
-            const delay = kdsDelay(t.item.sent_at, now)
+          {tickets.map((ticket) => {
+            const delay = kdsDelay(ticket.item.sent_at, now)
             return (
-              <Card key={t.item.id} className={DELAY_BORDER[delay.level]}>
+              <Card key={ticket.item.id} className={DELAY_BORDER[delay.level]}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span>Mesa {tableNumber(t.tableId)}</span>
+                    <span>{t("kds.tableLabel", { number: tableNumber(ticket.tableId) })}</span>
                     <span className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
                       {delay.level === "late" ? (
                         <span className="rounded-full bg-red-100 px-2 py-0.5 font-medium text-red-700">
-                          demora
+                          {t("kds.delayed")}
                         </span>
                       ) : null}
                       <span className="tabular-nums">{delay.minutes}′</span>
@@ -106,26 +108,26 @@ export function StationBoard({
                 <CardContent className="flex flex-col gap-3">
                   <p className="text-sm">
                     <span className="font-medium">
-                      {t.item.quantity}× {t.item.name}
+                      {ticket.item.quantity}× {ticket.item.name}
                     </span>
-                    {t.item.note ? (
-                      <span className="text-muted-foreground"> ({t.item.note})</span>
+                    {ticket.item.note ? (
+                      <span className="text-muted-foreground"> ({ticket.item.note})</span>
                     ) : null}
                   </p>
-                  {t.item.status === "SENT" ? (
+                  {ticket.item.status === "SENT" ? (
                     <Button
                       variant="outline"
                       className="h-11 w-full"
-                      onClick={() => bump(t.orderId, t.item.id, "preparing")}
+                      onClick={() => bump(ticket.orderId, ticket.item.id, "preparing")}
                     >
-                      Empezar a preparar
+                      {t("kds.startPreparing")}
                     </Button>
                   ) : (
                     <Button
                       className="h-11 w-full"
-                      onClick={() => bump(t.orderId, t.item.id, "ready")}
+                      onClick={() => bump(ticket.orderId, ticket.item.id, "ready")}
                     >
-                      Marcar listo
+                      {t("kds.markReady")}
                     </Button>
                   )}
                 </CardContent>
@@ -134,7 +136,9 @@ export function StationBoard({
           })}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">No hay ítems en {title.toLowerCase()}.</p>
+        <p className="text-sm text-muted-foreground">
+          {t("kds.empty", { station: title.toLowerCase() })}
+        </p>
       )}
     </div>
   )

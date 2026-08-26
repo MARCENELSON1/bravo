@@ -1,7 +1,8 @@
 import { Fragment, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type {
   CashMovementKind,
   CashReportDTO,
@@ -20,25 +21,7 @@ import {
 } from "@/hooks/use-cash"
 import { formatMoney } from "@/lib/money"
 
-const METHOD_LABELS: Record<PaymentMethod, string> = {
-  CASH: "Efectivo",
-  CARD: "Tarjeta",
-  TRANSFER: "Transferencia",
-  MERCADOPAGO: "MercadoPago",
-  QR: "QR",
-}
-
-const MOVEMENT_KINDS: { kind: CashMovementKind; label: string }[] = [
-  { kind: "DROP", label: "Sangría" },
-  { kind: "DEPOSIT", label: "Ingreso" },
-  { kind: "PAYOUT", label: "Pago" },
-]
-
-const MOVEMENT_LABELS: Record<CashMovementKind, string> = {
-  DROP: "Sangría",
-  DEPOSIT: "Ingreso de efectivo",
-  PAYOUT: "Pago en efectivo",
-}
+const MOVEMENT_KINDS: CashMovementKind[] = ["DROP", "DEPOSIT", "PAYOUT"]
 
 function signedMoney(amount: number, currency: string): string {
   const sign = amount < 0 ? "−" : amount > 0 ? "+" : ""
@@ -46,6 +29,7 @@ function signedMoney(amount: number, currency: string): string {
 }
 
 export function CashSessionPage() {
+  const { t } = useTranslation()
   const session = useCurrentCashSession()
   const [closedReport, setClosedReport] = useState<CashReportDTO | null>(null)
 
@@ -53,10 +37,10 @@ export function CashSessionPage() {
     <div className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-col gap-1">
         <GradientHeading size="md" weight="bold">
-          Caja
+          {t("cashier.title")}
         </GradientHeading>
         <p className="text-sm text-muted-foreground">
-          Apertura con fondo, arqueo Z (esperado vs contado) y cierre de turno.
+          {t("cashier.subtitle")}
         </p>
       </header>
 
@@ -77,21 +61,22 @@ export function CashSessionPage() {
 }
 
 function OpenForm() {
+  const { t } = useTranslation()
   const open = useOpenCashSession()
   const [amount, setAmount] = useState("")
 
   const submit = () => {
     const minor = Math.round(Number(amount || 0) * 100)
     if (!Number.isFinite(minor) || minor < 0) {
-      toast.error("Ingresá un fondo válido.")
+      toast.error(t("cashier.open.invalidFloat"))
       return
     }
     open.mutate(
       { amount: minor },
       {
-        onSuccess: () => toast.success("Caja abierta."),
+        onSuccess: () => toast.success(t("cashier.open.success")),
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos abrir la caja."),
+          toast.error(apiErrorText(error, t, t("cashier.open.error"))),
       }
     )
   }
@@ -99,11 +84,11 @@ function OpenForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Abrir caja</CardTitle>
+        <CardTitle>{t("cashier.open.title")}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <label className="text-sm text-muted-foreground" htmlFor="float">
-          Fondo inicial (efectivo en la caja)
+          {t("cashier.open.floatLabel")}
         </label>
         <div className="flex items-center gap-2">
           <Input
@@ -118,7 +103,7 @@ function OpenForm() {
             className="max-w-[10rem]"
           />
           <Button onClick={submit} disabled={open.isPending}>
-            {open.isPending ? "Abriendo…" : "Abrir caja"}
+            {open.isPending ? t("cashier.open.submitting") : t("cashier.open.submit")}
           </Button>
         </div>
       </CardContent>
@@ -133,6 +118,7 @@ function OpenSession({
   report: CashReportDTO
   onClosed: (report: CashReportDTO) => void
 }) {
+  const { t } = useTranslation()
   const close = useCloseCashSession()
   // Counted amount (pesos as typed) per method.
   const [counted, setCounted] = useState<Partial<Record<PaymentMethod, string>>>({})
@@ -150,11 +136,11 @@ function OpenSession({
       { sessionId: report.session_id, counted: payload },
       {
         onSuccess: (final) => {
-          toast.success("Caja cerrada.")
+          toast.success(t("cashier.reconcile.success"))
           onClosed(final)
         },
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos cerrar la caja."),
+          toast.error(apiErrorText(error, t, t("cashier.reconcile.error"))),
       }
     )
   }
@@ -164,16 +150,18 @@ function OpenSession({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Arqueo Z</span>
+          <span>{t("cashier.reconcile.title")}</span>
           <span className="text-xs font-normal text-muted-foreground">
-            Fondo {formatMoney(report.opening_float, report.currency)}
+            {t("cashier.reconcile.float", {
+              amount: formatMoney(report.opening_float, report.currency),
+            })}
           </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {blind ? (
           <p className="rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-            Arqueo ciego: contá sin ver el esperado. La diferencia se revela al cerrar.
+            {t("cashier.reconcile.blindNotice")}
           </p>
         ) : null}
         <div
@@ -182,15 +170,15 @@ function OpenSession({
             (blind ? "grid-cols-[1fr_auto]" : "grid-cols-[1fr_auto_auto]")
           }
         >
-          <span className="text-xs font-medium text-muted-foreground">Medio</span>
+          <span className="text-xs font-medium text-muted-foreground">{t("cashier.reconcile.method")}</span>
           {blind ? null : (
-            <span className="text-right text-xs font-medium text-muted-foreground">Esperado</span>
+            <span className="text-right text-xs font-medium text-muted-foreground">{t("cashier.reconcile.expected")}</span>
           )}
-          <span className="text-right text-xs font-medium text-muted-foreground">Contado</span>
+          <span className="text-right text-xs font-medium text-muted-foreground">{t("cashier.reconcile.counted")}</span>
           {report.lines.map((line) => (
             <Row
               key={line.method}
-              label={METHOD_LABELS[line.method]}
+              label={t(`cashier.methodLabels.${line.method}`)}
               expected={blind ? null : formatMoney(line.expected, report.currency)}
               value={counted[line.method] ?? ""}
               onChange={(v) => setMethod(line.method, v)}
@@ -200,19 +188,19 @@ function OpenSession({
         {blind ? null : (
           <>
             <div className="flex items-center justify-between border-t pt-3 text-sm font-medium">
-              <span>Esperado total</span>
+              <span>{t("cashier.reconcile.expectedTotal")}</span>
               <span>{formatMoney(report.expected_total, report.currency)}</span>
             </div>
             {report.tips_total > 0 ? (
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Propinas (incluidas; para repartir)</span>
+                <span>{t("cashier.reconcile.tips")}</span>
                 <span>{formatMoney(report.tips_total, report.currency)}</span>
               </div>
             ) : null}
           </>
         )}
         <Button onClick={submit} disabled={close.isPending}>
-          {close.isPending ? "Cerrando…" : "Cerrar caja"}
+          {close.isPending ? t("cashier.reconcile.submitting") : t("cashier.reconcile.submit")}
         </Button>
       </CardContent>
     </Card>
@@ -220,6 +208,7 @@ function OpenSession({
 }
 
 function CashMovements({ report }: { report: CashReportDTO }) {
+  const { t } = useTranslation()
   const register = useRegisterCashMovement()
   const [kind, setKind] = useState<CashMovementKind>("DROP")
   const [amount, setAmount] = useState("")
@@ -228,19 +217,19 @@ function CashMovements({ report }: { report: CashReportDTO }) {
   const submit = () => {
     const minor = Math.round(Number(amount || 0) * 100)
     if (!Number.isFinite(minor) || minor <= 0) {
-      toast.error("Ingresá un monto válido.")
+      toast.error(t("cashier.movements.invalidAmount"))
       return
     }
     register.mutate(
       { kind, amount: minor, reason: reason.trim() || null },
       {
         onSuccess: () => {
-          toast.success("Movimiento registrado.")
+          toast.success(t("cashier.movements.success"))
           setAmount("")
           setReason("")
         },
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos registrar el movimiento."),
+          toast.error(apiErrorText(error, t, t("cashier.movements.error"))),
       }
     )
   }
@@ -248,22 +237,21 @@ function CashMovements({ report }: { report: CashReportDTO }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Movimientos de caja</CardTitle>
+        <CardTitle className="text-base">{t("cashier.movements.title")}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <p className="text-xs text-muted-foreground">
-          Sangrías, ingresos de efectivo y pagos desde el cajón. Ajustan el esperado del arqueo
-          (no son ventas ni egresos del resultado).
+          {t("cashier.movements.hint")}
         </p>
         <div className="flex flex-wrap items-center gap-2">
           {MOVEMENT_KINDS.map((m) => (
             <Button
-              key={m.kind}
+              key={m}
               size="sm"
-              variant={kind === m.kind ? "default" : "outline"}
-              onClick={() => setKind(m.kind)}
+              variant={kind === m ? "default" : "outline"}
+              onClick={() => setKind(m)}
             >
-              {m.label}
+              {t(`cashier.movementKinds.${m}`)}
             </Button>
           ))}
         </div>
@@ -279,13 +267,13 @@ function CashMovements({ report }: { report: CashReportDTO }) {
             className="max-w-[9rem]"
           />
           <Input
-            placeholder="Motivo (opcional)"
+            placeholder={t("cashier.movements.reasonPlaceholder")}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             className="max-w-[14rem] flex-1"
           />
           <Button onClick={submit} disabled={register.isPending}>
-            Registrar
+            {t("cashier.movements.submit")}
           </Button>
         </div>
 
@@ -294,7 +282,7 @@ function CashMovements({ report }: { report: CashReportDTO }) {
             {report.movements.map((mv) => (
               <div key={mv.id} className="flex items-center justify-between gap-3 text-sm">
                 <span className="truncate">
-                  {MOVEMENT_LABELS[mv.kind]}
+                  {t(`cashier.movementLabels.${mv.kind}`)}
                   {mv.reason ? (
                     <span className="text-muted-foreground"> · {mv.reason}</span>
                   ) : null}
@@ -311,8 +299,10 @@ function CashMovements({ report }: { report: CashReportDTO }) {
             ))}
             <div className="mt-1 flex items-center justify-between border-t pt-2 text-xs text-muted-foreground">
               <span>
-                Ingresos {formatMoney(report.cash_in_total, report.currency)} · Salidas{" "}
-                {formatMoney(report.cash_out_total, report.currency)}
+                {t("cashier.movements.cashInOut", {
+                  cashIn: formatMoney(report.cash_in_total, report.currency),
+                  cashOut: formatMoney(report.cash_out_total, report.currency),
+                })}
               </span>
             </div>
           </div>
@@ -360,20 +350,21 @@ function ClosedArqueo({
   report: CashReportDTO
   onDone: () => void
 }) {
+  const { t } = useTranslation()
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Caja cerrada · arqueo</CardTitle>
+        <CardTitle>{t("cashier.closed.title")}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="overflow-x-auto"><div className="grid min-w-[26rem] grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 gap-y-1 text-sm">
-          <span className="text-xs font-medium text-muted-foreground">Medio</span>
-          <span className="text-right text-xs font-medium text-muted-foreground">Esperado</span>
-          <span className="text-right text-xs font-medium text-muted-foreground">Contado</span>
-          <span className="text-right text-xs font-medium text-muted-foreground">Dif.</span>
+          <span className="text-xs font-medium text-muted-foreground">{t("cashier.closed.method")}</span>
+          <span className="text-right text-xs font-medium text-muted-foreground">{t("cashier.closed.expected")}</span>
+          <span className="text-right text-xs font-medium text-muted-foreground">{t("cashier.closed.counted")}</span>
+          <span className="text-right text-xs font-medium text-muted-foreground">{t("cashier.closed.difference")}</span>
           {report.lines.map((line) => (
             <Fragment key={line.method}>
-              <span>{METHOD_LABELS[line.method]}</span>
+              <span>{t(`cashier.methodLabels.${line.method}`)}</span>
               <span className="text-right tabular-nums">
                 {formatMoney(line.expected, report.currency)}
               </span>
@@ -396,7 +387,7 @@ function ClosedArqueo({
           ))}
         </div></div>
         <div className="flex items-center justify-between border-t pt-3 text-sm font-medium">
-          <span>Diferencia total</span>
+          <span>{t("cashier.closed.differenceTotal")}</span>
           <span
             className={
               (report.difference_total ?? 0) < 0
@@ -411,12 +402,12 @@ function ClosedArqueo({
         </div>
         {report.tips_total > 0 ? (
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Propinas (incluidas; para repartir)</span>
+            <span>{t("cashier.closed.tips")}</span>
             <span>{formatMoney(report.tips_total, report.currency)}</span>
           </div>
         ) : null}
         <Button variant="outline" onClick={onDone}>
-          Listo
+          {t("cashier.closed.done")}
         </Button>
       </CardContent>
     </Card>

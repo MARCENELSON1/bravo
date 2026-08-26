@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import type { ProductDTO } from "@/api/types-operations"
 import { Button } from "@/components/ui/button"
@@ -16,6 +17,7 @@ export function ProductGrid({
   products: ProductDTO[]
   onAdd: (product: ProductDTO, quantity: number) => void
 }) {
+  const { t } = useTranslation()
   const [search, setSearch] = useState("")
   const [qty, setQty] = useState(1)
   const ranked = useMemo(() => rankProducts(products, search, getUsage()), [products, search])
@@ -29,7 +31,7 @@ export function ProductGrid({
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <Input
-          placeholder="Buscar producto…"
+          placeholder={t("orders.searchProduct")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1"
@@ -39,7 +41,7 @@ export function ProductGrid({
             variant="outline"
             className="h-11 w-11 p-0 text-lg"
             onClick={() => setQty((q) => Math.max(1, q - 1))}
-            aria-label="Menos cantidad"
+            aria-label={t("orders.lessQuantity")}
           >
             −
           </Button>
@@ -48,7 +50,7 @@ export function ProductGrid({
             variant="outline"
             className="h-11 w-11 p-0 text-lg"
             onClick={() => setQty((q) => q + 1)}
-            aria-label="Más cantidad"
+            aria-label={t("orders.moreQuantity")}
           >
             +
           </Button>
@@ -72,7 +74,7 @@ export function ProductGrid({
           ))}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">Sin productos que coincidan.</p>
+        <p className="text-sm text-muted-foreground">{t("orders.noProducts")}</p>
       )}
     </div>
   )

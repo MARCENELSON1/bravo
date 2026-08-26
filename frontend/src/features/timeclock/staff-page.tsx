@@ -1,8 +1,9 @@
 import { useState } from "react"
 import { QRCodeSVG } from "qrcode.react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type { ShiftDTO } from "@/api/types-timeclock"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -40,13 +41,13 @@ import {
   formatMinutes,
   fromDateTimeLocal,
   isNextDay,
-  SHIFT_SOURCE_LABELS,
   toDateTimeLocal,
 } from "@/lib/timeclock"
 
 // Manager correction for a single shift. Internal (not exported) so the page
 // file exports only the page component.
 function AdjustSheet({ shift }: { shift: ShiftDTO }) {
+  const { t } = useTranslation()
   const adjust = useAdjustShift()
   const [open, setOpen] = useState(false)
   const [clockIn, setClockIn] = useState(() => toDateTimeLocal(shift.clock_in_at))
@@ -56,7 +57,7 @@ function AdjustSheet({ shift }: { shift: ShiftDTO }) {
 
   const submit = () => {
     if (!clockIn) {
-      toast.error("Ingresá la hora de entrada.")
+      toast.error(t("timeclock.adjust.emptyClockIn"))
       return
     }
     adjust.mutate(
@@ -69,11 +70,11 @@ function AdjustSheet({ shift }: { shift: ShiftDTO }) {
       },
       {
         onSuccess: () => {
-          toast.success("Fichaje corregido.")
+          toast.success(t("timeclock.adjust.corrected"))
           setOpen(false)
         },
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos corregir el fichaje."),
+          toast.error(apiErrorText(error, t, t("timeclock.adjust.correctError"))),
       }
     )
   }
@@ -82,17 +83,17 @@ function AdjustSheet({ shift }: { shift: ShiftDTO }) {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="sm">
-          Corregir
+          {t("timeclock.adjust.trigger")}
         </Button>
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Corregir fichaje</SheetTitle>
-          <SheetDescription>Quedará registrado como corrección del encargado.</SheetDescription>
+          <SheetTitle>{t("timeclock.adjust.title")}</SheetTitle>
+          <SheetDescription>{t("timeclock.adjust.description")}</SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-3 px-4 pb-4">
           <label className="flex flex-col gap-1 text-sm">
-            Entrada
+            {t("timeclock.adjust.clockIn")}
             <Input
               type="datetime-local"
               value={clockIn}
@@ -100,7 +101,7 @@ function AdjustSheet({ shift }: { shift: ShiftDTO }) {
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            Salida (vacío = turno abierto)
+            {t("timeclock.adjust.clockOut")}
             <Input
               type="datetime-local"
               value={clockOut}
@@ -108,7 +109,7 @@ function AdjustSheet({ shift }: { shift: ShiftDTO }) {
             />
           </label>
           <Button onClick={submit} disabled={adjust.isPending}>
-            {adjust.isPending ? "Guardando…" : "Guardar"}
+            {adjust.isPending ? t("timeclock.adjust.saving") : t("timeclock.adjust.save")}
           </Button>
         </div>
       </SheetContent>
@@ -119,6 +120,7 @@ function AdjustSheet({ shift }: { shift: ShiftDTO }) {
 // OWNER/MANAGER provisions the local display: generates an enrolment link (and a
 // QR of it) to open on the screen that will show the rotating fichaje QR.
 function DeviceProvisionCard() {
+  const { t } = useTranslation()
   const register = useRegisterPresenceDevice()
   const [url, setUrl] = useState<string | null>(null)
 
@@ -126,26 +128,27 @@ function DeviceProvisionCard() {
     register.mutate(undefined, {
       onSuccess: (device) => setUrl(buildDisplayUrl(device.device_token)),
       onError: (error) =>
-        toast.error(isApiError(error) ? error.message : "No pudimos generar el dispositivo."),
+        toast.error(apiErrorText(error, t, t("timeclock.device.createError"))),
     })
   }
 
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline">Dispositivo de fichaje</Button>
+        <Button variant="outline">{t("timeclock.device.trigger")}</Button>
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Dispositivo de fichaje</SheetTitle>
-          <SheetDescription>
-            Generá un enlace y abrilo en la pantalla del local (tablet o monitor). Esa pantalla
-            muestra el QR y el código rotativo que el personal escanea o tipea para fichar.
-          </SheetDescription>
+          <SheetTitle>{t("timeclock.device.title")}</SheetTitle>
+          <SheetDescription>{t("timeclock.device.description")}</SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-3 px-4 pb-4">
           <Button onClick={generate} disabled={register.isPending}>
-            {register.isPending ? "Generando…" : url ? "Generar otro enlace" : "Generar enlace"}
+            {register.isPending
+              ? t("timeclock.device.generating")
+              : url
+                ? t("timeclock.device.generateAnother")
+                : t("timeclock.device.generate")}
           </Button>
           {url ? (
             <>
@@ -154,11 +157,10 @@ function DeviceProvisionCard() {
                 <QRCodeSVG value={url} marginSize={2} className="h-44 w-44" />
               </div>
               <Button variant="outline" onClick={() => window.open(url, "_blank", "noopener")}>
-                Abrir pantalla
+                {t("timeclock.device.openScreen")}
               </Button>
               <p className="text-xs text-muted-foreground">
-                Escaneá este QR desde la tablet del local para abrir la pantalla, o copiá el enlace.
-                Guardá el enlace en un lugar seguro: habilita el fichaje de ese dispositivo.
+                {t("timeclock.device.hint")}
               </p>
             </>
           ) : null}
@@ -169,6 +171,7 @@ function DeviceProvisionCard() {
 }
 
 export function StaffPage() {
+  const { t } = useTranslation()
   const [from, setFrom] = useState("")
   const [to, setTo] = useState("")
   const fromIso = from ? new Date(`${from}T00:00:00`).toISOString() : undefined
@@ -186,15 +189,15 @@ export function StaffPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <GradientHeading size="md" weight="bold">
-            Personal
+            {t("timeclock.staff.title")}
           </GradientHeading>
           <p className="text-sm text-muted-foreground">
-            Horas, extras, mesas y ventas por empleado. Corregí fichajes olvidados.
+            {t("timeclock.staff.subtitle")}
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-            Desde
+            {t("timeclock.staff.from")}
             <Input
               type="date"
               value={from}
@@ -203,7 +206,7 @@ export function StaffPage() {
             />
           </label>
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-            Hasta
+            {t("timeclock.staff.to")}
             <Input
               type="date"
               value={to}
@@ -216,7 +219,7 @@ export function StaffPage() {
       </header>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-foreground">Reporte por mozo</h2>
+        <h2 className="text-sm font-semibold text-foreground">{t("timeclock.staff.reportTitle")}</h2>
         <div className="overflow-hidden rounded-xl border border-border">
           {report.isPending ? (
             <div className="flex justify-center p-10">
@@ -226,12 +229,12 @@ export function StaffPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Empleado</TableHead>
-                  <TableHead className="text-right">Horas</TableHead>
-                  <TableHead className="text-right">Extras</TableHead>
-                  <TableHead className="text-right">Mesas</TableHead>
-                  <TableHead className="text-right">Ventas</TableHead>
-                  <TableHead className="text-right">Valor hora</TableHead>
+                  <TableHead>{t("timeclock.staff.columns.employee")}</TableHead>
+                  <TableHead className="text-right">{t("timeclock.staff.columns.hours")}</TableHead>
+                  <TableHead className="text-right">{t("timeclock.staff.columns.overtime")}</TableHead>
+                  <TableHead className="text-right">{t("timeclock.staff.columns.tables")}</TableHead>
+                  <TableHead className="text-right">{t("timeclock.staff.columns.sales")}</TableHead>
+                  <TableHead className="text-right">{t("timeclock.staff.columns.hourlyRate")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -257,14 +260,14 @@ export function StaffPage() {
             </Table>
           ) : (
             <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
-              No hay datos para el período.
+              {t("timeclock.staff.noReportData")}
             </p>
           )}
         </div>
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-foreground">Fichajes</h2>
+        <h2 className="text-sm font-semibold text-foreground">{t("timeclock.staff.shiftsTitle")}</h2>
         <div className="overflow-hidden rounded-xl border border-border">
           {shifts.isPending ? (
             <div className="flex justify-center p-10">
@@ -274,13 +277,13 @@ export function StaffPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Empleado</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Entrada</TableHead>
-                  <TableHead>Salida</TableHead>
-                  <TableHead className="text-right">Horas</TableHead>
-                  <TableHead>Origen</TableHead>
-                  <TableHead className="text-right">Acción</TableHead>
+                  <TableHead>{t("timeclock.staff.columns.employee")}</TableHead>
+                  <TableHead>{t("timeclock.staff.columns.date")}</TableHead>
+                  <TableHead>{t("timeclock.staff.columns.clockIn")}</TableHead>
+                  <TableHead>{t("timeclock.staff.columns.clockOut")}</TableHead>
+                  <TableHead className="text-right">{t("timeclock.staff.columns.hours")}</TableHead>
+                  <TableHead>{t("timeclock.staff.columns.source")}</TableHead>
+                  <TableHead className="text-right">{t("timeclock.staff.columns.action")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -305,11 +308,13 @@ export function StaffPage() {
                       {s.worked_minutes !== null ? (
                         formatMinutes(s.worked_minutes)
                       ) : (
-                        <Badge variant="secondary">En curso</Badge>
+                        <Badge variant="secondary">{t("timeclock.staff.inProgress")}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{SHIFT_SOURCE_LABELS[s.source] ?? s.source}</Badge>
+                      <Badge variant="outline">
+                        {t(`timeclock.shiftSource.${s.source}`, { defaultValue: s.source })}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <AdjustSheet shift={s} />
@@ -320,7 +325,7 @@ export function StaffPage() {
             </Table>
           ) : (
             <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
-              No hay fichajes para el período.
+              {t("timeclock.staff.noShifts")}
             </p>
           )}
         </div>
@@ -332,6 +337,7 @@ export function StaffPage() {
 // Valor/hora editable (Tanda D Finanzas): alimenta el labor cost real del
 // Asesor. Se edita en pesos y se guarda en minor units; vacío borra el rate.
 function HourlyRateCell({ userId, rate }: { userId: string; rate: number | null }) {
+  const { t } = useTranslation()
   const setRate = useSetHourlyRate()
   const [value, setValue] = useState(rate != null ? String(rate / 100) : "")
 
@@ -339,7 +345,7 @@ function HourlyRateCell({ userId, rate }: { userId: string; rate: number | null 
     const trimmed = value.trim()
     const amount = trimmed === "" ? null : Math.round(Number(trimmed) * 100)
     if (trimmed !== "" && (!Number.isFinite(amount) || (amount as number) < 0)) {
-      toast.error("Valor/hora inválido.")
+      toast.error(t("timeclock.staff.invalidRate"))
       setValue(rate != null ? String(rate / 100) : "")
       return
     }
@@ -348,7 +354,7 @@ function HourlyRateCell({ userId, rate }: { userId: string; rate: number | null 
       { userId, amount },
       {
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos guardar el valor/hora."),
+          toast.error(apiErrorText(error, t, t("timeclock.staff.rateError"))),
       }
     )
   }
@@ -360,7 +366,7 @@ function HourlyRateCell({ userId, rate }: { userId: string; rate: number | null 
       step="0.01"
       inputMode="decimal"
       placeholder="—"
-      aria-label="Valor hora"
+      aria-label={t("timeclock.staff.columns.hourlyRate")}
       className="ml-auto h-8 w-28 text-right tabular-nums"
       value={value}
       disabled={setRate.isPending}

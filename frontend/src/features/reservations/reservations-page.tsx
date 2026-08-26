@@ -1,7 +1,8 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type { ReservationDTO, ServiceTurn } from "@/api/types-reservations"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -37,13 +38,7 @@ import {
   useReservationTransition,
 } from "@/hooks/use-reservations"
 import { useTables } from "@/hooks/use-tables"
-import {
-  formatReservedTime,
-  RESERVATION_STATUS_LABELS,
-  RESERVATION_STATUS_VARIANT,
-  SERVICE_TURN_LABELS,
-  toReservedAtIso,
-} from "@/lib/reservations"
+import { formatReservedTime, RESERVATION_STATUS_VARIANT, toReservedAtIso } from "@/lib/reservations"
 
 const NO_TABLE = "none"
 
@@ -55,6 +50,7 @@ function todayLocal(): string {
 
 // Alta de reserva. Internal so the page file exports only the page component.
 function NewReservationSheet({ defaultDate }: { defaultDate: string }) {
+  const { t } = useTranslation()
   const create = useCreateReservation()
   const tables = useTables()
   const [open, setOpen] = useState(false)
@@ -69,16 +65,16 @@ function NewReservationSheet({ defaultDate }: { defaultDate: string }) {
 
   const submit = () => {
     if (!name.trim()) {
-      toast.error("Ingresá el nombre del cliente.")
+      toast.error(t("reservations.toasts.customerNameRequired"))
       return
     }
     const size = Number(partySize)
     if (!Number.isInteger(size) || size < 1) {
-      toast.error("Ingresá una cantidad de personas válida.")
+      toast.error(t("reservations.toasts.partySizeInvalid"))
       return
     }
     if (!date || !time) {
-      toast.error("Ingresá fecha y hora.")
+      toast.error(t("reservations.toasts.dateTimeRequired"))
       return
     }
     create.mutate(
@@ -93,7 +89,7 @@ function NewReservationSheet({ defaultDate }: { defaultDate: string }) {
       },
       {
         onSuccess: () => {
-          toast.success("Reserva creada.")
+          toast.success(t("reservations.toasts.created"))
           setName("")
           setPhone("")
           setPartySize("2")
@@ -102,7 +98,7 @@ function NewReservationSheet({ defaultDate }: { defaultDate: string }) {
           setOpen(false)
         },
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos crear la reserva."),
+          toast.error(apiErrorText(error, t, t("reservations.toasts.createError"))),
       }
     )
   }
@@ -110,17 +106,21 @@ function NewReservationSheet({ defaultDate }: { defaultDate: string }) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button>Nueva reserva</Button>
+        <Button>{t("reservations.form.new")}</Button>
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Nueva reserva</SheetTitle>
-          <SheetDescription>Cliente, personas, fecha/hora y turno. Mesa opcional.</SheetDescription>
+          <SheetTitle>{t("reservations.form.new")}</SheetTitle>
+          <SheetDescription>{t("reservations.form.description")}</SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-3 px-4 pb-4">
-          <Input placeholder="Cliente" value={name} onChange={(e) => setName(e.target.value)} />
           <Input
-            placeholder="Teléfono (opcional)"
+            placeholder={t("reservations.form.customer")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <Input
+            placeholder={t("reservations.form.phone")}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
@@ -128,7 +128,7 @@ function NewReservationSheet({ defaultDate }: { defaultDate: string }) {
             <Input
               type="number"
               min={1}
-              placeholder="Personas"
+              placeholder={t("reservations.form.guests")}
               value={partySize}
               onChange={(e) => setPartySize(e.target.value)}
               className="max-w-[7rem]"
@@ -138,8 +138,8 @@ function NewReservationSheet({ defaultDate }: { defaultDate: string }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="LUNCH">Almuerzo</SelectItem>
-                <SelectItem value="DINNER">Cena</SelectItem>
+                <SelectItem value="LUNCH">{t("reservations.turnLabels.LUNCH")}</SelectItem>
+                <SelectItem value="DINNER">{t("reservations.turnLabels.DINNER")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -149,25 +149,25 @@ function NewReservationSheet({ defaultDate }: { defaultDate: string }) {
           </div>
           <Select value={tableId} onValueChange={setTableId}>
             <SelectTrigger>
-              <SelectValue placeholder="Mesa (opcional)" />
+              <SelectValue placeholder={t("reservations.form.table")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={NO_TABLE}>Sin mesa</SelectItem>
-              {tables.data?.map((t) => (
-                <SelectItem key={t.id} value={t.id}>
-                  Mesa {t.number}
-                  {t.name ? ` · ${t.name}` : ""}
+              <SelectItem value={NO_TABLE}>{t("reservations.form.noTable")}</SelectItem>
+              {tables.data?.map((table) => (
+                <SelectItem key={table.id} value={table.id}>
+                  {t("reservations.tableOption", { number: table.number })}
+                  {table.name ? ` · ${table.name}` : ""}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Input
-            placeholder="Nota (opcional)"
+            placeholder={t("reservations.form.note")}
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
           <Button onClick={submit} disabled={create.isPending}>
-            {create.isPending ? "Creando…" : "Crear reserva"}
+            {create.isPending ? t("reservations.form.creating") : t("reservations.form.submit")}
           </Button>
         </div>
       </SheetContent>
@@ -176,6 +176,7 @@ function NewReservationSheet({ defaultDate }: { defaultDate: string }) {
 }
 
 function RowActions({ reservation }: { reservation: ReservationDTO }) {
+  const { t } = useTranslation()
   const transition = useReservationTransition()
 
   const act = (action: "confirm" | "seat" | "complete" | "cancel" | "noShow") =>
@@ -183,7 +184,7 @@ function RowActions({ reservation }: { reservation: ReservationDTO }) {
       { id: reservation.id, action },
       {
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos actualizar la reserva."),
+          toast.error(apiErrorText(error, t, t("reservations.toasts.transitionError"))),
       }
     )
 
@@ -196,26 +197,26 @@ function RowActions({ reservation }: { reservation: ReservationDTO }) {
     <div className="flex flex-wrap justify-end gap-1">
       {status === "PENDING" ? (
         <Button variant="ghost" size="sm" disabled={transition.isPending} onClick={() => act("confirm")}>
-          Confirmar
+          {t("reservations.actions.confirm")}
         </Button>
       ) : null}
       {status === "PENDING" || status === "CONFIRMED" ? (
         <Button variant="ghost" size="sm" disabled={transition.isPending} onClick={() => act("seat")}>
-          Sentar
+          {t("reservations.actions.seat")}
         </Button>
       ) : null}
       {status === "SEATED" ? (
         <Button variant="ghost" size="sm" disabled={transition.isPending} onClick={() => act("complete")}>
-          Completar
+          {t("reservations.actions.complete")}
         </Button>
       ) : null}
       {status === "PENDING" || status === "CONFIRMED" ? (
         <>
           <Button variant="ghost" size="sm" disabled={transition.isPending} onClick={() => act("noShow")}>
-            No-show
+            {t("reservations.actions.noShow")}
           </Button>
           <Button variant="ghost" size="sm" disabled={transition.isPending} onClick={() => act("cancel")}>
-            Cancelar
+            {t("reservations.actions.cancel")}
           </Button>
         </>
       ) : null}
@@ -224,6 +225,7 @@ function RowActions({ reservation }: { reservation: ReservationDTO }) {
 }
 
 export function ReservationsPage() {
+  const { t } = useTranslation()
   const [date, setDate] = useState(() => todayLocal())
   const [turnFilter, setTurnFilter] = useState<"ALL" | ServiceTurn>("ALL")
 
@@ -239,8 +241,8 @@ export function ReservationsPage() {
   const tables = useTables()
   const tableLabel = (tableId: string | null) => {
     if (!tableId) return "—"
-    const table = tables.data?.find((t) => t.id === tableId)
-    return table ? `Mesa ${table.number}` : "—"
+    const table = tables.data?.find((item) => item.id === tableId)
+    return table ? t("reservations.tableOption", { number: table.number }) : "—"
   }
 
   return (
@@ -248,15 +250,15 @@ export function ReservationsPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <GradientHeading size="md" weight="bold">
-            Reservas
+            {t("reservations.title")}
           </GradientHeading>
           <p className="text-sm text-muted-foreground">
-            Agenda del servicio por día y turno. Confirmá, sentá y registrá no-shows.
+            {t("reservations.subtitle")}
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-            Día
+            {t("reservations.dayLabel")}
             <Input
               type="date"
               value={date}
@@ -265,15 +267,15 @@ export function ReservationsPage() {
             />
           </label>
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-            Turno
+            {t("reservations.shiftLabel")}
             <Select value={turnFilter} onValueChange={(v) => setTurnFilter(v as "ALL" | ServiceTurn)}>
               <SelectTrigger className="w-[8rem]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">Todos</SelectItem>
-                <SelectItem value="LUNCH">Almuerzo</SelectItem>
-                <SelectItem value="DINNER">Cena</SelectItem>
+                <SelectItem value="ALL">{t("reservations.filterAll")}</SelectItem>
+                <SelectItem value="LUNCH">{t("reservations.turnLabels.LUNCH")}</SelectItem>
+                <SelectItem value="DINNER">{t("reservations.turnLabels.DINNER")}</SelectItem>
               </SelectContent>
             </Select>
           </label>
@@ -290,13 +292,13 @@ export function ReservationsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Hora</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead className="text-right">Personas</TableHead>
-                <TableHead>Turno</TableHead>
-                <TableHead>Mesa</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead>{t("reservations.columns.time")}</TableHead>
+                <TableHead>{t("reservations.columns.customer")}</TableHead>
+                <TableHead className="text-right">{t("reservations.columns.guests")}</TableHead>
+                <TableHead>{t("reservations.columns.shift")}</TableHead>
+                <TableHead>{t("reservations.columns.table")}</TableHead>
+                <TableHead>{t("reservations.columns.status")}</TableHead>
+                <TableHead className="text-right">{t("reservations.columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -313,12 +315,12 @@ export function ReservationsPage() {
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{r.party_size}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {SERVICE_TURN_LABELS[r.turn]}
+                    {t(`reservations.turnLabels.${r.turn}`)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{tableLabel(r.table_id)}</TableCell>
                   <TableCell>
                     <Badge variant={RESERVATION_STATUS_VARIANT[r.status]}>
-                      {RESERVATION_STATUS_LABELS[r.status]}
+                      {t(`reservations.statusLabels.${r.status}`)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -330,7 +332,7 @@ export function ReservationsPage() {
           </Table>
         ) : (
           <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
-            No hay reservas para este día.
+            {t("reservations.emptyState")}
           </p>
         )}
       </div>

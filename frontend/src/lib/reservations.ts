@@ -1,18 +1,8 @@
-import type { ReservationStatus, ServiceTurn } from "@/api/types-reservations"
+import type { ReservationStatus } from "@/api/types-reservations"
 
-export const RESERVATION_STATUS_LABELS: Record<ReservationStatus, string> = {
-  PENDING: "Pendiente",
-  CONFIRMED: "Confirmada",
-  SEATED: "Sentada",
-  COMPLETED: "Completada",
-  CANCELLED: "Cancelada",
-  NO_SHOW: "No-show",
-}
-
-export const SERVICE_TURN_LABELS: Record<ServiceTurn, string> = {
-  LUNCH: "Almuerzo",
-  DINNER: "Cena",
-}
+// Los textos de estado y turno viven en el diccionario i18n
+// (`reservations.statusLabels.*` y `reservations.turnLabels.*`); el consumidor
+// los resuelve con `t()`. Acá solo queda lo que es código (variantes, formato).
 
 type BadgeVariant = "default" | "secondary" | "outline" | "destructive"
 

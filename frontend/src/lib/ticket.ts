@@ -6,9 +6,36 @@ import { formatMoney } from "@/lib/money"
 // own lines. Server-side ESC/POS network printing stays a follow-up behind a
 // future TicketPrinter port.
 
-const STATION_LABEL: Record<Station, string> = {
-  KITCHEN: "COCINA",
-  BAR: "BARRA",
+// Etiquetas traducibles del ticket. Se inyectan desde el consumidor (que tiene
+// `t()`); los defaults en español dejan las funciones puras y testeables sin
+// pasar `t`, y garantizan la paridad AR.
+export interface TicketLabels {
+  stations: Record<Station, string>
+  empty: string
+}
+
+const DEFAULT_TICKET_LABELS: TicketLabels = {
+  stations: {
+    KITCHEN: "COCINA",
+    BAR: "BARRA",
+  },
+  empty: "— sin ítems —",
+}
+
+export interface ReceiptLabels {
+  nonFiscal: string
+  subtotal: string
+  tax: (rate: string) => string
+  total: string
+  tip: string
+}
+
+const DEFAULT_RECEIPT_LABELS: ReceiptLabels = {
+  nonFiscal: "RECIBO NO FISCAL",
+  subtotal: "Subtotal",
+  tax: (rate) => `Impuesto (${rate}%)`,
+  total: "TOTAL",
+  tip: "Propina",
 }
 
 function escapeHtml(value: string): string {
@@ -25,7 +52,8 @@ export function ticketHtml(
   order: OrderDTO,
   tableLabel: string,
   printedAt: string,
-  station?: Station
+  station?: Station,
+  labels: TicketLabels = DEFAULT_TICKET_LABELS
 ): string {
   const items = station ? order.items.filter((it) => it.station === station) : order.items
   const byStation = new Map<Station, OrderItemDTO[]>()
@@ -45,11 +73,11 @@ export function ticketHtml(
           return `<div class="line"><span class="qty">${it.quantity}×</span> ${escapeHtml(it.name)}</div>${note}`
         })
         .join("")
-      return `<div class="station">${STATION_LABEL[st]}</div>${rows}`
+      return `<div class="station">${labels.stations[st]}</div>${rows}`
     })
     .join("")
 
-  return `<div class="ticket"><div class="head">${escapeHtml(tableLabel)}</div><div class="meta">${escapeHtml(printedAt)}</div>${sections || '<div class="line">— sin ítems —</div>'}</div>`
+  return `<div class="ticket"><div class="head">${escapeHtml(tableLabel)}</div><div class="meta">${escapeHtml(printedAt)}</div>${sections || `<div class="line">${labels.empty}</div>`}</div>`
 }
 
 export interface ReceiptPaymentLine {
@@ -75,7 +103,8 @@ export function receiptHtml(
   printedAt: string,
   payments: ReceiptPaymentLine[],
   tipAmount = 0,
-  tax: ReceiptTax | null = null
+  tax: ReceiptTax | null = null,
+  labels: ReceiptLabels = DEFAULT_RECEIPT_LABELS
 ): string {
   const lines = order.items
     .map(
@@ -93,18 +122,18 @@ export function receiptHtml(
   // La propina va aparte del total de la venta (no es ingreso del local).
   const tip =
     tipAmount > 0
-      ? `<div class="line">Propina<span class="amt">${formatMoney(tipAmount, order.currency)}</span></div>`
+      ? `<div class="line">${labels.tip}<span class="amt">${formatMoney(tipAmount, order.currency)}</span></div>`
       : ""
   const totalBlock =
     tax && tax.amount > 0
-      ? `<div class="line">Subtotal<span class="amt">${formatMoney(tax.subtotal, order.currency)}</span></div>` +
-        `<div class="line">Impuesto (${(tax.rateBps / 100).toFixed(2)}%)` +
+      ? `<div class="line">${labels.subtotal}<span class="amt">${formatMoney(tax.subtotal, order.currency)}</span></div>` +
+        `<div class="line">${labels.tax((tax.rateBps / 100).toFixed(2))}` +
         `<span class="amt">${formatMoney(tax.amount, order.currency)}</span></div>` +
-        `<div class="station">TOTAL<span class="amt">${formatMoney(tax.total, order.currency)}</span></div>`
-      : `<div class="station">TOTAL<span class="amt">${formatMoney(order.total_amount, order.currency)}</span></div>`
+        `<div class="station">${labels.total}<span class="amt">${formatMoney(tax.total, order.currency)}</span></div>`
+      : `<div class="station">${labels.total}<span class="amt">${formatMoney(order.total_amount, order.currency)}</span></div>`
   return (
     `<div class="ticket"><div class="head">${escapeHtml(tableLabel)}</div>` +
-    `<div class="meta">RECIBO NO FISCAL · ${escapeHtml(printedAt)}</div>` +
+    `<div class="meta">${labels.nonFiscal} · ${escapeHtml(printedAt)}</div>` +
     `${lines}` +
     `${totalBlock}` +
     `${tip}` +
@@ -129,11 +158,11 @@ export const TICKET_CSS = `
 
 // Thin: opens a print-only window with the ticket and triggers the dialog. A
 // thermal printer set as the print target produces the physical ticket.
-export function printTicket(bodyHtml: string): void {
+export function printTicket(bodyHtml: string, title = "Comanda"): void {
   const w = window.open("", "_blank", "width=320,height=640")
   if (!w) return
   w.document.write(
-    `<!doctype html><html><head><meta charset="utf-8"><title>Comanda</title><style>${TICKET_CSS}</style></head><body>${bodyHtml}</body></html>`
+    `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>${TICKET_CSS}</style></head><body>${bodyHtml}</body></html>`
   )
   w.document.close()
   w.focus()

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type { FloorTableDTO, SectorDTO } from "@/api/types-operations"
 import { useAuth } from "@/auth/auth-context"
 import { Badge } from "@/components/ui/badge"
@@ -22,12 +23,12 @@ import { floorView, type FloorView } from "@/lib/floor-session"
 import { kdsDelay } from "@/lib/kds"
 import { formatMoney } from "@/lib/money"
 
-const CHIPS: { key: FloorChip; label: string }[] = [
-  { key: "all", label: "Todas" },
-  { key: "to_serve", label: "Para servir" },
-  { key: "to_charge", label: "A cobrar" },
-  { key: "mine", label: "Mis mesas" },
-  { key: "free", label: "Libres" },
+const CHIPS: { key: FloorChip; labelKey: string }[] = [
+  { key: "all", labelKey: "floor.chips.all" },
+  { key: "to_serve", labelKey: "floor.chips.toServe" },
+  { key: "to_charge", labelKey: "floor.chips.toCharge" },
+  { key: "mine", labelKey: "floor.chips.mine" },
+  { key: "free", labelKey: "floor.chips.free" },
 ]
 
 const SIN_SECTOR = "__none__"
@@ -63,6 +64,7 @@ function TableCard({
   onBill: (sessionId: string) => void
   billPending: boolean
 }) {
+  const { t } = useTranslation()
   const view = floorView(table)
   const order = table.active_order
   const delay = view.since ? kdsDelay(view.since, now) : null
@@ -73,7 +75,9 @@ function TableCard({
         <div className="flex items-center gap-1.5">
           <span className="font-heading text-2xl font-medium">{table.number}</span>
           {view.pax ? (
-            <span className="text-xs text-muted-foreground">· {view.pax}p</span>
+            <span className="text-xs text-muted-foreground">
+              {t("floor.pax", { count: view.pax })}
+            </span>
           ) : null}
         </div>
         {table.name ? (
@@ -82,7 +86,7 @@ function TableCard({
         {view.state !== "FREE" ? (
           <>
             <Badge variant={view.attention ? "default" : "secondary"} className="mt-1">
-              {view.label}
+              {t(`floor.state.${view.state}`)}
             </Badge>
             {order ? (
               <span className="text-xs font-medium">
@@ -117,12 +121,12 @@ function TableCard({
                   onBill(table.session!.id)
                 }}
               >
-                Pedir cuenta
+                {t("floor.requestBill")}
               </Button>
             ) : null}
           </>
         ) : (
-          <span className="text-xs text-muted-foreground">Libre</span>
+          <span className="text-xs text-muted-foreground">{t("floor.state.FREE")}</span>
         )}
       </CardContent>
     </Card>
@@ -130,6 +134,7 @@ function TableCard({
 }
 
 export function FloorPage() {
+  const { t } = useTranslation()
   const floor = useFloor()
   const sectors = useSectors()
   const createOrder = useCreateOrder()
@@ -163,33 +168,33 @@ export function FloorPage() {
     createOrder.mutate(table.id, {
       onSuccess: (res) => navigate(`/app/orders/${res.order_id}`),
       onError: (error) =>
-        toast.error(isApiError(error) ? error.message : "No pudimos abrir la comanda."),
+        toast.error(apiErrorText(error, t, t("floor.errors.openOrder"))),
     })
   }
 
   const askForBill = (sessionId: string) => {
     requestBill.mutate(sessionId, {
       onError: (error) =>
-        toast.error(isApiError(error) ? error.message : "No pudimos pedir la cuenta."),
+        toast.error(apiErrorText(error, t, t("floor.errors.requestBill"))),
     })
   }
 
   const addTable = () => {
     const n = Number(newNumber)
     if (!Number.isInteger(n) || n <= 0) {
-      toast.error("Número de mesa inválido.")
+      toast.error(t("floor.errors.invalidNumber"))
       return
     }
     createTable.mutate(
       { number: n, name: null },
       {
         onSuccess: () => {
-          toast.success("Mesa agregada.")
+          toast.success(t("floor.toast.added"))
           setNewNumber("")
           void queryClient.invalidateQueries({ queryKey: ["floor"] })
         },
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos agregar la mesa."),
+          toast.error(apiErrorText(error, t, t("floor.errors.addTable"))),
       }
     )
   }
@@ -236,11 +241,9 @@ export function FloorPage() {
     <div className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-col gap-1">
         <GradientHeading size="md" weight="bold">
-          Mesas
+          {t("floor.title")}
         </GradientHeading>
-        <p className="text-sm text-muted-foreground">
-          En vivo: para servir / a cobrar / en cocina. Tocá una mesa para abrir su comanda.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("floor.subtitle")}</p>
       </header>
 
       {canManage ? (
@@ -248,13 +251,13 @@ export function FloorPage() {
           <Input
             type="number"
             inputMode="numeric"
-            placeholder="N° de mesa"
+            placeholder={t("floor.numberPlaceholder")}
             value={newNumber}
             onChange={(e) => setNewNumber(e.target.value)}
             className="max-w-[8rem]"
           />
           <Button variant="outline" onClick={addTable} disabled={createTable.isPending}>
-            Agregar mesa
+            {t("floor.addTable")}
           </Button>
         </div>
       ) : null}
@@ -262,7 +265,7 @@ export function FloorPage() {
       {tables.length > 0 ? (
         <div className="flex flex-col gap-2">
           <Input
-            placeholder="Buscar mesa…"
+            placeholder={t("floor.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="max-w-[12rem]"
@@ -275,7 +278,7 @@ export function FloorPage() {
                 variant={chip === c.key ? "default" : "outline"}
                 onClick={() => setChip(c.key)}
               >
-                {c.label}
+                {t(c.labelKey)}
               </Button>
             ))}
           </div>
@@ -285,7 +288,7 @@ export function FloorPage() {
       {attention.length > 0 ? (
         <section className="flex flex-col gap-2 rounded-xl border border-amber-500/40 bg-amber-50/40 p-3 dark:bg-amber-500/5">
           <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-            Requieren atención ({attention.length})
+            {t("floor.attention", { count: attention.length })}
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{attention.map(card)}</div>
         </section>
@@ -295,10 +298,10 @@ export function FloorPage() {
         <Spinner />
       ) : tables.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No hay mesas todavía{canManage ? " — agregá una arriba." : "."}
+          {canManage ? t("floor.emptyManage") : t("floor.empty")}
         </p>
       ) : visible.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No hay mesas que coincidan.</p>
+        <p className="text-sm text-muted-foreground">{t("floor.noMatch")}</p>
       ) : hasSectors ? (
         <div className="flex flex-col gap-4">
           {groups.map(({ sector, tables: group }) => {
@@ -318,7 +321,7 @@ export function FloorPage() {
                     />
                   ) : null}
                   <span className="text-sm font-semibold text-foreground">
-                    {sector?.name ?? "Sin sector"}
+                    {sector?.name ?? t("floor.sinSector")}
                   </span>
                   <span className="text-xs text-muted-foreground">({group.length})</span>
                   <span className="text-xs text-muted-foreground">
