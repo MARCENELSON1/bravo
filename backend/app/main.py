@@ -16,6 +16,7 @@ from app.presentation.api.v1 import (
     advisor,
     analytics,
     auth,
+    billing,
     cashier,
     copilot,
     customers,
@@ -72,6 +73,7 @@ def create_app() -> FastAPI:
 
     register_error_handlers(app)
     app.include_router(auth.router, prefix="/api/v1")
+    app.include_router(billing.router, prefix="/api/v1")
     app.include_router(tenants.router, prefix="/api/v1")
     app.include_router(users.router, prefix="/api/v1")
     app.include_router(ping.router, prefix="/api/v1")

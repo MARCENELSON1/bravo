@@ -22,6 +22,13 @@ from app.application.analytics.use_cases import (
     GetRevenueDaily,
     GetRevenueSummary,
 )
+from app.application.billing.use_cases import (
+    CancelSubscription,
+    GetSubscription,
+    HandleBillingWebhook,
+    ListPlans,
+    StartSubscriptionCheckout,
+)
 from app.application.cashier.settings import GetCashSettings, UpdateCashSettings
 from app.application.cashier.tips import GetTipsReport, PayTips
 from app.application.cashier.use_cases import (
@@ -191,6 +198,9 @@ from app.infrastructure.advisor.claude_synthesizer import ClaudeSynthesizer
 from app.infrastructure.advisor.llm import AnthropicAdvisorLLM
 from app.infrastructure.advisor.no_synthesis import NoSynthesis
 from app.infrastructure.advisor.template_narrator import TemplateNarrator
+from app.infrastructure.billing.mercadopago_gateway import MercadoPagoPreapprovalGateway
+from app.infrastructure.billing.resolver import RailBillingGatewayResolver
+from app.infrastructure.billing.stripe_gateway import StripeBillingGateway
 from app.infrastructure.copilot.anthropic_copilot import AnthropicCopilotLLM
 from app.infrastructure.copilot.no_copilot import NoCopilot
 from app.infrastructure.copilot.sql_runner import SqlAlchemyCopilotQueryRunner
@@ -821,6 +831,48 @@ class Container(containers.DeclarativeContainer):
     )
     subscription_repository = providers.Factory(
         SqlAlchemySubscriptionRepository, session_factory=db.provided.session
+    )
+    # Pasarelas de billing (Flujo A): Stripe (USD) + MercadoPago (ARS), elegidas
+    # por riel. Keys del entorno (Railway). El resolver materializa el anti-arbitraje.
+    stripe_billing_gateway = providers.Singleton(
+        StripeBillingGateway,
+        api_key=config.provided.stripe_api_key,
+        webhook_secret=config.provided.stripe_webhook_secret,
+    )
+    mercadopago_billing_gateway = providers.Singleton(
+        MercadoPagoPreapprovalGateway,
+        access_token=config.provided.mp_billing_access_token,
+        webhook_secret=config.provided.mp_billing_webhook_secret,
+    )
+    billing_gateway_resolver = providers.Singleton(
+        RailBillingGatewayResolver,
+        stripe=stripe_billing_gateway,
+        mercadopago=mercadopago_billing_gateway,
+    )
+    list_plans = providers.Factory(ListPlans, plans=plan_repository)
+    get_subscription = providers.Factory(
+        GetSubscription,
+        subscriptions=subscription_repository,
+        tenant_context=tenant_context,
+    )
+    start_subscription_checkout = providers.Factory(
+        StartSubscriptionCheckout,
+        plans=plan_repository,
+        subscriptions=subscription_repository,
+        gateways=billing_gateway_resolver,
+        tenant_context=tenant_context,
+    )
+    cancel_subscription = providers.Factory(
+        CancelSubscription,
+        subscriptions=subscription_repository,
+        gateways=billing_gateway_resolver,
+        tenant_context=tenant_context,
+    )
+    handle_billing_webhook = providers.Factory(
+        HandleBillingWebhook,
+        subscriptions=subscription_repository,
+        gateways=billing_gateway_resolver,
+        tenant_context=tenant_context,
     )
     # --- Fase 14: caja / arqueo Z ---
     cash_session_repository = providers.Factory(

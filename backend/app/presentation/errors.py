@@ -11,6 +11,14 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.domain.advisor.exceptions import InvalidAdvisorSettings
+from app.domain.billing.exceptions import (
+    InvalidBillingWebhook,
+    InvalidSubscriptionTransition,
+    PlanNotFound,
+    RailNotAllowedForRegion,
+    SubscriptionAlreadyActive,
+    SubscriptionNotFound,
+)
 from app.domain.cashier.exceptions import (
     CashSessionAlreadyClosed,
     CashSessionAlreadyOpen,
@@ -153,6 +161,13 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     # Internacionalización US — conexión de TaxJar
     (InvalidTaxProviderCredential, 422),
     (TaxProviderUnavailable, 502),
+    # Billing del SaaS (Flujo A)
+    (PlanNotFound, 404),
+    (SubscriptionNotFound, 404),
+    (SubscriptionAlreadyActive, 409),
+    (RailNotAllowedForRegion, 409),
+    (InvalidSubscriptionTransition, 409),
+    (InvalidBillingWebhook, 401),
     # Fase 5 — fichaje
     (ShiftNotFound, 404),
     (ShiftAlreadyOpen, 409),

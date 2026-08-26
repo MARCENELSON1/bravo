@@ -6,7 +6,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from uuid import uuid4
 
-from app.domain.billing.entities import Subscription
+from app.domain.billing.entities import Plan, Subscription
 from app.domain.billing.exceptions import (
     PlanNotFound,
     SubscriptionAlreadyActive,
@@ -19,10 +19,35 @@ from app.domain.billing.value_objects import (
     BillingEvent,
     BillingEventType,
     BillingRail,
+    BillingRegion,
     SubscriptionStatus,
     rail_for_region,
 )
 from app.domain.identity.ports import TenantContext
+
+
+class ListPlans:
+    """Planes activos de una región (para la pantalla de pricing)."""
+
+    def __init__(self, plans: PlanRepository) -> None:
+        self._plans = plans
+
+    async def execute(self, *, region: BillingRegion) -> list[Plan]:
+        return await self._plans.list_active(region)
+
+
+class GetSubscription:
+    """La suscripción actual del tenant (para mostrar estado / gatear features)."""
+
+    def __init__(
+        self, subscriptions: SubscriptionRepository, tenant_context: TenantContext
+    ) -> None:
+        self._subscriptions = subscriptions
+        self._tenant_context = tenant_context
+
+    async def execute(self, *, tenant_id: str) -> Subscription | None:
+        self._tenant_context.set(tenant_id)
+        return await self._subscriptions.get_by_tenant(tenant_id)
 
 
 class StartSubscriptionCheckout:

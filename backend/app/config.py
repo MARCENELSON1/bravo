@@ -116,6 +116,18 @@ class Settings(BaseSettings):
     # host in prod). Empty → rely on the dashboard-configured webhook.
     mp_notification_url: str = ""
 
+    # Billing del SaaS (Flujo A). Stripe cobra la región Internacional (USD),
+    # MercadoPago Preapproval la región AR (ARS). Keys SOLO del entorno (Railway),
+    # nunca en el repo. sk_test_… = sandbox / sk_live_… = producción (lo define la
+    # key, no un flag). El webhook_secret sale del endpoint al crearlo en el panel.
+    stripe_api_key: str = ""
+    stripe_webhook_secret: str = ""
+    mp_billing_access_token: str = ""
+    mp_billing_webhook_secret: str = ""
+    # URLs de retorno del checkout hosteado (a dónde vuelve el usuario tras pagar).
+    billing_success_url: str = ""
+    billing_cancel_url: str = ""
+
     # Fichaje por presencia (Fase 5.5). "hmac" = QR/código rotativo firmado;
     # "off" = deshabilitado. El secreto de firma cae al jwt_secret si no se setea.
     presence_provider: Literal["hmac", "off"] = "hmac"
