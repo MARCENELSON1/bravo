@@ -15,6 +15,10 @@ import { createContainer } from "@/infrastructure/di/container"
 import { ContainerProvider } from "@/presentation/providers/container-provider"
 import { buildStructuredData } from "@/infrastructure/seo/structured-data"
 
+// Re-exportados para el prerender (scripts/prerender.mjs), que arma el <head> por
+// región desde el bundle SSR.
+export { seoHead, seoMetaFor } from "@/infrastructure/seo/meta"
+
 export function render(region: Region = "AR"): string {
   const container = createContainer(region)
   return renderToString(

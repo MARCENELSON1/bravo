@@ -1,45 +1,68 @@
 /**
- * Post-build: inyecta en dist/index.html el HTML ya renderizado y el JSON-LD.
+ * Post-build: genera las DOS variantes estáticas de la landing desde una sola base.
  *
- * Corre después de los dos `vite build` (cliente y SSR). Sin esto el archivo que
- * sirve Railway tiene 0 caracteres de texto y es invisible para cualquier bot
- * que no ejecute JavaScript.
+ *   dist/index.html      → es-AR  (render("AR"))
+ *   dist/en/index.html   → en-US  (render("INTL"))
+ *
+ * Cada una lleva su <head> por región (title/description/OG/canonical + hreflang),
+ * su `<html lang>` y su JSON-LD. Ambas URLs quedan crawleables directo; hreflang le
+ * dice a Google que son la misma página en dos idiomas. Sin esto el archivo que
+ * sirve Railway tiene 0 caracteres de texto y es invisible para cualquier bot que
+ * no ejecute JavaScript.
  */
-import { readFile, writeFile, rm } from "node:fs/promises"
+import { readFile, writeFile, rm, mkdir } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
 import path from "node:path"
 
-// Rutas relativas a ESTE archivo, sin asumir cómo se llama la carpeta: Railway
-// monta el Root Directory en /app, no en /landing.
 const projectDir = fileURLToPath(new URL("../", import.meta.url))
-const indexPath = path.join(projectDir, "dist", "index.html")
+const distDir = path.join(projectDir, "dist")
+const indexPath = path.join(distDir, "index.html")
 const serverEntry = path.join(projectDir, "dist-ssr", "entry-server.js")
 
-const { render, structuredData } = await import(serverEntry)
+const { render, structuredData, seoHead, seoMetaFor } = await import(serverEntry)
 
-const html = render()
-const jsonLd = await structuredData()
+const base = await readFile(indexPath, "utf8")
 
-let template = await readFile(indexPath, "utf8")
-
-if (!template.includes('<div id="root"></div>')) {
-  throw new Error("No encontré el <div id=\"root\"> vacío en dist/index.html")
+if (!base.includes('<div id="root"></div>')) {
+  throw new Error('No encontré el <div id="root"> vacío en dist/index.html')
 }
-template = template.replace('<div id="root"></div>', `<div id="root">${html}</div>`)
+if (!/<!--SEO:start-->[\s\S]*?<!--SEO:end-->/.test(base)) {
+  throw new Error("No encontré el bloque <!--SEO:start-->…<!--SEO:end--> en dist/index.html")
+}
 
-// El JSON-LD va al final del <head>, antes de cerrarlo.
-template = template.replace(
-  "</head>",
-  `  <script type="application/ld+json">${jsonLd}</script>\n  </head>`,
-)
+// AR se escribe sobre dist/index.html; INTL va a dist/en/index.html.
+const VARIANTS = [
+  { region: "AR", out: indexPath },
+  { region: "INTL", out: path.join(distDir, "en", "index.html") },
+]
 
-await writeFile(indexPath, template, "utf8")
+for (const { region, out } of VARIANTS) {
+  const html = render(region)
+  const jsonLd = await structuredData(region)
+  const { lang } = seoMetaFor(region)
+
+  const doc = base
+    // <head> variable por región (reemplaza todo el bloque marcado).
+    .replace(/<!--SEO:start-->[\s\S]*?<!--SEO:end-->/, seoHead(region))
+    // idioma del documento: el cliente deriva la región de acá al hidratar.
+    .replace(/<html lang="[^"]*">/, `<html lang="${lang}">`)
+    // el árbol ya renderizado.
+    .replace('<div id="root"></div>', `<div id="root">${html}</div>`)
+    // JSON-LD al final del <head>.
+    .replace("</head>", `  <script type="application/ld+json">${jsonLd}</script>\n  </head>`)
+
+  await mkdir(path.dirname(out), { recursive: true })
+  await writeFile(out, doc, "utf8")
+
+  const text = doc
+    .replace(/<script[\s\S]*?<\/script>/g, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+  console.log(
+    `prerender ${region} → ${path.relative(distDir, out) || "index.html"} — ${text.length} caracteres de texto`,
+  )
+}
+
 // El bundle SSR es un artefacto intermedio: no se publica.
 await rm(path.join(projectDir, "dist-ssr"), { recursive: true, force: true })
-
-const text = template
-  .replace(/<script[\s\S]*?<\/script>/g, "")
-  .replace(/<[^>]+>/g, " ")
-  .replace(/\s+/g, " ")
-  .trim()
-console.log(`prerender ok — ${text.length} caracteres de texto en el HTML servido`)
