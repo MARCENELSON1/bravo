@@ -19,7 +19,7 @@
 
 ## Pendientes (no bloqueantes)
 
-1. **Pasada de formato:** varios usan `toLocaleTimeString/DateString/String("es-AR")` e `Intl` con locale fijo (`topbar-clock`, `lib/timeclock`, `product-ficha`, `pricing-inflation-card`, etc.) → un usuario EN ve hora/fecha/número en formato AR. Fix = derivar el locale del idioma activo de i18next en un helper de formato central.
+1. **Pasada de formato — FECHAS/HORAS ✅** (`b2af8c3`): helper `lib/format.ts` → `dateLocale()` (es→`es-AR`, en→`en-US`, default es-AR=paridad); reemplaza el locale fijo en todos los formatters de fecha/hora (timeclock, reservations, topbar-clock, finance, recent-movements, pricing-card, order-page ticket, subscription-page). Un user EN ya ve 12h AM/PM + MM/DD. **Queda (menor): NÚMEROS sin moneda** — `formatQty` (kg/g), `formatBps`/`formatPct` (%), abreviaciones `$XM`, ratio `N×` siguen en es-AR (coma decimal). Son funciones puras con tests que asertan es-AR; para migrarlas hay que hacerlas locale-aware + volver sus tests deterministas por idioma. Los **montos** ya van por moneda (`lib/money`, correcto).
 2. **Constantes de lib vivas solo para sus tests** (dead-for-UI, inofensivas): `pricing.WEEKDAY_LABELS`, `lib/advisor.BUCKET_LABELS`, `lib/timeclock.SHIFT_SOURCE_LABELS` (movido), `lib/floor-session` labels. Si se limpian, actualizar sus tests.
 3. **Doc-types AFIP/ARCA** (`lib/invoice-labels`) quedan en ES a propósito (concepto fiscal AR; un restaurante US usa recibos de sales tax).
 4. **Idioma adentro de la app:** hoy manda navegador + toggle persistido. Falta (opcional) fijarlo por `tenant.locale` al loguearse.
