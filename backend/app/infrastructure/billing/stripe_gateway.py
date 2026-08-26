@@ -33,6 +33,9 @@ from app.domain.billing.value_objects import (
 _STRIPE_BASE = "https://api.stripe.com"
 _INTERVAL = {BillingInterval.MONTH: "month", BillingInterval.YEAR: "year"}
 _SIGNATURE_TOLERANCE_S = 300  # 5 minutos (anti-replay)
+# Tax code de Stripe: "Software as a service (SaaS), business use". Requerido por
+# Managed Payments para clasificar el producto y calcular el impuesto correcto.
+_SAAS_TAX_CODE = "txcd_10103001"
 
 
 class StripeBillingGateway(BillingGateway):
@@ -74,17 +77,17 @@ class StripeBillingGateway(BillingGateway):
             "mode": "subscription",
             "success_url": success_url,
             "cancel_url": cancel_url,
-            # Managed Payments viene activado por default en la cuenta y exige un
-            # tax_code en el producto inline (si no, 400). Lo desactivamos por
-            # sesión para operar como procesador clásico (nuestro price_data inline
-            # no lleva tax_code). Adoptar Managed Payments (Stripe como Merchant of
-            # Record / Stripe Tax sobre el SaaS) sería una decisión de negocio aparte.
-            "managed_payments[enabled]": "false",
+            # Managed Payments ON: Stripe es el Merchant of Record del SaaS y maneja
+            # el impuesto indirecto (sales tax/IVA/GST) de la suscripción — lo calcula,
+            # cobra, declara y remite en +80 países. Requiere un tax_code elegible en
+            # el producto (abajo) para clasificarlo.
+            "managed_payments[enabled]": "true",
             "line_items[0][quantity]": "1",
             "line_items[0][price_data][currency]": plan.price.currency.lower(),
             "line_items[0][price_data][unit_amount]": str(plan.price.amount),
             "line_items[0][price_data][recurring][interval]": _INTERVAL[plan.interval],
             "line_items[0][price_data][product_data][name]": f"Wellnod {plan.tier.value}",
+            "line_items[0][price_data][product_data][tax_code]": _SAAS_TAX_CODE,
             "metadata[tenant_id]": subscription.tenant_id,
             "metadata[subscription_id]": subscription.id,
             "subscription_data[metadata][tenant_id]": subscription.tenant_id,
