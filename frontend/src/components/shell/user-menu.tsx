@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { AnimatePresence, motion } from "motion/react"
 import { LogOut, Settings } from "lucide-react"
 import { NavLink } from "react-router-dom"
 
 import { useAuth } from "@/auth/auth-context"
+import { LanguageSwitcher } from "@/components/language-switcher"
 import { useReduceMotion } from "@/lib/reduce-motion"
 import { ROLE_LABELS } from "@/lib/role-labels"
 import { cn } from "@/lib/utils"
@@ -24,6 +26,7 @@ const ITEM =
 
 // Fila de cuenta al pie de la sidebar; al tocarla abre un menú de opciones útiles.
 export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
+  const { t } = useTranslation()
   const { session, logout } = useAuth()
   const reduce = useReduceMotion()
   const [open, setOpen] = useState(false)
@@ -77,6 +80,10 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
               <Settings className="size-4 shrink-0" />
               Configuración
             </NavLink>
+            <div className="flex w-full items-center justify-between gap-2.5 px-2.5 py-2 text-sm text-sidebar-foreground/80">
+              <span>{t("common.language")}</span>
+              <LanguageSwitcher />
+            </div>
             <div className="my-1 h-px bg-black/10 dark:bg-white/10" />
             <button
               type="button"

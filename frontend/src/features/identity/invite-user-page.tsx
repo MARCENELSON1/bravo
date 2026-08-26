@@ -1,11 +1,13 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import { INVITABLE_ROLES } from "@/api/types"
 import { FormError } from "@/components/form-error"
 import { Button } from "@/components/ui/button"
@@ -28,12 +30,10 @@ import {
 import { useInviteUser } from "@/hooks/use-invite-user"
 import { ROLE_LABELS } from "@/lib/role-labels"
 
-const schema = z.object({
-  email: z.email("Email inválido"),
-  role: z.enum(["MANAGER", "WAITER", "KITCHEN", "CASHIER"]),
-})
-
-type InviteValues = z.infer<typeof schema>
+type InviteValues = {
+  email: string
+  role: "MANAGER" | "WAITER" | "KITCHEN" | "CASHIER"
+}
 
 // Route standalone: /app/invite. El contenido vive en <InviteUserForm/> para poder
 // reutilizarlo también dentro de la sección "Equipo" de Configuración.
@@ -52,8 +52,18 @@ export function InviteUserForm({
   showBack?: boolean
   embedded?: boolean
 }) {
+  const { t } = useTranslation()
   const invite = useInviteUser()
   const [serverError, setServerError] = useState<string | null>(null)
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        email: z.email(t("identity.invite.errors.emailInvalid")),
+        role: z.enum(["MANAGER", "WAITER", "KITCHEN", "CASHIER"]),
+      }),
+    [t]
+  )
 
   const {
     register,
@@ -71,18 +81,18 @@ export function InviteUserForm({
     setServerError(null)
     invite.mutate(values, {
       onSuccess: () => {
-        toast.success("Invitación enviada.")
+        toast.success(t("identity.invite.sent"))
         reset()
       },
       onError: (error) => {
         if (!isApiError(error)) {
-          setServerError("No pudimos enviar la invitación.")
+          setServerError(t("identity.invite.genericError"))
           return
         }
         if (error.code === "email_already_registered" || error.code === "invalid_email") {
-          setError("email", { message: error.message })
+          setError("email", { message: apiErrorText(error, t, error.message) })
         } else {
-          setServerError(error.message)
+          setServerError(apiErrorText(error, t, error.message))
         }
       },
     })
@@ -90,7 +100,7 @@ export function InviteUserForm({
 
   const emailField = (
     <Field>
-      <FieldLabel htmlFor="email">Email</FieldLabel>
+      <FieldLabel htmlFor="email">{t("identity.invite.emailLabel")}</FieldLabel>
       <Input id="email" type="email" aria-invalid={!!errors.email} {...register("email")} />
       <FieldError>{errors.email?.message}</FieldError>
     </Field>
@@ -98,14 +108,14 @@ export function InviteUserForm({
 
   const rolField = (
     <Field>
-      <FieldLabel htmlFor="role">Rol</FieldLabel>
+      <FieldLabel htmlFor="role">{t("identity.invite.roleLabel")}</FieldLabel>
       <Controller
         control={control}
         name="role"
         render={({ field }) => (
           <Select value={field.value} onValueChange={field.onChange}>
             <SelectTrigger id="role" className="w-full">
-              <SelectValue placeholder="Elegí un rol" />
+              <SelectValue placeholder={t("identity.invite.rolePlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {INVITABLE_ROLES.map((role) => (
@@ -134,13 +144,13 @@ export function InviteUserForm({
       <div className="flex items-center justify-between gap-3">
         {showBack ? (
           <Link to="/app" className="text-sm text-muted-foreground underline underline-offset-4">
-            Volver
+            {t("identity.invite.back")}
           </Link>
         ) : (
           <span />
         )}
         <Button type="submit" disabled={invite.isPending}>
-          {invite.isPending ? "Enviando…" : "Enviar invitación"}
+          {invite.isPending ? t("identity.invite.submitting") : t("identity.invite.submit")}
         </Button>
       </div>
     </form>
@@ -154,13 +164,13 @@ export function InviteUserForm({
       <form onSubmit={onSubmit} className="py-5" noValidate>
         <div className="mb-5 flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground">Invitar a tu equipo</p>
+            <p className="text-sm font-medium text-foreground">{t("identity.invite.title")}</p>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              Le enviamos un email para que cree su cuenta.
+              {t("identity.invite.subtitle")}
             </p>
           </div>
           <Button type="submit" disabled={invite.isPending} className="mt-3 mr-2 shrink-0">
-            {invite.isPending ? "Enviando…" : "Enviar invitación"}
+            {invite.isPending ? t("identity.invite.submitting") : t("identity.invite.submit")}
           </Button>
         </div>
         <div className="flex flex-col gap-5">
@@ -177,8 +187,8 @@ export function InviteUserForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Invitar a tu equipo</CardTitle>
-        <CardDescription>Le enviamos un email para que cree su cuenta.</CardDescription>
+        <CardTitle>{t("identity.invite.title")}</CardTitle>
+        <CardDescription>{t("identity.invite.subtitle")}</CardDescription>
       </CardHeader>
       <CardContent>{form}</CardContent>
     </Card>

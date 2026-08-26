@@ -1,12 +1,14 @@
 import { useEffect, useRef } from "react"
+import { useTranslation } from "react-i18next"
 import { Link, useSearchParams } from "react-router-dom"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import { AuthLayout } from "@/components/auth/auth-layout"
 import { Spinner } from "@/components/ui/spinner"
 import { useVerifyEmail } from "@/hooks/use-verify-email"
 
 export function VerifyEmailPage() {
+  const { t } = useTranslation()
   const [params] = useSearchParams()
   const token = params.get("token")
   const verify = useVerifyEmail()
@@ -20,26 +22,24 @@ export function VerifyEmailPage() {
 
   const loginLink = (
     <Link to="/login" className="font-medium text-foreground underline underline-offset-4">
-      Ir a iniciar sesión
+      {t("identity.goToLogin")}
     </Link>
   )
 
   if (!token) {
     return (
-      <AuthLayout title="Enlace inválido" footer={loginLink}>
+      <AuthLayout title={t("identity.verifyEmail.invalid.title")} footer={loginLink}>
         <p className="text-sm text-muted-foreground">
-          El enlace de verificación no es válido. Pedí uno nuevo desde tu email.
+          {t("identity.verifyEmail.invalid.body")}
         </p>
       </AuthLayout>
     )
   }
 
   if (verify.isError) {
-    const message = isApiError(verify.error)
-      ? verify.error.message
-      : "No pudimos verificar tu email."
+    const message = apiErrorText(verify.error, t, t("identity.verifyEmail.error.fallback"))
     return (
-      <AuthLayout title="No pudimos verificar" footer={loginLink}>
+      <AuthLayout title={t("identity.verifyEmail.error.title")} footer={loginLink}>
         <p className="text-sm text-muted-foreground">{message}</p>
       </AuthLayout>
     )
@@ -47,18 +47,18 @@ export function VerifyEmailPage() {
 
   if (verify.isSuccess) {
     return (
-      <AuthLayout title="Email verificado" footer={loginLink}>
+      <AuthLayout title={t("identity.verifyEmail.success.title")} footer={loginLink}>
         <p className="text-sm text-muted-foreground">
-          Tu email quedó verificado. Ya podés iniciar sesión.
+          {t("identity.verifyEmail.success.body")}
         </p>
       </AuthLayout>
     )
   }
 
   return (
-    <AuthLayout title="Verificando tu email">
+    <AuthLayout title={t("identity.verifyEmail.verifying")}>
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Spinner /> Un momento…
+        <Spinner /> {t("identity.verifyEmail.loadingHint")}
       </div>
     </AuthLayout>
   )

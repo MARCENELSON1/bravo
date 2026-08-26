@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { motion } from "motion/react"
+import { useTranslation } from "react-i18next"
 
 import { WellnodMark } from "@/components/brand/wellnod-mark"
 import { GradientHeading } from "@/components/ui/gradient-heading"
@@ -19,6 +20,9 @@ export function AuthLayout({
   footer?: ReactNode
 }) {
   const reduce = useReduceMotion()
+  const { t } = useTranslation()
+  // Bullets de marca: mapeamos las claves del namespace `auth` a una lista
+  const bulletKeys = ["realtime", "areas", "ai"] as const
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
       <aside
@@ -51,15 +55,15 @@ export function AuthLayout({
 
         <div className="relative">
           <h2 className="font-heading text-4xl font-semibold leading-tight">
-            El cerebro del local
+            {t("auth.brandHeading")}
           </h2>
           <p className="mt-4 max-w-sm text-sm text-white/70">
-            Todo lo que necesitás para entender y gestionar tu negocio, en un solo lugar.
+            {t("auth.brandSubtitle")}
           </p>
           <ul className="mt-6 flex flex-col gap-2 text-sm text-white/80">
-            <li>Información y datos en tiempo real</li>
-            <li>Todas las áreas: comandas, cobros, personal y más</li>
-            <li>IA Insights: Copiloto y Diagnóstico de tu negocio</li>
+            {bulletKeys.map((key) => (
+              <li key={key}>{t(`auth.bullets.${key}`)}</li>
+            ))}
           </ul>
         </div>
 

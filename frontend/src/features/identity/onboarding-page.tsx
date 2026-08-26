@@ -1,10 +1,12 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 
 import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import { AuthLayout } from "@/components/auth/auth-layout"
 import { FormError } from "@/components/form-error"
 import { Button } from "@/components/ui/button"
@@ -12,24 +14,41 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { Input } from "@/components/ui/input"
 import { useOnboarding } from "@/hooks/use-onboarding"
 
-const schema = z.object({
-  tenantName: z.string().min(2, "Mínimo 2 caracteres").max(120, "Máximo 120 caracteres"),
-  tenantSlug: z
-    .string()
-    .min(2, "Mínimo 2 caracteres")
-    .max(63, "Máximo 63 caracteres")
-    .regex(/^[a-z0-9-]+$/, "Solo minúsculas, números y guiones"),
-  ownerEmail: z.email("Email inválido"),
-  ownerPassword: z.string().min(8, "Mínimo 8 caracteres").max(128, "Máximo 128 caracteres"),
-  ownerName: z.string().max(120, "Máximo 120 caracteres").optional(),
-})
-
-type OnboardingValues = z.infer<typeof schema>
+type OnboardingValues = {
+  tenantName: string
+  tenantSlug: string
+  ownerEmail: string
+  ownerPassword: string
+  ownerName?: string
+}
 
 export function OnboardingPage() {
+  const { t } = useTranslation()
   const onboarding = useOnboarding()
   const [serverError, setServerError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        tenantName: z
+          .string()
+          .min(2, t("identity.onboarding.errors.min2"))
+          .max(120, t("identity.onboarding.errors.maxName")),
+        tenantSlug: z
+          .string()
+          .min(2, t("identity.onboarding.errors.min2"))
+          .max(63, t("identity.onboarding.errors.maxSlug"))
+          .regex(/^[a-z0-9-]+$/, t("identity.onboarding.errors.slugFormat")),
+        ownerEmail: z.email(t("identity.onboarding.errors.emailInvalid")),
+        ownerPassword: z
+          .string()
+          .min(8, t("identity.onboarding.errors.passwordMin"))
+          .max(128, t("identity.onboarding.errors.passwordMax")),
+        ownerName: z.string().max(120, t("identity.onboarding.errors.ownerNameMax")).optional(),
+      }),
+    [t]
+  )
 
   const {
     register,
@@ -61,15 +80,15 @@ export function OnboardingPage() {
         onSuccess: () => setDone(true),
         onError: (error) => {
           if (!isApiError(error)) {
-            setServerError("No pudimos crear el comercio.")
+            setServerError(t("identity.onboarding.genericError"))
             return
           }
           if (error.code === "tenant_already_exists") {
-            setError("tenantSlug", { message: error.message })
+            setError("tenantSlug", { message: apiErrorText(error, t, error.message) })
           } else if (error.code === "email_already_registered" || error.code === "invalid_email") {
-            setError("ownerEmail", { message: error.message })
+            setError("ownerEmail", { message: apiErrorText(error, t, error.message) })
           } else {
-            setServerError(error.message)
+            setServerError(apiErrorText(error, t, error.message))
           }
         },
       }
@@ -79,17 +98,16 @@ export function OnboardingPage() {
   if (done) {
     return (
       <AuthLayout
-        title="Revisá tu email"
-        description="Te enviamos un enlace para verificar tu cuenta."
+        title={t("identity.onboarding.done.title")}
+        description={t("identity.onboarding.done.description")}
         footer={
           <Link to="/login" className="font-medium text-foreground underline underline-offset-4">
-            Ir a iniciar sesión
+            {t("identity.goToLogin")}
           </Link>
         }
       >
         <p className="text-sm text-muted-foreground">
-          Creamos tu comercio. Para poder ingresar, abrí el email que te mandamos y seguí el
-          enlace de verificación.
+          {t("identity.onboarding.done.body")}
         </p>
       </AuthLayout>
     )
@@ -97,13 +115,13 @@ export function OnboardingPage() {
 
   return (
     <AuthLayout
-      title="Crear comercio"
-      description="Creá tu local y tu cuenta de dueño."
+      title={t("identity.onboarding.title")}
+      description={t("identity.onboarding.description")}
       footer={
         <span>
-          ¿Ya tenés cuenta?{" "}
+          {t("identity.onboarding.footerPrompt")}{" "}
           <Link to="/login" className="font-medium text-foreground underline underline-offset-4">
-            Iniciar sesión
+            {t("identity.onboarding.footerLink")}
           </Link>
         </span>
       }
@@ -111,30 +129,30 @@ export function OnboardingPage() {
       <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor="tenantName">Nombre del comercio</FieldLabel>
-            <Input id="tenantName" placeholder="Bar La Esquina" aria-invalid={!!errors.tenantName} {...register("tenantName")} />
+            <FieldLabel htmlFor="tenantName">{t("identity.onboarding.tenantNameLabel")}</FieldLabel>
+            <Input id="tenantName" placeholder={t("identity.onboarding.tenantNamePlaceholder")} aria-invalid={!!errors.tenantName} {...register("tenantName")} />
             <FieldError>{errors.tenantName?.message}</FieldError>
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="tenantSlug">Identificador (slug)</FieldLabel>
+            <FieldLabel htmlFor="tenantSlug">{t("identity.onboarding.tenantSlugLabel")}</FieldLabel>
             <Input
               id="tenantSlug"
-              placeholder="bar-la-esquina"
+              placeholder={t("identity.onboarding.tenantSlugPlaceholder")}
               autoCapitalize="none"
               autoCorrect="off"
               aria-invalid={!!errors.tenantSlug}
               {...register("tenantSlug")}
             />
-            <FieldDescription>Lo usás para iniciar sesión. Solo minúsculas, números y guiones.</FieldDescription>
+            <FieldDescription>{t("identity.onboarding.tenantSlugDescription")}</FieldDescription>
             <FieldError>{errors.tenantSlug?.message}</FieldError>
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="ownerName">Tu nombre</FieldLabel>
+            <FieldLabel htmlFor="ownerName">{t("identity.onboarding.ownerNameLabel")}</FieldLabel>
             <Input
               id="ownerName"
-              placeholder="Juan Pérez"
+              placeholder={t("identity.onboarding.ownerNamePlaceholder")}
               autoComplete="name"
               aria-invalid={!!errors.ownerName}
               {...register("ownerName")}
@@ -143,14 +161,14 @@ export function OnboardingPage() {
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="ownerEmail">Tu email</FieldLabel>
-            <Input id="ownerEmail" type="email" placeholder="tu@email.com" autoComplete="email" aria-invalid={!!errors.ownerEmail} {...register("ownerEmail")} />
+            <FieldLabel htmlFor="ownerEmail">{t("identity.onboarding.ownerEmailLabel")}</FieldLabel>
+            <Input id="ownerEmail" type="email" placeholder={t("identity.onboarding.ownerEmailPlaceholder")} autoComplete="email" aria-invalid={!!errors.ownerEmail} {...register("ownerEmail")} />
             <FieldError>{errors.ownerEmail?.message}</FieldError>
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="ownerPassword">Contraseña</FieldLabel>
-            <Input id="ownerPassword" type="password" placeholder="********" autoComplete="new-password" aria-invalid={!!errors.ownerPassword} {...register("ownerPassword")} />
+            <FieldLabel htmlFor="ownerPassword">{t("identity.onboarding.ownerPasswordLabel")}</FieldLabel>
+            <Input id="ownerPassword" type="password" placeholder={t("identity.onboarding.ownerPasswordPlaceholder")} autoComplete="new-password" aria-invalid={!!errors.ownerPassword} {...register("ownerPassword")} />
             <FieldError>{errors.ownerPassword?.message}</FieldError>
           </Field>
         </FieldGroup>
@@ -158,7 +176,7 @@ export function OnboardingPage() {
         <FormError message={serverError} />
 
         <Button type="submit" className="w-full" disabled={onboarding.isPending}>
-          {onboarding.isPending ? "Creando…" : "Crear comercio"}
+          {onboarding.isPending ? t("identity.onboarding.submitting") : t("identity.onboarding.submit")}
         </Button>
       </form>
     </AuthLayout>
