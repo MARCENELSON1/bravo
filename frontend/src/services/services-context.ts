@@ -3,6 +3,7 @@ import { createContext, useContext } from "react"
 import type { AdvisorApi } from "@/api/advisor-api"
 import type { AnalyticsApi } from "@/api/analytics-api"
 import type { AuthApi } from "@/api/auth-api"
+import type { BillingApi } from "@/api/billing-api"
 import type { CashApi } from "@/api/cash-api"
 import type { CopilotApi } from "@/api/copilot-api"
 import type { CustomersApi } from "@/api/customers-api"
@@ -30,6 +31,7 @@ export interface Services {
   advisorApi: AdvisorApi
   analyticsApi: AnalyticsApi
   authApi: AuthApi
+  billingApi: BillingApi
   cashApi: CashApi
   copilotApi: CopilotApi
   customersApi: CustomersApi

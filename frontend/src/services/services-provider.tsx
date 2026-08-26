@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 import { AdvisorApi } from "@/api/advisor-api"
 import { AnalyticsApi } from "@/api/analytics-api"
 import { AuthApi } from "@/api/auth-api"
+import { BillingApi } from "@/api/billing-api"
 import { CashApi } from "@/api/cash-api"
 import { CopilotApi } from "@/api/copilot-api"
 import { CustomersApi } from "@/api/customers-api"
@@ -43,6 +44,7 @@ export function ServicesProvider({
       analyticsApi: new AnalyticsApi(http),
       financeApi: new FinanceApi(http),
       authApi: new AuthApi(http),
+      billingApi: new BillingApi(http),
       cashApi: new CashApi(http),
       copilotApi: new CopilotApi(http),
       customersApi: new CustomersApi(http),

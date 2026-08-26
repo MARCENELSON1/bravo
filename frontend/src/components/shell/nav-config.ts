@@ -7,6 +7,7 @@ import {
   Clock,
   Coffee,
   Coins,
+  CreditCard,
   FileText,
   Home,
   Lightbulb,
@@ -111,6 +112,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Insumos", to: "/app/stock", icon: Boxes, roles: ["OWNER", "MANAGER"] },
       { label: "Proveedores", to: "/app/suppliers", icon: Truck, roles: ["OWNER", "MANAGER"] },
       { label: "Personal", to: "/app/staff", icon: Clock, roles: ["OWNER", "MANAGER"] },
+      { label: "Suscripción", to: "/app/subscription", icon: CreditCard, roles: ["OWNER"] },
     ],
   },
 ]
