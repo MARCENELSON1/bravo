@@ -101,7 +101,9 @@ async def test_webhook_checkout_completed_is_activated():
             "data": {"object": {"metadata": {"tenant_id": "t1"}, "subscription": "sub_1"}},
         }
     ).encode()
-    event = await _gateway().parse_webhook(payload=payload, signature=_signed(payload))
+    event = await _gateway().parse_webhook(
+        payload=payload, headers={"stripe-signature": _signed(payload)}
+    )
     assert event is not None
     assert event.tenant_id == "t1"
     assert event.external_ref == "sub_1"
@@ -113,7 +115,9 @@ async def test_webhook_subscription_past_due_is_payment_failed():
     payload = json.dumps(
         {"type": "customer.subscription.updated", "data": {"object": obj}}
     ).encode()
-    event = await _gateway().parse_webhook(payload=payload, signature=_signed(payload))
+    event = await _gateway().parse_webhook(
+        payload=payload, headers={"stripe-signature": _signed(payload)}
+    )
     assert event.type is BillingEventType.PAYMENT_FAILED
     assert event.external_ref == "sub_1"
 
@@ -125,16 +129,23 @@ async def test_webhook_subscription_deleted_is_canceled():
             "data": {"object": {"id": "sub_1", "metadata": {"tenant_id": "t1"}}},
         }
     ).encode()
-    event = await _gateway().parse_webhook(payload=payload, signature=_signed(payload))
+    event = await _gateway().parse_webhook(
+        payload=payload, headers={"stripe-signature": _signed(payload)}
+    )
     assert event.type is BillingEventType.CANCELED
 
 
 async def test_webhook_bad_signature_raises():
     payload = b'{"type":"checkout.session.completed","data":{"object":{}}}'
     with pytest.raises(InvalidBillingWebhook):
-        await _gateway().parse_webhook(payload=payload, signature="t=1000,v1=deadbeef")
+        await _gateway().parse_webhook(
+            payload=payload, headers={"stripe-signature": "t=1000,v1=deadbeef"}
+        )
 
 
 async def test_webhook_unknown_type_returns_none():
     payload = json.dumps({"type": "invoice.created", "data": {"object": {}}}).encode()
-    assert await _gateway().parse_webhook(payload=payload, signature=_signed(payload)) is None
+    result = await _gateway().parse_webhook(
+        payload=payload, headers={"stripe-signature": _signed(payload)}
+    )
+    assert result is None

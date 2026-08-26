@@ -16,7 +16,7 @@ import hashlib
 import hmac
 import json
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
 import httpx
 
@@ -67,6 +67,7 @@ class StripeBillingGateway(BillingGateway):
         plan: Plan,
         success_url: str,
         cancel_url: str,
+        payer_email: str | None = None,
     ) -> CheckoutSession:
         data = {
             "mode": "subscription",
@@ -82,6 +83,8 @@ class StripeBillingGateway(BillingGateway):
             "subscription_data[metadata][tenant_id]": subscription.tenant_id,
             "subscription_data[metadata][subscription_id]": subscription.id,
         }
+        if payer_email:
+            data["customer_email"] = payer_email
         async with self._client() as client:
             resp = await client.post("/v1/checkout/sessions", data=data)
             resp.raise_for_status()
@@ -95,8 +98,10 @@ class StripeBillingGateway(BillingGateway):
             return  # ya no existe → idempotente
         resp.raise_for_status()
 
-    async def parse_webhook(self, *, payload: bytes, signature: str) -> BillingEvent | None:
-        if not self._verify(payload, signature):
+    async def parse_webhook(
+        self, *, payload: bytes, headers: Mapping[str, str]
+    ) -> BillingEvent | None:
+        if not self._verify(payload, headers.get("stripe-signature", "")):
             raise InvalidBillingWebhook()
         event = json.loads(payload)
         obj = (event.get("data") or {}).get("object") or {}

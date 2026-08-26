@@ -3,6 +3,7 @@ los puertos (repos + gateway resolver), no de Stripe/MercadoPago."""
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from uuid import uuid4
 
 from app.domain.billing.entities import Subscription
@@ -43,7 +44,13 @@ class StartSubscriptionCheckout:
         self._tenant_context = tenant_context
 
     async def execute(
-        self, *, tenant_id: str, plan_id: str, success_url: str, cancel_url: str
+        self,
+        *,
+        tenant_id: str,
+        plan_id: str,
+        success_url: str,
+        cancel_url: str,
+        payer_email: str | None = None,
     ) -> str:
         self._tenant_context.set(tenant_id)
         plan = await self._plans.get_by_id(plan_id)
@@ -68,6 +75,7 @@ class StartSubscriptionCheckout:
             plan=plan,
             success_url=success_url,
             cancel_url=cancel_url,
+            payer_email=payer_email,
         )
         subscription.external_ref = session.external_ref
         if existing is not None:
@@ -118,9 +126,11 @@ class HandleBillingWebhook:
         self._gateways = gateways
         self._tenant_context = tenant_context
 
-    async def execute(self, *, rail: BillingRail, payload: bytes, signature: str) -> None:
+    async def execute(
+        self, *, rail: BillingRail, payload: bytes, headers: Mapping[str, str]
+    ) -> None:
         event = await self._gateways.for_rail(rail).parse_webhook(
-            payload=payload, signature=signature
+            payload=payload, headers=headers
         )
         if event is None:
             return  # evento que no nos interesa

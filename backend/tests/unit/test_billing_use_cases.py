@@ -69,14 +69,16 @@ class _FakeGateway(BillingGateway):
         self.checkout_calls: list = []
         self.cancel_calls: list[str] = []
 
-    async def start_checkout(self, *, subscription, plan, success_url, cancel_url):  # noqa: ANN001
+    async def start_checkout(  # noqa: ANN001
+        self, *, subscription, plan, success_url, cancel_url, payer_email=None
+    ):
         self.checkout_calls.append(subscription.rail)
         return CheckoutSession(url="https://pay/x", external_ref="ext-123")
 
     async def cancel(self, *, external_ref: str) -> None:
         self.cancel_calls.append(external_ref)
 
-    async def parse_webhook(self, *, payload: bytes, signature: str):
+    async def parse_webhook(self, *, payload: bytes, headers):  # noqa: ANN001
         return self.event
 
 
@@ -204,7 +206,7 @@ def _handler(subs: _FakeSubs, event: BillingEvent | None):
 async def test_webhook_activated_activates():
     subs = _FakeSubs(_sub(SubscriptionStatus.INCOMPLETE))
     event = BillingEvent(tenant_id="t1", external_ref="ext-1", type=BillingEventType.ACTIVATED)
-    await _handler(subs, event).execute(rail=BillingRail.STRIPE, payload=b"{}", signature="sig")
+    await _handler(subs, event).execute(rail=BillingRail.STRIPE, payload=b"{}", headers={})
     assert subs.saved.status is SubscriptionStatus.ACTIVE
     assert subs.saved.external_ref == "ext-1"
 
@@ -212,7 +214,7 @@ async def test_webhook_activated_activates():
 async def test_webhook_activated_is_idempotent():
     subs = _FakeSubs(_sub(SubscriptionStatus.ACTIVE, external_ref="ext-1"))
     event = BillingEvent(tenant_id="t1", external_ref="ext-1", type=BillingEventType.ACTIVATED)
-    await _handler(subs, event).execute(rail=BillingRail.STRIPE, payload=b"{}", signature="s")
+    await _handler(subs, event).execute(rail=BillingRail.STRIPE, payload=b"{}", headers={})
     assert subs.saved is None  # sin cambios → no persiste
 
 
@@ -221,18 +223,18 @@ async def test_webhook_payment_failed_marks_past_due():
     event = BillingEvent(
         tenant_id="t1", external_ref="ext-1", type=BillingEventType.PAYMENT_FAILED
     )
-    await _handler(subs, event).execute(rail=BillingRail.STRIPE, payload=b"{}", signature="s")
+    await _handler(subs, event).execute(rail=BillingRail.STRIPE, payload=b"{}", headers={})
     assert subs.saved.status is SubscriptionStatus.PAST_DUE
 
 
 async def test_webhook_canceled():
     subs = _FakeSubs(_sub(SubscriptionStatus.ACTIVE, external_ref="ext-1"))
     event = BillingEvent(tenant_id="t1", external_ref="ext-1", type=BillingEventType.CANCELED)
-    await _handler(subs, event).execute(rail=BillingRail.STRIPE, payload=b"{}", signature="s")
+    await _handler(subs, event).execute(rail=BillingRail.STRIPE, payload=b"{}", headers={})
     assert subs.saved.status is SubscriptionStatus.CANCELED
 
 
 async def test_webhook_ignored_when_no_event():
     subs = _FakeSubs(_sub(SubscriptionStatus.ACTIVE, external_ref="ext-1"))
-    await _handler(subs, None).execute(rail=BillingRail.STRIPE, payload=b"{}", signature="s")
+    await _handler(subs, None).execute(rail=BillingRail.STRIPE, payload=b"{}", headers={})
     assert subs.saved is None
