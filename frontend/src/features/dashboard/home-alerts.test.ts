@@ -19,14 +19,27 @@ describe("homeAlerts", () => {
   it("mesas para servir y cobrar, en ese orden", () => {
     const out = homeAlerts({ ...base, toServe: 2, toCharge: 1 })
     expect(out.map((a) => a.key)).toEqual(["to_serve", "to_charge"])
-    expect(out[0].label).toContain("2 mesas para servir")
-    expect(out[1].label).toContain("1 mesa para cobrar")
+
+    expect(out[0].labelKey).toBe("dashboard.alerts.toServe")
+    expect(out[0].count).toBe(2)
+    expect(out[0].to).toBe("/app/floor")
+    expect(out[0].tone).toBe("attention")
+
+    expect(out[1].labelKey).toBe("dashboard.alerts.toCharge")
+    expect(out[1].count).toBe(1)
+    expect(out[1].to).toBe("/app/floor?cobrar=1")
+    expect(out[1].tone).toBe("attention")
   })
 
   it("caja: solo molesta si el local está operando (hay ocupadas)", () => {
     expect(homeAlerts({ ...base, cashOpen: false, occupied: 0 })).toEqual([])
     const out = homeAlerts({ ...base, cashOpen: false, occupied: 3 })
     expect(out.map((a) => a.key)).toEqual(["cash"])
+
+    expect(out[0].labelKey).toBe("dashboard.alerts.cashClosed")
+    expect(out[0].count).toBeUndefined() // la caja no pluraliza
+    expect(out[0].to).toBe("/app/caja")
+    expect(out[0].tone).toBe("warn")
   })
 
   it("caja desconocida (null) no genera alerta", () => {
@@ -36,7 +49,15 @@ describe("homeAlerts", () => {
   it("stock bajo y clientes en riesgo", () => {
     const out = homeAlerts({ ...base, lowStock: 4, atRisk: 1 })
     expect(out.map((a) => a.key)).toEqual(["low_stock", "at_risk"])
-    expect(out[0].label).toContain("4 insumos por reponer")
-    expect(out[1].label).toContain("1 cliente en riesgo")
+
+    expect(out[0].labelKey).toBe("dashboard.alerts.lowStock")
+    expect(out[0].count).toBe(4)
+    expect(out[0].to).toBe("/app/stock")
+    expect(out[0].tone).toBe("info")
+
+    expect(out[1].labelKey).toBe("dashboard.alerts.atRisk")
+    expect(out[1].count).toBe(1)
+    expect(out[1].to).toBe("/app/clientes")
+    expect(out[1].tone).toBe("info")
   })
 })

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { motion } from "motion/react"
 import { Menu } from "lucide-react"
 import type { OverlayScrollbars } from "overlayscrollbars"
@@ -46,6 +47,7 @@ const GLASS_PANEL =
   "dark:border-white/10 dark:bg-black/30"
 
 export function AppShell() {
+  const { t } = useTranslation()
   const { session } = useAuth()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const location = useLocation()
@@ -85,7 +87,7 @@ export function AppShell() {
             />
           ) : null}
           <item.icon className="relative z-10 size-[18px] shrink-0" />
-          <span className="relative z-10">{item.label}</span>
+          <span className="relative z-10">{t(item.label)}</span>
         </>
       )}
     </NavLink>
@@ -117,7 +119,7 @@ export function AppShell() {
             return (
               <div key={group.label} className="mt-5 flex flex-col gap-1">
                 <p className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wider text-sidebar-foreground/40">
-                  {group.label}
+                  {t(group.label)}
                 </p>
                 {items.map(renderItem)}
               </div>
@@ -146,7 +148,7 @@ export function AppShell() {
         <div className="fixed inset-0 z-50 md:hidden">
           <button
             type="button"
-            aria-label="Cerrar menú"
+            aria-label={t("shell.aria.closeMenu")}
             className="absolute inset-0 bg-black/50"
             onClick={() => setDrawerOpen(false)}
           />
@@ -162,7 +164,7 @@ export function AppShell() {
             variant="ghost"
             size="icon"
             className="md:hidden"
-            aria-label="Abrir menú"
+            aria-label={t("shell.aria.openMenu")}
             onClick={() => setDrawerOpen(true)}
           >
             <Menu className="size-4" />

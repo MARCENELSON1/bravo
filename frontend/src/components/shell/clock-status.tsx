@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Clock } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
@@ -10,6 +11,7 @@ import { formatMinutes, minutesSince } from "@/lib/timeclock"
 // Fichar. En móvil: un relojito compacto que, al tocarlo, muestra la info en un
 // popover (así no ocupa toda la barra). No fichas desde acá — eso va por presencia.
 export function ClockStatus() {
+  const { t } = useTranslation()
   const me = useMyTimeclock()
   const navigate = useNavigate()
   const [now, setNow] = useState(() => Date.now())
@@ -44,7 +46,9 @@ export function ClockStatus() {
   if (me.isPending || me.isError) return null
 
   const duration = openShift ? formatMinutes(minutesSince(openShift.clock_in_at, now)) : null
-  const label = openShift ? `En turno · ${duration}` : "Fuera de turno"
+  const label = openShift
+    ? t("shell.clock.onShiftFor", { duration })
+    : t("shell.clock.offShift")
 
   return (
     <>
@@ -54,7 +58,7 @@ export function ClockStatus() {
         size="sm"
         onClick={() => navigate("/app/fichar")}
         className="hidden gap-2 sm:inline-flex"
-        title="Ir a Fichar"
+        title={t("shell.clock.goToClock")}
       >
         <Clock className="size-4" />
         <span className="tabular-nums">{label}</span>
@@ -81,10 +85,12 @@ export function ClockStatus() {
           >
             <div className="px-2.5 py-1.5">
               <p className="text-sm font-medium text-foreground">
-                {openShift ? "En turno" : "Fuera de turno"}
+                {openShift ? t("shell.clock.onShift") : t("shell.clock.offShift")}
               </p>
               {duration ? (
-                <p className="text-xs tabular-nums text-muted-foreground">Hace {duration}</p>
+                <p className="text-xs tabular-nums text-muted-foreground">
+                  {t("shell.clock.ago", { duration })}
+                </p>
               ) : null}
             </div>
             <div className="my-1 h-px bg-black/10 dark:bg-white/10" />
@@ -98,7 +104,7 @@ export function ClockStatus() {
               className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-foreground/80 transition duration-200 ease-out hover:bg-accent hover:text-foreground active:scale-[0.97]"
             >
               <Clock className="size-4 shrink-0" />
-              Ir a Fichar
+              {t("shell.clock.goToClock")}
             </button>
           </div>
         ) : null}

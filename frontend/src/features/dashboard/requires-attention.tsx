@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 
 import { GlassCard } from "@/components/ui/glass-card"
@@ -20,6 +21,7 @@ const TONE_CLASS: Record<AlertTone, string> = {
 // stock + clientes en una sola lista de "qué hacer ahora". Convierte el Home de
 // reporte en cerebro. Todo dato ya existente; sin backend nuevo.
 export function RequiresAttention() {
+  const { t } = useTranslation()
   const floor = useFloor()
   const cash = useCurrentCashSession()
   const lowStock = useLowStock()
@@ -52,9 +54,13 @@ export function RequiresAttention() {
 
   return (
     <GlassCard className="p-5">
-      <h2 className="mb-3 text-base font-semibold text-foreground">Requiere tu atención</h2>
+      <h2 className="mb-3 text-base font-semibold text-foreground">
+        {t("dashboard.requiresAttention.title")}
+      </h2>
       {alerts.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nada urgente por ahora. Todo en orden ✓</p>
+        <p className="text-sm text-muted-foreground">
+          {t("dashboard.requiresAttention.allClear")}
+        </p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {alerts.map((a) => (
@@ -66,7 +72,7 @@ export function RequiresAttention() {
                 TONE_CLASS[a.tone]
               }
             >
-              {a.label}
+              {t(a.labelKey, a.count !== undefined ? { count: a.count } : undefined)}
               <span aria-hidden>→</span>
             </Link>
           ))}

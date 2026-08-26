@@ -1,0 +1,46 @@
+// Namespace `shell`: logged-in app chrome — navigation labels (nav-config),
+// groups, user menu and clock.
+export const shell = {
+  nav: {
+    home: "Home",
+    finance: "Finance",
+    customers: "Customers",
+    reservations: "Reservations",
+    products: "Products",
+    aiInsights: "AI Insights",
+    advisor: "Advisor",
+    analytics: "Analytics",
+    reports: "Reports",
+    tables: "Tables",
+    kitchen: "Kitchen",
+    bar: "Bar",
+    cash: "Register",
+    tips: "Tips",
+    clock: "Clock in",
+    expenses: "Expenses",
+    invoices: "Receipts",
+    supplies: "Supplies",
+    suppliers: "Suppliers",
+    staff: "Staff",
+    subscription: "Subscription",
+  },
+  groups: {
+    operation: "Operation",
+    management: "Management",
+  },
+  aria: {
+    closeMenu: "Close menu",
+    openMenu: "Open menu",
+  },
+  userMenu: {
+    settings: "Settings",
+    logout: "Log out",
+  },
+  clock: {
+    onShift: "On shift",
+    offShift: "Off shift",
+    onShiftFor: "On shift · {{duration}}",
+    ago: "{{duration}} ago",
+    goToClock: "Go to Clock in",
+  },
+} as const

@@ -78,7 +78,7 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
             <div className="my-1 h-px bg-black/10 dark:bg-white/10" />
             <NavLink to="/app/config" onClick={goNavigate} className={ITEM} role="menuitem">
               <Settings className="size-4 shrink-0" />
-              Configuración
+              {t("shell.userMenu.settings")}
             </NavLink>
             <div className="flex w-full items-center justify-between gap-2.5 px-2.5 py-2 text-sm text-sidebar-foreground/80">
               <span>{t("common.language")}</span>
@@ -92,7 +92,7 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
               className={cn(ITEM, "text-red-500 hover:bg-red-500/10 hover:text-red-500")}
             >
               <LogOut className="size-4 shrink-0" />
-              Cerrar sesión
+              {t("shell.userMenu.logout")}
             </button>
           </motion.div>
         ) : null}

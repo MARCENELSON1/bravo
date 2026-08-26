@@ -6,25 +6,31 @@ import type { FinanceDiagnosticDTO } from "@/api/types-operations"
 
 describe("dailyVerdict", () => {
   it("net negativo → bad", () => {
-    expect(dailyVerdict(-5000, null).tone).toBe("bad")
+    const v = dailyVerdict(-5000, null)
+    expect(v.tone).toBe("bad")
+    expect(v.vsKey).toBeNull()
+    expect(v.pct).toBeNull()
   })
 
   it("net positivo sin ayer → good, sin comparativo", () => {
     const v = dailyVerdict(1000, null)
     expect(v.tone).toBe("good")
-    expect(v.message).not.toContain("%")
+    expect(v.vsKey).toBeNull()
+    expect(v.pct).toBeNull()
   })
 
   it("mejor que ayer → good con % más", () => {
     const v = dailyVerdict(2000, 100)
     expect(v.tone).toBe("good")
-    expect(v.message).toContain("100% más")
+    expect(v.vsKey).toBe("vsMore")
+    expect(v.pct).toBe(100)
   })
 
   it("peor que ayer pero en ganancia → ok con % menos", () => {
     const v = dailyVerdict(800, -20)
     expect(v.tone).toBe("ok")
-    expect(v.message).toContain("20% menos")
+    expect(v.vsKey).toBe("vsLess")
+    expect(v.pct).toBe(20)
   })
 })
 

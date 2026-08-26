@@ -1,5 +1,7 @@
 import { useState } from "react"
+import type { TFunction } from "i18next"
 import { ArrowRight, Plus } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 
 import type { FinanceDiagnosticDTO } from "@/api/types-operations"
@@ -22,24 +24,22 @@ import { formatMoney } from "@/lib/money"
 // Home Wellnod (solo OWNER/MANAGER — RoleLanding redirige al resto): jerarquía de
 // 7 niveles del spec. "Arrancás viendo lo único que importa": la ganancia del día.
 
-const WEEKDAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
-const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
-const METHOD_LABELS: Record<string, string> = {
-  CASH: "Efectivo",
-  CARD: "Tarjeta",
-  TRANSFER: "Transferencia",
-  MERCADOPAGO: "MercadoPago",
-  QR: "QR",
-}
 const TONE_STYLE: Record<string, string> = {
   good: "text-emerald-500",
   ok: "text-amber-500",
   bad: "text-red-500",
 }
 
-function todayLabel(): string {
+function todayLabel(t: TFunction): string {
   const now = new Date()
-  return `${WEEKDAYS[now.getDay()]}, ${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`
+  const weekdays = t("dashboard.weekdays", { returnObjects: true }) as unknown as string[]
+  const months = t("dashboard.months", { returnObjects: true }) as unknown as string[]
+  return t("dashboard.todayFormat", {
+    weekday: weekdays[now.getDay()],
+    day: now.getDate(),
+    month: months[now.getMonth()],
+    year: now.getFullYear(),
+  })
 }
 function startOfTodayIso(): string {
   const d = new Date()
@@ -69,6 +69,7 @@ function topAlert(diagnostics: FinanceDiagnosticDTO[]): FinanceDiagnosticDTO | n
 }
 
 export function DashboardPage() {
+  const { t } = useTranslation()
   const { session } = useAuth()
   // Guarda C: el Home es "hoy" — acotamos a hoy para que el hero cuadre con
   // "Cobros por canal" (antes sumaba all-time rotulado "hoy").
@@ -92,6 +93,10 @@ export function DashboardPage() {
   const net = (d?.collected_net ?? sales) - expenses
   const pctVsYesterday = revenuePctVsYesterday(daily.data ?? [])
   const verdict = dailyVerdict(net, pctVsYesterday)
+  const verdictVs = verdict.vsKey
+    ? t(`dashboard.verdict.${verdict.vsKey}`, { pct: verdict.pct })
+    : ""
+  const verdictMessage = t(`dashboard.verdict.${verdict.tone}`, { vs: verdictVs })
   const marginPer100 = sales > 0 ? Math.round((net / sales) * 100) : 0
   // Guarda C: hubo ventas pero cero egresos → el margen = ventas es un número
   // inflado (todavía no cargaste gastos). Lo mostramos provisorio, no como sólido.
@@ -114,14 +119,14 @@ export function DashboardPage() {
 
       <header className="flex flex-wrap items-start justify-between gap-2">
         <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
-          Buen día{firstName ? `, ${firstName}` : ""}
+          {firstName ? t("dashboard.greetingNamed", { name: firstName }) : t("dashboard.greeting")}
         </h1>
-        <p className="text-sm text-muted-foreground">{todayLabel()}</p>
+        <p className="text-sm text-muted-foreground">{todayLabel(t)}</p>
       </header>
 
       {/* NIVEL 1 — Tu ganancia de hoy */}
       <GlassCard className="p-6">
-        <p className="text-sm text-muted-foreground">Tu ganancia de hoy</p>
+        <p className="text-sm text-muted-foreground">{t("dashboard.todayProfit")}</p>
         <div
           className={`mt-1 text-3xl font-bold tabular-nums sm:text-4xl ${net < 0 ? "text-red-500" : "text-foreground"}`}
         >
@@ -131,15 +136,13 @@ export function DashboardPage() {
             <AnimatedNumber value={net} format={money} />
           )}
         </div>
-        <p className={`mt-2 text-sm font-medium ${TONE_STYLE[verdict.tone]}`}>{verdict.message}</p>
+        <p className={`mt-2 text-sm font-medium ${TONE_STYLE[verdict.tone]}`}>{verdictMessage}</p>
         {marginTentative ? (
-          <p className="mt-1 text-xs text-amber-500">
-            Provisorio — todavía no cargaste egresos hoy.
-          </p>
+          <p className="mt-1 text-xs text-amber-500">{t("dashboard.profitTentative")}</p>
         ) : null}
         {feesTotal > 0 ? (
           <p className="mt-1 text-xs text-muted-foreground">
-            Ya restamos {money(feesTotal)} de comisiones de tarjeta / MercadoPago.
+            {t("dashboard.feesDeducted", { amount: money(feesTotal) })}
           </p>
         ) : null}
       </GlassCard>
@@ -156,22 +159,24 @@ export function DashboardPage() {
       {/* NIVEL 2 — Los 3 números que lo explican */}
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <GlassCard className="p-5">
-          <p className="text-sm text-muted-foreground">Facturaste hoy</p>
+          <p className="text-sm text-muted-foreground">{t("dashboard.billedToday")}</p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{money(sales)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{d?.payment_count ?? 0} cobros</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t("dashboard.paymentsCount", { n: d?.payment_count ?? 0 })}
+          </p>
         </GlassCard>
         <GlassCard className="p-5">
-          <p className="text-sm text-muted-foreground">Gastaste hoy</p>
+          <p className="text-sm text-muted-foreground">{t("dashboard.spentToday")}</p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{money(expenses)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Egresos registrados</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("dashboard.expensesRegistered")}</p>
         </GlassCard>
         <GlassCard className="p-5">
-          <p className="text-sm text-muted-foreground">Tu margen hoy</p>
+          <p className="text-sm text-muted-foreground">{t("dashboard.marginToday")}</p>
           {marginTentative ? (
             <>
               <p className="mt-1 text-2xl font-bold tabular-nums text-muted-foreground">—</p>
               <p className="mt-1 text-xs text-amber-500">
-                Cargá tus egresos para saber el margen real
+                {t("dashboard.loadExpensesForMargin")}
               </p>
             </>
           ) : (
@@ -181,7 +186,9 @@ export function DashboardPage() {
                 {sales > 0 ? `${marginPer100}%` : "—"}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {sales > 0 ? `De cada $100, $${marginPer100} son ganancia` : "Sin ventas aún"}
+                {sales > 0
+                  ? t("dashboard.marginExplain", { margin: marginPer100 })
+                  : t("dashboard.noSalesYet")}
               </p>
             </>
           )}
@@ -190,13 +197,13 @@ export function DashboardPage() {
 
       {/* NIVEL 3 — Cobros del día por canal (bruto) */}
       <GlassCard className="p-6">
-        <h2 className="mb-1 text-base font-semibold text-foreground">Cobros de hoy por canal</h2>
-        <p className="mb-4 text-xs text-muted-foreground">
-          Montos brutos (aún no descontamos comisiones de Mercado Pago / tarjeta).
-        </p>
+        <h2 className="mb-1 text-base font-semibold text-foreground">
+          {t("dashboard.channelsTitle")}
+        </h2>
+        <p className="mb-4 text-xs text-muted-foreground">{t("dashboard.channelsSubtitle")}</p>
         {inflows.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            {mix.isPending ? "Cargando…" : "Todavía no hubo cobros hoy."}
+            {mix.isPending ? t("dashboard.loading") : t("dashboard.noPaymentsToday")}
           </p>
         ) : (
           <div className="flex flex-col gap-4">
@@ -206,7 +213,7 @@ export function DashboardPage() {
                 <div key={row.method} className="flex flex-col gap-2">
                   <div className="flex items-baseline justify-between text-sm">
                     <span className="font-medium text-foreground">
-                      {METHOD_LABELS[row.method] ?? row.method}
+                      {t(`dashboard.methods.${row.method}`, { defaultValue: row.method })}
                     </span>
                     <span className="tabular-nums text-muted-foreground">
                       {money(row.amount)} · {share}%
@@ -228,7 +235,7 @@ export function DashboardPage() {
           <p
             className={`text-xs font-semibold uppercase tracking-wide ${alertIsWarn ? "text-amber-600 dark:text-amber-400" : "text-destructive"}`}
           >
-            Atención hoy
+            {t("dashboard.attentionToday")}
           </p>
           <p className="mt-1.5 text-sm font-medium text-foreground">{alert.title}</p>
           <p className="mt-1 text-sm text-muted-foreground">{alert.body}</p>
@@ -239,21 +246,25 @@ export function DashboardPage() {
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <GlassCard className="p-6 lg:col-span-2">
           <div className="mb-6">
-            <h2 className="text-base font-semibold text-foreground">Facturación últimos 7 días</h2>
+            <h2 className="text-base font-semibold text-foreground">
+              {t("dashboard.revenue7dTitle")}
+            </h2>
             <p className="text-sm text-muted-foreground">
               {daily.data
-                ? `${money(daily.data.reduce((sum, p) => sum + p.sales_amount, 0))} total`
+                ? t("dashboard.totalSuffix", {
+                    amount: money(daily.data.reduce((sum, p) => sum + p.sales_amount, 0)),
+                  })
                 : " "}
             </p>
           </div>
           <RevenueChart points={daily.data ?? []} pending={daily.isPending} currency={currency} />
         </GlassCard>
         <GlassCard className="p-6">
-          <h2 className="text-base font-semibold text-foreground">Cierre del mes</h2>
+          <h2 className="text-base font-semibold text-foreground">{t("dashboard.monthClose")}</h2>
           {projection ? (
             <>
               <p className="mt-1 text-sm text-muted-foreground">
-                Si seguís así, cerrás en{" "}
+                {t("dashboard.onTrackToClose")}{" "}
                 <span className="font-semibold text-foreground">
                   {money(projection.sales_amount)}
                 </span>
@@ -268,19 +279,22 @@ export function DashboardPage() {
                 />
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Día {projection.elapsed_days} de {projection.month_days}
+                {t("dashboard.dayOfMonth", {
+                  elapsed: projection.elapsed_days,
+                  total: projection.month_days,
+                })}
               </p>
             </>
           ) : (
             <p className="mt-1 text-sm text-muted-foreground">
-              {overview.isPending ? "Calculando…" : "Sin datos suficientes para proyectar."}
+              {overview.isPending ? t("dashboard.calculating") : t("dashboard.notEnoughData")}
             </p>
           )}
           <Link
             to="/app/finanzas"
             className="group mt-4 flex items-center gap-1 text-sm font-medium text-primary"
           >
-            Ver Finanzas
+            {t("dashboard.viewFinance")}
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </GlassCard>
@@ -298,7 +312,7 @@ export function DashboardPage() {
       {task && !taskDone ? (
         <GlassCard className="p-6">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-            Tu tarea para mañana
+            {t("dashboard.tomorrowTaskTitle")}
           </p>
           <p className="mt-1.5 text-sm text-foreground">{task}</p>
           <button
@@ -306,15 +320,15 @@ export function DashboardPage() {
             onClick={() => setTaskDone(true)}
             className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
           >
-            Entendido
+            {t("dashboard.gotIt")}
           </button>
         </GlassCard>
       ) : null}
 
       <Link
         to="/app/expenses"
-        aria-label="Registrar egreso"
-        title="Registrar egreso"
+        aria-label={t("dashboard.registerExpense")}
+        title={t("dashboard.registerExpense")}
         className="fixed bottom-6 right-6 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform duration-200 ease-out hover:scale-105 active:scale-[0.97]"
       >
         <Plus className="size-6" />
@@ -351,7 +365,7 @@ function revenuePctVsYesterday(points: { day: string; sales_amount: number }[]):
   return ((today - yesterday) / yesterday) * 100
 }
 
-function lastSevenDays(points: { day: string; sales_amount: number }[]) {
+function lastSevenDays(points: { day: string; sales_amount: number }[], weekdays: string[]) {
   const byDay = new Map(points.map((p) => [p.day, p.sales_amount]))
   const days: { key: string; label: string; value: number }[] = []
   const cursor = new Date()
@@ -359,7 +373,7 @@ function lastSevenDays(points: { day: string; sales_amount: number }[]) {
   cursor.setDate(cursor.getDate() - 6)
   for (let i = 0; i < 7; i += 1) {
     const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`
-    days.push({ key, label: WEEKDAYS[cursor.getDay()].slice(0, 3), value: byDay.get(key) ?? 0 })
+    days.push({ key, label: weekdays[cursor.getDay()].slice(0, 3), value: byDay.get(key) ?? 0 })
     cursor.setDate(cursor.getDate() + 1)
   }
   return days
@@ -374,13 +388,15 @@ function RevenueChart({
   pending: boolean
   currency: string
 }) {
-  const days = lastSevenDays(points)
+  const { t } = useTranslation()
+  const weekdays = t("dashboard.weekdays", { returnObjects: true }) as unknown as string[]
+  const days = lastSevenDays(points, weekdays)
   const max = Math.max(...days.map((x) => x.value), 1)
   const hasSales = days.some((x) => x.value > 0)
   if (!pending && !hasSales) {
     return (
       <p className="grid h-52 place-items-center text-sm text-muted-foreground">
-        Sin ventas en los últimos 7 días.
+        {t("dashboard.noSales7d")}
       </p>
     )
   }
