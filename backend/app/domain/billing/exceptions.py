@@ -24,3 +24,13 @@ class RailNotAllowedForRegion(DomainError):
 
     code = "rail_not_allowed_for_region"
     message = "Ese medio de pago no está habilitado para la región del plan."
+
+
+class SubscriptionAlreadyActive(DomainError):
+    code = "subscription_already_active"
+    message = "El local ya tiene una suscripción activa."
+
+
+class InvalidBillingWebhook(DomainError):
+    code = "invalid_billing_webhook"
+    message = "La notificación de billing no es válida."

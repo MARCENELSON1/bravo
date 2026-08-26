@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import StrEnum
 
 
@@ -54,3 +55,32 @@ _RAIL_BY_REGION = {
 def rail_for_region(region: BillingRegion) -> BillingRail:
     """El riel de cobro que corresponde a una región. Puro."""
     return _RAIL_BY_REGION[region]
+
+
+@dataclass(frozen=True)
+class CheckoutSession:
+    """Resultado de iniciar un checkout en la pasarela: la URL a la que se
+    redirige al usuario para pagar, y el id de referencia en la pasarela."""
+
+    url: str
+    external_ref: str
+
+
+class BillingEventType(StrEnum):
+    """Evento de billing normalizado (agnóstico de la pasarela). El adapter
+    traduce los eventos crudos de Stripe/MercadoPago a estos tres."""
+
+    ACTIVATED = "ACTIVATED"  # pago inicial OK / suscripción activa
+    PAYMENT_FAILED = "PAYMENT_FAILED"  # cobro fallido → gracia
+    CANCELED = "CANCELED"  # cancelada en la pasarela
+
+
+@dataclass(frozen=True)
+class BillingEvent:
+    """Un evento de webhook ya verificado y normalizado. ``tenant_id`` viene de la
+    metadata que pusimos al crear el checkout (así el webhook, que no lleva auth,
+    resuelve el tenant sin depender de la IP)."""
+
+    tenant_id: str
+    external_ref: str
+    type: BillingEventType
