@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/ui/glass-card"
 import { Spinner } from "@/components/ui/spinner"
@@ -19,6 +20,7 @@ import { waLink } from "@/lib/wa"
 // El corazón del CRM: "acciones para hoy" (máx 3 en riesgo por plata en juego) +
 // el loop de resultado arriba (contactaste N, volvieron M, $X).
 export function CustomerActionsView() {
+  const { t } = useTranslation()
   const stats = useCustomerStats()
   const customers = useCustomers()
   const recent = useRecentContacts(7)
@@ -49,49 +51,46 @@ export function CustomerActionsView() {
   return (
     <GlassCard className="flex flex-col gap-3 p-5">
       <div>
-        <h2 className="text-base font-semibold text-foreground">Acciones para hoy</h2>
+        <h2 className="text-base font-semibold text-foreground">{t("crm.actions.title")}</h2>
         {res && res.contacted > 0 ? (
           <p className="text-sm text-muted-foreground">
-            En los últimos 30 días contactaste{" "}
-            <span className="font-medium text-foreground">{res.contacted}</span>, volvieron{" "}
-            <span className="font-medium text-foreground">{res.returned}</span> y gastaron{" "}
+            {t("crm.actions.resultA")}
+            <span className="font-medium text-foreground">{res.contacted}</span>
+            {t("crm.actions.resultB")}
+            <span className="font-medium text-foreground">{res.returned}</span>
+            {t("crm.actions.resultC")}
             <span className="font-medium text-foreground">
               {formatMoney(res.revenue, res.currency)}
             </span>
-            .
+            {t("crm.actions.resultD")}
           </p>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            Clientes que venían seguido y dejaron de aparecer — los de mayor plata en juego.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("crm.actions.subtitle")}</p>
         )}
       </div>
 
       {actions.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Nada urgente hoy. Atribuí clientes a las comandas para detectar a los que se
-          enfrían.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("crm.actions.empty")}</p>
       ) : (
         <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
           {actions.map((c) => {
-            const link = waLink(
-              c.phone,
-              `Hola ${c.name}! Te extrañamos, ¿te esperamos pronto?`
-            )
+            const link = waLink(c.phone, t("crm.waWinback", { name: c.name }))
             return (
               <div key={c.customer_id} className="flex flex-wrap items-center gap-2 px-3 py-2.5">
                 <div className="min-w-0 flex-1">
                   <span className="text-sm font-medium">{c.name}</span>
                   <p className="text-xs text-muted-foreground">
-                    En riesgo · {formatMoney(c.total_spent, currency)} gastados
-                    {c.daysSinceLast !== null ? ` · hace ${c.daysSinceLast}d` : ""}
+                    {t("crm.actions.atRisk")} · {formatMoney(c.total_spent, currency)}{" "}
+                    {t("crm.spent")}
+                    {c.daysSinceLast !== null
+                      ? t("crm.daysAgo", { days: c.daysSinceLast })
+                      : ""}
                   </p>
                 </div>
                 {link ? (
                   <a href={link} target="_blank" rel="noopener noreferrer">
                     <Button size="sm" variant="outline">
-                      WhatsApp
+                      {t("crm.whatsapp")}
                     </Button>
                   </a>
                 ) : null}
@@ -103,16 +102,14 @@ export function CustomerActionsView() {
                     logContact.mutate(
                       { id: c.customer_id, reason: "en_riesgo" },
                       {
-                        onSuccess: () => toast.success("Marcado como contactado."),
+                        onSuccess: () => toast.success(t("crm.actions.markedSuccess")),
                         onError: (e) =>
-                          toast.error(
-                            isApiError(e) ? e.message : "No pudimos registrar el contacto."
-                          ),
+                          toast.error(apiErrorText(e, t, t("crm.actions.markError"))),
                       }
                     )
                   }
                 >
-                  Marcar contactado
+                  {t("crm.actions.markContacted")}
                 </Button>
               </div>
             )

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/ui/glass-card"
@@ -14,15 +15,17 @@ import { waLink } from "@/lib/wa"
 
 // Orden por accionabilidad (lo que exige contacto primero). "sin_compras" y
 // "ocasional" no son acciones → no tienen chip (pero cuentan en cobertura).
-const SEGMENTS: { key: CustomerSegment; label: string; dot: string }[] = [
-  { key: "en_riesgo", label: "En riesgo", dot: "bg-orange-500" },
-  { key: "vip", label: "VIP", dot: "bg-violet-500" },
-  { key: "nuevo", label: "Nuevos", dot: "bg-emerald-500" },
-  { key: "recurrente", label: "Recurrentes", dot: "bg-sky-500" },
-  { key: "ocasional", label: "Ocasionales", dot: "bg-neutral-400" },
+// El label se resuelve en el consumidor con t(`crm.segmentLabels.${key}`).
+const SEGMENTS: { key: CustomerSegment; dot: string }[] = [
+  { key: "en_riesgo", dot: "bg-orange-500" },
+  { key: "vip", dot: "bg-violet-500" },
+  { key: "nuevo", dot: "bg-emerald-500" },
+  { key: "recurrente", dot: "bg-sky-500" },
+  { key: "ocasional", dot: "bg-neutral-400" },
 ]
 
 export function CustomerSegmentsView() {
+  const { t } = useTranslation()
   const stats = useCustomerStats()
   const [selected, setSelected] = useState<CustomerSegment | null>(null)
   // "Ahora" congelado al montar (Date.now es impuro; una sola lectura estable).
@@ -47,11 +50,11 @@ export function CustomerSegmentsView() {
   return (
     <GlassCard className="flex flex-col gap-3 p-5">
       <div>
-        <h2 className="text-base font-semibold text-foreground">Segmentos</h2>
+        <h2 className="text-base font-semibold text-foreground">{t("crm.segments.title")}</h2>
         <p className="text-sm text-muted-foreground">
-          Segmentamos <span className="font-medium">{cov.withPurchases}</span> de {cov.total}{" "}
-          clientes (los que tienen compras registradas). Atribuí clientes a las comandas para
-          que entren más.
+          {t("crm.segments.coverageA")}
+          <span className="font-medium">{cov.withPurchases}</span>
+          {t("crm.segments.coverageB", { total: cov.total })}
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -66,7 +69,7 @@ export function CustomerSegmentsView() {
               onClick={() => setSelected((v) => (v === s.key ? null : s.key))}
             >
               <span className={`mr-1.5 inline-block size-2 rounded-full ${s.dot}`} />
-              {s.label} · {n}
+              {t(`crm.segmentLabels.${s.key}`)} · {n}
             </Button>
           )
         })}
@@ -75,21 +78,23 @@ export function CustomerSegmentsView() {
       {selected && list.length > 0 ? (
         <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
           {list.map((c) => {
-            const link = waLink(c.phone, `Hola ${c.name}!`)
+            const link = waLink(c.phone, t("crm.waGreeting", { name: c.name }))
             return (
               <div key={c.customer_id} className="flex flex-wrap items-center gap-2 px-3 py-2">
                 <div className="min-w-0 flex-1">
                   <span className="text-sm font-medium">{c.name}</span>
                   <p className="text-xs text-muted-foreground">
-                    {c.visits} {c.visits === 1 ? "visita" : "visitas"} ·{" "}
+                    {c.visits} {t("crm.visitWord", { count: c.visits })} ·{" "}
                     {formatMoney(c.total_spent, currency)}
-                    {c.daysSinceLast !== null ? ` · hace ${c.daysSinceLast}d` : ""}
+                    {c.daysSinceLast !== null
+                      ? t("crm.daysAgo", { days: c.daysSinceLast })
+                      : ""}
                   </p>
                 </div>
                 {link ? (
                   <a href={link} target="_blank" rel="noopener noreferrer">
                     <Button size="sm" variant="outline">
-                      WhatsApp
+                      {t("crm.whatsapp")}
                     </Button>
                   </a>
                 ) : null}

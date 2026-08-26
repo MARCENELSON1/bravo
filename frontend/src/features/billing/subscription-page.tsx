@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { ArrowLeft, Check } from "lucide-react"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type { BillingPlanDTO } from "@/api/types-billing"
 import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/ui/glass-card"
@@ -17,15 +18,8 @@ import {
 import { useFiscalSettings } from "@/hooks/use-tenant"
 import { formatMoney } from "@/lib/money"
 
-const STATUS_LABEL: Record<string, string> = {
-  TRIALING: "En prueba",
-  ACTIVE: "Activa",
-  PAST_DUE: "Pago pendiente",
-  INCOMPLETE: "Incompleta",
-  CANCELED: "Cancelada",
-}
-
 function PlanCard({ plan }: { plan: BillingPlanDTO }) {
+  const { t } = useTranslation()
   const checkout = useCheckout()
 
   const subscribe = () => {
@@ -34,7 +28,7 @@ function PlanCard({ plan }: { plan: BillingPlanDTO }) {
         window.location.href = r.url // al checkout hosteado (Stripe / MercadoPago)
       },
       onError: (e) =>
-        toast.error(isApiError(e) ? e.message : "No pudimos iniciar el pago."),
+        toast.error(apiErrorText(e, t, t("billing.checkoutError"))),
     })
   }
 
@@ -46,7 +40,7 @@ function PlanCard({ plan }: { plan: BillingPlanDTO }) {
           {formatMoney(plan.amount, plan.currency)}
           <span className="text-sm font-normal text-muted-foreground">
             {" "}
-            / {plan.interval === "MONTH" ? "mes" : "año"}
+            / {plan.interval === "MONTH" ? t("billing.interval.month") : t("billing.interval.year")}
           </span>
         </p>
       </div>
@@ -61,13 +55,14 @@ function PlanCard({ plan }: { plan: BillingPlanDTO }) {
         </ul>
       ) : null}
       <Button onClick={subscribe} disabled={checkout.isPending} className="mt-auto">
-        {checkout.isPending ? "Redirigiendo…" : "Suscribirme"}
+        {checkout.isPending ? t("billing.redirecting") : t("billing.subscribe")}
       </Button>
     </GlassCard>
   )
 }
 
 export function SubscriptionPage() {
+  const { t } = useTranslation()
   const fiscal = useFiscalSettings()
   const region = fiscal.data ? (fiscal.data.country === "AR" ? "AR" : "INTL") : null
   const subscription = useSubscription()
@@ -75,10 +70,10 @@ export function SubscriptionPage() {
   const cancel = useCancelSubscription()
 
   const doCancel = () => {
-    if (!window.confirm("¿Seguro que querés cancelar la suscripción?")) return
+    if (!window.confirm(t("billing.cancelConfirm"))) return
     cancel.mutate(undefined, {
-      onSuccess: () => toast.success("Suscripción cancelada."),
-      onError: (e) => toast.error(isApiError(e) ? e.message : "No pudimos cancelar."),
+      onSuccess: () => toast.success(t("billing.cancelSuccess")),
+      onError: (e) => toast.error(apiErrorText(e, t, t("billing.cancelError"))),
     })
   }
 
@@ -91,11 +86,11 @@ export function SubscriptionPage() {
         <Link
           to="/app"
           className="text-muted-foreground transition hover:text-foreground"
-          aria-label="Volver"
+          aria-label={t("billing.back")}
         >
           <ArrowLeft className="size-5" />
         </Link>
-        <GradientHeading>Suscripción</GradientHeading>
+        <GradientHeading>{t("billing.title")}</GradientHeading>
       </header>
 
       {fiscal.isPending || subscription.isPending ? (
@@ -104,36 +99,39 @@ export function SubscriptionPage() {
         <GlassCard className="flex flex-col gap-3 p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-base font-semibold text-foreground">Plan activo</h2>
+              <h2 className="text-base font-semibold text-foreground">{t("billing.activePlan")}</h2>
               <p className="text-sm text-muted-foreground">
-                Estado: {STATUS_LABEL[sub.status] ?? sub.status}
+                {t("billing.statusLine", {
+                  value: t(`billing.statusLabels.${sub.status}`, { defaultValue: sub.status }),
+                })}
                 {sub.current_period_end
-                  ? ` · renueva el ${new Date(sub.current_period_end).toLocaleDateString()}`
+                  ? t("billing.renewsOn", {
+                      date: new Date(sub.current_period_end).toLocaleDateString(),
+                    })
                   : ""}
               </p>
             </div>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-              <Check className="size-4" /> Activa
+              <Check className="size-4" /> {t("billing.statusLabels.ACTIVE")}
             </span>
           </div>
           <div>
             <Button variant="outline" onClick={doCancel} disabled={cancel.isPending}>
-              {cancel.isPending ? "Cancelando…" : "Cancelar suscripción"}
+              {cancel.isPending ? t("billing.canceling") : t("billing.cancelSubscription")}
             </Button>
           </div>
         </GlassCard>
       ) : (
         <>
           <p className="text-sm text-muted-foreground">
-            Elegí un plan para activar tu suscripción. El pago es seguro y se procesa
-            en {region === "AR" ? "MercadoPago" : "Stripe"}.
+            {t("billing.chooseIntro", { gateway: region === "AR" ? "MercadoPago" : "Stripe" })}
           </p>
           {plans.isPending ? (
             <Spinner />
           ) : (plans.data?.length ?? 0) === 0 ? (
             <GlassCard className="p-6">
               <p className="text-sm text-muted-foreground">
-                Todavía no hay planes disponibles para tu región.
+                {t("billing.noPlans")}
               </p>
             </GlassCard>
           ) : (

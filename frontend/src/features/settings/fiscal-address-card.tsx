@@ -1,25 +1,17 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type { FiscalSettingsDTO } from "@/api/types-tenant"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { useFiscalSettings, useUpdateFiscalAddress } from "@/hooks/use-tenant"
 
-const REGIME_LABEL: Record<string, string> = {
-  AR_AFIP: "Argentina · AFIP (IVA incluido)",
-  US_SALES_TAX: "EE.UU. · Sales tax",
-}
-const ENGINE_LABEL: Record<string, string> = {
-  NONE: "Nativo (sin motor externo)",
-  TAXJAR: "TaxJar",
-  AVALARA: "Avalara",
-}
-
 // The form owns its state, seeded once from the loaded settings (no effect sync).
 function AddressForm({ settings }: { settings: FiscalSettingsDTO }) {
+  const { t } = useTranslation()
   const update = useUpdateFiscalAddress()
   const [street, setStreet] = useState(settings.street ?? "")
   const [city, setCity] = useState(settings.city ?? "")
@@ -37,9 +29,9 @@ function AddressForm({ settings }: { settings: FiscalSettingsDTO }) {
         zip: zip.trim() || null,
       },
       {
-        onSuccess: () => toast.success("Dirección fiscal guardada."),
+        onSuccess: () => toast.success(t("settings.fiscal.saved")),
         onError: (e) =>
-          toast.error(isApiError(e) ? e.message : "No pudimos guardar la dirección."),
+          toast.error(apiErrorText(e, t, t("settings.fiscal.saveError"))),
       }
     )
   }
@@ -47,18 +39,23 @@ function AddressForm({ settings }: { settings: FiscalSettingsDTO }) {
   return (
     <div className="flex flex-col gap-4 py-4">
       <div>
-        <p className="text-sm font-medium text-foreground">Dirección fiscal del local</p>
+        <p className="text-sm font-medium text-foreground">{t("settings.fiscal.title")}</p>
         <p className="mt-0.5 text-sm text-muted-foreground">
           {usesAddress
-            ? "El motor de impuestos la usa para calcular la tasa por zona."
-            : "Tu régimen no la usa para impuestos (el IVA ya va en el precio); igual podés guardarla como dato del local."}
+            ? t("settings.fiscal.descUsed")
+            : t("settings.fiscal.descUnused")}
         </p>
         <div className="mt-2 flex flex-wrap gap-2 text-xs">
           <span className="rounded-full border border-border px-2 py-0.5 text-muted-foreground">
-            {REGIME_LABEL[settings.tax_regime] ?? settings.tax_regime}
+            {t(`settings.fiscal.regimeLabels.${settings.tax_regime}`, {
+              defaultValue: settings.tax_regime,
+            })}
           </span>
           <span className="rounded-full border border-border px-2 py-0.5 text-muted-foreground">
-            Impuestos: {ENGINE_LABEL[settings.tax_engine] ?? settings.tax_engine}
+            {t("settings.fiscal.taxesLabel")}:{" "}
+            {t(`settings.fiscal.engineLabels.${settings.tax_engine}`, {
+              defaultValue: settings.tax_engine,
+            })}
           </span>
           <span className="rounded-full border border-border px-2 py-0.5 text-muted-foreground">
             {settings.currency}
@@ -68,18 +65,22 @@ function AddressForm({ settings }: { settings: FiscalSettingsDTO }) {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Input
-          placeholder="Calle y número"
+          placeholder={t("settings.fiscal.street")}
           value={street}
           onChange={(e) => setStreet(e.target.value)}
         />
-        <Input placeholder="Ciudad" value={city} onChange={(e) => setCity(e.target.value)} />
         <Input
-          placeholder="Estado / provincia"
+          placeholder={t("settings.fiscal.city")}
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+        />
+        <Input
+          placeholder={t("settings.fiscal.state")}
           value={state}
           onChange={(e) => setState(e.target.value)}
         />
         <Input
-          placeholder="Código postal (ZIP)"
+          placeholder={t("settings.fiscal.zip")}
           value={zip}
           onChange={(e) => setZip(e.target.value)}
         />
@@ -87,7 +88,7 @@ function AddressForm({ settings }: { settings: FiscalSettingsDTO }) {
 
       <div>
         <Button onClick={save} disabled={update.isPending}>
-          {update.isPending ? "Guardando…" : "Guardar dirección"}
+          {update.isPending ? t("settings.fiscal.saving") : t("settings.fiscal.save")}
         </Button>
       </div>
     </div>

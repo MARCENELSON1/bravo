@@ -1,2 +1,54 @@
-// Namespace `advisor` (P3 gestión). Lo completa la migración de esa área.
-export const advisor = {} as const
+// Namespace `advisor` (P3 gestión). Pantalla del Asesor: KPIs, config de costos y diagnósticos.
+export const advisor = {
+  title: "Asesor",
+  subtitle: "Cómo te fue y qué hacer. Por defecto, este mes.",
+  controls: {
+    from: "Desde",
+    to: "Hasta",
+  },
+  settings: {
+    trigger: "Configurar costos",
+    sheetTitle: "Costos del mes",
+    sheetDescription:
+      "Sueldos y costos fijos para calcular margen neto, prime cost y punto de equilibrio.",
+    labor: "Sueldos del mes",
+    otherFixed: "Otros costos fijos del mes (alquiler, servicios…)",
+    targetFoodCost: "Objetivo de food cost (%)",
+    seats: "Asientos del local (para RevPASH)",
+    seatsPlaceholder: "Ej. 40",
+    openHours: "Horas abiertas por día (para RevPASH)",
+    openHoursPlaceholder: "Ej. 8",
+    inflation: "Inflación mensual estimada (%)",
+    inflationPlaceholder: "Ej. 4",
+    inflationHint: "Para estimar a cuánto “debería estar” cada precio en Productos.",
+    vat: "IVA (%)",
+    vatPlaceholder: "Ej. 21",
+    vatHint:
+      "Al cargarlo, los márgenes se calculan netos de IVA (los precios se siguen mostrando con IVA, como los cargás). Vacío = sin aplicar.",
+    save: "Guardar costos",
+    saving: "Guardando…",
+    saved: "Costos guardados.",
+    saveError: "No pudimos guardar los costos.",
+    errors: {
+      amounts: "Revisá los montos y el objetivo de food cost.",
+      seatsHours: "Revisá los asientos y las horas de apertura.",
+      inflation: "Revisá la inflación mensual estimada.",
+      vat: "Revisá el IVA (entre 0 y 100%).",
+    },
+  },
+  kpis: {
+    sales: "Ventas",
+    grossMargin: "Margen bruto",
+    netMargin: "Margen neto",
+    foodCost: "Food cost",
+    primeCost: "Prime cost",
+    breakEven: "Punto de equilibrio",
+    configureCosts: "Configurá costos",
+  },
+  bucketLabels: {
+    TODAY: "Actuá hoy",
+    THIS_WEEK: "Esta semana",
+    UPCOMING: "Lo que viene",
+    WELL_DONE: "Bien hecho",
+  },
+} as const

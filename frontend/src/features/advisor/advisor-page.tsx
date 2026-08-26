@@ -1,8 +1,9 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Sparkles } from "lucide-react"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type { AdvisorKpisDTO, AdvisorSettingsDTO } from "@/api/types-advisor"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,7 +23,7 @@ import {
   useAdvisorSettings,
   useUpdateAdvisorSettings,
 } from "@/hooks/use-advisor"
-import { BUCKET_LABELS, BUCKET_ORDER, formatPct, SEVERITY_VARIANT } from "@/lib/advisor"
+import { BUCKET_ORDER, formatPct, SEVERITY_VARIANT } from "@/lib/advisor"
 import { formatMoney } from "@/lib/money"
 
 function KpiCard({
@@ -56,6 +57,7 @@ function SettingsForm({
   initial: AdvisorSettingsDTO
   onDone: () => void
 }) {
+  const { t } = useTranslation()
   const update = useUpdateAdvisorSettings()
   const [labor, setLabor] = useState(() => String(initial.monthly_labor_cost / 100))
   const [other, setOther] = useState(() => String(initial.monthly_other_fixed_costs / 100))
@@ -88,19 +90,19 @@ function SettingsForm({
       targetBps < 0 ||
       targetBps > 10000
     ) {
-      toast.error("Revisá los montos y el objetivo de food cost.")
+      toast.error(t("advisor.settings.errors.amounts"))
       return
     }
     if (!Number.isFinite(seatsN) || seatsN < 0 || !Number.isFinite(openMin) || openMin < 0 || openMin > 1440) {
-      toast.error("Revisá los asientos y las horas de apertura.")
+      toast.error(t("advisor.settings.errors.seatsHours"))
       return
     }
     if (!Number.isFinite(inflationBps) || inflationBps < 0 || inflationBps > 100000) {
-      toast.error("Revisá la inflación mensual estimada.")
+      toast.error(t("advisor.settings.errors.inflation"))
       return
     }
     if (!Number.isFinite(vatBps) || vatBps < 0 || vatBps > 10000) {
-      toast.error("Revisá el IVA (entre 0 y 100%).")
+      toast.error(t("advisor.settings.errors.vat"))
       return
     }
     update.mutate(
@@ -115,11 +117,11 @@ function SettingsForm({
       },
       {
         onSuccess: () => {
-          toast.success("Costos guardados.")
+          toast.success(t("advisor.settings.saved"))
           onDone()
         },
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos guardar los costos."),
+          toast.error(apiErrorText(error, t, t("advisor.settings.saveError"))),
       }
     )
   }
@@ -127,7 +129,7 @@ function SettingsForm({
   return (
     <div className="flex flex-col gap-3 px-4 pb-4">
       <label className="flex flex-col gap-1 text-sm">
-        Sueldos del mes
+        {t("advisor.settings.labor")}
         <Input
           type="number"
           min={0}
@@ -137,7 +139,7 @@ function SettingsForm({
         />
       </label>
       <label className="flex flex-col gap-1 text-sm">
-        Otros costos fijos del mes (alquiler, servicios…)
+        {t("advisor.settings.otherFixed")}
         <Input
           type="number"
           min={0}
@@ -147,7 +149,7 @@ function SettingsForm({
         />
       </label>
       <label className="flex flex-col gap-1 text-sm">
-        Objetivo de food cost (%)
+        {t("advisor.settings.targetFoodCost")}
         <Input
           type="number"
           min={0}
@@ -158,79 +160,77 @@ function SettingsForm({
         />
       </label>
       <label className="flex flex-col gap-1 text-sm">
-        Asientos del local (para RevPASH)
+        {t("advisor.settings.seats")}
         <Input
           type="number"
           min={0}
           step="1"
-          placeholder="Ej. 40"
+          placeholder={t("advisor.settings.seatsPlaceholder")}
           value={seats}
           onChange={(e) => setSeats(e.target.value)}
         />
       </label>
       <label className="flex flex-col gap-1 text-sm">
-        Horas abiertas por día (para RevPASH)
+        {t("advisor.settings.openHours")}
         <Input
           type="number"
           min={0}
           max={24}
           step="0.5"
-          placeholder="Ej. 8"
+          placeholder={t("advisor.settings.openHoursPlaceholder")}
           value={openHours}
           onChange={(e) => setOpenHours(e.target.value)}
         />
       </label>
       <label className="flex flex-col gap-1 text-sm">
-        Inflación mensual estimada (%)
+        {t("advisor.settings.inflation")}
         <Input
           type="number"
           min={0}
           step="0.1"
-          placeholder="Ej. 4"
+          placeholder={t("advisor.settings.inflationPlaceholder")}
           value={inflation}
           onChange={(e) => setInflation(e.target.value)}
         />
         <span className="text-xs text-muted-foreground">
-          Para estimar a cuánto “debería estar” cada precio en Productos.
+          {t("advisor.settings.inflationHint")}
         </span>
       </label>
       <label className="flex flex-col gap-1 text-sm">
-        IVA (%)
+        {t("advisor.settings.vat")}
         <Input
           type="number"
           min={0}
           max={100}
           step="0.5"
-          placeholder="Ej. 21"
+          placeholder={t("advisor.settings.vatPlaceholder")}
           value={vat}
           onChange={(e) => setVat(e.target.value)}
         />
         <span className="text-xs text-muted-foreground">
-          Al cargarlo, los márgenes se calculan netos de IVA (los precios se
-          siguen mostrando con IVA, como los cargás). Vacío = sin aplicar.
+          {t("advisor.settings.vatHint")}
         </span>
       </label>
       <Button onClick={submit} disabled={update.isPending}>
-        {update.isPending ? "Guardando…" : "Guardar costos"}
+        {update.isPending ? t("advisor.settings.saving") : t("advisor.settings.save")}
       </Button>
     </div>
   )
 }
 
 function SettingsSheet() {
+  const { t } = useTranslation()
   const settings = useAdvisorSettings()
   const [open, setOpen] = useState(false)
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline">Configurar costos</Button>
+        <Button variant="outline">{t("advisor.settings.trigger")}</Button>
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Costos del mes</SheetTitle>
-          <SheetDescription>
-            Sueldos y costos fijos para calcular margen neto, prime cost y punto de equilibrio.
-          </SheetDescription>
+          <SheetTitle>{t("advisor.settings.sheetTitle")}</SheetTitle>
+          <SheetDescription>{t("advisor.settings.sheetDescription")}</SheetDescription>
         </SheetHeader>
         {open && settings.data ? (
           <SettingsForm initial={settings.data} onDone={() => setOpen(false)} />
@@ -245,27 +245,28 @@ function SettingsSheet() {
 }
 
 function KpiGrid({ kpis }: { kpis: AdvisorKpisDTO }) {
+  const { t } = useTranslation()
   const money = (amount: number) => formatMoney(amount, kpis.currency)
-  const lockedHint = kpis.configured ? undefined : "Configurá costos"
+  const lockedHint = kpis.configured ? undefined : t("advisor.kpis.configureCosts")
   const locked = (value: string) => (kpis.configured ? value : "—")
   return (
     <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      <KpiCard label="Ventas" value={money(kpis.sales_amount)} />
-      <KpiCard label="Margen bruto" value={money(kpis.gross_margin_amount)} />
+      <KpiCard label={t("advisor.kpis.sales")} value={money(kpis.sales_amount)} />
+      <KpiCard label={t("advisor.kpis.grossMargin")} value={money(kpis.gross_margin_amount)} />
       <KpiCard
-        label="Margen neto"
+        label={t("advisor.kpis.netMargin")}
         value={locked(money(kpis.net_margin_amount))}
         hint={lockedHint}
         negative={kpis.configured && kpis.net_margin_amount < 0}
       />
-      <KpiCard label="Food cost" value={formatPct(kpis.food_cost_ratio_bps)} />
+      <KpiCard label={t("advisor.kpis.foodCost")} value={formatPct(kpis.food_cost_ratio_bps)} />
       <KpiCard
-        label="Prime cost"
+        label={t("advisor.kpis.primeCost")}
         value={locked(formatPct(kpis.prime_cost_ratio_bps))}
         hint={lockedHint}
       />
       <KpiCard
-        label="Punto de equilibrio"
+        label={t("advisor.kpis.breakEven")}
         value={locked(money(kpis.break_even_amount))}
         hint={lockedHint}
       />
@@ -274,6 +275,7 @@ function KpiGrid({ kpis }: { kpis: AdvisorKpisDTO }) {
 }
 
 export function AdvisorPage() {
+  const { t } = useTranslation()
   const [from, setFrom] = useState("")
   const [to, setTo] = useState("")
   const fromIso = from ? new Date(`${from}T00:00:00`).toISOString() : undefined
@@ -283,7 +285,7 @@ export function AdvisorPage() {
   const controls = (
     <div className="flex flex-wrap items-end gap-2">
       <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-        Desde
+        {t("advisor.controls.from")}
         <Input
           type="date"
           value={from}
@@ -292,7 +294,7 @@ export function AdvisorPage() {
         />
       </label>
       <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-        Hasta
+        {t("advisor.controls.to")}
         <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-auto" />
       </label>
       <SettingsSheet />
@@ -320,7 +322,9 @@ export function AdvisorPage() {
           if (items.length === 0) return null
           return (
             <section key={bucket} className="flex flex-col gap-3">
-              <h2 className="text-sm font-semibold text-foreground">{BUCKET_LABELS[bucket]}</h2>
+              <h2 className="text-sm font-semibold text-foreground">
+                {t(`advisor.bucketLabels.${bucket}`)}
+              </h2>
               <div className="flex flex-col gap-2">
                 {items.map((insight) => (
                   <div
@@ -350,11 +354,9 @@ export function AdvisorPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <GradientHeading size="md" weight="bold">
-            Asesor
+            {t("advisor.title")}
           </GradientHeading>
-          <p className="text-sm text-muted-foreground">
-            Cómo te fue y qué hacer. Por defecto, este mes.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("advisor.subtitle")}</p>
         </div>
         {controls}
       </header>

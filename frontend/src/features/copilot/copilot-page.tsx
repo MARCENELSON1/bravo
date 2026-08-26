@@ -1,7 +1,9 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { MessageCircleQuestion, Sparkles } from "lucide-react"
 
 import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import { Button } from "@/components/ui/button"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Input } from "@/components/ui/input"
@@ -16,14 +18,9 @@ import {
 } from "@/components/ui/table"
 import { useAskCopilot } from "@/hooks/use-copilot"
 
-const EXAMPLES = [
-  "¿Cuánto vendí este mes?",
-  "¿Cuáles son mis 5 productos más vendidos?",
-  "¿Qué mozo facturó más?",
-  "¿Cuántas reservas tengo para mañana?",
-]
-
 export function CopilotPage() {
+  const { t } = useTranslation()
+  const examples = t("copilot.examples", { returnObjects: true }) as unknown as string[]
   const ask = useAskCopilot()
   const [question, setQuestion] = useState("")
   const [showSource, setShowSource] = useState(false)
@@ -39,9 +36,7 @@ export function CopilotPage() {
     ask.isError && isApiError(ask.error) && ask.error.code === "copilot_disabled"
   const errorMessage =
     ask.isError && !disabled
-      ? isApiError(ask.error)
-        ? ask.error.message
-        : "No pudimos responder esa pregunta."
+      ? apiErrorText(ask.error, t, t("copilot.errorFallback"))
       : null
   const result = ask.data
 
@@ -49,11 +44,9 @@ export function CopilotPage() {
     <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-col gap-1">
         <GradientHeading size="md" weight="bold">
-          Copiloto
+          {t("copilot.title")}
         </GradientHeading>
-        <p className="text-sm text-muted-foreground">
-          Preguntá sobre tu negocio. Te muestro la respuesta y de dónde sale.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("copilot.subtitle")}</p>
       </header>
 
       <form
@@ -64,17 +57,17 @@ export function CopilotPage() {
         className="flex gap-2"
       >
         <Input
-          placeholder="¿Cuánto vendí este finde?"
+          placeholder={t("copilot.inputPlaceholder")}
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
         />
         <Button type="submit" disabled={ask.isPending || !question.trim()}>
-          {ask.isPending ? "Pensando…" : "Preguntar"}
+          {ask.isPending ? t("copilot.thinking") : t("copilot.ask")}
         </Button>
       </form>
 
       <div className="flex flex-wrap gap-2">
-        {EXAMPLES.map((ex) => (
+        {examples.map((ex) => (
           <Button
             key={ex}
             type="button"
@@ -93,9 +86,7 @@ export function CopilotPage() {
       {disabled ? (
         <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/30 p-4 text-sm">
           <MessageCircleQuestion className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <p className="text-muted-foreground">
-            El copiloto todavía no está habilitado en esta cuenta.
-          </p>
+          <p className="text-muted-foreground">{t("copilot.disabled")}</p>
         </div>
       ) : null}
 
@@ -123,7 +114,7 @@ export function CopilotPage() {
             className="self-start"
             onClick={() => setShowSource((v) => !v)}
           >
-            {showSource ? "Ocultar consulta y datos" : "Ver consulta y datos"}
+            {showSource ? t("copilot.hideSource") : t("copilot.showSource")}
           </Button>
 
           {showSource ? (
@@ -155,7 +146,7 @@ export function CopilotPage() {
                   </Table>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Sin filas.</p>
+                <p className="text-sm text-muted-foreground">{t("copilot.noRows")}</p>
               )}
             </div>
           ) : null}

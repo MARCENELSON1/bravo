@@ -1,2 +1,54 @@
-// Namespace `advisor` (P3 management). Filled by that area migration.
-export const advisor = {} as const
+// Namespace `advisor` (P3 management). Advisor screen: KPIs, cost setup and diagnostics.
+export const advisor = {
+  title: "Advisor",
+  subtitle: "How you did and what to do. This month by default.",
+  controls: {
+    from: "From",
+    to: "To",
+  },
+  settings: {
+    trigger: "Set up costs",
+    sheetTitle: "Monthly costs",
+    sheetDescription:
+      "Salaries and fixed costs to calculate net margin, prime cost, and break-even.",
+    labor: "Monthly payroll",
+    otherFixed: "Other monthly fixed costs (rent, utilities…)",
+    targetFoodCost: "Target food cost (%)",
+    seats: "Seats (for RevPASH)",
+    seatsPlaceholder: "e.g. 40",
+    openHours: "Open hours per day (for RevPASH)",
+    openHoursPlaceholder: "e.g. 8",
+    inflation: "Estimated monthly inflation (%)",
+    inflationPlaceholder: "e.g. 4",
+    inflationHint: "To estimate where each price “should be” in Products.",
+    vat: "Sales tax (%)",
+    vatPlaceholder: "e.g. 21",
+    vatHint:
+      "Once set, margins are calculated net of sales tax (prices still show with tax, as you enter them). Empty = not applied.",
+    save: "Save costs",
+    saving: "Saving…",
+    saved: "Costs saved.",
+    saveError: "We couldn't save the costs.",
+    errors: {
+      amounts: "Check the amounts and the target food cost.",
+      seatsHours: "Check the seats and open hours.",
+      inflation: "Check the estimated monthly inflation.",
+      vat: "Check the sales tax (between 0 and 100%).",
+    },
+  },
+  kpis: {
+    sales: "Sales",
+    grossMargin: "Gross margin",
+    netMargin: "Net margin",
+    foodCost: "Food cost",
+    primeCost: "Prime cost",
+    breakEven: "Break-even",
+    configureCosts: "Set up costs",
+  },
+  bucketLabels: {
+    TODAY: "Act today",
+    THIS_WEEK: "This week",
+    UPCOMING: "What's coming",
+    WELL_DONE: "Well done",
+  },
+} as const

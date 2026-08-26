@@ -1,7 +1,8 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type { SectorDTO, TableDTO } from "@/api/types-operations"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,6 +18,7 @@ import { useTables, useUpdateTable } from "@/hooks/use-tables"
 // Config panel (Salones y mesas): CRUD de sectores + asignar cada mesa a un
 // sector y su capacidad (default de PAX). Sin sectores → el floor queda plano.
 export function SectorsManager() {
+  const { t } = useTranslation()
   const sectors = useSectors()
   const tables = useTables()
   const createSector = useCreateSector()
@@ -27,7 +29,7 @@ export function SectorsManager() {
   const addSector = () => {
     const trimmed = name.trim()
     if (!trimmed) {
-      toast.error("Poné un nombre de sector.")
+      toast.error(t("settings.sectors.nameRequired"))
       return
     }
     const nextOrder = (sectors.data?.length ?? 0) + 1
@@ -36,10 +38,10 @@ export function SectorsManager() {
       {
         onSuccess: () => {
           setName("")
-          toast.success("Sector creado.")
+          toast.success(t("settings.sectors.created"))
         },
         onError: (e) =>
-          toast.error(isApiError(e) ? e.message : "No pudimos crear el sector."),
+          toast.error(apiErrorText(e, t, t("settings.sectors.createError"))),
       }
     )
   }
@@ -48,15 +50,17 @@ export function SectorsManager() {
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Sectores</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            {t("settings.sectors.sectorsTitle")}
+          </h3>
           <p className="text-sm text-muted-foreground">
-            Zonas del salón (salón, terraza, barra…) para agrupar las mesas.
+            {t("settings.sectors.sectorsDesc")}
           </p>
         </div>
 
         <div className="flex flex-wrap items-end gap-2">
           <Input
-            placeholder="Nombre del sector"
+            placeholder={t("settings.sectors.namePlaceholder")}
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="max-w-[14rem]"
@@ -65,11 +69,11 @@ export function SectorsManager() {
             type="color"
             value={color}
             onChange={(e) => setColor(e.target.value)}
-            aria-label="Color del sector"
+            aria-label={t("settings.sectors.colorAria")}
             className="h-9 w-12 cursor-pointer rounded-md border border-border bg-transparent p-1"
           />
           <Button variant="outline" onClick={addSector} disabled={createSector.isPending}>
-            Agregar sector
+            {t("settings.sectors.add")}
           </Button>
         </div>
 
@@ -77,7 +81,7 @@ export function SectorsManager() {
           <Spinner />
         ) : (sectors.data?.length ?? 0) === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Todavía no hay sectores — el tablero se muestra plano.
+            {t("settings.sectors.empty")}
           </p>
         ) : (
           <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
@@ -90,15 +94,17 @@ export function SectorsManager() {
 
       <section className="flex flex-col gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Mesas y cubiertos</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            {t("settings.sectors.tablesTitle")}
+          </h3>
           <p className="text-sm text-muted-foreground">
-            Asigná cada mesa a un sector y su capacidad (default de comensales).
+            {t("settings.sectors.tablesDesc")}
           </p>
         </div>
         {tables.isPending ? (
           <Spinner />
         ) : (tables.data?.length ?? 0) === 0 ? (
-          <p className="text-sm text-muted-foreground">No hay mesas todavía.</p>
+          <p className="text-sm text-muted-foreground">{t("settings.sectors.tablesEmpty")}</p>
         ) : (
           <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
             {tables.data!.map((t) => (
@@ -112,6 +118,7 @@ export function SectorsManager() {
 }
 
 function SectorRow({ sector }: { sector: SectorDTO }) {
+  const { t } = useTranslation()
   const update = useUpdateSector()
   const remove = useDeleteSector()
   const [name, setName] = useState(sector.name)
@@ -122,7 +129,7 @@ function SectorRow({ sector }: { sector: SectorDTO }) {
     if (!name.trim()) return
     update.mutate(
       { id: sector.id, input: { name: name.trim(), color, sort_order: sector.sort_order } },
-      { onError: (e) => toast.error(isApiError(e) ? e.message : "No pudimos guardar.") }
+      { onError: (e) => toast.error(apiErrorText(e, t, t("settings.sectors.saveError"))) }
     )
   }
 
@@ -132,14 +139,14 @@ function SectorRow({ sector }: { sector: SectorDTO }) {
         type="color"
         value={color}
         onChange={(e) => setColor(e.target.value)}
-        aria-label={`Color de ${sector.name}`}
+        aria-label={t("settings.sectors.colorOf", { name: sector.name })}
         className="h-8 w-10 shrink-0 cursor-pointer rounded-md border border-border bg-transparent p-1"
       />
       <Input value={name} onChange={(e) => setName(e.target.value)} className="max-w-[12rem]" />
       <div className="ml-auto flex items-center gap-2">
         {dirty ? (
           <Button size="sm" variant="outline" onClick={save} disabled={update.isPending}>
-            Guardar
+            {t("settings.sectors.save")}
           </Button>
         ) : null}
         <Button
@@ -149,11 +156,11 @@ function SectorRow({ sector }: { sector: SectorDTO }) {
           disabled={remove.isPending}
           onClick={() =>
             remove.mutate(sector.id, {
-              onError: (e) => toast.error(isApiError(e) ? e.message : "No pudimos borrar."),
+              onError: (e) => toast.error(apiErrorText(e, t, t("settings.sectors.deleteError"))),
             })
           }
         >
-          Borrar
+          {t("settings.sectors.delete")}
         </Button>
       </div>
     </li>
@@ -161,13 +168,14 @@ function SectorRow({ sector }: { sector: SectorDTO }) {
 }
 
 function TableAssignRow({ table, sectors }: { table: TableDTO; sectors: SectorDTO[] }) {
+  const { t } = useTranslation()
   const update = useUpdateTable()
   const [capacity, setCapacity] = useState(table.capacity != null ? String(table.capacity) : "")
 
   const assignSector = (sectorId: string) => {
     update.mutate(
       { tableId: table.id, patch: { sector_id: sectorId === "" ? null : sectorId } },
-      { onError: (e) => toast.error(isApiError(e) ? e.message : "No pudimos asignar.") }
+      { onError: (e) => toast.error(apiErrorText(e, t, t("settings.sectors.assignError"))) }
     )
   }
 
@@ -175,28 +183,28 @@ function TableAssignRow({ table, sectors }: { table: TableDTO; sectors: SectorDT
     const raw = capacity.trim()
     const value = raw === "" ? null : Number(raw)
     if (value !== null && (!Number.isInteger(value) || value < 1)) {
-      toast.error("Capacidad inválida.")
+      toast.error(t("settings.sectors.invalidCapacity"))
       setCapacity(table.capacity != null ? String(table.capacity) : "")
       return
     }
     if (value === table.capacity) return
     update.mutate(
       { tableId: table.id, patch: { capacity: value } },
-      { onError: (e) => toast.error(isApiError(e) ? e.message : "No pudimos guardar.") }
+      { onError: (e) => toast.error(apiErrorText(e, t, t("settings.sectors.saveError"))) }
     )
   }
 
   return (
     <li className="flex flex-wrap items-center gap-2 px-3 py-2.5">
       <span className="w-16 shrink-0 text-sm font-medium">
-        {table.name ?? `Mesa ${table.number}`}
+        {table.name ?? t("settings.sectors.tableName", { number: table.number })}
       </span>
       <select
         value={table.sector_id ?? ""}
         onChange={(e) => assignSector(e.target.value)}
         className="h-9 rounded-md border border-border bg-background px-2 text-sm"
       >
-        <option value="">Sin sector</option>
+        <option value="">{t("settings.sectors.noSector")}</option>
         {sectors.map((s) => (
           <option key={s.id} value={s.id}>
             {s.name}
@@ -207,13 +215,13 @@ function TableAssignRow({ table, sectors }: { table: TableDTO; sectors: SectorDT
         <Input
           type="number"
           inputMode="numeric"
-          placeholder="cap."
+          placeholder={t("settings.sectors.capacityPlaceholder")}
           value={capacity}
           onChange={(e) => setCapacity(e.target.value)}
           onBlur={saveCapacity}
           className="w-20"
         />
-        <span className="text-xs text-muted-foreground">cubiertos</span>
+        <span className="text-xs text-muted-foreground">{t("settings.sectors.covers")}</span>
       </div>
     </li>
   )

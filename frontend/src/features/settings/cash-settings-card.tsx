@@ -1,6 +1,7 @@
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type { CashSettingsDTO } from "@/api/types-operations"
 import { Spinner } from "@/components/ui/spinner"
 import { useCashSettings, useUpdateCashSettings } from "@/hooks/use-cash"
@@ -41,6 +42,7 @@ function Toggle({
 // Config → Caja y pagos: los dos flags de política de caja (exigir caja abierta
 // para cobrar + arqueo ciego). OFF por default. Editable por OWNER/MANAGER.
 export function CashSettingsCard() {
+  const { t } = useTranslation()
   const settings = useCashSettings()
   const update = useUpdateCashSettings()
 
@@ -51,7 +53,7 @@ export function CashSettingsCard() {
       { ...base, ...patch },
       {
         onError: (e) =>
-          toast.error(isApiError(e) ? e.message : "No pudimos guardar el ajuste."),
+          toast.error(apiErrorText(e, t, t("settings.cash.saveError"))),
       }
     )
   }
@@ -65,10 +67,10 @@ export function CashSettingsCard() {
       <div className="flex items-center justify-between gap-4 py-4">
         <div>
           <p className="text-sm font-medium text-foreground">
-            Apertura de caja obligatoria
+            {t("settings.cash.requireOpenTitle")}
           </p>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            No se puede cobrar sin una caja abierta.
+            {t("settings.cash.requireOpenDesc")}
           </p>
         </div>
         <Toggle
@@ -79,9 +81,9 @@ export function CashSettingsCard() {
       </div>
       <div className="flex items-center justify-between gap-4 py-4">
         <div>
-          <p className="text-sm font-medium text-foreground">Arqueo ciego</p>
+          <p className="text-sm font-medium text-foreground">{t("settings.cash.blindTitle")}</p>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Al cerrar caja, el cajero cuenta sin ver el esperado (la diferencia sale honesta).
+            {t("settings.cash.blindDesc")}
           </p>
         </div>
         <Toggle

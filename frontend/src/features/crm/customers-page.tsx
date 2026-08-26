@@ -1,8 +1,9 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
 import type { CustomerDTO, CustomerInput } from "@/api/customers-api"
+import { apiErrorText } from "@/api/translate-error"
 import { useAuth } from "@/auth/auth-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,7 @@ import { formatMoney } from "@/lib/money"
 import { waLink } from "@/lib/wa"
 
 export function CustomersPage() {
+  const { t } = useTranslation()
   const { session } = useAuth()
   const canManage = session?.role === "OWNER" || session?.role === "MANAGER"
   const [search, setSearch] = useState("")
@@ -35,21 +37,19 @@ export function CustomersPage() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <GradientHeading>Clientes</GradientHeading>
-          <p className="text-sm text-muted-foreground">
-            Tu cartera de clientes. Contactalos por WhatsApp con un toque.
-          </p>
+          <GradientHeading>{t("crm.title")}</GradientHeading>
+          <p className="text-sm text-muted-foreground">{t("crm.subtitle")}</p>
         </div>
         {canManage ? (
           <Button onClick={() => setAdding((v) => !v)} variant={adding ? "outline" : "default"}>
-            {adding ? "Cancelar" : "Nuevo cliente"}
+            {adding ? t("crm.cancel") : t("crm.newCustomer")}
           </Button>
         ) : null}
       </header>
 
       {adding ? (
         <CustomerForm
-          title="Nuevo cliente"
+          title={t("crm.newCustomer")}
           onCancel={() => setAdding(false)}
           onSaved={() => setAdding(false)}
         />
@@ -60,7 +60,7 @@ export function CustomersPage() {
       <CustomerSegmentsView />
 
       <Input
-        placeholder="Buscar por nombre o teléfono…"
+        placeholder={t("crm.searchPlaceholder")}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="max-w-sm"
@@ -70,7 +70,7 @@ export function CustomersPage() {
         <Spinner />
       ) : rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          {search ? "No hay clientes que coincidan." : "Todavía no cargaste clientes."}
+          {search ? t("crm.noMatches") : t("crm.empty")}
         </p>
       ) : (
         <div className="flex flex-col gap-2">
@@ -78,7 +78,7 @@ export function CustomersPage() {
             editing === c.id ? (
               <CustomerForm
                 key={c.id}
-                title={`Editar ${c.name}`}
+                title={t("crm.editName", { name: c.name })}
                 customer={c}
                 onCancel={() => setEditing(null)}
                 onSaved={() => setEditing(null)}
@@ -107,10 +107,13 @@ function CustomerRow({
   canManage: boolean
   onEdit: () => void
 }) {
+  const { t } = useTranslation()
   const del = useDeleteCustomer()
   const [showHistory, setShowHistory] = useState(false)
   const history = useCustomerHistory(showHistory ? customer.id : null)
-  const link = customer.no_contactar ? null : waLink(customer.phone, `Hola ${customer.name}!`)
+  const link = customer.no_contactar
+    ? null
+    : waLink(customer.phone, t("crm.waGreeting", { name: customer.name }))
 
   return (
     <GlassCard className="flex flex-col gap-2 p-4">
@@ -120,7 +123,7 @@ function CustomerRow({
             <span className="font-medium text-foreground">{customer.name}</span>
             {customer.no_contactar ? (
               <Badge variant="secondary" className="text-xs font-normal">
-                No contactar
+                {t("crm.noContactBadge")}
               </Badge>
             ) : null}
           </div>
@@ -133,19 +136,19 @@ function CustomerRow({
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="ghost" onClick={() => setShowHistory((v) => !v)}>
-            {showHistory ? "Ocultar" : "Historial"}
+            {showHistory ? t("crm.hide") : t("crm.history")}
           </Button>
           {link ? (
             <a href={link} target="_blank" rel="noopener noreferrer">
               <Button size="sm" variant="outline">
-                WhatsApp
+                {t("crm.whatsapp")}
               </Button>
             </a>
           ) : null}
           {canManage ? (
             <>
               <Button size="sm" variant="ghost" onClick={onEdit}>
-                Editar
+                {t("crm.edit")}
               </Button>
               <Button
                 size="sm"
@@ -153,14 +156,14 @@ function CustomerRow({
                 className="text-destructive"
                 disabled={del.isPending}
                 onClick={() => {
-                  if (!window.confirm(`¿Borrar a ${customer.name}?`)) return
+                  if (!window.confirm(t("crm.confirmDelete", { name: customer.name }))) return
                   del.mutate(customer.id, {
                     onError: (e) =>
-                      toast.error(isApiError(e) ? e.message : "No pudimos borrar el cliente."),
+                      toast.error(apiErrorText(e, t, t("crm.deleteError"))),
                   })
                 }}
               >
-                Borrar
+                {t("crm.delete")}
               </Button>
             </>
           ) : null}
@@ -169,27 +172,29 @@ function CustomerRow({
       {showHistory ? (
         <div className="border-t pt-2 text-sm">
           {history.isPending ? (
-            <span className="text-muted-foreground">Cargando…</span>
+            <span className="text-muted-foreground">{t("crm.loading")}</span>
           ) : history.data ? (
             history.data.visits === 0 ? (
               <span className="text-muted-foreground">
-                Todavía no le atribuiste ninguna compra. Asignalo a una comanda al cobrar.
+                {t("crm.historyDetail.noPurchases")}
               </span>
             ) : (
               <span className="text-foreground">
                 <span className="font-medium">{history.data.visits}</span>{" "}
-                {history.data.visits === 1 ? "visita" : "visitas"} ·{" "}
+                {t("crm.visitWord", { count: history.data.visits })} ·{" "}
                 <span className="font-medium">
                   {formatMoney(history.data.total_spent, history.data.currency)}
                 </span>{" "}
-                gastados
+                {t("crm.spent")}
                 {history.data.last_visit_at
-                  ? ` · última: ${history.data.last_visit_at.slice(0, 10)}`
+                  ? t("crm.historyDetail.lastVisit", {
+                      date: history.data.last_visit_at.slice(0, 10),
+                    })
                   : ""}
               </span>
             )
           ) : (
-            <span className="text-muted-foreground">No pudimos cargar el historial.</span>
+            <span className="text-muted-foreground">{t("crm.historyDetail.loadError")}</span>
           )}
         </div>
       ) : null}
@@ -208,6 +213,7 @@ function CustomerForm({
   onCancel: () => void
   onSaved: () => void
 }) {
+  const { t } = useTranslation()
   const create = useCreateCustomer()
   const update = useUpdateCustomer()
   const [name, setName] = useState(customer?.name ?? "")
@@ -219,7 +225,7 @@ function CustomerForm({
 
   const submit = () => {
     if (!name.trim()) {
-      toast.error("Poné un nombre.")
+      toast.error(t("crm.form.nameRequired"))
       return
     }
     const input: CustomerInput = {
@@ -230,7 +236,7 @@ function CustomerForm({
       no_contactar: noContactar,
     }
     const onError = (e: unknown) =>
-      toast.error(isApiError(e) ? e.message : "No pudimos guardar el cliente.")
+      toast.error(apiErrorText(e, t, t("crm.form.saveError")))
     if (customer) {
       update.mutate({ id: customer.id, input }, { onSuccess: onSaved, onError })
     } else {
@@ -242,20 +248,28 @@ function CustomerForm({
     <GlassCard className="flex flex-col gap-3 p-5">
       <h2 className="text-base font-semibold text-foreground">{title}</h2>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <Input placeholder="Nombre *" value={name} onChange={(e) => setName(e.target.value)} />
         <Input
-          placeholder="Teléfono (con código país)"
+          placeholder={t("crm.form.namePlaceholder")}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <Input
+          placeholder={t("crm.form.phonePlaceholder")}
           inputMode="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
         <Input
-          placeholder="Email"
+          placeholder={t("crm.form.emailPlaceholder")}
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <Input placeholder="Notas" value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <Input
+          placeholder={t("crm.form.notesPlaceholder")}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
       </div>
       <label className="flex items-center gap-2 text-sm text-muted-foreground">
         <input
@@ -263,14 +277,14 @@ function CustomerForm({
           checked={noContactar}
           onChange={(e) => setNoContactar(e.target.checked)}
         />
-        No contactar (opt-out) — no se ofrece el botón de WhatsApp
+        {t("crm.form.noContact")}
       </label>
       <div className="flex gap-2">
         <Button onClick={submit} disabled={pending}>
-          Guardar
+          {t("crm.save")}
         </Button>
         <Button variant="outline" onClick={onCancel}>
-          Cancelar
+          {t("crm.cancel")}
         </Button>
       </div>
     </GlassCard>

@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import { motion } from "motion/react"
 import { ArrowLeft, Monitor, Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
@@ -34,10 +35,12 @@ import { TaxJarConnectionCard } from "@/features/settings/taxjar-connection-card
 import { SectorsManager } from "@/features/settings/sectors-manager"
 import { cn } from "@/lib/utils"
 
+// `label` guarda la clave i18n; el consumidor la resuelve con t(). `value` es el
+// código del tema (light/dark/system), no cambia.
 const THEME_OPTIONS = [
-  { value: "light", label: "Claro", icon: Sun },
-  { value: "dark", label: "Oscuro", icon: Moon },
-  { value: "system", label: "Sistema", icon: Monitor },
+  { value: "light", label: "settings.themeOptions.light", icon: Sun },
+  { value: "dark", label: "settings.themeOptions.dark", icon: Moon },
+  { value: "system", label: "settings.themeOptions.system", icon: Monitor },
 ] as const
 
 type TabId =
@@ -55,20 +58,21 @@ type TabId =
   | "integraciones"
   | "cuenta"
 
+// `label` guarda la clave i18n del tab; se resuelve con t() al renderizar.
 const TABS: { id: TabId; label: string; managerOnly?: boolean }[] = [
-  { id: "perfil", label: "Mi perfil" },
-  { id: "apariencia", label: "Apariencia" },
-  { id: "seguridad", label: "Seguridad" },
-  { id: "notificaciones", label: "Notificaciones" },
-  { id: "facturacion", label: "Facturación electrónica", managerOnly: true },
-  { id: "negocio", label: "Datos del local", managerOnly: true },
-  { id: "salones", label: "Salones y mesas", managerOnly: true },
-  { id: "caja", label: "Caja y pagos", managerOnly: true },
-  { id: "comandas", label: "Comandas e impresión", managerOnly: true },
-  { id: "equipo", label: "Equipo", managerOnly: true },
-  { id: "ia", label: "IA Insights", managerOnly: true },
-  { id: "integraciones", label: "Integraciones", managerOnly: true },
-  { id: "cuenta", label: "Cuenta", managerOnly: true },
+  { id: "perfil", label: "settings.tabs.perfil" },
+  { id: "apariencia", label: "settings.tabs.apariencia" },
+  { id: "seguridad", label: "settings.tabs.seguridad" },
+  { id: "notificaciones", label: "settings.tabs.notificaciones" },
+  { id: "facturacion", label: "settings.tabs.facturacion", managerOnly: true },
+  { id: "negocio", label: "settings.tabs.negocio", managerOnly: true },
+  { id: "salones", label: "settings.tabs.salones", managerOnly: true },
+  { id: "caja", label: "settings.tabs.caja", managerOnly: true },
+  { id: "comandas", label: "settings.tabs.comandas", managerOnly: true },
+  { id: "equipo", label: "settings.tabs.equipo", managerOnly: true },
+  { id: "ia", label: "settings.tabs.ia", managerOnly: true },
+  { id: "integraciones", label: "settings.tabs.integraciones", managerOnly: true },
+  { id: "cuenta", label: "settings.tabs.cuenta", managerOnly: true },
 ]
 
 type RowDef = {
@@ -83,115 +87,117 @@ type RowDef = {
 
 // Filas por sección. `apariencia` incluye solo los extras (tema y reducir
 // movimiento son funcionales y se renderizan aparte). El resto son placeholders.
+// `label`/`desc`/`value`/`action` guardan claves i18n; se resuelven con t() al
+// renderizar. Los slugs y los códigos (valueKey, kind) no cambian.
 const SECTIONS: Record<TabId, RowDef[]> = {
   perfil: [
-    { label: "Foto de perfil", desc: "Se muestra en tu perfil.", valueKey: "avatar", action: "Cambiar" },
-    { label: "Nombre completo", required: true, valueKey: "name" },
-    { label: "Email de contacto", required: true, valueKey: "email" },
-    { label: "Teléfono", action: "Editar" },
-    { label: "Idioma", value: "Español (Argentina)" },
-    { label: "Zona horaria", value: "GMT−3 · Buenos Aires" },
-    { label: "Formato de hora", value: "24 h" },
-    { label: "Pantalla de inicio", desc: "Adónde entrás al abrir la app.", value: "Inicio" },
+    { label: "settings.rows.perfil.avatar.label", desc: "settings.rows.perfil.avatar.desc", valueKey: "avatar", action: "settings.actions.change" },
+    { label: "settings.rows.perfil.name.label", required: true, valueKey: "name" },
+    { label: "settings.rows.perfil.email.label", required: true, valueKey: "email" },
+    { label: "settings.rows.perfil.phone.label", action: "settings.actions.edit" },
+    { label: "settings.rows.perfil.language.label", value: "settings.rows.perfil.language.value" },
+    { label: "settings.rows.perfil.timezone.label", value: "settings.rows.perfil.timezone.value" },
+    { label: "settings.rows.perfil.timeFormat.label", value: "settings.rows.perfil.timeFormat.value" },
+    { label: "settings.rows.perfil.homeScreen.label", desc: "settings.rows.perfil.homeScreen.desc", value: "settings.rows.perfil.homeScreen.value" },
   ],
   apariencia: [
-    { label: "Densidad", desc: "Espaciado de la interfaz.", value: "Cómoda" },
-    { label: "Tamaño de texto", value: "Normal" },
-    { label: "Color de acento", action: "Elegir" },
-    { label: "Alto contraste", kind: "toggle" },
-    { label: "Sidebar colapsado", kind: "toggle" },
-    { label: "Vista de mesas por defecto", value: "Plano" },
-    { label: "Decimales en precios", value: "2" },
+    { label: "settings.rows.apariencia.density.label", desc: "settings.rows.apariencia.density.desc", value: "settings.rows.apariencia.density.value" },
+    { label: "settings.rows.apariencia.textSize.label", value: "settings.rows.apariencia.textSize.value" },
+    { label: "settings.rows.apariencia.accentColor.label", action: "settings.actions.choose" },
+    { label: "settings.rows.apariencia.highContrast.label", kind: "toggle" },
+    { label: "settings.rows.apariencia.collapsedSidebar.label", kind: "toggle" },
+    { label: "settings.rows.apariencia.defaultTableView.label", value: "settings.rows.apariencia.defaultTableView.value" },
+    { label: "settings.rows.apariencia.priceDecimals.label", value: "settings.rows.apariencia.priceDecimals.value" },
   ],
   seguridad: [
-    { label: "Contraseña", desc: "Actualizá tu contraseña.", action: "Cambiar" },
-    { label: "Verificación en dos pasos (2FA)", kind: "toggle" },
-    { label: "PIN de acceso rápido", desc: "Para operar sin re-ingresar.", action: "Configurar" },
-    { label: "Bloqueo por inactividad", value: "Desactivado" },
-    { label: "Pedir contraseña para anular o descontar", kind: "toggle" },
-    { label: "Sesiones activas", action: "Ver" },
-    { label: "Historial de accesos", action: "Ver" },
+    { label: "settings.rows.seguridad.password.label", desc: "settings.rows.seguridad.password.desc", action: "settings.actions.change" },
+    { label: "settings.rows.seguridad.twoFactor.label", kind: "toggle" },
+    { label: "settings.rows.seguridad.pin.label", desc: "settings.rows.seguridad.pin.desc", action: "settings.actions.configure" },
+    { label: "settings.rows.seguridad.inactivityLock.label", value: "settings.rows.seguridad.inactivityLock.value" },
+    { label: "settings.rows.seguridad.passwordForVoid.label", kind: "toggle" },
+    { label: "settings.rows.seguridad.activeSessions.label", action: "settings.actions.view" },
+    { label: "settings.rows.seguridad.accessHistory.label", action: "settings.actions.view" },
   ],
   notificaciones: [
-    { label: "Canales", desc: "Email, push, WhatsApp.", action: "Configurar" },
-    { label: "Eventos que avisan", action: "Configurar" },
-    { label: "Umbral de mesa demorada", value: "20 min" },
-    { label: "Resumen diario", desc: "Y a qué hora te llega.", action: "Configurar" },
-    { label: "No molestar", kind: "toggle" },
-    { label: "Sonido de alertas", kind: "toggle" },
+    { label: "settings.rows.notificaciones.channels.label", desc: "settings.rows.notificaciones.channels.desc", action: "settings.actions.configure" },
+    { label: "settings.rows.notificaciones.events.label", action: "settings.actions.configure" },
+    { label: "settings.rows.notificaciones.delayedTableThreshold.label", value: "settings.rows.notificaciones.delayedTableThreshold.value" },
+    { label: "settings.rows.notificaciones.dailySummary.label", desc: "settings.rows.notificaciones.dailySummary.desc", action: "settings.actions.configure" },
+    { label: "settings.rows.notificaciones.doNotDisturb.label", kind: "toggle" },
+    { label: "settings.rows.notificaciones.alertSound.label", kind: "toggle" },
   ],
   facturacion: [
-    { label: "CUIT", required: true, action: "Editar" },
-    { label: "Condición frente al IVA", required: true, action: "Editar" },
-    { label: "Certificado ARCA", desc: "Certificado y clave fiscal.", action: "Cargar" },
-    { label: "Ambiente", desc: "Homologación o producción.", value: "Homologación" },
-    { label: "Puntos de venta", action: "Configurar" },
-    { label: "Emisión automática al cerrar mesa", kind: "toggle" },
-    { label: "Comprobante por defecto", value: "Ticket B" },
-    { label: "Envío al cliente", desc: "Comprobante por email o WhatsApp.", action: "Configurar" },
+    { label: "settings.rows.facturacion.cuit.label", required: true, action: "settings.actions.edit" },
+    { label: "settings.rows.facturacion.ivaCondition.label", required: true, action: "settings.actions.edit" },
+    { label: "settings.rows.facturacion.arcaCertificate.label", desc: "settings.rows.facturacion.arcaCertificate.desc", action: "settings.actions.upload" },
+    { label: "settings.rows.facturacion.environment.label", desc: "settings.rows.facturacion.environment.desc", value: "settings.rows.facturacion.environment.value" },
+    { label: "settings.rows.facturacion.salesPoints.label", action: "settings.actions.configure" },
+    { label: "settings.rows.facturacion.autoIssue.label", kind: "toggle" },
+    { label: "settings.rows.facturacion.defaultReceipt.label", value: "settings.rows.facturacion.defaultReceipt.value" },
+    { label: "settings.rows.facturacion.sendToCustomer.label", desc: "settings.rows.facturacion.sendToCustomer.desc", action: "settings.actions.configure" },
   ],
   negocio: [
-    { label: "Nombre", required: true, valueKey: "tenant", action: "Editar" },
-    { label: "Logo", action: "Cargar" },
-    { label: "Dirección", action: "Editar" },
-    { label: "Teléfono", action: "Editar" },
-    { label: "Horarios de atención", action: "Configurar" },
-    { label: "Capacidad", desc: "Cantidad de cubiertos.", action: "Editar" },
-    { label: "Precios con IVA incluido", kind: "toggle" },
-    { label: "Redondeo", value: "Sin redondeo" },
-    { label: "Cubierto", desc: "Cargo por cubierto.", action: "Configurar" },
-    { label: "Propina sugerida", value: "10%" },
+    { label: "settings.rows.negocio.name.label", required: true, valueKey: "tenant", action: "settings.actions.edit" },
+    { label: "settings.rows.negocio.logo.label", action: "settings.actions.upload" },
+    { label: "settings.rows.negocio.address.label", action: "settings.actions.edit" },
+    { label: "settings.rows.negocio.phone.label", action: "settings.actions.edit" },
+    { label: "settings.rows.negocio.hours.label", action: "settings.actions.configure" },
+    { label: "settings.rows.negocio.capacity.label", desc: "settings.rows.negocio.capacity.desc", action: "settings.actions.edit" },
+    { label: "settings.rows.negocio.vatIncluded.label", kind: "toggle" },
+    { label: "settings.rows.negocio.rounding.label", value: "settings.rows.negocio.rounding.value" },
+    { label: "settings.rows.negocio.coverCharge.label", desc: "settings.rows.negocio.coverCharge.desc", action: "settings.actions.configure" },
+    { label: "settings.rows.negocio.suggestedTip.label", value: "settings.rows.negocio.suggestedTip.value" },
   ],
   salones: [
-    { label: "Sectores", desc: "Salón, terraza, barra…", action: "Configurar" },
-    { label: "Mesas y cubiertos", action: "Configurar" },
-    { label: "Numeración automática", kind: "toggle" },
-    { label: "Unir y dividir mesas", kind: "toggle" },
+    { label: "settings.rows.salones.sectors.label", desc: "settings.rows.salones.sectors.desc", action: "settings.actions.configure" },
+    { label: "settings.rows.salones.tables.label", action: "settings.actions.configure" },
+    { label: "settings.rows.salones.autoNumbering.label", kind: "toggle" },
+    { label: "settings.rows.salones.mergeSplit.label", kind: "toggle" },
   ],
   caja: [
-    { label: "Medios de pago", action: "Configurar" },
-    { label: "Apertura de caja obligatoria", kind: "toggle" },
-    { label: "Arqueo ciego", desc: "Sin ver el esperado al cerrar.", kind: "toggle" },
-    { label: "Diferencia tolerada", value: "$0" },
-    { label: "Reparto de propinas", action: "Configurar" },
-    { label: "Límite de descuento por rol", action: "Configurar" },
-    { label: "Cuenta corriente", action: "Configurar" },
+    { label: "settings.rows.caja.paymentMethods.label", action: "settings.actions.configure" },
+    { label: "settings.rows.caja.requireOpenCash.label", kind: "toggle" },
+    { label: "settings.rows.caja.blindCount.label", desc: "settings.rows.caja.blindCount.desc", kind: "toggle" },
+    { label: "settings.rows.caja.toleratedDifference.label", value: "settings.rows.caja.toleratedDifference.value" },
+    { label: "settings.rows.caja.tipSharing.label", action: "settings.actions.configure" },
+    { label: "settings.rows.caja.discountLimit.label", action: "settings.actions.configure" },
+    { label: "settings.rows.caja.houseAccount.label", action: "settings.actions.configure" },
   ],
   comandas: [
-    { label: "Impresoras por sector", action: "Configurar" },
-    { label: "Ruteo de categoría a impresora", action: "Configurar" },
-    { label: "Copias", value: "1" },
-    { label: "Formato de ticket", action: "Configurar" },
-    { label: "Tiempo de alerta del KDS", value: "8 min" },
-    { label: "Impresión automática", kind: "toggle" },
+    { label: "settings.rows.comandas.printersBySector.label", action: "settings.actions.configure" },
+    { label: "settings.rows.comandas.categoryRouting.label", action: "settings.actions.configure" },
+    { label: "settings.rows.comandas.copies.label", value: "settings.rows.comandas.copies.value" },
+    { label: "settings.rows.comandas.ticketFormat.label", action: "settings.actions.configure" },
+    { label: "settings.rows.comandas.kdsAlertTime.label", value: "settings.rows.comandas.kdsAlertTime.value" },
+    { label: "settings.rows.comandas.autoPrint.label", kind: "toggle" },
   ],
   equipo: [
-    { label: "Usuarios", action: "Gestionar" },
-    { label: "Roles y permisos", action: "Configurar" },
-    { label: "PIN por empleado", action: "Configurar" },
-    { label: "Turnos", action: "Configurar" },
-    { label: "Tolerancia de fichaje", value: "10 min" },
-    { label: "Geocerca", desc: "Fichaje dentro del local.", action: "Configurar" },
+    { label: "settings.rows.equipo.users.label", action: "settings.actions.manage" },
+    { label: "settings.rows.equipo.rolesPermissions.label", action: "settings.actions.configure" },
+    { label: "settings.rows.equipo.pinPerEmployee.label", action: "settings.actions.configure" },
+    { label: "settings.rows.equipo.shifts.label", action: "settings.actions.configure" },
+    { label: "settings.rows.equipo.clockInTolerance.label", value: "settings.rows.equipo.clockInTolerance.value" },
+    { label: "settings.rows.equipo.geofence.label", desc: "settings.rows.equipo.geofence.desc", action: "settings.actions.configure" },
   ],
   ia: [
-    { label: "Acceso a datos por módulo", action: "Configurar" },
-    { label: "Nivel de autonomía", value: "Sugerencias" },
-    { label: "Umbrales de alerta", action: "Editar" },
-    { label: "Frecuencia del resumen", value: "Diario" },
-    { label: "Privacidad", action: "Configurar" },
+    { label: "settings.rows.ia.dataAccess.label", action: "settings.actions.configure" },
+    { label: "settings.rows.ia.autonomyLevel.label", value: "settings.rows.ia.autonomyLevel.value" },
+    { label: "settings.rows.ia.alertThresholds.label", action: "settings.actions.edit" },
+    { label: "settings.rows.ia.summaryFrequency.label", value: "settings.rows.ia.summaryFrequency.value" },
+    { label: "settings.rows.ia.privacy.label", action: "settings.actions.configure" },
   ],
   integraciones: [
-    { label: "Mercado Pago", action: "Conectar" },
-    { label: "PedidosYa", action: "Conectar" },
-    { label: "Rappi", action: "Conectar" },
-    { label: "WhatsApp", action: "Conectar" },
-    { label: "API y webhooks", action: "Configurar" },
+    { label: "settings.rows.integraciones.mercadopago.label", action: "settings.actions.connect" },
+    { label: "settings.rows.integraciones.pedidosya.label", action: "settings.actions.connect" },
+    { label: "settings.rows.integraciones.rappi.label", action: "settings.actions.connect" },
+    { label: "settings.rows.integraciones.whatsapp.label", action: "settings.actions.connect" },
+    { label: "settings.rows.integraciones.apiWebhooks.label", action: "settings.actions.configure" },
   ],
   cuenta: [
-    { label: "Plan y uso", desc: "Tu plan de Wellnod.", action: "Ver" },
-    { label: "Facturas de Wellnod", action: "Ver" },
-    { label: "Exportar datos", action: "Exportar" },
-    { label: "Zona de riesgo", desc: "Eliminar cuenta y datos.", action: "Eliminar" },
+    { label: "settings.rows.cuenta.planUsage.label", desc: "settings.rows.cuenta.planUsage.desc", action: "settings.actions.view" },
+    { label: "settings.rows.cuenta.invoices.label", action: "settings.actions.view" },
+    { label: "settings.rows.cuenta.exportData.label", action: "settings.actions.export" },
+    { label: "settings.rows.cuenta.riskZone.label", desc: "settings.rows.cuenta.riskZone.desc", action: "settings.actions.delete" },
   ],
 }
 
@@ -266,15 +272,16 @@ function Row({
   )
 }
 
-function EditSoon({ label = "Editar" }: { label?: string }) {
+function EditSoon({ label }: { label?: string }) {
+  const { t } = useTranslation()
   return (
     <button
       type="button"
       disabled
-      title="Próximamente"
+      title={t("settings.editSoon")}
       className="shrink-0 text-sm font-semibold text-muted-foreground underline underline-offset-4 opacity-60"
     >
-      {label}
+      {label ?? t("settings.actions.edit")}
     </button>
   )
 }
@@ -305,6 +312,7 @@ function ScrollCard({ children }: { children: ReactNode }) {
 
 // ── Página ────────────────────────────────────────────────────────────────────
 export function ConfigPage() {
+  const { t } = useTranslation()
   const { session } = useAuth()
   const { theme, setTheme } = useTheme()
   const reduceMotion = useReduceMotion()
@@ -317,7 +325,7 @@ export function ConfigPage() {
   if (!session) return null
 
   const canManage = session.role === "OWNER" || session.role === "MANAGER"
-  const tabs = TABS.filter((t) => !t.managerOnly || canManage)
+  const tabs = TABS.filter((item) => !item.managerOnly || canManage)
 
   const rowValue = (r: RowDef) =>
     r.valueKey === "name"
@@ -327,6 +335,8 @@ export function ConfigPage() {
         : r.valueKey === "tenant"
           ? session.tenantName
           : r.value
+            ? t(r.value)
+            : undefined
 
   return (
     <div className="h-svh overflow-hidden">
@@ -347,33 +357,33 @@ export function ConfigPage() {
             className="mb-5 inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg text-sm font-medium text-muted-foreground transition duration-200 ease-out hover:text-foreground active:scale-[0.97]"
           >
             <ArrowLeft className="size-4" />
-            Inicio
+            {t("settings.back")}
           </button>
 
           <header className="mb-6 shrink-0">
             <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
-              Configuración
+              {t("settings.title")}
             </h1>
-            <p className="text-sm text-muted-foreground">Gestioná tus datos y preferencias.</p>
+            <p className="text-sm text-muted-foreground">{t("settings.subtitle")}</p>
           </header>
 
           {/* Pestañas (fijas) */}
           <div className="mb-6 shrink-0 border-b border-border">
             <OverlayScrollbarsComponent ref={tabsOsRef} options={OS_OPTIONS_TABS} className="pb-3" defer>
               <div className="flex gap-1">
-                {tabs.map((t) => (
+                {tabs.map((item) => (
                   <button
-                    key={t.id}
+                    key={item.id}
                     type="button"
-                    onClick={() => setTab(t.id)}
+                    onClick={() => setTab(item.id)}
                     className={cn(
                       "shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium whitespace-nowrap transition duration-200 ease-out active:scale-[0.97]",
-                      tab === t.id
+                      tab === item.id
                         ? "bg-card text-foreground shadow-sm ring-1 ring-border"
                         : "text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    {t.label}
+                    {t(item.label)}
                   </button>
                 ))}
               </div>
@@ -406,7 +416,7 @@ export function ConfigPage() {
                   {/* Apariencia: filas funcionales primero */}
                   {tab === "apariencia" ? (
                 <>
-                  <Row label="Tema" desc="Apariencia de la interfaz.">
+                  <Row label={t("settings.appearance.theme")} desc={t("settings.appearance.themeDesc")}>
                     <div className="flex flex-wrap gap-2">
                       {THEME_OPTIONS.map((opt) => {
                         const active = theme === opt.value
@@ -424,13 +434,13 @@ export function ConfigPage() {
                             )}
                           >
                             <opt.icon className="size-4" />
-                            {opt.label}
+                            {t(opt.label)}
                           </button>
                         )
                       })}
                     </div>
                   </Row>
-                  <Row label="Reducir movimiento" desc="Desactiva las animaciones de la interfaz.">
+                  <Row label={t("settings.appearance.reduceMotion")} desc={t("settings.appearance.reduceMotionDesc")}>
                     <span />
                     <LiveSwitch checked={reduceMotion} onChange={setReduceMotion} />
                   </Row>
@@ -469,18 +479,20 @@ export function ConfigPage() {
                 .filter(
                   (r) =>
                     tab !== "salones" ||
-                    (r.label !== "Sectores" && r.label !== "Mesas y cubiertos")
+                    (r.label !== "settings.rows.salones.sectors.label" &&
+                      r.label !== "settings.rows.salones.tables.label")
                 )
                 .filter(
                   (r) =>
                     tab !== "caja" ||
-                    (r.label !== "Apertura de caja obligatoria" && r.label !== "Arqueo ciego")
+                    (r.label !== "settings.rows.caja.requireOpenCash.label" &&
+                      r.label !== "settings.rows.caja.blindCount.label")
                 )
-                .filter((r) => tab !== "negocio" || r.label !== "Dirección")
+                .filter((r) => tab !== "negocio" || r.label !== "settings.rows.negocio.address.label")
                 .map((r) => {
                 const value = rowValue(r)
                 return (
-                  <Row key={r.label} label={r.label} required={r.required} desc={r.desc}>
+                  <Row key={r.label} label={t(r.label)} required={r.required} desc={r.desc ? t(r.desc) : undefined}>
                     {r.valueKey === "avatar" ? (
                       <span className="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                         {initialsOf(session.name, session.email)}
@@ -493,7 +505,7 @@ export function ConfigPage() {
                     {r.kind === "toggle" ? (
                       <Switch checked={false} disabled />
                     ) : (
-                      <EditSoon label={r.action} />
+                      <EditSoon label={r.action ? t(r.action) : undefined} />
                     )}
                   </Row>
                 )

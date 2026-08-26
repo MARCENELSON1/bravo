@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type { FiscalCondition } from "@/api/types-invoicing"
 import { Button } from "@/components/ui/button"
 import {
@@ -38,24 +39,25 @@ import { useServices } from "@/services/services-context"
 // MercadoPago (?mp=ok|error). El contenido vive en <IntegrationsPanel/> para poder
 // reutilizarlo dentro de la sección "Integraciones" de Configuración.
 export function IntegrationsPage() {
+  const { t } = useTranslation()
   const [params, setParams] = useSearchParams()
 
   // The OAuth callback redirects back here with ?mp=ok|error.
   useEffect(() => {
     const result = params.get("mp")
     if (!result) return
-    if (result === "ok") toast.success("MercadoPago conectado.")
-    else toast.error("No pudimos conectar MercadoPago. Probá de nuevo.")
+    if (result === "ok") toast.success(t("integrations.mpConnectedToast"))
+    else toast.error(t("integrations.mpConnectError"))
     setParams({}, { replace: true })
-  }, [params, setParams])
+  }, [params, setParams, t])
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-col gap-1">
         <GradientHeading size="md" weight="bold">
-          Integraciones
+          {t("integrations.title")}
         </GradientHeading>
-        <p className="text-sm text-muted-foreground">Conectá tus medios de cobro.</p>
+        <p className="text-sm text-muted-foreground">{t("integrations.subtitle")}</p>
       </header>
 
       <IntegrationsPanel />
@@ -84,6 +86,7 @@ function Section({
 }
 
 export function IntegrationsPanel({ embedded = false }: { embedded?: boolean }) {
+  const { t } = useTranslation()
   const connection = useMpConnection()
   const disconnect = useDisconnectMp()
   const { integrationsApi } = useServices()
@@ -93,7 +96,7 @@ export function IntegrationsPanel({ embedded = false }: { embedded?: boolean }) 
       const { url } = await integrationsApi.getMpConnectUrl()
       window.location.href = url
     } catch (error) {
-      toast.error(isApiError(error) ? error.message : "No pudimos iniciar la conexión.")
+      toast.error(apiErrorText(error, t, t("integrations.mp.startError")))
     }
   }
 
@@ -108,9 +111,9 @@ export function IntegrationsPanel({ embedded = false }: { embedded?: boolean }) 
           <div className="flex items-center gap-2 text-sm">
             <span className="size-2 rounded-full bg-emerald-500" />
             <span>
-              Conectado
+              {t("integrations.mp.connected")}
               {data.nickname ? ` · ${data.nickname}` : ""}
-              {!data.live_mode ? " · sandbox" : ""}
+              {!data.live_mode ? t("integrations.mp.sandboxSuffix") : ""}
             </span>
           </div>
           <Button
@@ -118,19 +121,21 @@ export function IntegrationsPanel({ embedded = false }: { embedded?: boolean }) 
             disabled={disconnect.isPending}
             onClick={() =>
               disconnect.mutate(undefined, {
-                onSuccess: () => toast.success("MercadoPago desconectado."),
+                onSuccess: () => toast.success(t("integrations.mp.disconnectedToast")),
                 onError: (error) =>
-                  toast.error(isApiError(error) ? error.message : "No pudimos desconectar."),
+                  toast.error(apiErrorText(error, t, t("integrations.mp.disconnectError"))),
               })
             }
           >
-            {disconnect.isPending ? "Desconectando…" : "Desconectar"}
+            {disconnect.isPending
+              ? t("integrations.mp.disconnecting")
+              : t("integrations.mp.disconnect")}
           </Button>
         </>
       ) : (
         <>
-          <p className="text-sm text-muted-foreground">No conectado.</p>
-          <Button onClick={connect}>Conectar con MercadoPago</Button>
+          <p className="text-sm text-muted-foreground">{t("integrations.mp.notConnected")}</p>
+          <Button onClick={connect}>{t("integrations.mp.connect")}</Button>
         </>
       )}
     </>
@@ -141,10 +146,7 @@ export function IntegrationsPanel({ embedded = false }: { embedded?: boolean }) 
   if (embedded) {
     return (
       <div className="divide-y divide-border">
-        <Section
-          title="MercadoPago"
-          desc="Conectá la cuenta de tu local. Los cobros por MercadoPago/QR caen directo a tu cuenta."
-        >
+        <Section title={t("integrations.mp.title")} desc={t("integrations.mp.description")}>
           {mpContent}
         </Section>
         <AfipCard embedded />
@@ -156,10 +158,8 @@ export function IntegrationsPanel({ embedded = false }: { embedded?: boolean }) 
     <div className="flex flex-col gap-5">
       <Card>
         <CardHeader>
-          <CardTitle>MercadoPago</CardTitle>
-          <CardDescription>
-            Conectá la cuenta de tu local. Los cobros por MercadoPago/QR caen directo a tu cuenta.
-          </CardDescription>
+          <CardTitle>{t("integrations.mp.title")}</CardTitle>
+          <CardDescription>{t("integrations.mp.description")}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">{mpContent}</CardContent>
       </Card>
@@ -178,6 +178,7 @@ const FISCAL_CONDITIONS: { value: FiscalCondition; label: string }[] = [
 // and CUIT. Credentials are sent once and stored encrypted server-side; the UI
 // never reads them back.
 function AfipCard({ embedded = false }: { embedded?: boolean }) {
+  const { t } = useTranslation()
   const connection = useAfipConnection()
   const connect = useConnectAfip()
   const disconnect = useDisconnectAfip()
@@ -192,15 +193,15 @@ function AfipCard({ embedded = false }: { embedded?: boolean }) {
   const submit = () => {
     const pos = Number(pointOfSale)
     if (!/^\d{11}$/.test(cuit.trim())) {
-      toast.error("El CUIT debe tener 11 dígitos.")
+      toast.error(t("integrations.afip.invalidCuit"))
       return
     }
     if (!Number.isInteger(pos) || pos < 1) {
-      toast.error("Punto de venta inválido.")
+      toast.error(t("integrations.afip.invalidPos"))
       return
     }
     if (!certificate.includes("BEGIN CERTIFICATE") || !privateKey.includes("PRIVATE KEY")) {
-      toast.error("Pegá el certificado y la clave privada en formato PEM.")
+      toast.error(t("integrations.afip.invalidPem"))
       return
     }
     connect.mutate(
@@ -213,12 +214,12 @@ function AfipCard({ embedded = false }: { embedded?: boolean }) {
       },
       {
         onSuccess: () => {
-          toast.success("ARCA conectado.")
+          toast.success(t("integrations.afip.connectedToast"))
           setCertificate("")
           setPrivateKey("")
         },
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos conectar ARCA."),
+          toast.error(apiErrorText(error, t, t("integrations.afip.connectError"))),
       }
     )
   }
@@ -232,8 +233,11 @@ function AfipCard({ embedded = false }: { embedded?: boolean }) {
           <div className="flex items-center gap-2 text-sm">
             <span className="size-2 rounded-full bg-emerald-500" />
             <span>
-              Conectado · CUIT {data.cuit} · PV {data.point_of_sale}
-              {!data.live_mode ? " · homologación" : ""}
+              {t("integrations.afip.connected", {
+                cuit: data.cuit,
+                pos: data.point_of_sale,
+              })}
+              {!data.live_mode ? t("integrations.afip.homologationSuffix") : ""}
             </span>
           </div>
           <Button
@@ -241,20 +245,22 @@ function AfipCard({ embedded = false }: { embedded?: boolean }) {
             disabled={disconnect.isPending}
             onClick={() =>
               disconnect.mutate(undefined, {
-                onSuccess: () => toast.success("ARCA desconectado."),
+                onSuccess: () => toast.success(t("integrations.afip.disconnectedToast")),
                 onError: (error) =>
-                  toast.error(isApiError(error) ? error.message : "No pudimos desconectar."),
+                  toast.error(apiErrorText(error, t, t("integrations.afip.disconnectError"))),
               })
             }
           >
-            {disconnect.isPending ? "Desconectando…" : "Desconectar"}
+            {disconnect.isPending
+              ? t("integrations.afip.disconnecting")
+              : t("integrations.afip.disconnect")}
           </Button>
         </>
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1">
-              <Label htmlFor="afip-cuit">CUIT</Label>
+              <Label htmlFor="afip-cuit">{t("integrations.afip.cuitLabel")}</Label>
               <Input
                 id="afip-cuit"
                 inputMode="numeric"
@@ -264,7 +270,7 @@ function AfipCard({ embedded = false }: { embedded?: boolean }) {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <Label htmlFor="afip-pos">Punto de venta</Label>
+              <Label htmlFor="afip-pos">{t("integrations.afip.posLabel")}</Label>
               <Input
                 id="afip-pos"
                 type="number"
@@ -275,7 +281,7 @@ function AfipCard({ embedded = false }: { embedded?: boolean }) {
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <Label>Condición fiscal</Label>
+            <Label>{t("integrations.afip.fiscalConditionLabel")}</Label>
             <Select
               value={fiscalCondition}
               onValueChange={(v) => setFiscalCondition(v as FiscalCondition)}
@@ -293,7 +299,7 @@ function AfipCard({ embedded = false }: { embedded?: boolean }) {
             </Select>
           </div>
           <div className="flex flex-col gap-1">
-            <Label htmlFor="afip-cert">Certificado (PEM)</Label>
+            <Label htmlFor="afip-cert">{t("integrations.afip.certificateLabel")}</Label>
             <Textarea
               id="afip-cert"
               placeholder="-----BEGIN CERTIFICATE-----"
@@ -303,7 +309,7 @@ function AfipCard({ embedded = false }: { embedded?: boolean }) {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <Label htmlFor="afip-key">Clave privada (PEM)</Label>
+            <Label htmlFor="afip-key">{t("integrations.afip.privateKeyLabel")}</Label>
             <Textarea
               id="afip-key"
               placeholder="-----BEGIN PRIVATE KEY-----"
@@ -313,7 +319,9 @@ function AfipCard({ embedded = false }: { embedded?: boolean }) {
             />
           </div>
           <Button onClick={submit} disabled={connect.isPending}>
-            {connect.isPending ? "Conectando…" : "Conectar ARCA"}
+            {connect.isPending
+              ? t("integrations.afip.connecting")
+              : t("integrations.afip.connect")}
           </Button>
         </>
       )}
@@ -322,10 +330,7 @@ function AfipCard({ embedded = false }: { embedded?: boolean }) {
 
   if (embedded) {
     return (
-      <Section
-        title="ARCA · Facturación electrónica"
-        desc="Cargá el certificado de tu CUIT (WSFEv1) para emitir facturas con CAE. Se guarda cifrado."
-      >
+      <Section title={t("integrations.afip.title")} desc={t("integrations.afip.description")}>
         {content}
       </Section>
     )
@@ -334,10 +339,8 @@ function AfipCard({ embedded = false }: { embedded?: boolean }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>ARCA · Facturación electrónica</CardTitle>
-        <CardDescription>
-          Cargá el certificado de tu CUIT (WSFEv1) para emitir facturas con CAE. Se guarda cifrado.
-        </CardDescription>
+        <CardTitle>{t("integrations.afip.title")}</CardTitle>
+        <CardDescription>{t("integrations.afip.description")}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">{content}</CardContent>
     </Card>
