@@ -74,6 +74,12 @@ class StripeBillingGateway(BillingGateway):
             "mode": "subscription",
             "success_url": success_url,
             "cancel_url": cancel_url,
+            # Managed Payments viene activado por default en la cuenta y exige un
+            # tax_code en el producto inline (si no, 400). Lo desactivamos por
+            # sesión para operar como procesador clásico (nuestro price_data inline
+            # no lleva tax_code). Adoptar Managed Payments (Stripe como Merchant of
+            # Record / Stripe Tax sobre el SaaS) sería una decisión de negocio aparte.
+            "managed_payments[enabled]": "false",
             "line_items[0][quantity]": "1",
             "line_items[0][price_data][currency]": plan.price.currency.lower(),
             "line_items[0][price_data][unit_amount]": str(plan.price.amount),

@@ -67,6 +67,8 @@ async def test_start_checkout_posts_subscription_session():
     assert captured["url"].endswith("/v1/checkout/sessions")
     form = captured["form"]
     assert form["mode"] == ["subscription"]
+    # Managed Payments desactivado por sesión (evita el 400 por tax_code faltante).
+    assert form["managed_payments[enabled]"] == ["false"]
     assert form["line_items[0][price_data][currency]"] == ["usd"]
     assert form["line_items[0][price_data][unit_amount]"] == ["4900"]
     assert form["line_items[0][price_data][recurring][interval]"] == ["month"]
