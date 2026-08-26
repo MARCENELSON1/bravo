@@ -3,31 +3,53 @@ import { Check } from "lucide-react"
 import { useLandingContent } from "@/presentation/hooks/use-landing-content"
 import { WellnodMark } from "@/presentation/components/brand/wellnod-mark"
 import { Reveal } from "@/presentation/components/ui/reveal"
+import { useContainer } from "@/presentation/providers/container-provider"
 import { FEATURE_ICONS } from "@/presentation/lib/feature-icons"
 
-const POINTS = ["Un solo login para todo el equipo", "Un solo panel, en tiempo real", "Los mismos datos en cada módulo"]
+const COPY = {
+  "es-AR": {
+    eyebrow: "Plataforma unificada",
+    heading: "El salón y la cocina, por fin en un solo sistema",
+    sub: "Nada de apps sueltas ni de exportar planillas de un lado a otro. Comandas, cocina, caja, facturación, fichaje y tu copiloto trabajan con los mismos datos.",
+    points: [
+      "Un solo login para todo el equipo",
+      "Un solo panel, en tiempo real",
+      "Los mismos datos en cada módulo",
+    ],
+    badge: "Un solo panel",
+  },
+  "en-US": {
+    eyebrow: "One unified platform",
+    heading: "Front of house and kitchen, finally in one system",
+    sub: "No more scattered apps or exporting spreadsheets back and forth. Orders, kitchen, register, tax, time tracking, and your copilot all run on the same data.",
+    points: [
+      "One login for the whole team",
+      "One dashboard, in real time",
+      "The same data in every module",
+    ],
+    badge: "One dashboard",
+  },
+} as const
 
 // Sección "plataforma unificada": el mensaje de que todo vive en un solo sistema.
 // Reutiliza los módulos que expone el ContentRepository (no los duplica).
 export function UnifiedSystem() {
   const { features } = useLandingContent()
+  const t = COPY[useContainer().locale]
 
   return (
     <section className="border-y border-border bg-muted/30">
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-20 md:py-24 lg:grid-cols-2">
         <Reveal>
           <p className="text-sm font-semibold uppercase tracking-wider text-primary">
-            Plataforma unificada
+            {t.eyebrow}
           </p>
           <h2 className="mt-3 font-display text-3xl font-bold leading-tight tracking-tight text-balance sm:text-4xl">
-            El salón y la cocina, por fin en un solo sistema
+            {t.heading}
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Nada de apps sueltas ni de exportar planillas de un lado a otro. Comandas, cocina,
-            caja, facturación, fichaje y tu copiloto trabajan con los mismos datos.
-          </p>
+          <p className="mt-4 text-lg text-muted-foreground">{t.sub}</p>
           <ul className="mt-6 flex flex-col gap-3">
-            {POINTS.map((point) => (
+            {t.points.map((point) => (
               <li key={point} className="flex items-center gap-3 text-sm">
                 <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
                   <Check className="size-3.5" />
@@ -46,7 +68,7 @@ export function UnifiedSystem() {
                 <span className="font-display font-semibold">Wellnod</span>
               </span>
               <span className="rounded-full bg-primary/12 px-2.5 py-1 text-xs font-medium text-primary">
-                Un solo panel
+                {t.badge}
               </span>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3">

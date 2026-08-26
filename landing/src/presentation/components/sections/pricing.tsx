@@ -4,31 +4,67 @@ import { Check, X } from "lucide-react"
 import type { BillingPeriod, Plan } from "@/domain/entities/plan"
 import { priceFor } from "@/domain/entities/plan"
 import { formatMoney } from "@/domain/value-objects/money"
+import type { Locale } from "@/domain/value-objects/region"
 import { useAuthLinks } from "@/presentation/hooks/use-auth-links"
 import { usePricingPlans } from "@/presentation/hooks/use-pricing-plans"
+import { useContainer } from "@/presentation/providers/container-provider"
 import { buttonVariants } from "@/presentation/components/ui/button"
 import { Reveal } from "@/presentation/components/ui/reveal"
 import { cn } from "@/presentation/lib/cn"
 
+const COPY = {
+  "es-AR": {
+    eyebrow: "Planes",
+    heading: "Precios simples, sin sorpresas",
+    sub: "Empezá gratis y escalá cuando tu local crezca. Cambiás de plan cuando quieras.",
+    monthly: "Mensual",
+    yearly: "Anual",
+    yearlyHint: "−2 meses",
+    perMonth: "/mes",
+    forever: "Para siempre",
+    perLocationYearly: "por local · facturado anual",
+    perLocationMonthly: "por local · facturado mensual",
+  },
+  "en-US": {
+    eyebrow: "Plans",
+    heading: "Simple pricing, no surprises",
+    sub: "Every plan starts with a 30-day free trial — card required, we only charge when it ends. Cancel anytime.",
+    monthly: "Monthly",
+    yearly: "Yearly",
+    yearlyHint: "2 months free",
+    perMonth: "/mo",
+    forever: "Forever",
+    perLocationYearly: "per location · billed yearly",
+    perLocationMonthly: "per location · billed monthly",
+  },
+} as const
+
+// El plan "hablá con ventas" enruta al formulario en vez de al signup. Se detecta por
+// la etiqueta del CTA, en los dos idiomas (ventas / sales).
+function isSalesCta(label: string): boolean {
+  const l = label.toLowerCase()
+  return l.includes("ventas") || l.includes("sales")
+}
+
 export function Pricing() {
   const { plans, loading } = usePricingPlans()
+  const locale = useContainer().locale
+  const t = COPY[locale]
   const [period, setPeriod] = useState<BillingPeriod>("monthly")
 
   return (
     <section id="planes" className="border-t border-border bg-muted/30">
       <div className="mx-auto max-w-6xl px-5 py-20 md:py-24">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary">Planes</p>
+          <p className="text-sm font-semibold uppercase tracking-wider text-primary">{t.eyebrow}</p>
           <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-            Precios simples, sin sorpresas
+            {t.heading}
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Empezá gratis y escalá cuando tu local crezca. Cambiás de plan cuando quieras.
-          </p>
+          <p className="mt-4 text-lg text-muted-foreground">{t.sub}</p>
         </Reveal>
 
         <div className="mt-8 flex justify-center">
-          <PeriodToggle period={period} onChange={setPeriod} />
+          <PeriodToggle period={period} onChange={setPeriod} locale={locale} />
         </div>
 
         <div className="mt-12 grid items-stretch gap-6 lg:grid-cols-3">
@@ -36,7 +72,7 @@ export function Pricing() {
             ? Array.from({ length: 3 }).map((_, i) => <PlanSkeleton key={i} />)
             : plans.map((plan, i) => (
                 <Reveal key={plan.id} style={{ transitionDelay: `${i * 80}ms` }} className="h-full">
-                  <PlanCard plan={plan} period={period} />
+                  <PlanCard plan={plan} period={period} locale={locale} />
                 </Reveal>
               ))}
         </div>
@@ -48,10 +84,13 @@ export function Pricing() {
 function PeriodToggle({
   period,
   onChange,
+  locale,
 }: {
   period: BillingPeriod
   onChange: (p: BillingPeriod) => void
+  locale: Locale
 }) {
+  const t = COPY[locale]
   return (
     <div className="inline-flex items-center rounded-full border border-border bg-card p-1">
       {(["monthly", "yearly"] as const).map((value) => (
@@ -66,10 +105,10 @@ function PeriodToggle({
               : "text-muted-foreground hover:text-foreground",
           )}
         >
-          {value === "monthly" ? "Mensual" : "Anual"}
+          {value === "monthly" ? t.monthly : t.yearly}
           {value === "yearly" ? (
             <span className={cn("ml-1.5 text-xs", period === value ? "opacity-80" : "text-primary")}>
-              −2 meses
+              {t.yearlyHint}
             </span>
           ) : null}
         </button>
@@ -78,10 +117,11 @@ function PeriodToggle({
   )
 }
 
-function PlanCard({ plan, period }: { plan: Plan; period: BillingPeriod }) {
+function PlanCard({ plan, period, locale }: { plan: Plan; period: BillingPeriod; locale: Locale }) {
   const { register } = useAuthLinks()
+  const t = COPY[locale]
   const price = priceFor(plan, period)
-  const isSales = plan.ctaLabel.toLowerCase().includes("ventas")
+  const isSales = isSalesCta(plan.ctaLabel)
   const href = isSales ? "#contacto" : register
   const isFree = price.amount === 0
 
@@ -106,16 +146,16 @@ function PlanCard({ plan, period }: { plan: Plan; period: BillingPeriod }) {
 
       <div className="mt-5 flex items-baseline gap-1">
         <span className="font-display text-4xl font-bold tracking-tight tabular-nums">
-          {formatMoney(price)}
+          {formatMoney(price, locale)}
         </span>
-        {!isFree ? <span className="text-sm text-muted-foreground">/mes</span> : null}
+        {!isFree ? <span className="text-sm text-muted-foreground">{t.perMonth}</span> : null}
       </div>
       <p className="mt-1 h-5 text-xs text-muted-foreground">
         {isFree
-          ? "Para siempre"
+          ? t.forever
           : period === "yearly"
-            ? "por local · facturado anual"
-            : "por local · facturado mensual"}
+            ? t.perLocationYearly
+            : t.perLocationMonthly}
       </p>
 
       <a

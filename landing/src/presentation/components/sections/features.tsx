@@ -1,21 +1,33 @@
 import { useLandingContent } from "@/presentation/hooks/use-landing-content"
 import { FEATURE_ICONS } from "@/presentation/lib/feature-icons"
 import { Reveal } from "@/presentation/components/ui/reveal"
+import { useContainer } from "@/presentation/providers/container-provider"
+
+const COPY = {
+  "es-AR": {
+    eyebrow: "Producto",
+    heading: "Una sola herramienta para operar todo el local",
+    sub: "Desde que el mozo toma el pedido hasta que cobrás y facturás. Todo conectado, en tiempo real.",
+  },
+  "en-US": {
+    eyebrow: "Product",
+    heading: "One tool to run the whole restaurant",
+    sub: "From the moment your server takes the order to the moment you charge and file tax. All connected, in real time.",
+  },
+} as const
 
 export function Features() {
   const { features } = useLandingContent()
+  const t = COPY[useContainer().locale]
 
   return (
     <section id="producto" className="mx-auto max-w-6xl px-5 py-20 md:py-24">
       <Reveal className="mx-auto max-w-2xl text-center">
-        <p className="text-sm font-semibold uppercase tracking-wider text-primary">Producto</p>
+        <p className="text-sm font-semibold uppercase tracking-wider text-primary">{t.eyebrow}</p>
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-          Una sola herramienta para operar todo el local
+          {t.heading}
         </h2>
-        <p className="mt-4 text-lg text-muted-foreground">
-          Desde que el mozo toma el pedido hasta que cobrás y facturás. Todo conectado, en tiempo
-          real.
-        </p>
+        <p className="mt-4 text-lg text-muted-foreground">{t.sub}</p>
       </Reveal>
 
       <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

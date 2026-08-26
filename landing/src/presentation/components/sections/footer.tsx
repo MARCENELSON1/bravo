@@ -1,33 +1,70 @@
 import { useAuthLinks } from "@/presentation/hooks/use-auth-links"
 import { WellnodLogo } from "@/presentation/components/brand/wellnod-mark"
+import { useContainer } from "@/presentation/providers/container-provider"
 
 const YEAR = 2026
 
+const COPY = {
+  "es-AR": {
+    tagline: "El cerebro de tu local: comandas, cobros y tu copiloto en español.",
+    product: "Producto",
+    company: "Empresa",
+    legal: "Legal",
+    functions: "Funciones",
+    plans: "Planes",
+    faq: "Preguntas",
+    contact: "Contacto",
+    login: "Iniciar sesión",
+    register: "Empezá gratis",
+    terms: "Términos",
+    privacy: "Privacidad",
+    rights: `© ${YEAR} Wellnod. Todos los derechos reservados.`,
+    madeIn: "Hecho en Argentina 🧉",
+  },
+  "en-US": {
+    tagline: "Your restaurant's brain: orders, payments, and your copilot in English.",
+    product: "Product",
+    company: "Company",
+    legal: "Legal",
+    functions: "Features",
+    plans: "Plans",
+    faq: "FAQ",
+    contact: "Contact",
+    login: "Log in",
+    register: "Start free trial",
+    terms: "Terms",
+    privacy: "Privacy",
+    rights: `© ${YEAR} Wellnod. All rights reserved.`,
+    madeIn: "Built for US restaurants 🇺🇸",
+  },
+} as const
+
 export function Footer() {
   const { login, register } = useAuthLinks()
+  const t = COPY[useContainer().locale]
 
   const columns = [
     {
-      title: "Producto",
+      title: t.product,
       links: [
-        { label: "Funciones", href: "#producto" },
-        { label: "Planes", href: "#planes" },
-        { label: "Preguntas", href: "#preguntas" },
+        { label: t.functions, href: "#producto" },
+        { label: t.plans, href: "#planes" },
+        { label: t.faq, href: "#preguntas" },
       ],
     },
     {
-      title: "Empresa",
+      title: t.company,
       links: [
-        { label: "Contacto", href: "#contacto" },
-        { label: "Iniciar sesión", href: login },
-        { label: "Empezá gratis", href: register },
+        { label: t.contact, href: "#contacto" },
+        { label: t.login, href: login },
+        { label: t.register, href: register },
       ],
     },
     {
-      title: "Legal",
+      title: t.legal,
       links: [
-        { label: "Términos", href: "#" },
-        { label: "Privacidad", href: "#" },
+        { label: t.terms, href: "#" },
+        { label: t.privacy, href: "#" },
       ],
     },
   ]
@@ -37,9 +74,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div className="lg:col-span-1">
           <WellnodLogo />
-          <p className="mt-4 max-w-xs text-sm text-muted-foreground">
-            El cerebro de tu local: comandas, cobros y tu copiloto en español.
-          </p>
+          <p className="mt-4 max-w-xs text-sm text-muted-foreground">{t.tagline}</p>
         </div>
 
         {columns.map((column) => (
@@ -63,8 +98,8 @@ export function Footer() {
 
       <div className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-5 py-6 text-sm text-muted-foreground sm:flex-row">
-          <p>© {YEAR} Wellnod. Todos los derechos reservados.</p>
-          <p>Hecho en Argentina 🧉</p>
+          <p>{t.rights}</p>
+          <p>{t.madeIn}</p>
         </div>
       </div>
     </footer>

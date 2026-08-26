@@ -1,18 +1,25 @@
 import { useLandingContent } from "@/presentation/hooks/use-landing-content"
 import { Reveal } from "@/presentation/components/ui/reveal"
+import { useContainer } from "@/presentation/providers/container-provider"
+
+const COPY = {
+  "es-AR": { eyebrow: "Cómo funciona", heading: "De la mesa al reporte, en cuatro pasos" },
+  "en-US": { eyebrow: "How it works", heading: "From table to report, in four steps" },
+} as const
 
 export function HowItWorks() {
   const { steps } = useLandingContent()
+  const t = COPY[useContainer().locale]
 
   return (
     <section id="como-funciona" className="border-t border-border bg-muted/30">
       <div className="mx-auto max-w-6xl px-5 py-20 md:py-24">
         <Reveal className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-primary">
-            Cómo funciona
+            {t.eyebrow}
           </p>
           <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-            De la mesa al reporte, en cuatro pasos
+            {t.heading}
           </h2>
         </Reveal>
 

@@ -3,18 +3,25 @@ import { ChevronDown } from "lucide-react"
 
 import { useLandingContent } from "@/presentation/hooks/use-landing-content"
 import { Reveal } from "@/presentation/components/ui/reveal"
+import { useContainer } from "@/presentation/providers/container-provider"
 import { cn } from "@/presentation/lib/cn"
+
+const COPY = {
+  "es-AR": { eyebrow: "Preguntas", heading: "Lo que se suele preguntar" },
+  "en-US": { eyebrow: "FAQ", heading: "Questions we get a lot" },
+} as const
 
 export function Faq() {
   const { faqs } = useLandingContent()
+  const t = COPY[useContainer().locale]
   const [openId, setOpenId] = useState<string | null>(null)
 
   return (
     <section id="preguntas" className="mx-auto max-w-3xl px-5 py-20 md:py-24">
       <Reveal className="text-center">
-        <p className="text-sm font-semibold uppercase tracking-wider text-primary">Preguntas</p>
+        <p className="text-sm font-semibold uppercase tracking-wider text-primary">{t.eyebrow}</p>
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-          Lo que se suele preguntar
+          {t.heading}
         </h2>
       </Reveal>
 
