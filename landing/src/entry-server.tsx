@@ -10,12 +10,13 @@ import { StrictMode } from "react"
 import { renderToString } from "react-dom/server"
 
 import { App } from "@/App"
+import type { Region } from "@/domain/value-objects/region"
 import { createContainer } from "@/infrastructure/di/container"
 import { ContainerProvider } from "@/presentation/providers/container-provider"
 import { buildStructuredData } from "@/infrastructure/seo/structured-data"
 
-export function render(): string {
-  const container = createContainer()
+export function render(region: Region = "AR"): string {
+  const container = createContainer(region)
   return renderToString(
     <StrictMode>
       <ContainerProvider container={container}>
@@ -26,7 +27,7 @@ export function render(): string {
 }
 
 /** JSON-LD derivado de los MISMOS repositorios que pintan la pantalla. */
-export async function structuredData(): Promise<string> {
-  const container = createContainer()
+export async function structuredData(region: Region = "AR"): Promise<string> {
+  const container = createContainer(region)
   return buildStructuredData(container)
 }

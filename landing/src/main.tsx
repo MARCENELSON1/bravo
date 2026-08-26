@@ -3,12 +3,15 @@ import { createRoot, hydrateRoot } from "react-dom/client"
 
 import "@/index.css"
 import { App } from "@/App"
+import { regionFromLang } from "@/domain/value-objects/region"
 import { createContainer } from "@/infrastructure/di/container"
 import { ContainerProvider } from "@/presentation/providers/container-provider"
 
 // Composition root en el borde de la app: se construye el contenedor una sola vez
-// y se inyecta hacia adentro vía contexto.
-const container = createContainer()
+// y se inyecta hacia adentro vía contexto. La región se deriva del <html lang> que
+// sirvió el prerender (es → AR, en → INTL), para hidratar sin mismatch de markup.
+const region = regionFromLang(document.documentElement.lang)
+const container = createContainer(region)
 
 const root = document.getElementById("root")
 if (!root) throw new Error("No se encontró el elemento #root")
