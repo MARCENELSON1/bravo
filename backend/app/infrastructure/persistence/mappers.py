@@ -7,6 +7,14 @@ clobbers the DB-managed timestamp and inserts use the column ``server_default``.
 from __future__ import annotations
 
 from app.domain.advisor.entities import AdvisorSettings
+from app.domain.billing.entities import Plan, Subscription
+from app.domain.billing.value_objects import (
+    BillingInterval,
+    BillingRail,
+    BillingRegion,
+    PlanTier,
+    SubscriptionStatus,
+)
 from app.domain.cashier.entities import CashCount, CashMovement, CashSession
 from app.domain.cashier.value_objects import CashMovementKind, CashSessionStatus
 from app.domain.customer.entities import Customer
@@ -73,6 +81,7 @@ from app.infrastructure.persistence.models import (
     PasswordResetTokenORM,
     PaymentCredentialORM,
     PaymentORM,
+    PlanORM,
     PreparationItemORM,
     PreparationORM,
     ProductORM,
@@ -83,6 +92,7 @@ from app.infrastructure.persistence.models import (
     SectorORM,
     ShiftORM,
     StockMovementORM,
+    SubscriptionORM,
     SupplierORM,
     TableORM,
     TableSessionORM,
@@ -690,6 +700,61 @@ def taxjar_credential_to_orm(credential: TaxJarCredential) -> TaxJarCredentialOR
         tenant_id=credential.tenant_id,
         api_token=credential.api_token,
         sandbox=credential.sandbox,
+    )
+
+
+def plan_to_domain(row: PlanORM) -> Plan:
+    return Plan(
+        id=row.id,
+        tier=PlanTier(row.tier),
+        region=BillingRegion(row.region),
+        price=Money(row.price_amount, row.currency),
+        interval=BillingInterval(row.interval),
+        features=frozenset(row.features or []),
+        active=row.active,
+    )
+
+
+def plan_to_orm(plan: Plan) -> PlanORM:
+    return PlanORM(
+        id=plan.id,
+        tier=plan.tier.value,
+        region=plan.region.value,
+        price_amount=plan.price.amount,
+        currency=plan.price.currency,
+        interval=plan.interval.value,
+        features=list(plan.features),
+        active=plan.active,
+    )
+
+
+def subscription_to_domain(row: SubscriptionORM) -> Subscription:
+    return Subscription(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        plan_id=row.plan_id,
+        region=BillingRegion(row.region),
+        rail=BillingRail(row.rail),
+        status=SubscriptionStatus(row.status),
+        external_ref=row.external_ref,
+        trial_end=row.trial_end,
+        current_period_end=row.current_period_end,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+def subscription_to_orm(subscription: Subscription) -> SubscriptionORM:
+    return SubscriptionORM(
+        id=subscription.id,
+        tenant_id=subscription.tenant_id,
+        plan_id=subscription.plan_id,
+        region=subscription.region.value,
+        rail=subscription.rail.value,
+        status=subscription.status.value,
+        external_ref=subscription.external_ref,
+        trial_end=subscription.trial_end,
+        current_period_end=subscription.current_period_end,
     )
 
 

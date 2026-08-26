@@ -224,6 +224,10 @@ from app.infrastructure.persistence.analytics_repo import (
     SqlAlchemyRevenueReadModel,
 )
 from app.infrastructure.persistence.audit_repo import SqlAlchemyAuditRepository
+from app.infrastructure.persistence.billing_repo import (
+    SqlAlchemyPlanRepository,
+    SqlAlchemySubscriptionRepository,
+)
 from app.infrastructure.persistence.cash_movement_repo import (
     SqlAlchemyCashMovementRepository,
 )
@@ -810,6 +814,13 @@ class Container(containers.DeclarativeContainer):
     # transición a PAID solo si se cobró tax (>0) → vacío en AR (paridad).
     tax_report_ledger = providers.Factory(
         SqlAlchemyTaxReportLedger, session_factory=db.provided.session
+    )
+    # Billing del SaaS (Flujo A): catálogo de planes + suscripciones por tenant.
+    plan_repository = providers.Factory(
+        SqlAlchemyPlanRepository, session_factory=db.provided.session
+    )
+    subscription_repository = providers.Factory(
+        SqlAlchemySubscriptionRepository, session_factory=db.provided.session
     )
     # --- Fase 14: caja / arqueo Z ---
     cash_session_repository = providers.Factory(

@@ -529,6 +529,57 @@ class TaxJarCredentialORM(Base):
     )
 
 
+class PlanORM(Base):
+    """Catálogo de planes del SaaS (Flujo A). GLOBAL, no tenant-scoped (no lleva
+    RLS): el mismo tier existe una vez por región (BASIC/AR en ARS, BASIC/INTL en
+    USD). Lo lee cualquiera (pricing); lo escribe el admin (seed)."""
+
+    __tablename__ = "plans"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tier: Mapped[str] = mapped_column(String(20), index=True)
+    region: Mapped[str] = mapped_column(String(10), index=True)
+    price_amount: Mapped[int] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(String(3))
+    interval: Mapped[str] = mapped_column(String(10), server_default="MONTH")
+    features: Mapped[list[str]] = mapped_column(JSON, default=list)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class SubscriptionORM(Base):
+    """Suscripción de un tenant a un plan (Flujo A). Una por tenant. Datos de
+    plata → RLS. ``external_ref`` = id en la pasarela (Stripe sub_… / MP preapproval)."""
+
+    __tablename__ = "subscriptions"
+    __table_args__ = (UniqueConstraint("tenant_id", name="uq_subscriptions_tenant"),)
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    plan_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
+    region: Mapped[str] = mapped_column(String(10))
+    rail: Mapped[str] = mapped_column(String(20))
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    external_ref: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    trial_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    current_period_end: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
 # --- Fase 5: fichaje (shifts, tenant-scoped) -------------------------------
 
 

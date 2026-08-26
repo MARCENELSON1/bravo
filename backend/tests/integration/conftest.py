@@ -43,6 +43,8 @@ _TABLES = [
     "tax_credentials",
     "taxjar_credentials",
     "tax_reports",
+    "subscriptions",
+    "plans",
     "payment_credentials",
     "payments",
     "order_items",
