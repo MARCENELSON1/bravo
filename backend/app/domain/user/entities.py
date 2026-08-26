@@ -24,6 +24,9 @@ class User:
     password_hash: str | None = None
     email_verified: bool = False
     active: bool = True
+    # Super-admin de plataforma (transversal a los tenants): puede gestionar el
+    # catálogo global de planes del SaaS. Se prende con el script de bootstrap.
+    platform_admin: bool = False
     failed_attempts: int = 0
     locked_until: datetime | None = None
     created_at: datetime | None = None

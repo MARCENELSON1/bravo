@@ -94,6 +94,9 @@ class UserORM(Base):
     role: Mapped[str] = mapped_column(String(20))
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    platform_admin: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
     failed_attempts: Mapped[int] = mapped_column(Integer, default=0)
     locked_until: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

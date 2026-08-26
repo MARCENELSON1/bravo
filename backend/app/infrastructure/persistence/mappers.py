@@ -158,6 +158,7 @@ def user_to_domain(row: UserORM) -> User:
         password_hash=row.password_hash,
         email_verified=row.email_verified,
         active=row.active,
+        platform_admin=row.platform_admin,
         failed_attempts=row.failed_attempts,
         locked_until=row.locked_until,
         created_at=row.created_at,
@@ -175,6 +176,7 @@ def user_to_orm(user: User) -> UserORM:
         password_hash=user.password_hash,
         email_verified=user.email_verified,
         active=user.active,
+        platform_admin=user.platform_admin,
         failed_attempts=user.failed_attempts,
         locked_until=user.locked_until,
     )
