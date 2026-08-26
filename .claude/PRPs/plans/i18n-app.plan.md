@@ -1,6 +1,6 @@
 # PRP — i18n de la app (`app.wellnod.com`) — español ↔ inglés
 
-> **Estado:** ✅ **COMPLETA** (P0–P3). Creado 2026-08-26. **P0 (`a873fb3`) + P1 (`35c1822`) + P2 (`d98a030`) + P3-A (`e4e43bd`) + P3-B (`72c6ac6`) en `main`.** Las 54 pantallas de `app.wellnod.com` son bilingües ES/EN. Único pendiente: la **pasada de formato** (`es-AR` de fechas/horas/números → locale activo).
+> **Estado:** ✅ **COMPLETA al 100%** (P0–P3 + formato + revisión visual). Creado 2026-08-26. Commits en `main`: P0 `a873fb3` · P1 `35c1822` · P2 `d98a030` · P3-A `e4e43bd` · P3-B `72c6ac6` · formato fechas/horas `b2af8c3` · roles `76a97bb` · formato números `c8ebe97`. Las 54 pantallas de `app.wellnod.com` son bilingües ES/EN, **incluidos fechas, horas, números y roles** (locale-aware vía `lib/format.ts`); los montos van por moneda (`lib/money.ts`). Verificado en navegador (EN). No quedan pendientes de i18n.
 > **Objetivo:** que un restaurante de EE.UU. use **toda la app en inglés** (no solo el login). Hoy la landing EN manda al usuario a una app en español → rompe el funnel US.
 > **Relacionado:** `landing-internacional.plan.md` (la landing ya es bilingüe + geo), `plan-funnel-billing.md`.
 
@@ -19,7 +19,9 @@
 
 ## Pendientes (no bloqueantes)
 
-1. **Pasada de formato — FECHAS/HORAS ✅** (`b2af8c3`): helper `lib/format.ts` → `dateLocale()` (es→`es-AR`, en→`en-US`, default es-AR=paridad); reemplaza el locale fijo en todos los formatters de fecha/hora (timeclock, reservations, topbar-clock, finance, recent-movements, pricing-card, order-page ticket, subscription-page). Un user EN ya ve 12h AM/PM + MM/DD. **Queda (menor): NÚMEROS sin moneda** — `formatQty` (kg/g), `formatBps`/`formatPct` (%), abreviaciones `$XM`, ratio `N×` siguen en es-AR (coma decimal). Son funciones puras con tests que asertan es-AR; para migrarlas hay que hacerlas locale-aware + volver sus tests deterministas por idioma. Los **montos** ya van por moneda (`lib/money`, correcto).
+1. **Pasada de formato ✅ COMPLETA:** `lib/format.ts` expone `dateLocale()` + `numberLocale()` (es→`es-AR`, en→`en-US`, default es-AR=paridad). **Fechas/horas** (`b2af8c3`): timeclock, reservations, topbar-clock, finance, recent-movements, pricing-card, order-page ticket, subscription-page. **Números** (`c8ebe97`): `formatQty`, `formatBps`, `formatPct`, abreviación `$XM`, ratio `N×`. Los 3 formatters testeados fijan `es` en un `beforeAll`. Un user EN ve 12h AM/PM, MM/DD y `1.5 kg`/`10.7%`. Montos por moneda (`lib/money`, correcto).
+2. **Roles ✅** (`76a97bb`, hallazgo de la revisión visual): `ROLE_LABELS` → `common.roles.*` (Owner/Manager/Server/…); borrado el lib + un placeholder muerto (`identity/home-page.tsx`).
+3. **Revisión visual ✅** (spot-check EN con `VITE_AUTH_BYPASS`): Home + Finance renderizan en inglés con fecha/hora US; el único gap fue roles (fixado).
 2. **Constantes de lib vivas solo para sus tests** (dead-for-UI, inofensivas): `pricing.WEEKDAY_LABELS`, `lib/advisor.BUCKET_LABELS`, `lib/timeclock.SHIFT_SOURCE_LABELS` (movido), `lib/floor-session` labels. Si se limpian, actualizar sus tests.
 3. **Doc-types AFIP/ARCA** (`lib/invoice-labels`) quedan en ES a propósito (concepto fiscal AR; un restaurante US usa recibos de sales tax).
 4. **Idioma adentro de la app:** hoy manda navegador + toggle persistido. Falta (opcional) fijarlo por `tenant.locale` al loguearse.
