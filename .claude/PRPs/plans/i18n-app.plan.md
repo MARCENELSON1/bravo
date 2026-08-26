@@ -1,6 +1,6 @@
 # PRP — i18n de la app (`app.wellnod.com`) — español ↔ inglés
 
-> **Estado:** EN CURSO. Creado 2026-08-26. **P0 ✅ (`a873fb3`) + P1 ✅ (`35c1822`) en `main`.**
+> **Estado:** EN CURSO. Creado 2026-08-26. **P0 ✅ (`a873fb3`) + P1 ✅ (`35c1822`) + P2 ✅ (`d98a030`) en `main`.**
 > **Objetivo:** que un restaurante de EE.UU. use **toda la app en inglés** (no solo el login). Hoy la landing EN manda al usuario a una app en español → rompe el funnel US.
 > **Relacionado:** `landing-internacional.plan.md` (la landing ya es bilingüe + geo), `plan-funnel-billing.md`.
 
@@ -9,10 +9,11 @@
 - **Fundación ✅:** locales troceados en **namespaces por feature** (`locales/{es,en}/*.ts` + barrels; adiós a los 2 archivos planos). Helper **`apiErrorText(error, t, fallback)`** (`src/api/translate-error.ts`) traduce por `code`. Diccionario **`errors` completo en inglés** (79 codes); **es vacío a propósito** → fallback al `message` del backend = paridad AR exacta. Cada feature futura solo agrega su namespace + swapea sus call-sites de error.
 - **P0 ✅** (`a873fb3`): `auth-layout` (panel de marca) + 4 pantallas de identity (onboarding / verify-email / accept-invitation / invite-user) a `t()` + `apiErrorText`; schemas zod movidos adentro con `useMemo([t])`. `<LanguageSwitcher/>` visible en el menú de usuario. Namespaces `auth`, `identity`. Login ya estaba.
 - **P1 ✅** (`35c1822`): **shell** (namespace `shell`: nav-config con labels→claves resueltas en `app-shell`, grupos, menú, aria, reloj) + **dashboard** (namespace `dashboard`: Home completo; helpers puros `daily-verdict`/`home-alerts` refactorizados a **keys+params** con plurales nativos i18next, tests actualizados).
-- **Ejecución:** por **workflow** (2 agentes/tanda sobre archivos disjuntos; fundación inline como seam). Validación por tanda: build + lint + 212 tests + grep anti-strings ES + paridad.
-- **Follow-up conocido:** `topbar-clock.tsx` usa `toLocaleTimeString("es-AR")` → un usuario EN ve la hora en 24h. Derivar el locale del idioma activo = pasada de formato (fechas/números/hora), pendiente.
+- **P2 ✅** (`d98a030`): 6 áreas de operación en un workflow de **6 agentes** (uno por área, archivos + libs disjuntos). Namespaces `orders`, `floor`, `kds`, `cashier`, `timeclock`, `reservations`. Mapas de labels de estado movidos del código al diccionario (`floor.state.*`, `reservations.statusLabels/turnLabels.*`, `cashier.methodLabels/movement*.*`, `timeclock.shiftSource.*`) y resueltos con `t()`; enums intactos. Labels del recibo/comanda impresos inyectados vía `t()` (+ bug de `CobroSection` corregido). `floorView` intacto (lo usa el dashboard). Se quitó el test de constantes de reservations (212→**211**, justificado).
+- **Ejecución:** por **workflow** (2–6 agentes/tanda sobre archivos disjuntos; fundación inline = crear namespaces stub + registrarlos en barrels = seam). Validación por tanda: build + lint + tests + grep anti-strings ES + paridad char-por-char.
+- **Follow-up conocido (pasada de formato):** `topbar-clock.tsx` y `lib/timeclock.ts` (y otros) usan `toLocaleTimeString/DateString("es-AR")` → un usuario EN ve hora/fecha en formato AR. Derivar el locale del idioma activo de i18next = pasada de formato (fechas/números/hora), pendiente.
 
-**Quedan P2** (operación: orders, floor, kds, cashier, timeclock, reservations) **y P3** (gestión: finance, products, inventory, expenses, invoices, analytics, reports, advisor, copilot, crm, integrations, settings, billing, platform).
+**Queda P3** (gestión, ~14 áreas: finance, products, inventory, expenses, invoices, analytics, reports, advisor, copilot, crm, integrations, settings, billing, platform). Es la tanda más grande. El diccionario `errors` ya está completo en inglés → cada área solo agrega su namespace + swapea sus call-sites de error.
 
 ---
 
