@@ -3,7 +3,7 @@ import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import type { FinanceKpiDTO, FinanceOverviewDTO } from "@/api/types-operations"
-import { dateLocale } from "@/lib/format"
+import { dateLocale, numberLocale } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/ui/glass-card"
 import { GradientHeading } from "@/components/ui/gradient-heading"
@@ -45,7 +45,7 @@ function pct(bps: number): string {
 function kpiValue(k: FinanceKpiDTO, currency: string): string {
   if (k.kind === "ratio") return pct(k.value)
   if (k.kind === "turnover")
-    return `${(k.value / 100).toLocaleString("es-AR", { maximumFractionDigits: 1 })}×`
+    return `${(k.value / 100).toLocaleString(numberLocale(), { maximumFractionDigits: 1 })}×`
   return formatMoney(k.value, currency)
 }
 

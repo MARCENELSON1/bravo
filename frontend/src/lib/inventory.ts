@@ -1,4 +1,5 @@
 import type { UnitOfMeasure } from "@/api/types-inventory"
+import { numberLocale } from "@/lib/format"
 
 // Quantities are stored as integers in milésimas of the base unit.
 export const QUANTITY_SCALE = 1000
@@ -42,7 +43,7 @@ export function recipeUnitOptions(
 export function formatQty(qty: number, unit: string): string {
   const value = qty / QUANTITY_SCALE
   const label = UNIT_LABELS[unit as UnitOfMeasure] ?? unit
-  return `${value.toLocaleString("es-AR", { maximumFractionDigits: 3 })} ${label}`
+  return `${value.toLocaleString(numberLocale(), { maximumFractionDigits: 3 })} ${label}`
 }
 
 // A decimal qty typed by the user (e.g. "1.5") → milésimas integer.
@@ -52,7 +53,7 @@ export function toMilesimas(value: string): number {
 
 // Food cost ratio in basis points → percent label (e.g. 1067 → "10,7%").
 export function formatBps(bps: number): string {
-  return `${(bps / 100).toLocaleString("es-AR", { maximumFractionDigits: 1 })}%`
+  return `${(bps / 100).toLocaleString(numberLocale(), { maximumFractionDigits: 1 })}%`
 }
 
 // Yield (rendimiento/merma) is stored in basis points: 10000 = 100% = no loss.

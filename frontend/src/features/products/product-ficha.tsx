@@ -2,6 +2,7 @@ import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import type { ProductDTO } from "@/api/types-operations"
+import { numberLocale } from "@/lib/format"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -187,7 +188,7 @@ function FichaBody({ product, period }: { product: ProductDTO; period: RangeWind
                 (prep ? t("products.preparationLabel", { name: prep.name }) : "—")
               const qtyLabel = ing
                 ? formatQty(item.qty, ing.recipe_unit ?? ing.unit)
-                : `${(item.qty / 1000).toLocaleString("es-AR", { maximumFractionDigits: 3 })} ${
+                : `${(item.qty / 1000).toLocaleString(numberLocale(), { maximumFractionDigits: 3 })} ${
                     prep ? UNIT_LABELS.UNIT : ""
                   }`
               return (

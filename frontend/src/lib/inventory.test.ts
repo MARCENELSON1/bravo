@@ -1,6 +1,13 @@
-import { describe, expect, it } from "vitest"
+import { beforeAll, describe, expect, it } from "vitest"
 
+import i18n from "@/i18n"
 import { formatBps, formatQty, toMilesimas } from "@/lib/inventory"
+
+// formatQty/formatBps siguen el idioma activo (numberLocale). Fijamos español
+// para asertar el formato es-AR ("1,5", "10,7%") de forma determinista.
+beforeAll(async () => {
+  await i18n.changeLanguage("es")
+})
 
 describe("inventory formatting", () => {
   it("formats milésimas into a human quantity with the unit label", () => {

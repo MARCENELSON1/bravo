@@ -1,6 +1,8 @@
 import { useState } from "react"
 import type { TFunction } from "i18next"
 import { ArrowRight, Plus } from "lucide-react"
+
+import { numberLocale } from "@/lib/format"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 
@@ -55,7 +57,7 @@ function sevenDaysAgoIso(): string {
 function compact(amountMinor: number): string {
   const pesos = amountMinor / 100
   if (pesos >= 1_000_000)
-    return `$${(pesos / 1_000_000).toLocaleString("es-AR", { maximumFractionDigits: 1 })}M`
+    return `$${(pesos / 1_000_000).toLocaleString(numberLocale(), { maximumFractionDigits: 1 })}M`
   if (pesos >= 1_000) return `$${Math.round(pesos / 1_000)}k`
   return `$${Math.round(pesos)}`
 }

@@ -1,6 +1,13 @@
-import { describe, expect, it } from "vitest"
+import { beforeAll, describe, expect, it } from "vitest"
 
+import i18n from "@/i18n"
 import { BUCKET_LABELS, BUCKET_ORDER, formatPct, SEVERITY_VARIANT } from "@/lib/advisor"
+
+// formatPct sigue el idioma activo (numberLocale). Fijamos español para asertar
+// el formato es-AR ("10,7%") de forma determinista.
+beforeAll(async () => {
+  await i18n.changeLanguage("es")
+})
 
 describe("advisor helpers", () => {
   it("orders and labels the buckets (Actuá hoy → Bien hecho)", () => {
