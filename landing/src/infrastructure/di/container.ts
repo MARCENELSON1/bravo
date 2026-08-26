@@ -7,7 +7,6 @@ import { HttpLeadGateway } from "@/infrastructure/gateways/http-lead-gateway"
 import { EnStaticContentRepository } from "@/infrastructure/repositories/en-static-content-repository"
 import { HttpPlanRepository } from "@/infrastructure/repositories/http-plan-repository"
 import { StaticContentRepository } from "@/infrastructure/repositories/static-content-repository"
-import { StaticPlanRepository } from "@/infrastructure/repositories/static-plan-repository"
 
 // Composition root: el ÚNICO lugar que conoce las implementaciones concretas.
 // Acá se elige qué adapter cumple cada puerto por región y se inyectan por
@@ -27,12 +26,9 @@ export function createContainer(region: Region = "AR"): Container {
   const config = loadConfig()
 
   // Adapters (infrastructure) elegidos por región → cumplen los puertos del dominio.
-  // AR: repos estáticos (el sitio vivo, intacto). INTL: contenido EN + precio del
-  // catálogo del backend (/public/plans, editable desde el panel, no hardcodeado).
-  const planRepository =
-    region === "INTL"
-      ? new HttpPlanRepository(config.apiUrl, region)
-      : new StaticPlanRepository()
+  // El PRECIO sale del catálogo del backend (/public/plans, editable desde el panel,
+  // no hardcodeado) para AR y para INTL. El CONTENIDO cambia por idioma.
+  const planRepository = new HttpPlanRepository(config.apiUrl, region)
   const contentRepository =
     region === "INTL" ? new EnStaticContentRepository() : new StaticContentRepository()
   const leadGateway = new HttpLeadGateway(config.apiUrl)

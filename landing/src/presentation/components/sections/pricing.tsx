@@ -16,7 +16,7 @@ const COPY = {
   "es-AR": {
     eyebrow: "Planes",
     heading: "Precios simples, sin sorpresas",
-    sub: "Empezá gratis y escalá cuando tu local crezca. Cambiás de plan cuando quieras.",
+    sub: "Todos los planes arrancan con 30 días de prueba — con tarjeta, se cobra recién al terminar. Cancelás cuando quieras.",
     monthly: "Mensual",
     yearly: "Anual",
     yearlyHint: "−2 meses",

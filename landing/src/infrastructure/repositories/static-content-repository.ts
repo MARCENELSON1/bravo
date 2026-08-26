@@ -98,9 +98,9 @@ const FAQS: readonly Faq[] = [
   },
   {
     id: "trial",
-    question: "¿Puedo probarlo gratis?",
+    question: "¿Hay prueba gratis?",
     answer:
-      "Sí. El plan Emprendé es gratis para empezar, y podés pasar a Profesional cuando lo necesites. Sin tarjeta para arrancar.",
+      "Sí, todos los planes arrancan con 30 días de prueba. Te pedimos la tarjeta al inicio y se cobra recién al terminar la prueba. Cancelás antes y no se te cobra nada.",
   },
   {
     id: "multi",
