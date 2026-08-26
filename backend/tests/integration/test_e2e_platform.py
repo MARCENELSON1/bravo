@@ -22,12 +22,16 @@ async def test_platform_plans_crud_gated_by_super_admin(client, admin_engine: As
     tokens = await _onboard_verify_login(http, fake_email, slug="plat", email="o@plat.com")
     h = _auth(tokens)
 
-    # Sin el flag → 403.
+    # Sin el flag → /access dice false y /plans da 403.
+    acc = await http.get("/api/v1/platform/access", headers=h)
+    assert acc.status_code == 200 and acc.json() == {"platform_admin": False}
     denied = await http.get("/api/v1/platform/plans", headers=h)
     assert denied.status_code == 403, denied.text
 
     # Se promueve a super-admin (el token no cambia; el flag se lee de la DB).
     await _make_admin(admin_engine, "o@plat.com")
+    acc2 = await http.get("/api/v1/platform/access", headers=h)
+    assert acc2.json() == {"platform_admin": True}
 
     # Catálogo de features + planes vacíos.
     feats = await http.get("/api/v1/platform/features", headers=h)

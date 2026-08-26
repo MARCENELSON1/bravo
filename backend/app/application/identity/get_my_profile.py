@@ -23,6 +23,7 @@ class MyProfile:
     email: str
     name: str | None
     tenant_name: str
+    platform_admin: bool = False
 
 
 class GetMyProfile:
@@ -51,4 +52,5 @@ class GetMyProfile:
             email=str(user.email),
             name=user.name,
             tenant_name=tenant.name,
+            platform_admin=user.platform_admin,
         )

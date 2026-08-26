@@ -11,18 +11,35 @@ from app.application.billing.platform_use_cases import (
     ListAllPlans,
     SavePlan,
 )
+from app.application.identity.get_my_profile import GetMyProfile
 from app.container import Container
 from app.domain.billing.entities import Plan
 from app.domain.billing.features import FEATURE_CATALOG
 from app.domain.identity.tokens import AccessClaims
+from app.presentation.deps import current_identity
 from app.presentation.rbac import require_platform_admin
 from app.presentation.schemas.platform import (
     FeatureResponse,
+    PlatformAccessResponse,
     PlatformPlanRequest,
     PlatformPlanResponse,
 )
 
 router = APIRouter(prefix="/platform", tags=["platform"])
+
+
+@router.get("/access", response_model=PlatformAccessResponse)
+@inject
+async def get_platform_access(
+    identity: AccessClaims = Depends(current_identity),
+    use_case: GetMyProfile = Depends(Provide[Container.get_my_profile]),
+) -> PlatformAccessResponse:
+    """Cualquier usuario autenticado consulta si es super-admin (para mostrar/ocultar
+    el panel en el frontend). No gateado: devuelve el bool, no 403."""
+    profile = await use_case.execute(
+        tenant_id=identity.tenant_id, user_id=identity.user_id
+    )
+    return PlatformAccessResponse(platform_admin=profile.platform_admin)
 
 
 def _to_response(plan: Plan) -> PlatformPlanResponse:

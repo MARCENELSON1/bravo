@@ -15,6 +15,7 @@ import { InventoryApi } from "@/api/inventory-api"
 import { InvoicesApi } from "@/api/invoices-api"
 import { OrdersApi } from "@/api/orders-api"
 import { PaymentsApi } from "@/api/payments-api"
+import { PlatformApi } from "@/api/platform-api"
 import { ProductsApi } from "@/api/products-api"
 import { RealtimeApi } from "@/api/realtime-api"
 import { ReportsApi } from "@/api/reports-api"
@@ -51,6 +52,7 @@ export function ServicesProvider({
       invoicesApi: new InvoicesApi(http),
       ordersApi: new OrdersApi(http),
       paymentsApi: new PaymentsApi(http),
+      platformApi: new PlatformApi(http),
       productsApi: new ProductsApi(http),
       realtimeApi: new RealtimeApi(http),
       reportsApi: new ReportsApi(http),

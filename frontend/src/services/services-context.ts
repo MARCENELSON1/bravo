@@ -13,6 +13,7 @@ import type { InventoryApi } from "@/api/inventory-api"
 import type { InvoicesApi } from "@/api/invoices-api"
 import type { OrdersApi } from "@/api/orders-api"
 import type { PaymentsApi } from "@/api/payments-api"
+import type { PlatformApi } from "@/api/platform-api"
 import type { ProductsApi } from "@/api/products-api"
 import type { RealtimeApi } from "@/api/realtime-api"
 import type { ReportsApi } from "@/api/reports-api"
@@ -39,6 +40,7 @@ export interface Services {
   invoicesApi: InvoicesApi
   ordersApi: OrdersApi
   paymentsApi: PaymentsApi
+  platformApi: PlatformApi
   productsApi: ProductsApi
   realtimeApi: RealtimeApi
   reportsApi: ReportsApi

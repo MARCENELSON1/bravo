@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom"
 
 import { AppShell } from "@/components/shell/app-shell"
 import { RequireAuth } from "@/auth/require-auth"
+import { RequirePlatformAdmin } from "@/auth/require-platform-admin"
 import { RequireRole } from "@/auth/require-role"
 import { RoleLanding } from "@/auth/role-landing"
 import { AdvisorPage } from "@/features/advisor/advisor-page"
@@ -18,6 +19,7 @@ import { AcceptInvitationPage } from "@/features/identity/accept-invitation-page
 import { InviteUserPage } from "@/features/identity/invite-user-page"
 import { LoginPage } from "@/features/identity/login-page"
 import { OnboardingPage } from "@/features/identity/onboarding-page"
+import { PlatformPage } from "@/features/platform/platform-page"
 import { VerifyEmailPage } from "@/features/identity/verify-email-page"
 import { ExpensesPage } from "@/features/expenses/expenses-page"
 import { IntegrationsPage } from "@/features/integrations/integrations-page"
@@ -48,6 +50,11 @@ export const router = createBrowserRouter([
     children: [
       // Full-screen (sin el shell/sidebar)
       { path: "/app/config", element: <ConfigPage /> },
+      // Panel de plataforma (super-admin, gateado por el flag platform_admin).
+      {
+        element: <RequirePlatformAdmin />,
+        children: [{ path: "/app/platform", element: <PlatformPage /> }],
+      },
       {
         element: <AppShell />,
         children: [

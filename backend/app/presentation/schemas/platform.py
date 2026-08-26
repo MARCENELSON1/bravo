@@ -5,6 +5,10 @@ from pydantic import BaseModel, Field
 from app.domain.billing.value_objects import BillingInterval, BillingRegion, PlanTier
 
 
+class PlatformAccessResponse(BaseModel):
+    platform_admin: bool
+
+
 class FeatureResponse(BaseModel):
     key: str
     label: str
