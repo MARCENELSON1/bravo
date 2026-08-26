@@ -10,13 +10,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  INVOICE_STATUS_LABELS,
-  invoiceNumber,
-  invoiceTypeLabel,
-} from "@/lib/invoice-labels"
+import { invoiceNumber, invoiceTypeLabel } from "@/lib/invoice-labels"
 import { formatMoney } from "@/lib/money"
 import { useInvoices } from "@/hooks/use-invoices"
+import { useTranslation } from "react-i18next"
 
 const STATUS_VARIANT: Record<InvoiceStatus, "default" | "secondary" | "destructive"> = {
   AUTHORIZED: "default",
@@ -25,16 +22,17 @@ const STATUS_VARIANT: Record<InvoiceStatus, "default" | "secondary" | "destructi
 }
 
 export function InvoicesPage() {
+  const { t } = useTranslation()
   const invoices = useInvoices()
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-col gap-1">
         <GradientHeading size="md" weight="bold">
-          Comprobantes
+          {t("invoices.title")}
         </GradientHeading>
         <p className="text-sm text-muted-foreground">
-          Facturas electrónicas emitidas (ARCA). El CAE es la autorización fiscal.
+          {t("invoices.subtitle")}
         </p>
       </header>
 
@@ -47,11 +45,11 @@ export function InvoicesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Comprobante</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>CAE</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Total</TableHead>
+                <TableHead>{t("invoices.columns.invoice")}</TableHead>
+                <TableHead>{t("invoices.columns.type")}</TableHead>
+                <TableHead>{t("invoices.columns.cae")}</TableHead>
+                <TableHead>{t("invoices.columns.status")}</TableHead>
+                <TableHead className="text-right">{t("invoices.columns.total")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -66,12 +64,14 @@ export function InvoicesPage() {
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {inv.cae ?? "—"}
                     {inv.cae_expiration ? (
-                      <span className="block">vto. {inv.cae_expiration}</span>
+                      <span className="block">
+                        {t("invoices.caeExpiration", { date: inv.cae_expiration })}
+                      </span>
                     ) : null}
                   </TableCell>
                   <TableCell>
                     <Badge variant={STATUS_VARIANT[inv.status]}>
-                      {INVOICE_STATUS_LABELS[inv.status]}
+                      {t(`invoices.statusLabels.${inv.status}`)}
                     </Badge>
                     {inv.rejection ? (
                       <span className="block text-xs text-destructive">{inv.rejection}</span>
@@ -86,7 +86,7 @@ export function InvoicesPage() {
           </Table>
         ) : (
           <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
-            Todavía no emitiste comprobantes. Facturá una comanda pagada desde su detalle.
+            {t("invoices.empty")}
           </p>
         )}
       </div>

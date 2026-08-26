@@ -3,8 +3,9 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import { FormError } from "@/components/form-error"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -26,26 +27,15 @@ import {
 import { useCreateProduct } from "@/hooks/use-products"
 import { FINANCE_RANGES, rangeWindow, type FinanceRange } from "@/lib/finance-range"
 
-const schema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(2, "Mínimo 2 caracteres")
-    .max(120)
-    // Evita nombres vacíos o basura: al menos una letra o número.
-    .refine((v) => /[\p{L}\p{N}]/u.test(v), "Ingresá un nombre válido"),
-  price: z
-    .string()
-    .min(1, "Ingresá un precio")
-    .refine((v) => Number(v) > 0, "El precio debe ser mayor a 0"),
-  category: z.string().max(60).optional(),
-  // Where it's prepared — obligatorio, sin preseleccionar (evita "todo Cocina").
-  station: z.enum(["KITCHEN", "BAR"], { message: "Elegí la estación" }),
-})
-
-type ProductValues = z.infer<typeof schema>
+type ProductValues = {
+  name: string
+  price: string
+  category?: string
+  station: "KITCHEN" | "BAR"
+}
 
 export function ProductsPage() {
+  const { t } = useTranslation()
   const createProduct = useCreateProduct()
   const [open, setOpen] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -53,6 +43,27 @@ export function ProductsPage() {
   // engineering y rotación; el catálogo lo usa para "vendidos".
   const [range, setRange] = useState<FinanceRange>("month")
   const period = useMemo(() => rangeWindow(range), [range])
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        name: z
+          .string()
+          .trim()
+          .min(2, t("products.validation.nameMin"))
+          .max(120)
+          // Evita nombres vacíos o basura: al menos una letra o número.
+          .refine((v) => /[\p{L}\p{N}]/u.test(v), t("products.validation.nameInvalid")),
+        price: z
+          .string()
+          .min(1, t("products.validation.priceRequired"))
+          .refine((v) => Number(v) > 0, t("products.validation.pricePositive")),
+        category: z.string().max(60).optional(),
+        // Where it's prepared — obligatorio, sin preseleccionar (evita "todo Cocina").
+        station: z.enum(["KITCHEN", "BAR"], { message: t("products.validation.stationRequired") }),
+      }),
+    [t]
+  )
 
   const {
     register,
@@ -75,12 +86,12 @@ export function ProductsPage() {
       },
       {
         onSuccess: () => {
-          toast.success("Producto creado.")
+          toast.success(t("products.created"))
           reset()
           setOpen(false)
         },
         onError: (error) =>
-          setServerError(isApiError(error) ? error.message : "No pudimos crear el producto."),
+          setServerError(apiErrorText(error, t, t("products.createError"))),
       }
     )
   })
@@ -90,9 +101,9 @@ export function ProductsPage() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
           <GradientHeading size="md" weight="bold">
-            Productos
+            {t("products.title")}
           </GradientHeading>
-          <p className="text-sm text-muted-foreground">Tu catálogo y precios.</p>
+          <p className="text-sm text-muted-foreground">{t("products.subtitle")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap items-center gap-1">
@@ -109,22 +120,22 @@ export function ProductsPage() {
           </div>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button>Nuevo producto</Button>
+              <Button>{t("products.newProduct")}</Button>
             </SheetTrigger>
             <SheetContent>
               <SheetHeader>
-                <SheetTitle>Nuevo producto</SheetTitle>
-                <SheetDescription>El precio se ingresa en la moneda del comercio.</SheetDescription>
+                <SheetTitle>{t("products.newProduct")}</SheetTitle>
+                <SheetDescription>{t("products.newProductDescription")}</SheetDescription>
               </SheetHeader>
               <form onSubmit={onSubmit} className="flex flex-col gap-4 px-4 pb-4" noValidate>
                 <FieldGroup>
                   <Field>
-                    <FieldLabel htmlFor="name">Nombre</FieldLabel>
+                    <FieldLabel htmlFor="name">{t("products.form.name")}</FieldLabel>
                     <Input id="name" aria-invalid={!!errors.name} {...register("name")} />
                     <FieldError>{errors.name?.message}</FieldError>
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="price">Precio</FieldLabel>
+                    <FieldLabel htmlFor="price">{t("products.form.price")}</FieldLabel>
                     <Input
                       id="price"
                       type="number"
@@ -136,11 +147,11 @@ export function ProductsPage() {
                     <FieldError>{errors.price?.message}</FieldError>
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="category">Categoría (opcional)</FieldLabel>
+                    <FieldLabel htmlFor="category">{t("products.form.category")}</FieldLabel>
                     <Input id="category" {...register("category")} />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="station">Estación</FieldLabel>
+                    <FieldLabel htmlFor="station">{t("products.form.station")}</FieldLabel>
                     <select
                       id="station"
                       aria-invalid={!!errors.station}
@@ -149,17 +160,17 @@ export function ProductsPage() {
                       {...register("station")}
                     >
                       <option value="" disabled>
-                        Elegí estación…
+                        {t("products.form.stationPlaceholder")}
                       </option>
-                      <option value="KITCHEN">Cocina</option>
-                      <option value="BAR">Barra</option>
+                      <option value="KITCHEN">{t("products.form.stationKitchen")}</option>
+                      <option value="BAR">{t("products.form.stationBar")}</option>
                     </select>
                     <FieldError>{errors.station?.message}</FieldError>
                   </Field>
                 </FieldGroup>
                 <FormError message={serverError} />
                 <Button type="submit" disabled={createProduct.isPending}>
-                  {createProduct.isPending ? "Creando…" : "Crear producto"}
+                  {createProduct.isPending ? t("products.form.creating") : t("products.form.create")}
                 </Button>
               </form>
             </SheetContent>

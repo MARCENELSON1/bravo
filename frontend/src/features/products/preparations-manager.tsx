@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type { IngredientDTO, PreparationDTO } from "@/api/types-inventory"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -50,6 +51,7 @@ export function ComponentRowsEditor({
   ingredients: IngredientDTO[]
   preparations: PreparationDTO[]
 }) {
+  const { t } = useTranslation()
   const add = () => onChange([...rows, { value: "", qty: "" }])
   const remove = (index: number) => onChange(rows.filter((_, i) => i !== index))
   const patch = (index: number, patch: Partial<ComponentDraft>) =>
@@ -59,7 +61,7 @@ export function ComponentRowsEditor({
     <div className="flex flex-col gap-2">
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Sin componentes. Agregá insumos o preparaciones.
+          {t("products.components.empty")}
         </p>
       ) : null}
       {rows.map((row, index) => {
@@ -73,7 +75,7 @@ export function ComponentRowsEditor({
           <div key={index} className="flex items-end gap-2">
             <Select value={row.value} onValueChange={(v) => patch(index, { value: v })}>
               <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Insumo o preparación" />
+                <SelectValue placeholder={t("products.components.selectPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {ingredients.map((i) => (
@@ -83,7 +85,7 @@ export function ComponentRowsEditor({
                 ))}
                 {preparations.map((p) => (
                   <SelectItem key={p.id} value={PREP + p.id}>
-                    Preparación: {p.name}
+                    {t("products.preparationLabel", { name: p.name })}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -92,7 +94,7 @@ export function ComponentRowsEditor({
               type="number"
               step="0.001"
               min={0}
-              placeholder="cant."
+              placeholder={t("products.components.qtyPlaceholder")}
               value={row.qty}
               onChange={(e) => patch(index, { qty: e.target.value })}
               className="max-w-[6rem]"
@@ -101,13 +103,13 @@ export function ComponentRowsEditor({
               {unitLabel}
             </span>
             <Button variant="ghost" size="sm" onClick={() => remove(index)}>
-              Quitar
+              {t("products.actions.remove")}
             </Button>
           </div>
         )
       })}
       <Button variant="outline" size="sm" onClick={add}>
-        Agregar componente
+        {t("products.components.add")}
       </Button>
     </div>
   )
@@ -124,6 +126,7 @@ function PreparationForm({
   preparations: PreparationDTO[]
   onDone: () => void
 }) {
+  const { t } = useTranslation()
   const create = useCreatePreparation()
   const update = useUpdatePreparation()
   const [name, setName] = useState(initial?.name ?? "")
@@ -144,16 +147,16 @@ function PreparationForm({
   const save = () => {
     const items = draftsToItems(rows)
     if (!name.trim() || Number(yieldQty) <= 0 || items.length === 0) {
-      toast.error("Cargá nombre, rendimiento y al menos un componente.")
+      toast.error(t("products.preparations.incomplete"))
       return
     }
     const body = { name: name.trim(), yield_qty: toMilesimas(yieldQty), items }
     const onSuccess = () => {
-      toast.success("Preparación guardada.")
+      toast.success(t("products.preparations.saved"))
       onDone()
     }
     const onError = (error: unknown) =>
-      toast.error(isApiError(error) ? error.message : "No pudimos guardar la preparación.")
+      toast.error(apiErrorText(error, t, t("products.preparations.saveError")))
     if (initial) {
       update.mutate({ id: initial.id, body }, { onSuccess, onError })
     } else {
@@ -164,7 +167,7 @@ function PreparationForm({
   if (ingredients.length === 0) {
     return (
       <p className="px-4 py-6 text-sm text-muted-foreground">
-        Cargá insumos en Stock antes de armar una preparación.
+        {t("products.preparations.noIngredients")}
       </p>
     )
   }
@@ -172,22 +175,26 @@ function PreparationForm({
   return (
     <div className="flex flex-col gap-4 px-4 pb-4">
       <label className="flex flex-col gap-1 text-sm">
-        Nombre
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Salsa fileto" />
+        {t("products.preparations.nameLabel")}
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t("products.preparations.namePlaceholder")}
+        />
       </label>
       <label className="flex flex-col gap-1 text-sm">
-        Rendimiento (cuánto rinde una tanda, en su unidad)
+        {t("products.preparations.yieldLabel")}
         <Input
           type="number"
           step="0.001"
           min={0}
           value={yieldQty}
           onChange={(e) => setYieldQty(e.target.value)}
-          placeholder="Ej. 2 (= 2 kg / 2 L / 2 u)"
+          placeholder={t("products.preparations.yieldPlaceholder")}
         />
       </label>
       <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium">Componentes</span>
+        <span className="text-sm font-medium">{t("products.preparations.componentsLabel")}</span>
         <ComponentRowsEditor
           rows={rows}
           onChange={setRows}
@@ -196,7 +203,7 @@ function PreparationForm({
         />
       </div>
       <Button onClick={save} disabled={pending}>
-        {pending ? "Guardando…" : "Guardar preparación"}
+        {pending ? t("products.actions.saving") : t("products.preparations.save")}
       </Button>
     </div>
   )
@@ -213,16 +220,20 @@ function PreparationSheet({
   preparations: PreparationDTO[]
   trigger: React.ReactNode
 }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>{initial ? `Editar ${initial.name}` : "Nueva preparación"}</SheetTitle>
+          <SheetTitle>
+            {initial
+              ? t("products.preparations.editTitle", { name: initial.name })
+              : t("products.preparations.newTitle")}
+          </SheetTitle>
           <SheetDescription>
-            Una preparación base (receta madre) se usa dentro de varios platos; su costo
-            se prorratea por lo que rinde.
+            {t("products.preparations.sheetDescription")}
           </SheetDescription>
         </SheetHeader>
         {open ? (
@@ -240,6 +251,7 @@ function PreparationSheet({
 
 // Sección "Recetas madre" en la pantalla Productos.
 export function PreparationsManager() {
+  const { t } = useTranslation()
   const preparations = usePreparations()
   const ingredients = useIngredients()
   const del = useDeletePreparation()
@@ -248,11 +260,11 @@ export function PreparationsManager() {
   const ings = ingredients.data ?? []
 
   const remove = (prep: PreparationDTO) => {
-    if (!window.confirm(`¿Eliminar la preparación "${prep.name}"?`)) return
+    if (!window.confirm(t("products.preparations.deleteConfirm", { name: prep.name }))) return
     del.mutate(prep.id, {
-      onSuccess: () => toast.success("Preparación eliminada."),
+      onSuccess: () => toast.success(t("products.preparations.deleted")),
       onError: (error) =>
-        toast.error(isApiError(error) ? error.message : "No pudimos eliminar la preparación."),
+        toast.error(apiErrorText(error, t, t("products.preparations.deleteError"))),
     })
   }
 
@@ -260,17 +272,18 @@ export function PreparationsManager() {
     <section className="flex flex-col gap-3">
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div className="flex flex-col gap-1">
-          <h2 className="text-sm font-semibold text-foreground">Recetas madre</h2>
+          <h2 className="text-sm font-semibold text-foreground">
+            {t("products.preparations.heading")}
+          </h2>
           <p className="text-sm text-muted-foreground">
-            Preparaciones base reutilizables (ej. salsa fileto). Se usan dentro de las
-            recetas y su costo se propaga solo.
+            {t("products.preparations.subtitle")}
           </p>
         </div>
         <PreparationSheet
           initial={null}
           ingredients={ings}
           preparations={list}
-          trigger={<Button variant="outline">Nueva preparación</Button>}
+          trigger={<Button variant="outline">{t("products.preparations.new")}</Button>}
         />
       </header>
 
@@ -286,13 +299,11 @@ export function PreparationsManager() {
                 <div className="min-w-0">
                   <p className="truncate font-medium text-foreground">{prep.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    Rinde {prep.yield_qty / 1000} · {prep.items.length}{" "}
-                    {prep.items.length === 1 ? "componente" : "componentes"} ·{" "}
+                    {t("products.preparations.yields", { qty: prep.yield_qty / 1000 })} ·{" "}
+                    {t("products.preparations.componentCount", { count: prep.items.length })} ·{" "}
                     {prep.used_in_products === 0
-                      ? "sin usar"
-                      : `usada en ${prep.used_in_products} ${
-                          prep.used_in_products === 1 ? "plato" : "platos"
-                        }`}
+                      ? t("products.preparations.unused")
+                      : t("products.preparations.usedIn", { count: prep.used_in_products })}
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
@@ -302,7 +313,7 @@ export function PreparationsManager() {
                     preparations={list}
                     trigger={
                       <Button variant="ghost" size="sm">
-                        Editar
+                        {t("products.actions.edit")}
                       </Button>
                     }
                   />
@@ -312,7 +323,7 @@ export function PreparationsManager() {
                     onClick={() => remove(prep)}
                     disabled={del.isPending}
                   >
-                    Eliminar
+                    {t("products.actions.delete")}
                   </Button>
                 </div>
               </li>
@@ -320,7 +331,7 @@ export function PreparationsManager() {
           </ul>
         ) : (
           <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
-            Todavía no cargaste preparaciones.
+            {t("products.preparations.empty")}
           </p>
         )}
       </div>

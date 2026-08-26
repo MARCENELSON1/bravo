@@ -1,7 +1,8 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type { PaymentMethod } from "@/api/types-operations"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -34,16 +35,10 @@ import {
 import { useExpenses, useRegisterExpense } from "@/hooks/use-payments"
 import { formatMoney } from "@/lib/money"
 
-const EXPENSE_METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: "CASH", label: "Efectivo" },
-  { value: "TRANSFER", label: "Transferencia" },
-  { value: "CARD", label: "Tarjeta" },
-  { value: "MERCADOPAGO", label: "MercadoPago" },
-]
-
-const methodLabel = (m: string) => EXPENSE_METHODS.find((x) => x.value === m)?.label ?? m
+const EXPENSE_METHODS: PaymentMethod[] = ["CASH", "TRANSFER", "CARD", "MERCADOPAGO"]
 
 export function ExpensesPage() {
+  const { t } = useTranslation()
   const expenses = useExpenses()
   const registerExpense = useRegisterExpense()
   const [open, setOpen] = useState(false)
@@ -56,7 +51,7 @@ export function ExpensesPage() {
   const submit = () => {
     const minor = Math.round(Number(amount) * 100)
     if (!Number.isFinite(minor) || minor < 1) {
-      toast.error("Ingresá un monto válido.")
+      toast.error(t("expenses.form.invalidAmount"))
       return
     }
     registerExpense.mutate(
@@ -69,7 +64,7 @@ export function ExpensesPage() {
       },
       {
         onSuccess: () => {
-          toast.success("Egreso registrado.")
+          toast.success(t("expenses.form.success"))
           setAmount("")
           setCategory("")
           setCounterparty("")
@@ -77,7 +72,7 @@ export function ExpensesPage() {
           setOpen(false)
         },
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos registrar el egreso."),
+          toast.error(apiErrorText(error, t, t("expenses.form.error"))),
       }
     )
   }
@@ -87,18 +82,18 @@ export function ExpensesPage() {
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div className="flex flex-col gap-1">
           <GradientHeading size="md" weight="bold">
-            Egresos
+            {t("expenses.title")}
           </GradientHeading>
-          <p className="text-sm text-muted-foreground">Registrá y seguí las salidas de plata.</p>
+          <p className="text-sm text-muted-foreground">{t("expenses.subtitle")}</p>
         </div>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <Button>Nuevo egreso</Button>
+            <Button>{t("expenses.new")}</Button>
           </SheetTrigger>
           <SheetContent>
             <SheetHeader>
-              <SheetTitle>Nuevo egreso</SheetTitle>
-              <SheetDescription>Una salida de plata (proveedor, gasto, etc.).</SheetDescription>
+              <SheetTitle>{t("expenses.new")}</SheetTitle>
+              <SheetDescription>{t("expenses.form.description")}</SheetDescription>
             </SheetHeader>
             <div className="flex flex-col gap-3 px-4 pb-4">
               <div className="flex items-end gap-2">
@@ -108,8 +103,8 @@ export function ExpensesPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {EXPENSE_METHODS.map((m) => (
-                      <SelectItem key={m.value} value={m.value}>
-                        {m.label}
+                      <SelectItem key={m} value={m}>
+                        {t(`expenses.methodLabels.${m}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -118,29 +113,31 @@ export function ExpensesPage() {
                   type="number"
                   min={0}
                   step="0.01"
-                  placeholder="Monto"
+                  placeholder={t("expenses.form.amountPlaceholder")}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="max-w-[8rem]"
                 />
               </div>
               <Input
-                placeholder="Rubro (p. ej. Proveedores)"
+                placeholder={t("expenses.form.categoryPlaceholder")}
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               />
               <Input
-                placeholder="Contraparte (p. ej. Frigorífico Sur)"
+                placeholder={t("expenses.form.counterpartyPlaceholder")}
                 value={counterparty}
                 onChange={(e) => setCounterparty(e.target.value)}
               />
               <Input
-                placeholder="Descripción (opcional)"
+                placeholder={t("expenses.form.descriptionPlaceholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
               <Button onClick={submit} disabled={registerExpense.isPending}>
-                {registerExpense.isPending ? "Registrando…" : "Registrar egreso"}
+                {registerExpense.isPending
+                  ? t("expenses.form.submitting")
+                  : t("expenses.form.submit")}
               </Button>
             </div>
           </SheetContent>
@@ -156,10 +153,10 @@ export function ExpensesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Contraparte</TableHead>
-                <TableHead>Rubro</TableHead>
-                <TableHead>Medio</TableHead>
-                <TableHead className="text-right">Monto</TableHead>
+                <TableHead>{t("expenses.table.counterparty")}</TableHead>
+                <TableHead>{t("expenses.table.category")}</TableHead>
+                <TableHead>{t("expenses.table.method")}</TableHead>
+                <TableHead className="text-right">{t("expenses.table.amount")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -175,7 +172,9 @@ export function ExpensesPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{e.category ?? "—"}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{methodLabel(e.method)}</Badge>
+                    <Badge variant="secondary">
+                      {t(`expenses.methodLabels.${e.method}`, { defaultValue: e.method })}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {formatMoney(e.amount, e.currency)}
@@ -186,7 +185,7 @@ export function ExpensesPage() {
           </Table>
         ) : (
           <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
-            Todavía no registraste egresos.
+            {t("expenses.empty")}
           </p>
         )}
       </div>

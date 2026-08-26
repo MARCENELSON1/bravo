@@ -1,8 +1,9 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type { IngredientDTO, UnitOfMeasure } from "@/api/types-inventory"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -57,6 +58,7 @@ import {
 
 // Alta de insumo. Internal (not exported) so the page file exports only the page.
 function CreateIngredientSheet() {
+  const { t } = useTranslation()
   const create = useCreateIngredient()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState("")
@@ -72,17 +74,17 @@ function CreateIngredientSheet() {
 
   const submit = () => {
     if (!name.trim()) {
-      toast.error("Ingresá un nombre.")
+      toast.error(t("inventory.stock.invalidName"))
       return
     }
     const unitCost = Math.round(Number(cost) * 100)
     if (!Number.isFinite(unitCost) || unitCost < 1) {
-      toast.error("Ingresá un costo válido.")
+      toast.error(t("inventory.stock.invalidCost"))
       return
     }
     const yp = yieldPct ? percentToBps(yieldPct) : 10000
     if (!isValidYieldBps(yp)) {
-      toast.error("Rendimiento entre 1 y 100%.")
+      toast.error(t("inventory.stock.invalidYield"))
       return
     }
     create.mutate(
@@ -98,7 +100,7 @@ function CreateIngredientSheet() {
       },
       {
         onSuccess: () => {
-          toast.success("Insumo creado.")
+          toast.success(t("inventory.stock.createSuccess"))
           setName("")
           setStock("")
           setMin("")
@@ -109,7 +111,7 @@ function CreateIngredientSheet() {
           setOpen(false)
         },
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos crear el insumo."),
+          toast.error(apiErrorText(error, t, t("inventory.stock.createError"))),
       }
     )
   }
@@ -117,17 +119,19 @@ function CreateIngredientSheet() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button>Nuevo insumo</Button>
+        <Button>{t("inventory.stock.newIngredient")}</Button>
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Nuevo insumo</SheetTitle>
-          <SheetDescription>
-            El costo es por unidad base; el stock y el mínimo, en esa misma unidad.
-          </SheetDescription>
+          <SheetTitle>{t("inventory.stock.createTitle")}</SheetTitle>
+          <SheetDescription>{t("inventory.stock.createDescription")}</SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-3 px-4 pb-4">
-          <Input placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
+          <Input
+            placeholder={t("inventory.stock.namePlaceholder")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
           <Select
             value={unit}
             onValueChange={(v) => {
@@ -148,7 +152,7 @@ function CreateIngredientSheet() {
           </Select>
           {recipeOpts.length > 0 ? (
             <label className="flex flex-col gap-1 text-sm">
-              Unidad de receta (opcional)
+              {t("inventory.stock.recipeUnitLabel")}
               <Select
                 value={recipeUnit || unit}
                 onValueChange={(v) => setRecipeUnit(v as UnitOfMeasure)}
@@ -165,9 +169,10 @@ function CreateIngredientSheet() {
                 </SelectContent>
               </Select>
               <span className="text-xs text-muted-foreground">
-                Cargá el costo/stock por {UNIT_LABELS[unit]} y usá{" "}
-                {UNIT_LABELS[recipeOpts[1].value]} en la receta. No se puede cambiar
-                después.
+                {t("inventory.stock.recipeUnitHint", {
+                  base: UNIT_LABELS[unit],
+                  recipe: UNIT_LABELS[recipeOpts[1].value],
+                })}
               </span>
             </label>
           ) : null}
@@ -176,7 +181,7 @@ function CreateIngredientSheet() {
               type="number"
               step="0.001"
               min={0}
-              placeholder={`Stock (${UNIT_LABELS[unit]})`}
+              placeholder={t("inventory.stock.stockPlaceholder", { unit: UNIT_LABELS[unit] })}
               value={stock}
               onChange={(e) => setStock(e.target.value)}
             />
@@ -184,7 +189,7 @@ function CreateIngredientSheet() {
               type="number"
               step="0.001"
               min={0}
-              placeholder={`Mínimo (${UNIT_LABELS[unit]})`}
+              placeholder={t("inventory.stock.minPlaceholder", { unit: UNIT_LABELS[unit] })}
               value={min}
               onChange={(e) => setMin(e.target.value)}
             />
@@ -193,12 +198,12 @@ function CreateIngredientSheet() {
             type="number"
             step="0.01"
             min={0}
-            placeholder={`Costo por ${UNIT_LABELS[unit]}`}
+            placeholder={t("inventory.stock.costPlaceholder", { unit: UNIT_LABELS[unit] })}
             value={cost}
             onChange={(e) => setCost(e.target.value)}
           />
           <label className="flex flex-col gap-1 text-sm">
-            Rendimiento (%)
+            {t("inventory.stock.yieldLabel")}
             <Input
               type="number"
               step="1"
@@ -208,7 +213,7 @@ function CreateIngredientSheet() {
               onChange={(e) => setYieldPct(e.target.value)}
             />
             <span className="text-xs text-muted-foreground">
-              Cuánto del insumo llega al plato. 100% = sin merma (hueso, recorte, cocción).
+              {t("inventory.stock.yieldHintCreate")}
             </span>
           </label>
           <label className="flex items-center gap-2 text-sm">
@@ -217,10 +222,10 @@ function CreateIngredientSheet() {
               checked={inclVat}
               onChange={(e) => setInclVat(e.target.checked)}
             />
-            El costo incluye IVA (destildá si el proveedor no lo cobra, ej. monotributo)
+            {t("inventory.stock.vatCreate")}
           </label>
           <Button onClick={submit} disabled={create.isPending}>
-            {create.isPending ? "Creando…" : "Crear insumo"}
+            {create.isPending ? t("inventory.stock.creating") : t("inventory.stock.createSubmit")}
           </Button>
         </div>
       </SheetContent>
@@ -229,6 +234,7 @@ function CreateIngredientSheet() {
 }
 
 function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
+  const { t } = useTranslation()
   const purchase = usePurchase()
   const suppliers = useSuppliers()
   const [open, setOpen] = useState(false)
@@ -246,11 +252,11 @@ function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
     const q = qty ? toMilesimas(qty) : 0
     const unitCost = Math.round(Number(cost) * 100)
     if (q < 1) {
-      toast.error("Ingresá una cantidad válida.")
+      toast.error(t("inventory.stock.invalidQty"))
       return
     }
     if (!Number.isFinite(unitCost) || unitCost < 1) {
-      toast.error("Ingresá un costo válido.")
+      toast.error(t("inventory.stock.invalidCost"))
       return
     }
     purchase.mutate(
@@ -265,7 +271,7 @@ function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
       },
       {
         onSuccess: () => {
-          toast.success("Compra registrada.")
+          toast.success(t("inventory.stock.buySuccess"))
           setQty("")
           setCost("")
           setInclVat(undefined)
@@ -273,7 +279,7 @@ function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
           setOpen(false)
         },
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos registrar la compra."),
+          toast.error(apiErrorText(error, t, t("inventory.stock.buyError"))),
       }
     )
   }
@@ -282,23 +288,22 @@ function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="sm">
-          Comprar
+          {t("inventory.stock.buy")}
         </Button>
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Comprar {ingredient.name}</SheetTitle>
-          <SheetDescription>
-            Suma stock y actualiza el costo por promedio ponderado (lo mezcla con lo que ya
-            tenías, para que una compra cara puntual no infle el food cost).
-          </SheetDescription>
+          <SheetTitle>{t("inventory.stock.buyTitle", { name: ingredient.name })}</SheetTitle>
+          <SheetDescription>{t("inventory.stock.buyDescription")}</SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-3 px-4 pb-4">
           <Input
             type="number"
             step="0.001"
             min={0}
-            placeholder={`Cantidad (${UNIT_LABELS[ingredient.unit]})`}
+            placeholder={t("inventory.stock.qtyPlaceholder", {
+              unit: UNIT_LABELS[ingredient.unit],
+            })}
             value={qty}
             onChange={(e) => setQty(e.target.value)}
           />
@@ -306,7 +311,9 @@ function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
             type="number"
             step="0.01"
             min={0}
-            placeholder={`Costo por ${UNIT_LABELS[ingredient.unit]}`}
+            placeholder={t("inventory.stock.costPlaceholder", {
+              unit: UNIT_LABELS[ingredient.unit],
+            })}
             value={cost}
             onChange={(e) => setCost(e.target.value)}
           />
@@ -315,7 +322,7 @@ function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
             onChange={(e) => setSupplierId(e.target.value)}
             className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
           >
-            <option value="">Proveedor (opcional)</option>
+            <option value="">{t("inventory.stock.supplierOption")}</option>
             {(suppliers.data ?? [])
               .filter((s) => s.active)
               .map((s) => (
@@ -330,10 +337,10 @@ function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
               checked={shownInclVat}
               onChange={(e) => setInclVat(e.target.checked)}
             />
-            El costo incluye IVA
+            {t("inventory.stock.vatBuy")}
           </label>
           <Button onClick={submit} disabled={purchase.isPending}>
-            {purchase.isPending ? "Guardando…" : "Registrar compra"}
+            {purchase.isPending ? t("inventory.stock.saving") : t("inventory.stock.buySubmit")}
           </Button>
         </div>
       </SheetContent>
@@ -342,6 +349,7 @@ function PurchaseSheet({ ingredient }: { ingredient: IngredientDTO }) {
 }
 
 function WasteSheet({ ingredient }: { ingredient: IngredientDTO }) {
+  const { t } = useTranslation()
   const waste = useWaste()
   const [open, setOpen] = useState(false)
   const [qty, setQty] = useState("")
@@ -350,20 +358,20 @@ function WasteSheet({ ingredient }: { ingredient: IngredientDTO }) {
   const submit = () => {
     const q = qty ? toMilesimas(qty) : 0
     if (q < 1) {
-      toast.error("Ingresá una cantidad válida.")
+      toast.error(t("inventory.stock.invalidQty"))
       return
     }
     waste.mutate(
       { id: ingredient.id, body: { qty: q, note: note.trim() || null } },
       {
         onSuccess: () => {
-          toast.success("Merma registrada.")
+          toast.success(t("inventory.stock.wasteSuccess"))
           setQty("")
           setNote("")
           setOpen(false)
         },
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos registrar la merma."),
+          toast.error(apiErrorText(error, t, t("inventory.stock.wasteError"))),
       }
     )
   }
@@ -372,30 +380,32 @@ function WasteSheet({ ingredient }: { ingredient: IngredientDTO }) {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="sm">
-          Merma
+          {t("inventory.stock.waste")}
         </Button>
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Merma de {ingredient.name}</SheetTitle>
-          <SheetDescription>Baja stock por rotura, vencimiento o desperdicio.</SheetDescription>
+          <SheetTitle>{t("inventory.stock.wasteTitle", { name: ingredient.name })}</SheetTitle>
+          <SheetDescription>{t("inventory.stock.wasteDescription")}</SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-3 px-4 pb-4">
           <Input
             type="number"
             step="0.001"
             min={0}
-            placeholder={`Cantidad (${UNIT_LABELS[ingredient.unit]})`}
+            placeholder={t("inventory.stock.qtyPlaceholder", {
+              unit: UNIT_LABELS[ingredient.unit],
+            })}
             value={qty}
             onChange={(e) => setQty(e.target.value)}
           />
           <Input
-            placeholder="Motivo (opcional)"
+            placeholder={t("inventory.stock.wasteNotePlaceholder")}
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
           <Button onClick={submit} disabled={waste.isPending}>
-            {waste.isPending ? "Guardando…" : "Registrar merma"}
+            {waste.isPending ? t("inventory.stock.saving") : t("inventory.stock.wasteSubmit")}
           </Button>
         </div>
       </SheetContent>
@@ -414,6 +424,7 @@ function EditIngredientForm({
   ingredient: IngredientDTO
   onDone: () => void
 }) {
+  const { t } = useTranslation()
   const update = useUpdateIngredient()
   const [name, setName] = useState(ingredient.name)
   const [yieldPct, setYieldPct] = useState(String(bpsToPercent(ingredient.yield_pct)))
@@ -422,7 +433,7 @@ function EditIngredientForm({
   const submit = () => {
     const yp = percentToBps(yieldPct)
     if (!isValidYieldBps(yp)) {
-      toast.error("Rendimiento entre 1 y 100%.")
+      toast.error(t("inventory.stock.invalidYield"))
       return
     }
     update.mutate(
@@ -432,20 +443,24 @@ function EditIngredientForm({
       },
       {
         onSuccess: () => {
-          toast.success("Insumo actualizado.")
+          toast.success(t("inventory.stock.updateSuccess"))
           onDone()
         },
         onError: (error) =>
-          toast.error(isApiError(error) ? error.message : "No pudimos actualizar el insumo."),
+          toast.error(apiErrorText(error, t, t("inventory.stock.updateError"))),
       }
     )
   }
 
   return (
     <div className="flex flex-col gap-3 px-4 pb-4">
-      <Input placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
+      <Input
+        placeholder={t("inventory.stock.namePlaceholder")}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
       <label className="flex flex-col gap-1 text-sm">
-        Rendimiento (%)
+        {t("inventory.stock.yieldLabel")}
         <Input
           type="number"
           step="1"
@@ -455,7 +470,7 @@ function EditIngredientForm({
           onChange={(e) => setYieldPct(e.target.value)}
         />
         <span className="text-xs text-muted-foreground">
-          Cuánto del insumo llega al plato. 100% = sin merma.
+          {t("inventory.stock.yieldHintEdit")}
         </span>
       </label>
       <label className="flex items-center gap-2 text-sm">
@@ -464,28 +479,29 @@ function EditIngredientForm({
           checked={inclVat}
           onChange={(e) => setInclVat(e.target.checked)}
         />
-        El costo incluye IVA (destildá para monotributo/sin IVA)
+        {t("inventory.stock.vatEdit")}
       </label>
       <Button onClick={submit} disabled={update.isPending}>
-        {update.isPending ? "Guardando…" : "Guardar"}
+        {update.isPending ? t("inventory.stock.saving") : t("inventory.stock.save")}
       </Button>
     </div>
   )
 }
 
 function EditIngredientSheet({ ingredient }: { ingredient: IngredientDTO }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="sm">
-          Editar
+          {t("inventory.stock.edit")}
         </Button>
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Editar {ingredient.name}</SheetTitle>
-          <SheetDescription>Nombre y rendimiento (merma) del insumo.</SheetDescription>
+          <SheetTitle>{t("inventory.stock.editTitle", { name: ingredient.name })}</SheetTitle>
+          <SheetDescription>{t("inventory.stock.editDescription")}</SheetDescription>
         </SheetHeader>
         {open ? (
           <EditIngredientForm ingredient={ingredient} onDone={() => setOpen(false)} />
@@ -496,21 +512,22 @@ function EditIngredientSheet({ ingredient }: { ingredient: IngredientDTO }) {
 }
 
 function FoodCostSection() {
+  const { t } = useTranslation()
   const report = useFoodCost()
   if (report.isPending) return null
   if (!report.data || report.data.rows.length === 0) return null
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold text-foreground">Food cost por producto</h2>
+      <h2 className="text-sm font-semibold text-foreground">{t("inventory.stock.foodCostTitle")}</h2>
       <div className="overflow-hidden rounded-xl border border-border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Producto</TableHead>
-              <TableHead className="text-right">Precio</TableHead>
-              <TableHead className="text-right">Food cost</TableHead>
-              <TableHead className="text-right">Margen</TableHead>
-              <TableHead className="text-right">% food cost</TableHead>
+              <TableHead>{t("inventory.stock.foodCostColumns.product")}</TableHead>
+              <TableHead className="text-right">{t("inventory.stock.foodCostColumns.price")}</TableHead>
+              <TableHead className="text-right">{t("inventory.stock.foodCostColumns.foodCost")}</TableHead>
+              <TableHead className="text-right">{t("inventory.stock.foodCostColumns.margin")}</TableHead>
+              <TableHead className="text-right">{t("inventory.stock.foodCostColumns.foodCostPct")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -541,6 +558,7 @@ function FoodCostSection() {
 }
 
 export function StockPage() {
+  const { t } = useTranslation()
   const ingredients = useIngredients()
   const lowStock = useLowStock()
   const lowCount = lowStock.data?.length ?? 0
@@ -550,10 +568,10 @@ export function StockPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <GradientHeading size="md" weight="bold">
-            Stock
+            {t("inventory.stock.title")}
           </GradientHeading>
           <p className="text-sm text-muted-foreground">
-            Insumos, costo y alertas de quiebre. Vender descuenta según la receta.
+            {t("inventory.stock.subtitle")}
           </p>
         </div>
         <CreateIngredientSheet />
@@ -564,7 +582,7 @@ export function StockPage() {
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
           <div>
             <p className="font-medium text-foreground">
-              {lowCount} insumo{lowCount === 1 ? "" : "s"} en quiebre
+              {t("inventory.stock.lowStock", { count: lowCount })}
             </p>
             <p className="text-muted-foreground">
               {lowStock.data?.map((i) => i.name).join(", ")}
@@ -574,7 +592,7 @@ export function StockPage() {
       ) : null}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-foreground">Insumos</h2>
+        <h2 className="text-sm font-semibold text-foreground">{t("inventory.stock.sectionTitle")}</h2>
         <div className="overflow-hidden rounded-xl border border-border">
           {ingredients.isPending ? (
             <div className="flex justify-center p-10">
@@ -584,13 +602,13 @@ export function StockPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Insumo</TableHead>
-                  <TableHead className="text-right">Stock</TableHead>
-                  <TableHead className="text-right">Mínimo</TableHead>
-                  <TableHead className="text-right">Costo</TableHead>
-                  <TableHead className="text-right">Rend.</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead>{t("inventory.stock.columns.ingredient")}</TableHead>
+                  <TableHead className="text-right">{t("inventory.stock.columns.stock")}</TableHead>
+                  <TableHead className="text-right">{t("inventory.stock.columns.min")}</TableHead>
+                  <TableHead className="text-right">{t("inventory.stock.columns.cost")}</TableHead>
+                  <TableHead className="text-right">{t("inventory.stock.columns.yield")}</TableHead>
+                  <TableHead>{t("inventory.stock.columns.status")}</TableHead>
+                  <TableHead className="text-right">{t("inventory.stock.columns.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -611,9 +629,9 @@ export function StockPage() {
                     </TableCell>
                     <TableCell>
                       {i.is_below_min ? (
-                        <Badge variant="destructive">Quiebre</Badge>
+                        <Badge variant="destructive">{t("inventory.stock.statusBreak")}</Badge>
                       ) : (
-                        <Badge variant="secondary">OK</Badge>
+                        <Badge variant="secondary">{t("inventory.stock.statusOk")}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -629,7 +647,7 @@ export function StockPage() {
             </Table>
           ) : (
             <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
-              Todavía no cargaste insumos.
+              {t("inventory.stock.emptyState")}
             </p>
           )}
         </div>

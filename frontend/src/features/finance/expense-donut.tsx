@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next"
+
 import type { ExpenseCategoryRowDTO } from "@/api/types-operations"
 import { GlassCard } from "@/components/ui/glass-card"
 import { formatMoney } from "@/lib/money"
@@ -8,12 +10,15 @@ const RADIUS = 52
 const CIRC = 2 * Math.PI * RADIUS
 
 // Agrupa a top 5 + "Otros" para no ensuciar el donut.
-function topWithRest(rows: ExpenseCategoryRowDTO[]): { category: string; amount: number }[] {
+function topWithRest(
+  rows: ExpenseCategoryRowDTO[],
+  otherLabel: string,
+): { category: string; amount: number }[] {
   const sorted = [...rows].filter((r) => r.amount > 0).sort((a, b) => b.amount - a.amount)
   if (sorted.length <= 6) return sorted.map((r) => ({ category: r.category, amount: r.amount }))
   const top = sorted.slice(0, 5).map((r) => ({ category: r.category, amount: r.amount }))
   const rest = sorted.slice(5).reduce((s, r) => s + r.amount, 0)
-  return [...top, { category: "Otros", amount: rest }]
+  return [...top, { category: otherLabel, amount: rest }]
 }
 
 export function ExpenseDonut({
@@ -29,13 +34,16 @@ export function ExpenseDonut({
   selected: string | null
   onSelect: (category: string | null) => void
 }) {
-  const segments = topWithRest(rows)
+  const { t } = useTranslation()
+  const segments = topWithRest(rows, t("finance.expenseDonut.other"))
 
   return (
     <GlassCard className="p-6">
-      <h2 className="mb-4 text-base font-semibold text-foreground">Distribución de gastos</h2>
+      <h2 className="mb-4 text-base font-semibold text-foreground">
+        {t("finance.expenseDonut.title")}
+      </h2>
       {total <= 0 ? (
-        <p className="text-sm text-muted-foreground">Sin gastos registrados en el período.</p>
+        <p className="text-sm text-muted-foreground">{t("finance.expenseDonut.empty")}</p>
       ) : (
         <div className="flex flex-wrap items-center gap-6">
           <svg viewBox="0 0 140 140" className="size-40 shrink-0 -rotate-90">

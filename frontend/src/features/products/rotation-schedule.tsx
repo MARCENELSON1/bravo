@@ -1,13 +1,16 @@
+import { useTranslation } from "react-i18next"
+
 import { GlassCard } from "@/components/ui/glass-card"
 import { Spinner } from "@/components/ui/spinner"
 import { useProductRotation } from "@/hooks/use-products"
 import { type RangeWindow } from "@/lib/finance-range"
-import { weekdayLabel } from "@/features/products/pricing"
 import { formatMoney } from "@/lib/money"
 
 // Rotación por día de semana (Productos v2 Tanda B): qué días vendés más y cuál es
 // el plato estrella de cada día, a partir de sale_facts.
 export function RotationSchedule({ period }: { period: RangeWindow }) {
+  const { t } = useTranslation()
+  const weekdays = t("products.weekdays", { returnObjects: true }) as unknown as string[]
   const rotation = useProductRotation({ from: period.from, to: period.to })
 
   if (rotation.isPending) {
@@ -20,7 +23,7 @@ export function RotationSchedule({ period }: { period: RangeWindow }) {
   if (!rotation.data) {
     return (
       <GlassCard className="p-6 text-sm text-muted-foreground">
-        No pudimos calcular la rotación.
+        {t("products.rotation.error")}
       </GlassCard>
     )
   }
@@ -32,22 +35,22 @@ export function RotationSchedule({ period }: { period: RangeWindow }) {
   return (
     <GlassCard className="flex flex-col gap-4 p-6">
       <header className="flex flex-col gap-1">
-        <h2 className="text-base font-semibold text-foreground">Rotación por día</h2>
+        <h2 className="text-base font-semibold text-foreground">{t("products.rotation.title")}</h2>
         <p className="text-sm text-muted-foreground">
-          Cuánto vendés cada día de la semana y el plato estrella de cada uno.
+          {t("products.rotation.subtitle")}
         </p>
       </header>
 
       {!hasSales ? (
         <p className="text-sm text-muted-foreground">
-          Todavía no hay ventas para mostrar la rotación.
+          {t("products.rotation.noSales")}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
           {rows.map((r) => (
             <li key={r.weekday} className="flex items-center gap-3">
               <span className="w-9 shrink-0 text-xs font-medium text-muted-foreground">
-                {weekdayLabel(r.weekday)}
+                {weekdays[r.weekday] ?? "?"}
               </span>
               <div className="h-6 flex-1 overflow-hidden rounded-md bg-foreground/5">
                 <div

@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next"
+
 import type { MovementDTO } from "@/api/types-operations"
 import { GlassCard } from "@/components/ui/glass-card"
 import { formatMoney } from "@/lib/money"
@@ -24,13 +26,16 @@ export function RecentMovements({
   pending: boolean
   fractionDigits?: number
 }) {
+  const { t } = useTranslation()
   return (
     <GlassCard className="p-6">
-      <h2 className="mb-4 text-base font-semibold text-foreground">Últimos movimientos</h2>
+      <h2 className="mb-4 text-base font-semibold text-foreground">
+        {t("finance.recentMovements.title")}
+      </h2>
       {pending ? (
-        <p className="text-sm text-muted-foreground">Cargando…</p>
+        <p className="text-sm text-muted-foreground">{t("finance.recentMovements.loading")}</p>
       ) : movements.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Sin movimientos en el período.</p>
+        <p className="text-sm text-muted-foreground">{t("finance.recentMovements.empty")}</p>
       ) : (
         <div className="flex flex-col">
           {movements.map((m, i) => (
@@ -49,7 +54,11 @@ export function RecentMovements({
                   {m.kind === "IN" ? "+" : "−"}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-foreground">
-                  {m.description || m.category || (m.kind === "IN" ? "Cobro" : "Egreso")}
+                  {m.description ||
+                    m.category ||
+                    (m.kind === "IN"
+                      ? t("finance.recentMovements.income")
+                      : t("finance.recentMovements.expense"))}
                 </span>
               </div>
               <span className="shrink-0 text-xs text-muted-foreground">{timeLabel(m.occurred_at)}</span>

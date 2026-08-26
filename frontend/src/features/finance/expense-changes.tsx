@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next"
+
 import type { ExpenseCategoryRowDTO } from "@/api/types-operations"
 import { GlassCard } from "@/components/ui/glass-card"
 import { formatMoney } from "@/lib/money"
@@ -10,6 +12,7 @@ export function ExpenseChanges({
   rows: ExpenseCategoryRowDTO[]
   currency: string
 }) {
+  const { t } = useTranslation()
   const top = [...rows]
     .filter((r) => r.delta !== 0)
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
@@ -18,11 +21,11 @@ export function ExpenseChanges({
   return (
     <GlassCard className="p-6">
       <h2 className="mb-4 text-base font-semibold text-foreground">
-        Los 3 gastos que más cambiaron
+        {t("finance.expenseChanges.title")}
       </h2>
       {top.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Sin cambios relevantes vs el período anterior.
+          {t("finance.expenseChanges.empty")}
         </p>
       ) : (
         <div className="flex flex-col gap-3">
@@ -42,7 +45,7 @@ export function ExpenseChanges({
             )
           })}
           <p className="mt-1 text-xs text-muted-foreground">
-            ▲ subió vs el período anterior · ▼ bajó
+            {t("finance.expenseChanges.legend")}
           </p>
         </div>
       )}

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import type { ProductDTO } from "@/api/types-operations"
 import { Badge } from "@/components/ui/badge"
@@ -31,6 +32,7 @@ import { formatMoney } from "@/lib/money"
 // aparte en la página; acá el foco es costo / receta / evolución / insumos.
 
 function Sparkline({ values }: { values: number[] }) {
+  const { t } = useTranslation()
   if (values.length < 2) return null
   const w = 180
   const h = 40
@@ -52,7 +54,7 @@ function Sparkline({ values }: { values: number[] }) {
       viewBox={`0 0 ${w} ${h}`}
       className="text-primary"
       role="img"
-      aria-label="Evolución del costo del plato"
+      aria-label={t("products.ficha.sparklineAria")}
     >
       <polyline points={points} fill="none" stroke="currentColor" strokeWidth={1.5} />
     </svg>
@@ -60,6 +62,7 @@ function Sparkline({ values }: { values: number[] }) {
 }
 
 function IngredientAlertRow({ ingredientId, name }: { ingredientId: string; name: string }) {
+  const { t } = useTranslation()
   const history = useIngredientCostHistory(ingredientId)
   const [now] = useState(() => Date.now()) // estable durante el montaje del drawer
   const alert = ingredientCostAlert(history.data ?? [], now)
@@ -73,10 +76,12 @@ function IngredientAlertRow({ ingredientId, name }: { ingredientId: string; name
           </Badge>
         ) : null}
         {alert.stale ? (
-          <Badge variant="secondary">compra hace {alert.daysSinceLast}d</Badge>
+          <Badge variant="secondary">
+            {t("products.ficha.changeStale", { days: alert.daysSinceLast })}
+          </Badge>
         ) : null}
         {history.data && history.data.length === 0 ? (
-          <span className="text-xs text-muted-foreground">sin compras</span>
+          <span className="text-xs text-muted-foreground">{t("products.ficha.noPurchases")}</span>
         ) : null}
       </div>
     </div>
@@ -84,6 +89,7 @@ function IngredientAlertRow({ ingredientId, name }: { ingredientId: string; name
 }
 
 function FichaBody({ product, period }: { product: ProductDTO; period: RangeWindow }) {
+  const { t } = useTranslation()
   const foodCost = useFoodCost()
   const recipe = useRecipe(product.id)
   const ingredients = useIngredients()
@@ -120,18 +126,18 @@ function FichaBody({ product, period }: { product: ProductDTO; period: RangeWind
     <div className="flex flex-col gap-5 px-4 pb-6">
       {/* Resumen */}
       <section className="grid grid-cols-2 gap-3">
-        <Metric label="Precio" value={formatMoney(product.price_amount, currency)} />
+        <Metric label={t("products.ficha.metricPrice")} value={formatMoney(product.price_amount, currency)} />
         <Metric
-          label="Costo (bruto)"
+          label={t("products.ficha.metricCost")}
           value={row ? formatMoney(row.food_cost_amount, currency) : "—"}
         />
         <Metric
-          label="Te deja (neto de IVA)"
+          label={t("products.ficha.metricLeaves")}
           value={row ? formatMoney(row.margin_amount, currency) : "—"}
           strong
         />
         <Metric
-          label="Food cost %"
+          label={t("products.ficha.metricFoodCost")}
           value={row ? formatBps(row.food_cost_ratio_bps) : "—"}
         />
       </section>
@@ -141,23 +147,23 @@ function FichaBody({ product, period }: { product: ProductDTO; period: RangeWind
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <Badge variant={row.cost_confirmed ? "default" : "secondary"}>
-              {row.cost_confirmed ? "Costo confirmado" : "Costo estimado"}
+              {row.cost_confirmed
+                ? t("products.ficha.costConfirmed")
+                : t("products.ficha.costEstimated")}
             </Badge>
             {!row.cost_confirmed ? (
               <span className="text-xs text-muted-foreground">
-                {Math.round(row.coverage_bps / 100)}% del costo respaldado por compras —
-                cargá las compras que faltan para confirmarlo.
+                {t("products.ficha.coverageHint", { pct: Math.round(row.coverage_bps / 100) })}
               </span>
             ) : null}
           </div>
           {!row.ratio_sane ? (
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-orange-600">
-                receta incompleta
+                {t("products.badges.incompleteRecipe")}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                El food cost cae fuera de 5–95% ({formatBps(row.food_cost_ratio_bps)}). Revisá la
-                receta antes de confiar en el margen.
+                {t("products.ficha.ratioHint", { pct: formatBps(row.food_cost_ratio_bps) })}
               </span>
             </div>
           ) : null}
@@ -168,15 +174,17 @@ function FichaBody({ product, period }: { product: ProductDTO; period: RangeWind
 
       {/* Receta */}
       <section className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold">Receta</h3>
+        <h3 className="text-sm font-semibold">{t("products.ficha.recipeHeading")}</h3>
         {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Este producto no tiene receta.</p>
+          <p className="text-sm text-muted-foreground">{t("products.ficha.noRecipe")}</p>
         ) : (
           <ul className="flex flex-col gap-1 text-sm">
             {items.map((item, i) => {
               const ing = item.ingredient_id ? ingById.get(item.ingredient_id) : undefined
               const prep = item.preparation_id ? prepById.get(item.preparation_id) : undefined
-              const name = ing?.name ?? (prep ? `Preparación: ${prep.name}` : "—")
+              const name =
+                ing?.name ??
+                (prep ? t("products.preparationLabel", { name: prep.name }) : "—")
               const qtyLabel = ing
                 ? formatQty(item.qty, ing.recipe_unit ?? ing.unit)
                 : `${(item.qty / 1000).toLocaleString("es-AR", { maximumFractionDigits: 3 })} ${
@@ -192,7 +200,9 @@ function FichaBody({ product, period }: { product: ProductDTO; period: RangeWind
           </ul>
         )}
         {items.length > 0 && recipe.data?.version ? (
-          <p className="text-xs text-muted-foreground">Versión de receta: v{recipe.data.version}</p>
+          <p className="text-xs text-muted-foreground">
+            {t("products.ficha.recipeVersion", { version: recipe.data.version })}
+          </p>
         ) : null}
       </section>
 
@@ -200,7 +210,7 @@ function FichaBody({ product, period }: { product: ProductDTO; period: RangeWind
 
       {/* Costo del plato en el tiempo */}
       <section className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold">Costo del plato en el tiempo</h3>
+        <h3 className="text-sm font-semibold">{t("products.ficha.costOverTime")}</h3>
         {detail.isPending ? (
           <Spinner className="size-4 text-muted-foreground" />
         ) : series.length >= 2 ? (
@@ -215,8 +225,7 @@ function FichaBody({ product, period }: { product: ProductDTO; period: RangeWind
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Sin suficientes ventas en el período para graficar. El costo se congela por
-            venta al cobrar.
+            {t("products.ficha.notEnoughSales")}
           </p>
         )}
       </section>
@@ -225,9 +234,9 @@ function FichaBody({ product, period }: { product: ProductDTO; period: RangeWind
 
       {/* Insumos + alertas */}
       <section className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold">Insumos</h3>
+        <h3 className="text-sm font-semibold">{t("products.ficha.ingredients")}</h3>
         {ingredientItems.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin insumos directos.</p>
+          <p className="text-sm text-muted-foreground">{t("products.ficha.noDirectIngredients")}</p>
         ) : (
           <div className="flex flex-col gap-1.5">
             {ingredientItems.map((item, i) => {
@@ -238,8 +247,7 @@ function FichaBody({ product, period }: { product: ProductDTO; period: RangeWind
               )
             })}
             <p className="mt-1 text-xs text-muted-foreground">
-              ▲ = subió desde la primera compra cargada. "compra hace Nd" = costo de
-              reposición desactualizado (última compra hace más de 60 días).
+              {t("products.ficha.ingredientsLegend")}
             </p>
           </div>
         )}
@@ -272,19 +280,20 @@ export function ProductFicha({
   product: ProductDTO
   period: RangeWindow
 }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="sm">
-          Ficha
+          {t("products.ficha.button")}
         </Button>
       </SheetTrigger>
       <SheetContent className="overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Ficha de {product.name}</SheetTitle>
+          <SheetTitle>{t("products.ficha.sheetTitle", { name: product.name })}</SheetTitle>
           <SheetDescription>
-            Costo, receta, evolución del costo e insumos del plato.
+            {t("products.ficha.sheetDescription")}
           </SheetDescription>
         </SheetHeader>
         {open ? <FichaBody product={product} period={period} /> : null}

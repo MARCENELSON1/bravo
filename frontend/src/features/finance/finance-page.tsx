@@ -1,4 +1,6 @@
+import type { TFunction } from "i18next"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import type { FinanceKpiDTO, FinanceOverviewDTO } from "@/api/types-operations"
 import { Button } from "@/components/ui/button"
@@ -22,18 +24,6 @@ import {
 } from "@/lib/finance-range"
 import { formatMoney } from "@/lib/money"
 
-const KPI_LABELS: Record<string, string> = {
-  prime_cost: "Prime Cost",
-  food_cost: "Food Cost",
-  labor_cost: "Costo de personal",
-  waste: "Mermas",
-  net_margin: "Margen neto",
-  gross_margin: "Margen bruto",
-  break_even: "Punto de equilibrio",
-  revpash: "RevPASH",
-  inventory_turnover: "Rotación de inventario",
-}
-
 const STATUS_STYLE: Record<string, string> = {
   healthy: "text-emerald-500",
   warn: "text-amber-500",
@@ -45,12 +35,6 @@ const STATUS_DOT: Record<string, string> = {
   warn: "bg-amber-500",
   alert: "bg-red-500",
   neutral: "bg-muted-foreground",
-}
-const STATUS_ACTION: Record<string, string> = {
-  healthy: "Mantener",
-  warn: "Revisar",
-  alert: "Actuar",
-  neutral: "—",
 }
 
 function pct(bps: number): string {
@@ -74,14 +58,15 @@ function kpiDelta(k: FinanceKpiDTO, currency: string): string | null {
   return `${up ? "▲" : "▼"} ${mag}`
 }
 
-function healthyHint(k: FinanceKpiDTO): string | null {
+function healthyHint(k: FinanceKpiDTO, t: TFunction): string | null {
   if (k.kind !== "ratio" || k.healthy_high == null) return null
   return k.healthy_low != null
-    ? `sano ${pct(k.healthy_low)}–${pct(k.healthy_high)}`
-    : `sano < ${pct(k.healthy_high)}`
+    ? t("finance.healthyRange", { low: pct(k.healthy_low), high: pct(k.healthy_high) })
+    : t("finance.healthyMax", { high: pct(k.healthy_high) })
 }
 
 export function FinancePage() {
+  const { t } = useTranslation()
   const [range, setRange] = useState<FinanceRange>("month")
   const window = useMemo(() => rangeWindow(range), [range])
   const overview = useFinanceOverview(window)
@@ -89,7 +74,7 @@ export function FinancePage() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <GradientHeading>Finanzas</GradientHeading>
+        <GradientHeading>{t("finance.title")}</GradientHeading>
         <div className="flex flex-wrap gap-1">
           {FINANCE_RANGES.map((r) => (
             <Button
@@ -98,7 +83,7 @@ export function FinancePage() {
               variant={range === r.value ? "default" : "outline"}
               onClick={() => setRange(r.value)}
             >
-              {r.label}
+              {t(`finance.ranges.${r.value}`)}
             </Button>
           ))}
         </div>
@@ -109,7 +94,7 @@ export function FinancePage() {
       ) : overview.data ? (
         <FinanceBody data={overview.data} window={window} range={range} />
       ) : (
-        <p className="text-sm text-muted-foreground">No pudimos cargar las finanzas.</p>
+        <p className="text-sm text-muted-foreground">{t("finance.loadError")}</p>
       )}
     </div>
   )
@@ -124,6 +109,7 @@ function FinanceBody({
   window: RangeWindow
   range: FinanceRange
 }) {
+  const { t } = useTranslation()
   const [category, setCategory] = useState<string | null>(null)
   const breakdown = useExpenseBreakdown(window)
   const showMovements = range === "today" || range === "week"
@@ -136,7 +122,7 @@ function FinanceBody({
     <>
       {/* HERO — ganancia neta del período */}
       <GlassCard className="p-6">
-        <p className="text-sm text-muted-foreground">Tu ganancia neta del período</p>
+        <p className="text-sm text-muted-foreground">{t("finance.hero.netProfit")}</p>
         <p
           className={`mt-1 text-3xl font-bold tabular-nums sm:text-4xl ${net && net.value < 0 ? "text-red-500" : "text-foreground"}`}
         >
@@ -145,16 +131,19 @@ function FinanceBody({
         <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
           {net && kpiDelta(net, data.currency) ? (
             <span className={net.delta > 0 ? "text-primary" : "text-destructive"}>
-              {kpiDelta(net, data.currency)} vs período anterior
+              {kpiDelta(net, data.currency)} {t("finance.hero.vsPrevious")}
             </span>
           ) : null}
           {data.projection ? (
             <span className="text-muted-foreground">
-              Si seguís así, cerrás en{" "}
+              {t("finance.hero.projectionPrefix")}{" "}
               <span className="font-semibold text-foreground">
                 {formatMoney(data.projection.sales_amount, data.currency)}
               </span>{" "}
-              ({data.projection.elapsed_days}/{data.projection.month_days} días)
+              {t("finance.hero.projectionDays", {
+                elapsed: data.projection.elapsed_days,
+                total: data.projection.month_days,
+              })}
             </span>
           ) : null}
         </div>
@@ -162,8 +151,7 @@ function FinanceBody({
 
       {!data.configured ? (
         <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-300">
-          Cargá tus costos fijos (personal y otros) en el Asesor para que el margen neto y el
-          prime cost sean exactos.
+          {t("finance.configureCosts")}
         </p>
       ) : null}
 
@@ -176,12 +164,14 @@ function FinanceBody({
             <GlassCard key={key} className="flex flex-col gap-1 p-4">
               <span className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span className={`size-2 rounded-full ${STATUS_DOT[k.status] ?? ""}`} />
-                {KPI_LABELS[key]}
+                {t(`finance.kpiLabels.${key}`)}
               </span>
               <span className={`text-xl font-bold tabular-nums ${STATUS_STYLE[k.status] ?? ""}`}>
                 {kpiValue(k, data.currency)}
               </span>
-              <span className="text-xs text-muted-foreground">{STATUS_ACTION[k.status] ?? "—"}</span>
+              <span className="text-xs text-muted-foreground">
+                {t(`finance.statusActions.${k.status}`, { defaultValue: "—" })}
+              </span>
             </GlassCard>
           )
         })}
@@ -192,13 +182,13 @@ function FinanceBody({
       {data.commissions_amount > 0 ? (
         <GlassCard className="flex flex-wrap items-center justify-between gap-3 p-4">
           <div>
-            <p className="text-sm text-muted-foreground">Comisiones de cobro (pasarelas)</p>
+            <p className="text-sm text-muted-foreground">{t("finance.commissions.label")}</p>
             <p className="text-xl font-bold tabular-nums text-destructive">
               −{formatMoney(data.commissions_amount, data.currency)}
             </p>
           </div>
           <p className="text-sm text-muted-foreground">
-            Cobrado neto de comisiones:{" "}
+            {t("finance.commissions.netCollected")}{" "}
             <span className="font-semibold text-foreground">
               {formatMoney(data.collected_net_amount, data.currency)}
             </span>
@@ -226,13 +216,15 @@ function FinanceBody({
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
         {data.kpis.map((k) => (
           <GlassCard key={k.key} className="flex flex-col gap-1 p-5">
-            <span className="text-sm text-muted-foreground">{KPI_LABELS[k.key] ?? k.key}</span>
+            <span className="text-sm text-muted-foreground">
+              {t(`finance.kpiLabels.${k.key}`, { defaultValue: k.key })}
+            </span>
             <span className={`text-2xl font-bold tabular-nums ${STATUS_STYLE[k.status] ?? ""}`}>
               {kpiValue(k, data.currency)}
             </span>
             <span className="flex items-center justify-between text-xs text-muted-foreground">
               <span>{kpiDelta(k, data.currency) ?? "—"}</span>
-              <span>{healthyHint(k) ?? ""}</span>
+              <span>{healthyHint(k, t) ?? ""}</span>
             </span>
           </GlassCard>
         ))}
@@ -240,7 +232,9 @@ function FinanceBody({
 
       {data.diagnostics.length > 0 ? (
         <GlassCard className="p-6">
-          <h2 className="mb-4 text-base font-semibold text-foreground">Diagnósticos</h2>
+          <h2 className="mb-4 text-base font-semibold text-foreground">
+            {t("finance.diagnostics.title")}
+          </h2>
           <div className="flex flex-col gap-3">
             {data.diagnostics.map((d) => (
               <div key={d.code} className="border-l-2 border-primary/60 pl-3">
@@ -256,12 +250,12 @@ function FinanceBody({
       {data.product_margins.length > 0 ? (
         <GlassCard className="p-6">
           <h2 className="mb-4 text-base font-semibold text-foreground">
-            Margen de contribución por producto
+            {t("finance.productMargins.title")}
           </h2>
           <div className="flex flex-col">
             <div className="flex items-center justify-between border-b pb-1 text-xs font-medium text-muted-foreground">
-              <span>Producto</span>
-              <span>Unidades · Margen</span>
+              <span>{t("finance.productMargins.product")}</span>
+              <span>{t("finance.productMargins.unitsMargin")}</span>
             </div>
             {data.product_margins.map((p) => (
               <ProductRow
@@ -305,6 +299,7 @@ function ProductRow({
   currency: string
   window: RangeWindow
 }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const detail = useProductDetail(open ? productId : null, window)
 
@@ -326,7 +321,7 @@ function ProductRow({
       {open ? (
         <div className="pb-2 pl-4 text-xs text-muted-foreground">
           {detail.isLoading ? (
-            <span>Cargando…</span>
+            <span>{t("finance.loading")}</span>
           ) : detail.data && detail.data.lines.length > 0 ? (
             detail.data.lines.map((line) => (
               <div key={line.order_id} className="flex items-center justify-between py-0.5">
@@ -337,7 +332,7 @@ function ProductRow({
               </div>
             ))
           ) : (
-            <span>Sin líneas en el período.</span>
+            <span>{t("finance.productMargins.noLines")}</span>
           )}
         </div>
       ) : null}

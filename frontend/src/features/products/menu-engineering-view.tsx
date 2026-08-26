@@ -1,5 +1,7 @@
 import { useMemo } from "react"
 import { Link } from "react-router-dom"
+import { useTranslation } from "react-i18next"
+import type { TFunction } from "i18next"
 
 import { Badge } from "@/components/ui/badge"
 import { GlassCard } from "@/components/ui/glass-card"
@@ -27,20 +29,15 @@ function minUnitsForPeriod(period: RangeWindow): number {
   return Math.max(3, Math.round((10 * days) / 30))
 }
 
-const CATEGORY_META: Record<
-  MenuCategory,
-  { label: string; sub: string; dot: string }
-> = {
-  funciona: { label: "Funciona", sub: "Tu motor — mantenelos", dot: "bg-emerald-500" },
-  oportunidad: { label: "Oportunidades", sub: "Empujá estos", dot: "bg-violet-500" },
-  estable: { label: "Estables", sub: "Tu base — no los toques", dot: "bg-sky-500" },
-  revisar: { label: "Revisar", sub: "Están mal, decidí", dot: "bg-orange-500" },
-  no_vendido: { label: "No vendidos", sub: "Nadie los pidió", dot: "bg-neutral-500" },
-  sin_datos: {
-    label: "Sin datos",
-    sub: "Pocas ventas o costo sin confirmar",
-    dot: "bg-neutral-400",
-  },
+// Color del punto por categoría. Las etiquetas (label/sub) viven en el diccionario
+// bajo `products.menuCategories.<cat>` — la CLAVE es el enum de dominio.
+const CATEGORY_DOT: Record<MenuCategory, string> = {
+  funciona: "bg-emerald-500",
+  oportunidad: "bg-violet-500",
+  estable: "bg-sky-500",
+  revisar: "bg-orange-500",
+  no_vendido: "bg-neutral-500",
+  sin_datos: "bg-neutral-400",
 }
 const ORDER: MenuCategory[] = [
   "funciona",
@@ -52,6 +49,7 @@ const ORDER: MenuCategory[] = [
 ]
 
 export function MenuEngineering({ period }: { period: RangeWindow }) {
+  const { t } = useTranslation()
   // limit alto para no truncar la clasificación (el endpoint corta en le=1000).
   const query = useMemo(() => ({ from: period.from, to: period.to, limit: 1000 }), [period])
   const perf = useProductPerformance(query)
@@ -96,12 +94,12 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
   const currency = perf.data?.[0]?.currency ?? "ARS"
 
   if (perf.isPending) {
-    return <p className="text-sm text-muted-foreground">Analizando tu carta…</p>
+    return <p className="text-sm text-muted-foreground">{t("products.menu.analyzing")}</p>
   }
   if (products.length === 0) {
     return (
       <GlassCard className="p-6 text-sm text-muted-foreground">
-        Todavía no hay ventas de productos en el período elegido para analizar la carta.
+        {t("products.menu.noSales")}
       </GlassCard>
     )
   }
@@ -118,23 +116,25 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
     <div className="flex flex-col gap-4">
       {/* Hero — resumen de la carta */}
       <GlassCard className="p-6">
-        <h2 className="text-base font-semibold text-foreground">Tu carta</h2>
+        <h2 className="text-base font-semibold text-foreground">{t("products.menu.heroTitle")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          De tus {products.length} platos, {byCat("funciona").length} son estrellas,{" "}
-          {byCat("oportunidad").length} son oportunidades, {byCat("revisar").length} te están
-          costando margen y {byCat("no_vendido").length} no se vendieron. Comparados dentro de su
-          categoría de carta.
+          {t("products.menu.heroSummary", {
+            total: products.length,
+            funciona: byCat("funciona").length,
+            oportunidad: byCat("oportunidad").length,
+            revisar: byCat("revisar").length,
+            noVendido: byCat("no_vendido").length,
+          })}
         </p>
         {byCat("sin_datos").length > 0 ? (
           <p className="mt-1 text-xs text-muted-foreground">
-            {byCat("sin_datos").length} platos quedaron sin clasificar (pocas ventas en el período
-            o costo sin confirmar) — no los forzamos a una categoría.
+            {t("products.menu.unclassified", { count: byCat("sin_datos").length })}
           </p>
         ) : null}
         {gate.open ? (
           <>
             <p className="mt-2 text-sm text-foreground">
-              En este período tu carta te dejó{" "}
+              {t("products.menu.leftYou")}{" "}
               <span className="font-semibold tabular-nums">
                 {money(confirmedMargin(products))}
               </span>
@@ -142,24 +142,28 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
             </p>
             {foodCost.data && foodCost.data.total_count > 0 ? (
               <p className="mt-2 text-xs text-muted-foreground">
-                {foodCost.data.confirmed_count} de {foodCost.data.total_count} platos con
-                costo confirmado. Los de costo estimado no suman a la plata de arriba —
-                cargá sus compras para confirmarlos.
+                {t("products.menu.confirmedCount", {
+                  confirmed: foodCost.data.confirmed_count,
+                  total: foodCost.data.total_count,
+                })}
               </p>
             ) : null}
           </>
         ) : (
           <div className="mt-2">
             <p className="text-sm text-foreground">
-              Todavía no podemos decirte cuánto te dejó tu carta — te faltan{" "}
-              <span className="font-semibold tabular-nums">{gate.missing}</span> platos con
-              costo confirmado (vas {gate.confirmed} de {gate.total}).
+              {t("products.menu.gateClosedPrefix")}{" "}
+              <span className="font-semibold tabular-nums">{gate.missing}</span>{" "}
+              {t("products.menu.gateClosedSuffix", {
+                confirmed: gate.confirmed,
+                total: gate.total,
+              })}
             </p>
             <Link
               to="/app/stock"
               className="mt-2 inline-flex text-sm font-medium text-primary hover:underline"
             >
-              Cargar compras →
+              {t("products.menu.loadPurchases")}
             </Link>
           </div>
         )}
@@ -169,28 +173,31 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {ORDER.map((cat) => {
           const items = byCat(cat)
-          const meta = CATEGORY_META[cat]
           const totalMargin = confirmedMargin(items) // Fase 3: solo confirmados
           return (
             <GlassCard key={cat} className="flex flex-col gap-2 p-5">
               <div className="flex items-center gap-2">
-                <span className={`size-2.5 rounded-full ${meta.dot}`} />
-                <span className="text-sm font-semibold text-foreground">{meta.label}</span>
+                <span className={`size-2.5 rounded-full ${CATEGORY_DOT[cat]}`} />
+                <span className="text-sm font-semibold text-foreground">
+                  {t(`products.menuCategories.${cat}.label`)}
+                </span>
                 <span className="ml-auto text-sm tabular-nums text-muted-foreground">
                   {items.length}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">{meta.sub}</p>
+              <p className="text-xs text-muted-foreground">
+                {t(`products.menuCategories.${cat}.sub`)}
+              </p>
               {gate.open && cat !== "no_vendido" && cat !== "sin_datos" ? (
                 <p className="text-sm tabular-nums text-foreground">
-                  Te dejan {money(totalMargin)}
+                  {t("products.menu.cardLeaves", { amount: money(totalMargin) })}
                 </p>
               ) : null}
               <ul className="mt-1 flex flex-col gap-0.5 text-xs text-muted-foreground">
                 {items.slice(0, 3).map((p) => (
                   <li key={p.id} className="flex justify-between gap-2">
                     <span className="truncate">{p.name}</span>
-                    <span className="tabular-nums">{p.units} uds</span>
+                    <span className="tabular-nums">{t("products.menu.units", { count: p.units })}</span>
                   </li>
                 ))}
               </ul>
@@ -203,7 +210,7 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
       {gate.open ? (
         <GlassCard className="p-6">
           <h2 className="mb-3 text-base font-semibold text-foreground">
-            Los 3 platos que más plata te dejan
+            {t("products.menu.topTitle")}
           </h2>
           <div className="flex flex-col gap-2">
             {top.map((p, i) => (
@@ -212,7 +219,7 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
                   {["🥇", "🥈", "🥉"][i]} {p.name}
                 </span>
                 <span className="shrink-0 tabular-nums text-muted-foreground">
-                  {p.units} uds ·{" "}
+                  {t("products.menu.units", { count: p.units })} ·{" "}
                   <span className="font-semibold text-foreground">{money(p.margin)}</span>
                 </span>
               </div>
@@ -223,24 +230,24 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
 
       {/* Tabla de detalle */}
       <GlassCard className="p-6">
-        <h2 className="mb-3 text-base font-semibold text-foreground">Detalle de productos</h2>
+        <h2 className="mb-3 text-base font-semibold text-foreground">{t("products.menu.detail.title")}</h2>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-sm">
             <thead>
               <tr className="border-b text-xs font-medium text-muted-foreground">
-                <th className="py-1 text-left">Producto</th>
-                <th className="py-1 text-right">Precio</th>
-                <th className="py-1 text-right">Costo</th>
-                <th className="py-1 text-right">Te deja</th>
-                <th className="py-1 text-right">Vendidos</th>
-                <th className="py-1 text-right">Estado</th>
+                <th className="py-1 text-left">{t("products.menu.detail.product")}</th>
+                <th className="py-1 text-right">{t("products.menu.detail.price")}</th>
+                <th className="py-1 text-right">{t("products.menu.detail.cost")}</th>
+                <th className="py-1 text-right">{t("products.menu.detail.leaves")}</th>
+                <th className="py-1 text-right">{t("products.menu.detail.sold")}</th>
+                <th className="py-1 text-right">{t("products.menu.detail.status")}</th>
               </tr>
             </thead>
             <tbody>
               {[...products]
                 .sort((a, b) => b.margin - a.margin)
                 .map((p) => (
-                  <MenuRow key={p.id} p={p} money={money} />
+                  <MenuRow key={p.id} p={p} money={money} t={t} />
                 ))}
             </tbody>
           </table>
@@ -250,8 +257,15 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
   )
 }
 
-function MenuRow({ p, money }: { p: ClassifiedProduct; money: (n: number) => string }) {
-  const meta = CATEGORY_META[p.category]
+function MenuRow({
+  p,
+  money,
+  t,
+}: {
+  p: ClassifiedProduct
+  money: (n: number) => string
+  t: TFunction
+}) {
   return (
     <tr className="border-b border-border/60 last:border-b-0">
       <td className="py-1.5 pr-2">{p.name}</td>
@@ -269,16 +283,16 @@ function MenuRow({ p, money }: { p: ClassifiedProduct; money: (n: number) => str
         <span className="flex items-center justify-end gap-1.5 text-xs">
           {!p.ratioSane ? (
             <Badge variant="outline" className="text-xs font-normal text-orange-600">
-              receta incompleta
+              {t("products.badges.incompleteRecipe")}
             </Badge>
           ) : null}
           {!p.costConfirmed ? (
             <Badge variant="secondary" className="text-xs font-normal">
-              estimado
+              {t("products.badges.estimated")}
             </Badge>
           ) : null}
-          <span className={`size-2 rounded-full ${meta.dot}`} />
-          {meta.label}
+          <span className={`size-2 rounded-full ${CATEGORY_DOT[p.category]}`} />
+          {t(`products.menuCategories.${p.category}.label`)}
         </span>
       </td>
     </tr>

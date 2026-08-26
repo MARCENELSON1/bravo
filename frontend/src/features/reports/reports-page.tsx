@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
 import { AccountantExport } from "@/features/finance/accountant-export"
@@ -18,13 +19,14 @@ import { FINANCE_RANGES, rangeWindow, type FinanceRange } from "@/lib/finance-ra
 import { formatMoney } from "@/lib/money"
 
 export function ReportsPage() {
+  const { t } = useTranslation()
   const [range, setRange] = useState<FinanceRange>("month")
   const window = useMemo(() => rangeWindow(range), [range])
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <GradientHeading>Reportes</GradientHeading>
+        <GradientHeading>{t("reports.title")}</GradientHeading>
         <div className="flex flex-wrap gap-1">
           {FINANCE_RANGES.map((r) => (
             <Button
@@ -33,7 +35,7 @@ export function ReportsPage() {
               variant={range === r.value ? "default" : "outline"}
               onClick={() => setRange(r.value)}
             >
-              {r.label}
+              {t(`reports.ranges.${r.value}`)}
             </Button>
           ))}
         </div>
@@ -68,42 +70,48 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
 }
 
 function Summary({ window }: { window: Win }) {
+  const { t } = useTranslation()
   const q = useDashboard({ from: window.from, to: window.to })
   const d = q.data
   const cur = d?.currency ?? "ARS"
   const money = (n: number) => formatMoney(n, cur)
   return (
     <GlassCard className="p-6">
-      <h2 className="mb-3 text-base font-semibold text-foreground">Resumen del período</h2>
+      <h2 className="mb-3 text-base font-semibold text-foreground">{t("reports.summary.title")}</h2>
       {q.isPending ? (
         <Spinner />
       ) : d ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          <Stat label="Ventas" value={money(d.sales)} />
-          <Stat label="Cobrado neto" value={money(d.collected_net)} />
-          <Stat label="Gastos" value={money(d.expenses)} />
-          <Stat label="Ganancia" value={money(d.collected_net - d.expenses)} accent />
-          <Stat label="Ticket prom." value={money(d.avg_ticket)} />
-          <Stat label="Órdenes" value={String(d.paid_orders)} />
+          <Stat label={t("reports.summary.sales")} value={money(d.sales)} />
+          <Stat label={t("reports.summary.collectedNet")} value={money(d.collected_net)} />
+          <Stat label={t("reports.summary.expenses")} value={money(d.expenses)} />
+          <Stat
+            label={t("reports.summary.profit")}
+            value={money(d.collected_net - d.expenses)}
+            accent
+          />
+          <Stat label={t("reports.summary.avgTicket")} value={money(d.avg_ticket)} />
+          <Stat label={t("reports.summary.orders")} value={String(d.paid_orders)} />
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">No pudimos cargar el resumen.</p>
+        <p className="text-sm text-muted-foreground">{t("reports.summary.error")}</p>
       )}
     </GlassCard>
   )
 }
 
 function SalesByDay({ window }: { window: Win }) {
+  const { t } = useTranslation()
   const q = useRevenueDaily({ from: window.from, to: window.to })
   const rows = q.data ?? []
   const max = rows.reduce((m, r) => Math.max(m, r.sales_amount), 0)
   return (
     <GlassCard className="flex flex-col gap-3 p-6">
-      <h2 className="text-base font-semibold text-foreground">Ventas por día</h2>
+      <h2 className="text-base font-semibold text-foreground">{t("reports.salesByDay.title")}</h2>
       {q.isPending ? (
         <Spinner />
       ) : rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Sin ventas en el período.</p>
+        <p className="text-sm text-muted-foreground">{t("reports.salesByDay.empty")}</p>
       ) : (
         <div className="flex flex-col gap-1.5">
           {rows.map((r) => (
@@ -127,15 +135,18 @@ function SalesByDay({ window }: { window: Win }) {
 }
 
 function ExpensesByCategory({ window }: { window: Win }) {
+  const { t } = useTranslation()
   const q = useExpenseBreakdown({ from: window.from, to: window.to })
   const data = q.data
   return (
     <GlassCard className="flex flex-col gap-3 p-6">
-      <h2 className="text-base font-semibold text-foreground">Gastos por rubro</h2>
+      <h2 className="text-base font-semibold text-foreground">
+        {t("reports.expensesByCategory.title")}
+      </h2>
       {q.isPending ? (
         <Spinner />
       ) : !data || data.rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Sin gastos en el período.</p>
+        <p className="text-sm text-muted-foreground">{t("reports.expensesByCategory.empty")}</p>
       ) : (
         <div className="flex flex-col gap-1.5 text-sm">
           {data.rows.map((r) => (
@@ -152,7 +163,7 @@ function ExpensesByCategory({ window }: { window: Win }) {
             </div>
           ))}
           <div className="mt-1 flex items-center justify-between border-t pt-2 font-medium">
-            <span>Total</span>
+            <span>{t("reports.expensesByCategory.total")}</span>
             <span className="tabular-nums">{formatMoney(data.total, data.currency)}</span>
           </div>
         </div>
@@ -164,16 +175,15 @@ function ExpensesByCategory({ window }: { window: Win }) {
 // Sales tax cobrado (a remitir). Sólo se muestra si hay algo (US); en AR el
 // impuesto va incluido en el precio y no se cobra aparte → no aparece (paridad).
 function TaxToRemit({ window }: { window: Win }) {
+  const { t } = useTranslation()
   const q = useTaxCollected({ from: window.from, to: window.to })
   const d = q.data
   if (!d || d.amount <= 0) return null
   return (
     <GlassCard className="flex items-center justify-between gap-4 p-6">
       <div>
-        <h2 className="text-base font-semibold text-foreground">Sales tax cobrado</h2>
-        <p className="text-sm text-muted-foreground">
-          Lo que cobraste de impuesto en el período — a remitir al fisco (no es ganancia).
-        </p>
+        <h2 className="text-base font-semibold text-foreground">{t("reports.taxToRemit.title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("reports.taxToRemit.description")}</p>
       </div>
       <span className="shrink-0 text-2xl font-bold tabular-nums text-foreground">
         {formatMoney(d.amount, d.currency)}
@@ -185,6 +195,7 @@ function TaxToRemit({ window }: { window: Win }) {
 // Estado del reporte al fisco (TaxJar AutoFile) + "Reportar ahora". Solo aparece
 // si hay algo en el outbox → en AR no se ve (paridad).
 function TaxReportStatusCard() {
+  const { t } = useTranslation()
   const q = useTaxReportStatus()
   const run = useReportPendingTax()
   const d = q.data
@@ -195,44 +206,44 @@ function TaxReportStatusCard() {
       onSuccess: (r) => {
         if (r.failed > 0) {
           toast.error(
-            `Reportadas ${r.sent}. ${r.failed} con error — reintentá o revisá TaxJar.`
+            t("reports.taxReport.reportPartialError", { sent: r.sent, failed: r.failed })
           )
         } else {
           toast.success(
-            r.sent > 0 ? `Reportadas ${r.sent} ventas a TaxJar.` : "No había ventas por reportar."
+            r.sent > 0
+              ? t("reports.taxReport.reportSuccess", { sent: r.sent })
+              : t("reports.taxReport.reportNothing")
           )
         }
       },
-      onError: () => toast.error("No pudimos reportar ahora. Probá de nuevo."),
+      onError: () => toast.error(t("reports.taxReport.reportError")),
     })
   }
 
   return (
     <GlassCard className="flex items-center justify-between gap-4 p-6">
       <div>
-        <h2 className="text-base font-semibold text-foreground">Reporte al fisco (TaxJar)</h2>
+        <h2 className="text-base font-semibold text-foreground">{t("reports.taxReport.title")}</h2>
         <p className="text-sm text-muted-foreground">
           {d.pending > 0
-            ? `${d.pending} venta${d.pending === 1 ? "" : "s"} por reportar${
-                d.failed > 0 ? ` — ${d.failed} con error` : ""
+            ? `${t("reports.taxReport.pending", { count: d.pending })}${
+                d.failed > 0 ? t("reports.taxReport.errorsSuffix", { count: d.failed }) : ""
               }.`
-            : `Todo reportado. ${d.sent} venta${d.sent === 1 ? "" : "s"} presentada${
-                d.sent === 1 ? "" : "s"
-              }.`}
+            : t("reports.taxReport.allReported", { count: d.sent })}
         </p>
         {d.failed > 0 ? (
           <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
-            Las fallidas se reintentan. Si persisten, revisá que TaxJar esté conectado en Config.
+            {t("reports.taxReport.failedNote")}
           </p>
         ) : null}
       </div>
       {d.pending > 0 ? (
         <Button onClick={report} disabled={run.isPending} className="shrink-0">
-          {run.isPending ? "Reportando…" : "Reportar ahora"}
+          {run.isPending ? t("reports.taxReport.reporting") : t("reports.taxReport.reportNow")}
         </Button>
       ) : (
         <span className="shrink-0 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-          Al día
+          {t("reports.taxReport.upToDate")}
         </span>
       )}
     </GlassCard>
@@ -240,25 +251,26 @@ function TaxReportStatusCard() {
 }
 
 function TopProducts({ window }: { window: Win }) {
+  const { t } = useTranslation()
   const q = useProductPerformance({ from: window.from, to: window.to, limit: 10 })
   const rows = q.data ?? []
   const cur = rows[0]?.currency ?? "ARS"
   return (
     <GlassCard className="flex flex-col gap-3 p-6">
-      <h2 className="text-base font-semibold text-foreground">Top productos</h2>
+      <h2 className="text-base font-semibold text-foreground">{t("reports.topProducts.title")}</h2>
       {q.isPending ? (
         <Spinner />
       ) : rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Sin ventas de productos en el período.</p>
+        <p className="text-sm text-muted-foreground">{t("reports.topProducts.empty")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[420px] text-sm">
             <thead>
               <tr className="border-b text-xs font-medium text-muted-foreground">
-                <th className="py-1 text-left">Producto</th>
-                <th className="py-1 text-right">Unidades</th>
-                <th className="py-1 text-right">Ventas</th>
-                <th className="py-1 text-right">Margen</th>
+                <th className="py-1 text-left">{t("reports.topProducts.product")}</th>
+                <th className="py-1 text-right">{t("reports.topProducts.units")}</th>
+                <th className="py-1 text-right">{t("reports.topProducts.sales")}</th>
+                <th className="py-1 text-right">{t("reports.topProducts.margin")}</th>
               </tr>
             </thead>
             <tbody>

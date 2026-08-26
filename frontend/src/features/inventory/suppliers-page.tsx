@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 
-import { isApiError } from "@/api/api-error"
+import { apiErrorText } from "@/api/translate-error"
 import type { SupplierDTO } from "@/api/types-inventory"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -33,6 +34,7 @@ function SupplierFormSheet({
   supplier?: SupplierDTO
   trigger: ReactNode
 }) {
+  const { t } = useTranslation()
   const create = useCreateSupplier()
   const update = useUpdateSupplier()
   const editing = supplier != null
@@ -45,7 +47,7 @@ function SupplierFormSheet({
 
   const submit = () => {
     if (!name.trim()) {
-      toast.error("Ingresá un nombre.")
+      toast.error(t("inventory.suppliers.invalidName"))
       return
     }
     const body = {
@@ -55,9 +57,11 @@ function SupplierFormSheet({
       notes: notes.trim() || null,
     }
     const onError = (error: unknown) =>
-      toast.error(isApiError(error) ? error.message : "No pudimos guardar el proveedor.")
+      toast.error(apiErrorText(error, t, t("inventory.suppliers.saveError")))
     const onSuccess = () => {
-      toast.success(editing ? "Proveedor actualizado." : "Proveedor creado.")
+      toast.success(
+        editing ? t("inventory.suppliers.updateSuccess") : t("inventory.suppliers.createSuccess")
+      )
       setOpen(false)
       if (!editing) {
         setName("")
@@ -78,27 +82,41 @@ function SupplierFormSheet({
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>{editing ? `Editar ${supplier.name}` : "Nuevo proveedor"}</SheetTitle>
-          <SheetDescription>
-            Quién te abastece — con teléfono lo contactás por WhatsApp.
-          </SheetDescription>
+          <SheetTitle>
+            {editing
+              ? t("inventory.suppliers.editTitle", { name: supplier.name })
+              : t("inventory.suppliers.createTitle")}
+          </SheetTitle>
+          <SheetDescription>{t("inventory.suppliers.formDescription")}</SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-3 px-4 pb-4">
-          <Input placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
           <Input
-            placeholder="Contacto (persona / email)"
+            placeholder={t("inventory.suppliers.namePlaceholder")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <Input
+            placeholder={t("inventory.suppliers.contactPlaceholder")}
             value={contact}
             onChange={(e) => setContact(e.target.value)}
           />
           <Input
-            placeholder="Teléfono (con código país)"
+            placeholder={t("inventory.suppliers.phonePlaceholder")}
             inputMode="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
-          <Input placeholder="Notas" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <Input
+            placeholder={t("inventory.suppliers.notesPlaceholder")}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
           <Button onClick={submit} disabled={pending}>
-            {pending ? "Guardando…" : editing ? "Guardar" : "Crear proveedor"}
+            {pending
+              ? t("inventory.suppliers.saving")
+              : editing
+                ? t("inventory.suppliers.save")
+                : t("inventory.suppliers.createSubmit")}
           </Button>
         </div>
       </SheetContent>
@@ -107,12 +125,13 @@ function SupplierFormSheet({
 }
 
 function SupplierRow({ supplier }: { supplier: SupplierDTO }) {
+  const { t } = useTranslation()
   const [showPurchases, setShowPurchases] = useState(false)
   const purchases = useSupplierPurchases(showPurchases ? supplier.id : null)
   // Preferí el teléfono estructurado; si no hay, caé a los dígitos del contacto
   // (proveedores viejos con el teléfono en el campo libre). waLink filtra: un email
   // en contacto no tiene dígitos → sin botón (correcto).
-  const link = waLink(supplier.phone ?? supplier.contact, "Hola! Te escribo de parte del local.")
+  const link = waLink(supplier.phone ?? supplier.contact, t("inventory.suppliers.waMessage"))
 
   return (
     <GlassCard className="flex flex-col gap-2 p-4">
@@ -122,7 +141,7 @@ function SupplierRow({ supplier }: { supplier: SupplierDTO }) {
             <span className="font-medium text-foreground">{supplier.name}</span>
             {!supplier.active ? (
               <Badge variant="secondary" className="text-xs font-normal">
-                Inactivo
+                {t("inventory.suppliers.inactive")}
               </Badge>
             ) : null}
           </div>
@@ -138,20 +157,20 @@ function SupplierRow({ supplier }: { supplier: SupplierDTO }) {
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="ghost" onClick={() => setShowPurchases((v) => !v)}>
-            {showPurchases ? "Ocultar" : "Compras"}
+            {showPurchases ? t("inventory.suppliers.hide") : t("inventory.suppliers.purchases")}
           </Button>
           <SupplierFormSheet
             supplier={supplier}
             trigger={
               <Button size="sm" variant="ghost">
-                Editar
+                {t("inventory.suppliers.edit")}
               </Button>
             }
           />
           {link ? (
             <a href={link} target="_blank" rel="noopener noreferrer">
               <Button size="sm" variant="outline">
-                WhatsApp
+                {t("inventory.suppliers.whatsapp")}
               </Button>
             </a>
           ) : null}
@@ -160,22 +179,22 @@ function SupplierRow({ supplier }: { supplier: SupplierDTO }) {
       {showPurchases ? (
         <div className="border-t pt-2 text-sm">
           {purchases.isPending ? (
-            <span className="text-muted-foreground">Cargando…</span>
+            <span className="text-muted-foreground">{t("inventory.suppliers.loading")}</span>
           ) : purchases.data && purchases.data.purchase_count > 0 ? (
             <span className="text-foreground">
               <span className="font-medium">{purchases.data.purchase_count}</span>{" "}
-              {purchases.data.purchase_count === 1 ? "compra" : "compras"} ·{" "}
+              {t("inventory.suppliers.purchasesWord", { count: purchases.data.purchase_count })} ·{" "}
               <span className="font-medium">
                 {formatMoney(purchases.data.total_spent, purchases.data.currency)}
               </span>{" "}
-              en total
+              {t("inventory.suppliers.inTotal")}
               {purchases.data.last_purchase_at
-                ? ` · última: ${purchases.data.last_purchase_at.slice(0, 10)}`
+                ? ` · ${t("inventory.suppliers.lastLabel")}: ${purchases.data.last_purchase_at.slice(0, 10)}`
                 : ""}
             </span>
           ) : (
             <span className="text-muted-foreground">
-              Todavía no registraste compras a este proveedor. Al comprar un insumo, elegilo.
+              {t("inventory.suppliers.noPurchases")}
             </span>
           )}
         </div>
@@ -185,6 +204,7 @@ function SupplierRow({ supplier }: { supplier: SupplierDTO }) {
 }
 
 export function SuppliersPage() {
+  const { t } = useTranslation()
   const suppliers = useSuppliers()
   const rows = suppliers.data ?? []
 
@@ -193,13 +213,13 @@ export function SuppliersPage() {
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div className="flex flex-col gap-1">
           <GradientHeading size="md" weight="bold">
-            Proveedores
+            {t("inventory.suppliers.title")}
           </GradientHeading>
           <p className="text-sm text-muted-foreground">
-            Tus fuentes de abastecimiento — contactalos y mirá qué le comprás a cada uno.
+            {t("inventory.suppliers.subtitle")}
           </p>
         </div>
-        <SupplierFormSheet trigger={<Button>Nuevo proveedor</Button>} />
+        <SupplierFormSheet trigger={<Button>{t("inventory.suppliers.newSupplier")}</Button>} />
       </header>
 
       {suppliers.isPending ? (
@@ -208,7 +228,7 @@ export function SuppliersPage() {
         </div>
       ) : rows.length === 0 ? (
         <p className="rounded-xl border border-border bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
-          Todavía no cargaste proveedores.
+          {t("inventory.suppliers.emptyState")}
         </p>
       ) : (
         <div className="flex flex-col gap-2">
