@@ -28,7 +28,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useInviteUser } from "@/hooks/use-invite-user"
-import { ROLE_LABELS } from "@/lib/role-labels"
 
 type InviteValues = {
   email: string
@@ -120,7 +119,7 @@ export function InviteUserForm({
             <SelectContent>
               {INVITABLE_ROLES.map((role) => (
                 <SelectItem key={role} value={role}>
-                  {ROLE_LABELS[role]}
+                  {t(`common.roles.${role}`)}
                 </SelectItem>
               ))}
             </SelectContent>

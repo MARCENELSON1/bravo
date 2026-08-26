@@ -7,7 +7,6 @@ import { NavLink } from "react-router-dom"
 import { useAuth } from "@/auth/auth-context"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { useReduceMotion } from "@/lib/reduce-motion"
-import { ROLE_LABELS } from "@/lib/role-labels"
 import { cn } from "@/lib/utils"
 
 // "Juan Pérez" → "JP"; fallback: primera letra del email.
@@ -113,7 +112,7 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
             {session.name ?? session.email}
           </span>
           <span className="block truncate text-xs text-sidebar-foreground/50">
-            {ROLE_LABELS[session.role]}
+            {t(`common.roles.${session.role}`)}
           </span>
         </span>
       </button>
