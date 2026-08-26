@@ -126,6 +126,26 @@ async def test_subscription_starts_null_then_checkout_then_webhook_activates(
     assert active["grants_access"] is True
 
 
+async def test_public_plans_listed_without_auth(billing_api):
+    http, fake_email, container, gateway = billing_api
+    await _seed_plan(container)  # PRO/INTL/USD 4900, active
+
+    # Endpoint PÚBLICO: sin header de auth.
+    r = await http.get("/api/v1/public/plans?region=INTL")
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert len(data) == 1
+    p = data[0]
+    assert p == {"tier": "PRO", "amount": 4900, "currency": "USD", "interval": "MONTH"}
+    # Proyección lean: no filtra id/region/features al público.
+    assert "id" not in p and "features" not in p and "region" not in p
+
+    # Otra región → vacío (cada landing ve solo su región).
+    other = await http.get("/api/v1/public/plans?region=AR")
+    assert other.status_code == 200
+    assert other.json() == []
+
+
 async def test_cancel_subscription(billing_api):
     http, fake_email, container, gateway = billing_api
     tokens = await _onboard_verify_login(http, fake_email, slug="biz2", email="o@biz2.com")

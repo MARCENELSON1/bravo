@@ -13,6 +13,16 @@ class PlanResponse(BaseModel):
     features: list[str]
 
 
+class PublicPlanResponse(BaseModel):
+    """Proyección pública del catálogo para la landing (sin auth). Expone solo lo
+    necesario para mostrar precios; el copy de marketing vive en la landing."""
+
+    tier: str
+    amount: int  # minor units (centavos)
+    currency: str
+    interval: str
+
+
 class CheckoutRequest(BaseModel):
     plan_id: str
 

@@ -34,6 +34,7 @@ from app.presentation.api.v1 import (
     ping,
     platform,
     products,
+    public,
     realtime,
     reports,
     reservations,
@@ -105,6 +106,7 @@ def create_app() -> FastAPI:
     app.include_router(finance.router, prefix="/api/v1")
     app.include_router(copilot.router, prefix="/api/v1")
     app.include_router(leads.router, prefix="/api/v1")
+    app.include_router(public.router, prefix="/api/v1")
 
     @app.middleware("http")
     async def security_headers(
