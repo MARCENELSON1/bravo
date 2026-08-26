@@ -39,9 +39,19 @@ const COPY = {
   },
 } as const
 
+// Cambia la región del display y persiste la elección en la cookie que lee el
+// Worker de Cloudflare (override del geo-routing). Sin JS, el <a> igual navega.
+function chooseRegion(target: "ar" | "intl") {
+  document.cookie = `wellnod_region=${target}; path=/; max-age=31536000; samesite=lax`
+}
+
 export function Footer() {
   const { login, register } = useAuthLinks()
-  const t = COPY[useContainer().locale]
+  const { locale, region } = useContainer()
+  const t = COPY[locale]
+  const toIntl = region === "AR"
+  const switchHref = toIntl ? "/en/" : "/"
+  const switchLabel = toIntl ? "🇺🇸 English · USD" : "🇦🇷 Español · ARS"
 
   const columns = [
     {
@@ -99,7 +109,16 @@ export function Footer() {
       <div className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-5 py-6 text-sm text-muted-foreground sm:flex-row">
           <p>{t.rights}</p>
-          <p>{t.madeIn}</p>
+          <div className="flex items-center gap-4">
+            <a
+              href={switchHref}
+              onClick={() => chooseRegion(toIntl ? "intl" : "ar")}
+              className="rounded-full border border-border px-3 py-1 text-xs font-medium transition hover:text-foreground"
+            >
+              {switchLabel}
+            </a>
+            <p>{t.madeIn}</p>
+          </div>
         </div>
       </div>
     </footer>
