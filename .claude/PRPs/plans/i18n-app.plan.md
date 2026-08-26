@@ -1,6 +1,6 @@
 # PRP — i18n de la app (`app.wellnod.com`) — español ↔ inglés
 
-> **Estado:** EN CURSO. Creado 2026-08-26. **P0 ✅ (`a873fb3`) + P1 ✅ (`35c1822`) + P2 ✅ (`d98a030`) en `main`.**
+> **Estado:** ✅ **COMPLETA** (P0–P3). Creado 2026-08-26. **P0 (`a873fb3`) + P1 (`35c1822`) + P2 (`d98a030`) + P3-A (`e4e43bd`) + P3-B (`72c6ac6`) en `main`.** Las 54 pantallas de `app.wellnod.com` son bilingües ES/EN. Único pendiente: la **pasada de formato** (`es-AR` de fechas/horas/números → locale activo).
 > **Objetivo:** que un restaurante de EE.UU. use **toda la app en inglés** (no solo el login). Hoy la landing EN manda al usuario a una app en español → rompe el funnel US.
 > **Relacionado:** `landing-internacional.plan.md` (la landing ya es bilingüe + geo), `plan-funnel-billing.md`.
 
@@ -13,7 +13,16 @@
 - **Ejecución:** por **workflow** (2–6 agentes/tanda sobre archivos disjuntos; fundación inline = crear namespaces stub + registrarlos en barrels = seam). Validación por tanda: build + lint + tests + grep anti-strings ES + paridad char-por-char.
 - **Follow-up conocido (pasada de formato):** `topbar-clock.tsx` y `lib/timeclock.ts` (y otros) usan `toLocaleTimeString/DateString("es-AR")` → un usuario EN ve hora/fecha en formato AR. Derivar el locale del idioma activo de i18next = pasada de formato (fechas/números/hora), pendiente.
 
-**Queda P3** (gestión, ~14 áreas: finance, products, inventory, expenses, invoices, analytics, reports, advisor, copilot, crm, integrations, settings, billing, platform). Es la tanda más grande. El diccionario `errors` ya está completo en inglés → cada área solo agrega su namespace + swapea sus call-sites de error.
+- **P3 ✅** (gestión, 14 áreas) en **dos sub-tandas** de 7 agentes: **P3-A** (`e4e43bd`: products, finance, inventory, invoices, expenses, analytics, reports) + **P3-B** (`72c6ac6`: advisor, copilot, crm, integrations, settings, billing, platform). Labels de categoría/estado/segmento/bucket movidos del código al diccionario y resueltos con `t()`; enums intactos. Frases con negrita/varias variables troceadas en claves-fragmento por idioma (no hay `<Trans>` en el repo). Respuestas del backend (copiloto, diagnóstico, planes) NO se traducen.
+
+**Sweep final:** en TODA la app queda **1 sola** línea con ES de UI — `products/pricing.ts` `WEEKDAY_LABELS` — intencional (la testea `pricing.test.ts`; la UI ya usa `products.weekdays`).
+
+## Pendientes (no bloqueantes)
+
+1. **Pasada de formato:** varios usan `toLocaleTimeString/DateString/String("es-AR")` e `Intl` con locale fijo (`topbar-clock`, `lib/timeclock`, `product-ficha`, `pricing-inflation-card`, etc.) → un usuario EN ve hora/fecha/número en formato AR. Fix = derivar el locale del idioma activo de i18next en un helper de formato central.
+2. **Constantes de lib vivas solo para sus tests** (dead-for-UI, inofensivas): `pricing.WEEKDAY_LABELS`, `lib/advisor.BUCKET_LABELS`, `lib/timeclock.SHIFT_SOURCE_LABELS` (movido), `lib/floor-session` labels. Si se limpian, actualizar sus tests.
+3. **Doc-types AFIP/ARCA** (`lib/invoice-labels`) quedan en ES a propósito (concepto fiscal AR; un restaurante US usa recibos de sales tax).
+4. **Idioma adentro de la app:** hoy manda navegador + toggle persistido. Falta (opcional) fijarlo por `tenant.locale` al loguearse.
 
 ---
 
