@@ -715,11 +715,74 @@ const QA: { q: string; a: ReactNode }[] = [
       </>
     ),
   },
+  {
+    q: "¿Mi hora pico?",
+    a: (
+      <>
+        Viernes y sábados de <b>21 a 23 h</b>: ahí se concentra el{" "}
+        <b className="text-primary">34%</b> de tus ventas de la semana.
+      </>
+    ),
+  },
+  {
+    q: "¿Ticket promedio?",
+    a: (
+      <>
+        <b>$4.740</b> por mesa — un <b className="text-primary">6% más</b> que el mes pasado.
+      </>
+    ),
+  },
+  {
+    q: "¿Qué stock me falta?",
+    a: (
+      <>
+        Muzzarella y papas: al ritmo de esta semana te alcanzan para <b>3 días</b>.
+      </>
+    ),
+  },
 ]
 
 function CopilotScreen() {
+  const reduced = prefersReducedMotion()
   const [sel, setSel] = useState(0)
   const [answered, setAnswered] = useState(false)
+  const [typed, setTyped] = useState(reduced ? QA[0].q : "")
+  const typer = useRef<number | null>(null)
+
+  const stopTyping = () => {
+    if (typer.current !== null) {
+      window.clearInterval(typer.current)
+      typer.current = null
+    }
+  }
+
+  // Al elegir una pregunta se "tipea" sola en el campo, letra por letra, para que se
+  // entienda que ahí va la pregunta. Con reduced-motion aparece entera de una.
+  useEffect(() => {
+    const full = QA[sel].q
+    stopTyping()
+    if (reduced) {
+      setTyped(full)
+      return
+    }
+    setTyped("")
+    let i = 0
+    typer.current = window.setInterval(() => {
+      i += 1
+      setTyped(full.slice(0, i))
+      if (i >= full.length) stopTyping()
+    }, 38)
+    return stopTyping
+  }, [sel, reduced])
+
+  // Si aprieta "Preguntar" mientras todavía se está tipeando, completa y responde.
+  const ask = () => {
+    stopTyping()
+    setTyped(QA[sel].q)
+    setAnswered(true)
+  }
+
+  const typing = typed.length < QA[sel].q.length
 
   return (
     <div className="flex flex-col gap-4">
@@ -731,12 +794,15 @@ function CopilotScreen() {
       </div>
 
       <div className="flex gap-2">
-        <div className="min-w-0 flex-1 truncate rounded-lg border border-border px-3 py-2 text-sm text-foreground">
-          {QA[sel].q}
+        <div className="flex min-h-[2.375rem] min-w-0 flex-1 items-center truncate rounded-lg border border-border px-3 py-2 text-sm text-foreground">
+          {typed}
+          {typing ? (
+            <span className="ml-px inline-block h-[1.1em] w-px shrink-0 animate-pulse bg-foreground" />
+          ) : null}
         </div>
         <button
           type="button"
-          onClick={() => setAnswered(true)}
+          onClick={ask}
           className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition active:scale-[0.97]"
         >
           Preguntar
@@ -772,6 +838,14 @@ function CopilotScreen() {
           <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
           <p className="text-sm text-foreground">{QA[sel].a}</p>
         </div>
+      ) : null}
+
+      {/* Aclaración del demo: solo una vez que preguntó, junto con la respuesta. */}
+      {answered ? (
+        <p className="screen-fade rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+          A modo de ejemplo, con datos de demo. En Wellnod el Copiloto responde con los números
+          reales de tu local.
+        </p>
       ) : null}
     </div>
   )
