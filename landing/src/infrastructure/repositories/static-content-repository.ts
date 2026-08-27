@@ -15,9 +15,9 @@ const FEATURES: readonly Feature[] = [
   {
     id: "payments",
     icon: "payments",
-    title: "Cobros y facturación AFIP",
+    title: "Cobros y facturación ARCA",
     description:
-      "Cobrá con MercadoPago y emití la factura electrónica en el mismo paso. AFIP nativo, sin planillas.",
+      "Cobrá con MercadoPago y emití la factura electrónica en el mismo paso. ARCA nativo, sin planillas.",
   },
   {
     id: "copilot",
@@ -70,13 +70,13 @@ const STEPS: readonly Step[] = [
     id: "charge",
     title: "Cobrás, facturás y medís",
     description:
-      "Cobro con MercadoPago, factura AFIP en el mismo paso y el reporte del día actualizado.",
+      "Cobro con MercadoPago, factura ARCA en el mismo paso y el reporte del día actualizado.",
   },
 ]
 
 const INTEGRATIONS: readonly Integration[] = [
   { id: "mercadopago", name: "MercadoPago", description: "Cobros y QR" },
-  { id: "afip", name: "AFIP / ARCA", description: "Factura electrónica" },
+  { id: "arca", name: "ARCA", description: "Factura electrónica" },
   { id: "printers", name: "Impresoras", description: "Comandas y tickets" },
   { id: "whatsapp", name: "WhatsApp", description: "Avisos y pedidos" },
   { id: "point", name: "Point", description: "Terminal de pago" },
@@ -91,10 +91,10 @@ const FAQS: readonly Faq[] = [
       "No. Wellnod funciona en los celulares, tablets o computadoras que ya tenés. Si querés, se integra con impresoras de comandas.",
   },
   {
-    id: "afip",
-    question: "¿Emite factura electrónica de AFIP?",
+    id: "arca",
+    question: "¿Emite factura electrónica de ARCA?",
     answer:
-      "Sí. La facturación AFIP es nativa: cobrás y facturás en el mismo flujo, sin cargar datos dos veces.",
+      "Sí. La facturación ARCA es nativa: cobrás y facturás en el mismo flujo, sin cargar datos dos veces.",
   },
   {
     id: "trial",
