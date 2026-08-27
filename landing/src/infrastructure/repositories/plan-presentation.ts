@@ -25,7 +25,7 @@ const PRESENTATION: Readonly<Record<Region, Readonly<Record<string, PlanPresenta
       features: [
         { label: "1 local", included: true },
         { label: "Comandas digitales (mozo → cocina)", included: true },
-        { label: "Cobros y facturación AFIP", included: true },
+        { label: "Cobros y facturación ARCA", included: true },
         { label: "Hasta 3 usuarios", included: true },
         { label: "Copiloto IA", included: false },
         { label: "Reportes avanzados", included: false },

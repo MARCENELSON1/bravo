@@ -26,9 +26,9 @@ const META: Record<Region, SeoMeta> = {
     path: "/",
     title: "Wellnod · El cerebro de tu local",
     description:
-      "Wellnod es el sistema todo-en-uno para tu restaurante: comandas digitales, cobros y facturación AFIP, fichaje de empleados y un copiloto de IA en español.",
+      "Wellnod es el sistema todo-en-uno para tu restaurante: comandas digitales, cobros y facturación ARCA, fichaje de empleados y un copiloto de IA en español.",
     ogDescription:
-      "Comandas digitales, cobros y facturación AFIP, fichaje y un copiloto de IA en español. Todo tu restaurante en una sola app.",
+      "Comandas digitales, cobros y facturación ARCA, fichaje y un copiloto de IA en español. Todo tu restaurante en una sola app.",
     ogImage: "/og.png",
   },
   INTL: {
