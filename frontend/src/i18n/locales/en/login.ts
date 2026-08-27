@@ -13,6 +13,7 @@ export const login = {
   submit: "Sign in",
   submitting: "Signing in…",
   genericError: "We couldn't sign you in.",
+  forgotPassword: "Forgot your password?",
   errors: {
     slugRequired: "Enter the business",
     slugFormat: "Only lowercase letters, numbers and hyphens",

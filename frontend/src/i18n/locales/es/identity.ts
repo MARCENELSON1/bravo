@@ -92,4 +92,45 @@ export const identity = {
       emailInvalid: "Email inválido",
     },
   },
+
+  forgotPassword: {
+    title: "Recuperar contraseña",
+    description: "Ingresá el comercio y tu email; te enviamos un enlace para restablecerla.",
+    businessLabel: "Comercio",
+    emailLabel: "Email",
+    submit: "Enviar enlace",
+    submitting: "Enviando…",
+    genericError: "No pudimos enviar el correo. Probá de nuevo.",
+    backToLogin: "Volver a iniciar sesión",
+    done: {
+      title: "Revisá tu correo",
+      body: "Si hay una cuenta con ese email en ese comercio, te enviamos un correo con las instrucciones para restablecer tu contraseña. Revisá también la carpeta de spam.",
+    },
+    errors: {
+      slugRequired: "Ingresá el comercio",
+      slugFormat: "Solo minúsculas, números y guiones",
+      emailInvalid: "Email inválido",
+    },
+  },
+
+  resetPassword: {
+    title: "Nueva contraseña",
+    description: "Elegí una contraseña nueva para tu cuenta.",
+    passwordLabel: "Contraseña",
+    submit: "Guardar contraseña",
+    submitting: "Guardando…",
+    genericError: "No pudimos actualizar la contraseña.",
+    invalid: {
+      title: "Enlace inválido",
+      body: "El enlace para restablecer la contraseña no es válido o expiró. Pedí uno nuevo desde \"¿Olvidaste tu contraseña?\".",
+    },
+    done: {
+      title: "Contraseña actualizada",
+      body: "Listo, ya podés iniciar sesión con tu nueva contraseña.",
+    },
+    errors: {
+      passwordMin: "Mínimo 8 caracteres",
+      passwordMax: "Máximo 128 caracteres",
+    },
+  },
 } as const

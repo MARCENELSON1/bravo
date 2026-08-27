@@ -13,6 +13,7 @@ export const login = {
   submit: "Ingresar",
   submitting: "Ingresando…",
   genericError: "No pudimos iniciar sesión.",
+  forgotPassword: "¿Olvidaste tu contraseña?",
   errors: {
     slugRequired: "Ingresá el comercio",
     slugFormat: "Solo minúsculas, números y guiones",

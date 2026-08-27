@@ -19,7 +19,9 @@ import { FloorPage } from "@/features/floor/floor-page"
 import { AcceptInvitationPage } from "@/features/identity/accept-invitation-page"
 import { InviteUserPage } from "@/features/identity/invite-user-page"
 import { LoginPage } from "@/features/identity/login-page"
+import { ForgotPasswordPage } from "@/features/identity/forgot-password-page"
 import { OnboardingPage } from "@/features/identity/onboarding-page"
+import { ResetPasswordPage } from "@/features/identity/reset-password-page"
 import { PlatformPage } from "@/features/platform/platform-page"
 import { VerifyEmailPage } from "@/features/identity/verify-email-page"
 import { ExpensesPage } from "@/features/expenses/expenses-page"
@@ -42,6 +44,8 @@ export const router = createBrowserRouter([
   { path: "/onboarding", element: <OnboardingPage /> },
   { path: "/verify-email", element: <VerifyEmailPage /> },
   { path: "/accept-invitation", element: <AcceptInvitationPage /> },
+  { path: "/forgot-password", element: <ForgotPasswordPage /> },
+  { path: "/reset-password", element: <ResetPasswordPage /> },
   // Local fichaje display (device-authenticated, no employee session).
   { path: "/fichaje", element: <PresenceDisplayPage /> },
 

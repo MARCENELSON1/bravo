@@ -155,6 +155,15 @@ export function LoginPage() {
           </Field>
         </FieldGroup>
 
+        <div className="-mt-1 flex justify-end">
+          <Link
+            to="/forgot-password"
+            className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+          >
+            {t("login.forgotPassword")}
+          </Link>
+        </div>
+
         <button
           type="button"
           role="checkbox"

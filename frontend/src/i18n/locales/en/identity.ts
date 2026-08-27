@@ -92,4 +92,45 @@ export const identity = {
       emailInvalid: "Invalid email",
     },
   },
+
+  forgotPassword: {
+    title: "Reset your password",
+    description: "Enter your business and email, and we'll send you a link to reset it.",
+    businessLabel: "Business",
+    emailLabel: "Email",
+    submit: "Send link",
+    submitting: "Sending…",
+    genericError: "We couldn't send the email. Try again.",
+    backToLogin: "Back to sign in",
+    done: {
+      title: "Check your email",
+      body: "If there's an account with that email at that business, we sent you an email with instructions to reset your password. Check your spam folder too.",
+    },
+    errors: {
+      slugRequired: "Enter the business",
+      slugFormat: "Only lowercase letters, numbers and hyphens",
+      emailInvalid: "Invalid email",
+    },
+  },
+
+  resetPassword: {
+    title: "New password",
+    description: "Choose a new password for your account.",
+    passwordLabel: "Password",
+    submit: "Save password",
+    submitting: "Saving…",
+    genericError: "We couldn't update the password.",
+    invalid: {
+      title: "Invalid link",
+      body: "The password reset link isn't valid or has expired. Request a new one from \"Forgot your password?\".",
+    },
+    done: {
+      title: "Password updated",
+      body: "You're all set. You can now sign in with your new password.",
+    },
+    errors: {
+      passwordMin: "At least 8 characters",
+      passwordMax: "At most 128 characters",
+    },
+  },
 } as const
