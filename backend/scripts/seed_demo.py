@@ -613,11 +613,14 @@ async def main() -> None:
                     " values($1,$2,$3,$4,true)",
                     supp[name], tenant, name, contact)
 
-            for name, price, cat, _w, station in MENU:
+            for name, _raw, cat, _w, station in MENU:
+                # prod[name][1] es el precio DERIVADO del food cost objetivo. Usar el
+                # crudo de la constante dejaba la carta a un precio y las ventas
+                # históricas a otro.
                 await conn.execute(
                     "insert into products(id,tenant_id,name,price_amount,price_currency,category,"
                     "active,station) values($1,$2,$3,$4,$5,$6,true,$7)",
-                    prod[name][0], tenant, name, price, CUR, cat, station)
+                    prod[name][0], tenant, name, prod[name][1], CUR, cat, station)
 
             for name, unit, cost, stock, minq, yld, incl_tax, runit in INGREDIENTS:
                 await conn.execute(
