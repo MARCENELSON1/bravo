@@ -811,6 +811,35 @@ function AppMockup({ locale }: { locale: Locale }) {
             </span>
           </header>
 
+          {/* Nav horizontal SOLO mobile: la sidebar (sm:flex) se oculta abajo de
+              sm, así que acá van los mismos destinos como chips scrolleables para
+              poder cambiar de pantalla en el celular. */}
+          <nav
+            className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-black/10 px-3 py-2 sm:hidden dark:border-white/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            aria-label={t.opsLabel}
+          >
+            {NAV_MAIN.map((it) => {
+              const active = screen === it.id
+              return (
+                <button
+                  key={it.id}
+                  type="button"
+                  onClick={() => onNav(it.id)}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors active:scale-[0.98]",
+                    active
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-foreground/70 hover:bg-accent hover:text-foreground"
+                  )}
+                >
+                  <it.icon className="size-3.5 shrink-0" />
+                  {t.navMain[it.id]}
+                </button>
+              )
+            })}
+          </nav>
+
           {/* La pantalla cambia según la sidebar (fade al cambiar). Sin scroll: se ve la parte de arriba. */}
           <div key={screen} className="screen-fade min-h-0 flex-1 overflow-hidden p-5 text-left">
             {screen === "home" ? (
