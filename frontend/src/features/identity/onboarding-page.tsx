@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useTranslation } from "react-i18next"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 
 import { isApiError } from "@/api/api-error"
 import { apiErrorText } from "@/api/translate-error"
@@ -25,6 +25,11 @@ type OnboardingValues = {
 export function OnboardingPage() {
   const { t } = useTranslation()
   const onboarding = useOnboarding()
+  // La región de la landing llega como `?country=US` (INTL) o `AR`. Define moneda,
+  // impuestos y locale del tenant en el backend (regional_defaults). Sin param → AR.
+  const [params] = useSearchParams()
+  const rawCountry = params.get("country") ?? ""
+  const country = /^[A-Za-z]{2}$/.test(rawCountry) ? rawCountry.toUpperCase() : undefined
   const [serverError, setServerError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
 
@@ -75,6 +80,7 @@ export function OnboardingPage() {
         owner_email: values.ownerEmail,
         owner_password: values.ownerPassword,
         owner_name: values.ownerName?.trim() ? values.ownerName.trim() : undefined,
+        country,
       },
       {
         onSuccess: () => setDone(true),

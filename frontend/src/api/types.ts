@@ -30,6 +30,10 @@ export interface OnboardingPayload {
   owner_email: string
   owner_password: string
   owner_name?: string
+  // País (ISO-2) del tenant → define moneda/impuestos/locale en el backend
+  // (regional_defaults). Lo pasa la landing por región: INTL → "US", AR → "AR".
+  // Ausente → el backend usa "AR" (paridad).
+  country?: string
 }
 
 export interface OnboardingResponse {
