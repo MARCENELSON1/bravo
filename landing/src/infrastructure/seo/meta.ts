@@ -16,6 +16,7 @@ export interface SeoMeta {
   readonly title: string
   readonly description: string
   readonly ogDescription: string
+  readonly ogImage: string // ruta de la tarjeta OG por región (texto baked-in)
 }
 
 const META: Record<Region, SeoMeta> = {
@@ -28,6 +29,7 @@ const META: Record<Region, SeoMeta> = {
       "Wellnod es el sistema todo-en-uno para tu restaurante: comandas digitales, cobros y facturación AFIP, fichaje de empleados y un copiloto de IA en español.",
     ogDescription:
       "Comandas digitales, cobros y facturación AFIP, fichaje y un copiloto de IA en español. Todo tu restaurante en una sola app.",
+    ogImage: "/og.png",
   },
   INTL: {
     lang: "en",
@@ -38,6 +40,7 @@ const META: Record<Region, SeoMeta> = {
       "Wellnod is the all-in-one system for your restaurant: digital order taking, card payments with automated sales tax, employee time tracking, and an AI copilot in English.",
     ogDescription:
       "Digital order taking, card payments & automated sales tax, time tracking, and an AI copilot in English. Your whole restaurant in one app.",
+    ogImage: "/og-en.png",
   },
 }
 
@@ -53,7 +56,7 @@ function esc(s: string): string {
 export function seoHead(region: Region): string {
   const m = META[region]
   const url = `${SITE}${m.path}`
-  const img = `${SITE}/og.png`
+  const img = `${SITE}${m.ogImage}`
   return [
     `<title>${esc(m.title)}</title>`,
     `<meta name="description" content="${esc(m.description)}" />`,
