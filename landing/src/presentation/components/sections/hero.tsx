@@ -7,6 +7,7 @@ import {
   Home,
   Lightbulb,
   LineChart,
+  Menu,
   Package,
   QrCode,
   Sparkles,
@@ -697,12 +698,17 @@ function AppMockup({ locale }: { locale: Locale }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduced])
 
+  // Drawer mobile: la sidebar se oculta abajo de sm y se abre como overlay desde
+  // el botón hamburguesa del topbar — igual que el shell real de la app.
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
   const onNav = (id: MainId) => {
     cancelled.current = true
     started.current = true
     clearTimers()
     setCursor((c) => ({ ...c, visible: false, press: false }))
     setScreen(id)
+    setDrawerOpen(false)
   }
 
   return (
@@ -735,8 +741,25 @@ function AppMockup({ locale }: { locale: Locale }) {
           aria-hidden
           className="bg-grain pointer-events-none absolute inset-0 opacity-[0.18] mix-blend-overlay"
         />
-        {/* Sidebar (navegable, con "más opciones" difuminadas abajo) */}
-        <aside className="relative hidden w-52 flex-col overflow-hidden rounded-2xl border border-black/10 bg-white/60 backdrop-blur-2xl sm:flex dark:border-white/10 dark:bg-black/30">
+        {/* Backdrop del drawer (solo mobile, al abrir la sidebar desde el hamburguesa) */}
+        {drawerOpen ? (
+          <button
+            type="button"
+            aria-label="Menu"
+            onClick={() => setDrawerOpen(false)}
+            className="absolute inset-0 z-40 bg-black/40 sm:hidden"
+          />
+        ) : null}
+
+        {/* Sidebar (navegable): estática en desktop, drawer overlay en mobile
+            (mismo patrón que el shell real de la app). */}
+        <aside
+          className={cn(
+            "z-50 w-52 flex-col overflow-hidden rounded-2xl border border-black/10 bg-white/60 backdrop-blur-2xl transition-transform duration-200 dark:border-white/10 dark:bg-black/30",
+            "absolute inset-y-0 left-0 flex sm:static",
+            drawerOpen ? "translate-x-0 shadow-2xl" : "-translate-x-[120%] sm:translate-x-0"
+          )}
+        >
           {/* Logo con la misma proporción que la sidebar real del software
               (hélix h-9 + título text-2xl, kerning pegado). */}
           <div className="flex h-14 shrink-0 items-center px-4">
@@ -801,6 +824,14 @@ function AppMockup({ locale }: { locale: Locale }) {
         <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-black/10 bg-white/60 backdrop-blur-2xl dark:border-white/10 dark:bg-black/30">
           {/* Topbar */}
           <header className="flex h-14 shrink-0 items-center gap-3 border-b border-black/10 px-5 dark:border-white/10">
+            <button
+              type="button"
+              aria-label="Menu"
+              onClick={() => setDrawerOpen(true)}
+              className="-ml-1 grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:hidden"
+            >
+              <Menu className="size-4" />
+            </button>
             <span className="min-w-0 truncate text-sm font-medium text-muted-foreground">
               {t.venue}
             </span>
@@ -810,35 +841,6 @@ function AppMockup({ locale }: { locale: Locale }) {
               {t.onShift}
             </span>
           </header>
-
-          {/* Nav horizontal SOLO mobile: la sidebar (sm:flex) se oculta abajo de
-              sm, así que acá van los mismos destinos como chips scrolleables para
-              poder cambiar de pantalla en el celular. */}
-          <nav
-            className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-black/10 px-3 py-2 sm:hidden dark:border-white/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            aria-label={t.opsLabel}
-          >
-            {NAV_MAIN.map((it) => {
-              const active = screen === it.id
-              return (
-                <button
-                  key={it.id}
-                  type="button"
-                  onClick={() => onNav(it.id)}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors active:scale-[0.98]",
-                    active
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-foreground/70 hover:bg-accent hover:text-foreground"
-                  )}
-                >
-                  <it.icon className="size-3.5 shrink-0" />
-                  {t.navMain[it.id]}
-                </button>
-              )
-            })}
-          </nav>
 
           {/* La pantalla cambia según la sidebar (fade al cambiar). Sin scroll: se ve la parte de arriba. */}
           <div key={screen} className="screen-fade min-h-0 flex-1 overflow-hidden p-5 text-left">
