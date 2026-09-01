@@ -52,8 +52,15 @@ export function useTableBill(token: string | undefined) {
 export function usePayTableBill(token: string | undefined) {
   const { publicMenuApi } = useServices()
   return useMutation({
-    mutationFn: ({ tip, idempotencyKey }: { tip: number; idempotencyKey: string }) =>
-      publicMenuApi.pay(token!, tip, idempotencyKey),
+    mutationFn: ({
+      tip,
+      amount,
+      idempotencyKey,
+    }: {
+      tip: number
+      amount: number | null
+      idempotencyKey: string
+    }) => publicMenuApi.pay(token!, tip, amount, idempotencyKey),
   })
 }
 

@@ -201,9 +201,9 @@ export function PublicMenuPage() {
     setIdemKey(crypto.randomUUID()) // una clave nueva por intento (retries la reusan)
     setPayOpen(true)
   }
-  const onPay = (tip: number) =>
+  const onPay = (tip: number, amount: number | null) =>
     payBill.mutate(
-      { tip, idempotencyKey: idemKey },
+      { tip, amount, idempotencyKey: idemKey },
       {
         onSuccess: (result) => {
           try {
@@ -337,12 +337,17 @@ export function PublicMenuPage() {
   )
 }
 
-// Presets de propina (%) sobre el saldo. 0 = sin propina; "custom" abre un monto
-// a mano. El comensal elige; si el dueño la desactivó, el selector no se muestra.
+// Presets de propina (%) sobre lo que este comensal paga. 0 = sin propina; "custom"
+// abre un monto a mano. Si el dueño la desactivó, el selector no se muestra.
 const TIP_PRESETS = [0, 10, 15, 20] as const
+const MIN_SPLIT = 2
+const MAX_SPLIT = 12
 
-// Pantalla de pago (Sheet inferior): la cuenta + selector de propina + "Pagar $X".
-// El saldo lo pone el server; la propina la elige el comensal (si está habilitada).
+// Cómo divide el comensal: todo el saldo, su parte (÷ N), o un monto a mano.
+type PayMode = "all" | "split" | "custom"
+
+// Pantalla de pago (Sheet inferior): la cuenta + dividir la cuenta + propina +
+// "Pagar $X". El saldo lo acota el server; el comensal elige cuánto y la propina.
 function PaySheet({
   open,
   onOpenChange,
@@ -353,23 +358,37 @@ function PaySheet({
   open: boolean
   onOpenChange: (open: boolean) => void
   bill: TableBillDTO
-  onPay: (tip: number) => void
+  onPay: (tip: number, amount: number | null) => void
   paying: boolean
 }) {
   const { t } = useTranslation()
+  const [mode, setMode] = useState<PayMode>("all")
+  const [splitN, setSplitN] = useState(MIN_SPLIT)
+  const [customAmount, setCustomAmount] = useState<string>("")
   const [tipPct, setTipPct] = useState<number>(0)
   const [customTip, setCustomTip] = useState<string>("")
-  const [customOpen, setCustomOpen] = useState(false)
+  const [tipCustomOpen, setTipCustomOpen] = useState(false)
 
   const balance = bill.balance
   const currency = bill.currency
-  const customMinor = Math.max(0, Math.round(Number(customTip.replace(",", ".")) * 100) || 0)
+  const toMinor = (s: string) => Math.max(0, Math.round(Number(s.replace(",", ".")) * 100) || 0)
+
+  // Cuánto paga este comensal (acotado al saldo). `all` manda null → el server
+  // cobra todo el saldo vigente (a prueba de carreras).
+  const share =
+    mode === "split"
+      ? Math.min(Math.round(balance / splitN), balance)
+      : mode === "custom"
+        ? Math.min(toMinor(customAmount), balance)
+        : balance
+  const payAmount: number | null = mode === "all" ? null : share
+
   const tip = bill.tips_enabled
-    ? customOpen
-      ? customMinor
-      : Math.round((balance * tipPct) / 100)
+    ? tipCustomOpen
+      ? toMinor(customTip)
+      : Math.round((share * tipPct) / 100)
     : 0
-  const total = balance + tip
+  const total = share + tip
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -378,7 +397,7 @@ function PaySheet({
           <SheetTitle>{t("publicMenu.pay.title")}</SheetTitle>
         </SheetHeader>
 
-        <div className="max-h-[40svh] divide-y divide-border/50 overflow-y-auto py-1">
+        <div className="max-h-[32svh] divide-y divide-border/50 overflow-y-auto py-1">
           {bill.items.map((item, i) => (
             <div key={i} className="flex items-start justify-between gap-3 py-2 text-sm">
               <span className="min-w-0">
@@ -402,6 +421,76 @@ function PaySheet({
           <span className="tabular-nums font-medium">{formatMoney(balance, currency)}</span>
         </div>
 
+        {/* Dividir la cuenta: todo / mi parte (÷ N) / otro monto. Parciales acumulan. */}
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-medium">{t("publicMenu.pay.split.title")}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant={mode === "all" ? "default" : "outline"}
+              onClick={() => setMode("all")}
+            >
+              {t("publicMenu.pay.split.all")}
+            </Button>
+            <Button
+              size="sm"
+              variant={mode === "split" ? "default" : "outline"}
+              onClick={() => setMode("split")}
+            >
+              {t("publicMenu.pay.split.mine")}
+            </Button>
+            <Button
+              size="sm"
+              variant={mode === "custom" ? "default" : "outline"}
+              onClick={() => setMode("custom")}
+            >
+              {t("publicMenu.pay.split.other")}
+            </Button>
+          </div>
+          {mode === "split" ? (
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">
+                {t("publicMenu.pay.split.between")}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-8 w-8"
+                  disabled={splitN <= MIN_SPLIT}
+                  onClick={() => setSplitN((n) => Math.max(MIN_SPLIT, n - 1))}
+                  aria-label={t("publicMenu.pay.split.fewer")}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <span className="w-6 text-center tabular-nums text-sm font-semibold">{splitN}</span>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-8 w-8"
+                  disabled={splitN >= MAX_SPLIT}
+                  onClick={() => setSplitN((n) => Math.min(MAX_SPLIT, n + 1))}
+                  aria-label={t("publicMenu.pay.split.more")}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ) : null}
+          {mode === "custom" ? (
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              value={customAmount}
+              onChange={(e) => setCustomAmount(e.target.value)}
+              aria-label={t("publicMenu.pay.split.amountLabel")}
+              className="mt-3 w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm tabular-nums outline-none focus:border-primary"
+              placeholder="0"
+            />
+          ) : null}
+        </div>
+
         {bill.tips_enabled ? (
           <div className="mt-4">
             <p className="mb-2 text-sm font-medium">{t("publicMenu.pay.tip")}</p>
@@ -410,9 +499,9 @@ function PaySheet({
                 <Button
                   key={pct}
                   size="sm"
-                  variant={!customOpen && tipPct === pct ? "default" : "outline"}
+                  variant={!tipCustomOpen && tipPct === pct ? "default" : "outline"}
                   onClick={() => {
-                    setCustomOpen(false)
+                    setTipCustomOpen(false)
                     setTipPct(pct)
                   }}
                 >
@@ -421,13 +510,13 @@ function PaySheet({
               ))}
               <Button
                 size="sm"
-                variant={customOpen ? "default" : "outline"}
-                onClick={() => setCustomOpen(true)}
+                variant={tipCustomOpen ? "default" : "outline"}
+                onClick={() => setTipCustomOpen(true)}
               >
                 {t("publicMenu.pay.tipCustom")}
               </Button>
             </div>
-            {customOpen ? (
+            {tipCustomOpen ? (
               <input
                 type="number"
                 inputMode="decimal"
@@ -444,8 +533,8 @@ function PaySheet({
 
         <Button
           className="mt-5 w-full justify-between"
-          disabled={paying || total <= 0}
-          onClick={() => onPay(tip)}
+          disabled={paying || share <= 0}
+          onClick={() => onPay(tip, payAmount)}
         >
           <span>{paying ? t("publicMenu.pay.paying") : t("publicMenu.pay.action")}</span>
           <span className="tabular-nums">{formatMoney(total, currency)}</span>

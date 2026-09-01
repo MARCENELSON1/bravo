@@ -104,12 +104,14 @@ class TableBillResponse(BaseModel):
 
 
 class TablePayRequest(BaseModel):
-    """El comensal inicia el pago (Carta QR F3). El monto lo calcula el server
-    (saldo de la orden) — el cliente solo manda token, propina y una clave de
-    idempotencia para que un doble-tap no cobre dos veces."""
+    """El comensal inicia el pago (Carta QR F3). El monto lo acota el server (saldo
+    de la orden). ``amount`` opcional = dividir la cuenta / pagar una parte (0 <
+    amount ≤ saldo); ausente = pagar todo el saldo. La ``idempotency_key`` evita
+    que un doble-tap cobre dos veces."""
 
     token: str
     tip: int = Field(default=0, ge=0)
+    amount: int | None = Field(default=None, gt=0)
     idempotency_key: str | None = Field(default=None, max_length=80)
 
 

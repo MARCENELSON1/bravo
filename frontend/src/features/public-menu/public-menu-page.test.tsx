@@ -240,9 +240,31 @@ describe("PublicMenuPage", () => {
 
     // La hoja muestra el saldo y el botón "Pagar $24.000,00" (server-side).
     await userEvent.click(await screen.findByRole("button", { name: /Pagar.*24/ }))
-    expect(api.pay).toHaveBeenCalledWith("tok-123", 0, expect.any(String))
+    // "Pagar todo" (default) → amount null; el server cobra el saldo vigente.
+    expect(api.pay).toHaveBeenCalledWith("tok-123", 0, null, expect.any(String))
 
     // Confirma (gateway sin checkout_url) → pantalla de pagado.
     expect(await screen.findByText("¡Pagado! 🎉")).toBeInTheDocument()
+  })
+
+  it("splits the bill and pays only my share", async () => {
+    const bill: TableBillDTO = {
+      currency: "ARS",
+      items: [{ name: "Pizza", quantity: 2, unit_price: 1200000 }],
+      total: 2400000,
+      paid: 0,
+      balance: 2400000,
+      online_pay_available: true,
+      tips_enabled: false,
+    }
+    const api = makeApi(() => Promise.resolve(MENU), bill)
+    renderMenu(api)
+
+    await userEvent.click(await screen.findByRole("button", { name: "Pagar" }))
+    // Dividir → "Mi parte": por default entre 2 → 1.200.000 (la mitad).
+    await userEvent.click(await screen.findByRole("button", { name: "Mi parte" }))
+    await userEvent.click(screen.getByRole("button", { name: /Pagar.*12/ }))
+
+    expect(api.pay).toHaveBeenCalledWith("tok-123", 0, 1200000, expect.any(String))
   })
 })

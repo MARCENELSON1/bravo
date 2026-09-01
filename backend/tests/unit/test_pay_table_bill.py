@@ -199,6 +199,45 @@ async def test_charges_the_oldest_unpaid_order_first() -> None:
     assert spy.calls[0]["amount"] == 700000
 
 
+async def test_partial_amount_splits_the_bill() -> None:
+    orders = [_order("o1", [_item(1000000, 2)])]  # balance 2_000_000
+    uc, token, spy = _use_case(
+        session=TableSession(id="sess-1", tenant_id="t1", table_id="tbl-1"),
+        orders=orders,
+        payments={},
+        settings=SelfPaySettings(enabled=True),
+    )
+
+    await uc.execute(token=token.issue("t1", "tbl-1"), amount=500000)
+
+    assert spy.calls[0]["amount"] == 500000  # only my part, not the whole balance
+
+
+async def test_amount_over_balance_rejected() -> None:
+    orders = [_order("o1", [_item(1000000, 1)])]  # balance 1_000_000
+    uc, token, spy = _use_case(
+        session=TableSession(id="sess-1", tenant_id="t1", table_id="tbl-1"),
+        orders=orders,
+        payments={},
+        settings=SelfPaySettings(enabled=True),
+    )
+    with pytest.raises(InvalidPaymentAmount):
+        await uc.execute(token=token.issue("t1", "tbl-1"), amount=1500000)
+    assert spy.calls == []  # a tampered client can't overpay
+
+
+async def test_amount_zero_rejected() -> None:
+    orders = [_order("o1", [_item(1000000, 1)])]
+    uc, token, _spy = _use_case(
+        session=TableSession(id="sess-1", tenant_id="t1", table_id="tbl-1"),
+        orders=orders,
+        payments={},
+        settings=SelfPaySettings(enabled=True),
+    )
+    with pytest.raises(InvalidPaymentAmount):
+        await uc.execute(token=token.issue("t1", "tbl-1"), amount=0)
+
+
 async def test_tip_rides_when_enabled_and_passes_idempotency_key() -> None:
     orders = [_order("o1", [_item(1000000, 1)])]
     uc, token, spy = _use_case(

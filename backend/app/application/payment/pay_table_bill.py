@@ -68,8 +68,18 @@ class PayTableBill:
         self._tenant_context = tenant_context
 
     async def execute(
-        self, *, token: str, tip: int = 0, idempotency_key: str | None = None
+        self,
+        *,
+        token: str,
+        tip: int = 0,
+        amount: int | None = None,
+        idempotency_key: str | None = None,
     ) -> PublicPaymentResult:
+        """``amount`` None → pay the order's whole remaining balance. A positive
+        ``amount`` pays only that much (split the bill / pay my part); partial
+        payments accumulate until the order is covered (the engine settles it).
+        The amount is still bounded server-side (0 < amount ≤ balance) so a tampered
+        client can neither overpay nor change what's owed."""
         claims = self._token.verify(token)  # raises InvalidTableQrToken
         tenant_id = claims.tenant_id
         self._tenant_context.set(tenant_id)
@@ -92,11 +102,17 @@ class PayTableBill:
             raise NothingToPay()
         order, balance = target
 
+        charge_amount = balance
+        if amount is not None:
+            if amount <= 0 or amount > balance:
+                raise InvalidPaymentAmount()
+            charge_amount = amount
+
         payment = await self._register_payment.execute(
             tenant_id=tenant_id,
             order_id=order.id,
             method=PaymentMethod.MERCADOPAGO.value,
-            amount=balance,
+            amount=charge_amount,
             tip=tip,
             idempotency_key=idempotency_key,
         )

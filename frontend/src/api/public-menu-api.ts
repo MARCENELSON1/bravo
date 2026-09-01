@@ -143,12 +143,18 @@ export class PublicMenuApi {
     )
   }
 
-  // Inicia el pago del saldo de la mesa. El monto lo calcula el server; el cliente
-  // manda propina + una clave de idempotencia (para que un doble-tap no cobre dos
-  // veces). Si vuelve `checkout_url`, hay que mandar al comensal ahí (MercadoPago).
-  pay(token: string, tip: number, idempotencyKey: string): Promise<TablePayResultDTO> {
+  // Inicia el pago de la mesa. El server acota el monto (saldo de la orden); el
+  // cliente manda propina, una clave de idempotencia (contra el doble-tap) y, para
+  // dividir la cuenta, un `amount` parcial opcional (null = pagar todo el saldo).
+  // Si vuelve `checkout_url`, hay que mandar al comensal ahí (MercadoPago).
+  pay(
+    token: string,
+    tip: number,
+    amount: number | null,
+    idempotencyKey: string
+  ): Promise<TablePayResultDTO> {
     return this.http.request<TablePayResultDTO>("POST", "/public/table/pay", {
-      body: { token, tip, idempotency_key: idempotencyKey },
+      body: { token, tip, amount, idempotency_key: idempotencyKey },
     })
   }
 

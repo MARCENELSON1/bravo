@@ -187,6 +187,55 @@ async def test_double_tap_charges_the_bill_once(client):
     assert len(pays.json()) == 1  # charged once
 
 
+async def test_split_the_bill_two_partial_payments_settle_it(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    pid = await _product(http, h, "Pizza", 1000000)
+    await _enable_self_order(http, h)
+    await _enable_self_pay(http, h)
+    token = await _qr_token(http, h, 11)
+    order_id = await _submit(http, token, pid, 2)  # total 2_000_000
+
+    # Diner 1 pays their half.
+    first = await http.post(
+        "/api/v1/public/table/pay", json={"token": token, "amount": 1000000}
+    )
+    assert first.status_code == 200, first.text
+    assert first.json()["amount"] == 1000000
+    order = await http.get(f"/api/v1/orders/{order_id}", headers=h)
+    assert order.json()["status"] != "PAID"  # still half owing
+    bill = await http.get("/api/v1/public/table/bill", params={"token": token})
+    assert bill.json()["balance"] == 1000000
+
+    # Diner 2 pays the rest → the order settles.
+    second = await http.post(
+        "/api/v1/public/table/pay", json={"token": token, "amount": 1000000}
+    )
+    assert second.status_code == 200, second.text
+    order = await http.get(f"/api/v1/orders/{order_id}", headers=h)
+    assert order.json()["status"] == "PAID"
+    bill = await http.get("/api/v1/public/table/bill", params={"token": token})
+    assert bill.json()["balance"] == 0
+
+
+async def test_split_amount_over_balance_is_rejected(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    pid = await _product(http, h, "Pizza", 1000000)
+    await _enable_self_order(http, h)
+    await _enable_self_pay(http, h)
+    token = await _qr_token(http, h, 12)
+    await _submit(http, token, pid, 1)  # balance 1_000_000
+
+    pay = await http.post(
+        "/api/v1/public/table/pay", json={"token": token, "amount": 5000000}
+    )
+    assert pay.status_code == 422
+    assert pay.json()["code"] == "invalid_payment_amount"
+
+
 async def test_pay_rejects_a_bad_token(client):
     http, fake_email = client
     await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")

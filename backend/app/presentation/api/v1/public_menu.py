@@ -120,7 +120,10 @@ async def pay_table_bill(
     use_case: PayTableBill = Depends(Provide[Container.pay_table_bill]),
 ) -> TablePayResponse:
     result = await use_case.execute(
-        token=body.token, tip=body.tip, idempotency_key=body.idempotency_key
+        token=body.token,
+        tip=body.tip,
+        amount=body.amount,
+        idempotency_key=body.idempotency_key,
     )
     return TablePayResponse(
         payment_id=result.payment_id,
