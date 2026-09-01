@@ -21,10 +21,25 @@ export const publicMenu = {
     callWaiter: "Llamar al mozo",
     requestBill: "Pedir la cuenta",
   },
+  cart: {
+    increase: "Sumar uno",
+    decrease: "Quitar uno",
+    send: "Enviar el pedido",
+    sending: "Enviando…",
+    total: "Total",
+  },
+  sent: {
+    title: "¡Pedido enviado!",
+    gated: "El mozo lo confirma en un momento y va a la cocina.",
+    kitchen: "Ya está en la cocina 🍳",
+    again: "Pedir algo más",
+  },
   toast: {
     waiterOnTheWay: "El mozo ya viene 🙌",
     billOnTheWay: "Te llevamos la cuenta 🙌",
     failed: "No pudimos avisar. Probá de nuevo.",
+    orderFailed: "No pudimos enviar el pedido. Probá de nuevo.",
+    orderUnavailable: "Uno de los platos ya no está disponible. Revisá tu pedido.",
   },
   poweredBy: "con Wellnod",
 } as const

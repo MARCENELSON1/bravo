@@ -54,6 +54,9 @@ async def test_issue_qr_then_fetch_public_menu(client):
     assert entradas[0]["price_amount"] == 1500
     # No cost/margin leaks to the public menu.
     assert "cost_amount" not in entradas[0]
+    # Autopedido apagado por default (paridad): la carta no muestra carrito.
+    assert body["self_order_enabled"] is False
+    assert body["self_order_requires_confirmation"] is True
 
 
 async def test_qr_endpoint_requires_owner_or_manager(client):

@@ -1300,11 +1300,15 @@ class Container(containers.DeclarativeContainer):
         tenant_context=tenant_context,
         app_base_url=config.provided.app_base_url,
     )
+    self_order_settings_repository = providers.Factory(
+        SqlAlchemySelfOrderSettingsRepository, session_factory=db.provided.session
+    )
     get_public_menu = providers.Factory(
         GetPublicMenu,
         token=table_qr_token,
         products=product_repository,
         tenants=tenant_repository,
+        settings=self_order_settings_repository,
         tenant_context=tenant_context,
     )
     request_table_attention = providers.Factory(
@@ -1313,9 +1317,6 @@ class Container(containers.DeclarativeContainer):
         tables=table_repository,
         event_bus=event_bus,
         tenant_context=tenant_context,
-    )
-    self_order_settings_repository = providers.Factory(
-        SqlAlchemySelfOrderSettingsRepository, session_factory=db.provided.session
     )
     get_self_order_settings = providers.Factory(
         GetSelfOrderSettings,

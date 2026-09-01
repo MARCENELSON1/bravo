@@ -37,6 +37,8 @@ async def get_public_menu(
         tenant_name=menu.tenant_name,
         currency=menu.currency,
         locale=menu.locale,
+        self_order_enabled=menu.self_order_enabled,
+        self_order_requires_confirmation=menu.self_order_requires_confirmation,
         categories=[
             PublicMenuCategoryResponse(
                 name=category.name,

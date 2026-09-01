@@ -28,12 +28,16 @@ class PublicMenuCategory:
 @dataclass(frozen=True)
 class PublicMenu:
     """The full public menu for a table's QR: the local's name + its currency/
-    locale (so the frontend formats prices) + the categorised catalog."""
+    locale (so the frontend formats prices) + the categorised catalog. The
+    self-order flags tell the carta whether to show the cart at all and whether a
+    submitted order waits for the waiter's confirmation (the kitchen gate)."""
 
     tenant_name: str
     currency: str
     locale: str
     categories: list[PublicMenuCategory]
+    self_order_enabled: bool = False
+    self_order_requires_confirmation: bool = True
 
 
 @dataclass(frozen=True)

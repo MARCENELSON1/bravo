@@ -21,10 +21,25 @@ export const publicMenu = {
     callWaiter: "Call the server",
     requestBill: "Ask for the check",
   },
+  cart: {
+    increase: "Add one",
+    decrease: "Remove one",
+    send: "Send order",
+    sending: "Sending…",
+    total: "Total",
+  },
+  sent: {
+    title: "Order sent!",
+    gated: "Your server will confirm it in a moment and send it to the kitchen.",
+    kitchen: "It's in the kitchen 🍳",
+    again: "Order more",
+  },
   toast: {
     waiterOnTheWay: "Your server is on the way 🙌",
     billOnTheWay: "Your check is on the way 🙌",
     failed: "We couldn't notify. Please try again.",
+    orderFailed: "We couldn't send your order. Please try again.",
+    orderUnavailable: "One of the dishes is no longer available. Please review your order.",
   },
   poweredBy: "with Wellnod",
 } as const

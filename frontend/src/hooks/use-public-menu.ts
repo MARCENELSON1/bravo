@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
 
+import type { CustomerOrderLineDTO } from "@/api/public-menu-api"
 import { useServices } from "@/services/services-context"
 
 // Carta pública por token de QR. Sin auth; el token es el scope del tenant.
@@ -24,4 +25,12 @@ export function useCallWaiter(token: string | undefined) {
 export function useRequestBill(token: string | undefined) {
   const { publicMenuApi } = useServices()
   return useMutation({ mutationFn: () => publicMenuApi.requestBill(token!) })
+}
+
+// Autopedido: envía el carrito → crea la comanda. Devuelve si el mozo debe confirmar.
+export function useSubmitCustomerOrder(token: string | undefined) {
+  const { publicMenuApi } = useServices()
+  return useMutation({
+    mutationFn: (lines: CustomerOrderLineDTO[]) => publicMenuApi.submitOrder(token!, lines),
+  })
 }

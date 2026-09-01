@@ -22,6 +22,9 @@ class PublicMenuResponse(BaseModel):
     currency: str
     locale: str
     categories: list[PublicMenuCategoryResponse]
+    # Gate del autopedido: si está apagado, la carta no muestra carrito.
+    self_order_enabled: bool = False
+    self_order_requires_confirmation: bool = True
 
 
 class IssueTableQrResponse(BaseModel):

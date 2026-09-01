@@ -22,6 +22,24 @@ export interface PublicMenuDTO {
   currency: string
   locale: string
   categories: PublicMenuCategoryDTO[]
+  // Gate del autopedido (Carta QR F2). `enabled` off → la carta no muestra carrito;
+  // `requires_confirmation` → el pedido espera al mozo (si no, va directo a cocina).
+  self_order_enabled?: boolean
+  self_order_requires_confirmation?: boolean
+}
+
+// El comensal manda solo id + cantidad (+ nota). El precio lo resuelve el server
+// desde el catálogo — un carrito manipulado NUNCA cambia el total.
+export interface CustomerOrderLineDTO {
+  product_id: string
+  quantity: number
+  note?: string | null
+}
+
+export interface CustomerOrderResultDTO {
+  order_id: string
+  status: string
+  requires_confirmation: boolean
 }
 
 export class PublicMenuApi {
@@ -47,5 +65,13 @@ export class PublicMenuApi {
 
   requestBill(token: string): Promise<void> {
     return this.http.request<void>("POST", "/public/table/request-bill", { body: { token } })
+  }
+
+  // Autopedido: el comensal envía su carrito → cae como una comanda real. Sin auth;
+  // el token porta el tenant + la mesa. El server valida disponibilidad y precio.
+  submitOrder(token: string, lines: CustomerOrderLineDTO[]): Promise<CustomerOrderResultDTO> {
+    return this.http.request<CustomerOrderResultDTO>("POST", "/public/table/order", {
+      body: { token, lines },
+    })
   }
 }

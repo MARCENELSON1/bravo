@@ -7,6 +7,7 @@ from app.application.public_menu.dtos import (
     PublicMenuItem,
 )
 from app.domain.identity.ports import TenantContext
+from app.domain.order.settings import SelfOrderSettingsRepository
 from app.domain.product.entities import Product
 from app.domain.product.repository import ProductRepository
 from app.domain.public_menu.exceptions import InvalidTableQrToken
@@ -79,11 +80,13 @@ class GetPublicMenu:
         token: TableQrToken,
         products: ProductRepository,
         tenants: TenantRepository,
+        settings: SelfOrderSettingsRepository,
         tenant_context: TenantContext,
     ) -> None:
         self._token = token
         self._products = products
         self._tenants = tenants
+        self._settings = settings
         self._tenant_context = tenant_context
 
     async def execute(self, *, token: str) -> PublicMenu:
@@ -95,11 +98,14 @@ class GetPublicMenu:
             # rather than leaking that distinction.
             raise InvalidTableQrToken()
         products = await self._products.list(claims.tenant_id, only_active=True)
+        self_order = await self._settings.get(claims.tenant_id)
         return PublicMenu(
             tenant_name=tenant.name,
             currency=tenant.currency,
             locale=tenant.locale,
             categories=group_menu(products),
+            self_order_enabled=self_order.enabled,
+            self_order_requires_confirmation=self_order.requires_confirmation,
         )
 
 

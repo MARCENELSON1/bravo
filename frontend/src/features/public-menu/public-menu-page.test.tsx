@@ -14,6 +14,9 @@ function makeApi(getMenu: () => Promise<PublicMenuDTO>) {
     getMenu: vi.fn(getMenu),
     callWaiter: vi.fn().mockResolvedValue(undefined),
     requestBill: vi.fn().mockResolvedValue(undefined),
+    submitOrder: vi
+      .fn()
+      .mockResolvedValue({ order_id: "o1", status: "OPEN", requires_confirmation: true }),
   } as unknown as PublicMenuApi
 }
 
@@ -100,5 +103,31 @@ describe("PublicMenuPage", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Llamar al mozo" }))
     expect(api.callWaiter).toHaveBeenCalledWith("tok-123")
+  })
+
+  it("hides the cart when self-order is disabled (F1 parity)", async () => {
+    renderMenu(makeApi(() => Promise.resolve(MENU))) // self_order_enabled ausente
+    await screen.findByText("Bar Paz")
+    // Sin steppers ni botón de envío: la carta se comporta como en F1.
+    expect(screen.queryByRole("button", { name: "Sumar uno" })).not.toBeInTheDocument()
+    expect(screen.queryByText(/Enviar el pedido/)).not.toBeInTheDocument()
+  })
+
+  it("builds a cart and submits the order server-side (prices never sent)", async () => {
+    const api = makeApi(() =>
+      Promise.resolve({ ...MENU, self_order_enabled: true, self_order_requires_confirmation: true })
+    )
+    renderMenu(api)
+    await screen.findByText("Bar Paz")
+
+    // Sumo 2 empanadas (la primera "+" en el DOM es la de Empanada).
+    await userEvent.click(screen.getAllByRole("button", { name: "Sumar uno" })[0])
+    await userEvent.click(screen.getAllByRole("button", { name: "Sumar uno" })[0]) // ahora [− 1 +]
+
+    await userEvent.click(screen.getByRole("button", { name: /Enviar el pedido/ }))
+
+    expect(api.submitOrder).toHaveBeenCalledWith("tok-123", [{ product_id: "1", quantity: 2 }])
+    // Gate ON → mensaje "el mozo lo confirma".
+    expect(await screen.findByText("¡Pedido enviado!")).toBeInTheDocument()
   })
 })
