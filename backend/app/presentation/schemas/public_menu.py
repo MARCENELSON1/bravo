@@ -7,6 +7,9 @@ class PublicMenuItemResponse(BaseModel):
     id: str
     name: str
     price_amount: int
+    image_url: str | None = None
+    description: str | None = None
+    available_today: bool = True
 
 
 class PublicMenuCategoryResponse(BaseModel):

@@ -5,6 +5,10 @@ export interface PublicMenuItemDTO {
   id: string
   name: string
   price_amount: number
+  // Enriquecimiento (Carta QR F2). Opcionales → una carta vieja sigue andando.
+  image_url?: string | null
+  description?: string | null
+  available_today?: boolean
 }
 
 export interface PublicMenuCategoryDTO {

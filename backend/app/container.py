@@ -145,6 +145,7 @@ from app.application.product.use_cases import (
     GetProductPriceHistory,
     GetProductRotation,
     ListProducts,
+    SetProductAvailability,
     UpdateProductPrice,
 )
 from app.application.public_menu.use_cases import (
@@ -583,6 +584,9 @@ class Container(containers.DeclarativeContainer):
     )
     list_products = providers.Factory(
         ListProducts, products=product_repository, tenant_context=tenant_context
+    )
+    set_product_availability = providers.Factory(
+        SetProductAvailability, products=product_repository, tenant_context=tenant_context
     )
     update_product_price = providers.Factory(
         UpdateProductPrice,

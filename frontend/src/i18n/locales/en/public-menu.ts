@@ -4,6 +4,7 @@ export const publicMenu = {
   loading: "Loading the menu…",
   menu: "Menu",
   uncategorized: "Other",
+  soldOut: "Sold out",
   empty: {
     title: "Menu coming soon",
     body: "No dishes yet. Ask your server for the menu.",

@@ -70,7 +70,7 @@ Arquitectura de siempre. Reusa `public_menu` (F1), `order`, `table_session` (flo
 - **Consumo de stock de modificadores:** fuera de scope (como el consumo de preparaciones anidadas).
 
 ## Troceo sugerido (tandas)
-- **A — Enriquecimiento del producto (backend):** `image_url`/`description`/`available_today` + migración + exponer en la carta (F1) y catálogo. Bajo riesgo.
+- **A — Enriquecimiento del producto: ✅ HECHA.** `image_url`/`description`/`available_today` en `Product` (entity+ORM+mapper) + migración **0046** (NO 0030 — la cadena real iba hasta 0045; aplicada a dev). `CreateProduct` acepta foto/descr.; `SetProductAvailability` + `PUT /products/{id}/availability` (toggle "86'd", no toca `active`). Expuesto en `GET /products` (helper `_product_response`) y en la carta pública (`GetPublicMenu` → item con foto/descr/disponibilidad). Front: DTO sincronizado + la carta muestra descripción + tag "Agotado" (fotos → Tanda C). Gates: back **626 tests**+ruff · front build+lint+**217 tests**. Todo con defaults no-breaking (paridad).
 - **B — Autopedido SIN modificadores (backend):** `OrderSource` + `SubmitCustomerOrder` (reusa CreateOrder/sesión, gate, precio server-side) + endpoint público + config del gate + migración `source`. **Deja el autopedido funcionando** con ítems simples.
 - **C — Carrito + carta enriquecida (frontend):** carrito, cantidades, enviar, confirmación; fotos/descr./agotado. A+B+C ya dejan el autopedido en la calle (sin modificadores).
 - **D — Modificadores (backend):** entidades + migración + CRUD + exponer en carta + snapshot/validación en `SubmitCustomerOrder`.

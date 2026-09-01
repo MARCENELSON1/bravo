@@ -4,6 +4,7 @@ export const publicMenu = {
   loading: "Cargando la carta…",
   menu: "Carta",
   uncategorized: "Otros",
+  soldOut: "Agotado",
   empty: {
     title: "Carta en preparación",
     body: "Todavía no hay platos cargados. Pedile la carta al mozo.",

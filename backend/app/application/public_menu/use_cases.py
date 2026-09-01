@@ -34,6 +34,9 @@ def group_menu(products: list[Product]) -> list[PublicMenuCategory]:
                 id=product.id,
                 name=product.name,
                 price_amount=product.price.amount,
+                image_url=product.image_url,
+                description=product.description,
+                available_today=product.available_today,
             )
         )
     return [PublicMenuCategory(name=category, items=buckets[category]) for category in order]

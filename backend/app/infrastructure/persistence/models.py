@@ -18,6 +18,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Text,
     UniqueConstraint,
     Uuid,
     func,
@@ -276,6 +277,12 @@ class ProductORM(Base):
     category: Mapped[str | None] = mapped_column(String(60), nullable=True)
     station: Mapped[str] = mapped_column(String(10), server_default="KITCHEN")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # QR menu enrichment (Carta QR F2). Nullable/defaulted → parity for existing rows.
+    image_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    available_today: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="true"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

@@ -419,6 +419,9 @@ def product_to_domain(row: ProductORM) -> Product:
         category=row.category,
         station=Station(row.station),
         active=row.active,
+        image_url=row.image_url,
+        description=row.description,
+        available_today=row.available_today,
         created_at=row.created_at,
     )
 
@@ -433,6 +436,9 @@ def product_to_orm(product: Product) -> ProductORM:
         category=product.category,
         station=product.station.value,
         active=product.active,
+        image_url=product.image_url,
+        description=product.description,
+        available_today=product.available_today,
     )
 
 

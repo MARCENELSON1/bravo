@@ -9,6 +9,7 @@ import { WellnodMark } from "@/components/brand/wellnod-mark"
 import { Button } from "@/components/ui/button"
 import { useCallWaiter, usePublicMenu, useRequestBill } from "@/hooks/use-public-menu"
 import { formatMoney } from "@/lib/money"
+import { cn } from "@/lib/utils"
 
 // Carta pública de cara al comensal (ruta /carta/:token, SIN auth). Mobile-first,
 // theme-aware (sigue el tema del navegador). El token porta el tenant → sin login.
@@ -111,20 +112,44 @@ function MenuSection({
   currency: string
   fallbackLabel: string
 }) {
+  const { t } = useTranslation()
   return (
     <section>
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         {category.name ?? fallbackLabel}
       </h2>
       <ul className="flex flex-col divide-y divide-border/50">
-        {category.items.map((item) => (
-          <li key={item.id} className="flex items-baseline justify-between gap-4 py-3">
-            <span className="min-w-0 text-[15px] leading-snug">{item.name}</span>
-            <span className="shrink-0 tabular-nums font-medium">
-              {formatMoney(item.price_amount, currency)}
-            </span>
-          </li>
-        ))}
+        {category.items.map((item) => {
+          const soldOut = item.available_today === false
+          return (
+            <li
+              key={item.id}
+              className={cn(
+                "flex items-baseline justify-between gap-4 py-3",
+                soldOut && "opacity-50"
+              )}
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[15px] leading-snug">{item.name}</span>
+                  {soldOut ? (
+                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {t("publicMenu.soldOut")}
+                    </span>
+                  ) : null}
+                </div>
+                {item.description ? (
+                  <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+                    {item.description}
+                  </p>
+                ) : null}
+              </div>
+              <span className="shrink-0 tabular-nums font-medium">
+                {formatMoney(item.price_amount, currency)}
+              </span>
+            </li>
+          )
+        })}
       </ul>
     </section>
   )

@@ -114,6 +114,8 @@ class CreateProduct:
         price_amount: int,
         category: str | None,
         station: Station = Station.KITCHEN,
+        image_url: str | None = None,
+        description: str | None = None,
     ) -> CreateProductResult:
         self._tenant_context.set(tenant_id)
         tenant = await self._tenants.get_by_id(tenant_id)
@@ -126,6 +128,8 @@ class CreateProduct:
             price=Money(price_amount, tenant.currency),
             category=category,
             station=station,
+            image_url=image_url,
+            description=description,
         )
         await self._products.add(product)
         await self._price_changes.record(
@@ -146,6 +150,31 @@ class ListProducts:
     async def execute(self, *, tenant_id: str, only_active: bool = False) -> list[Product]:
         self._tenant_context.set(tenant_id)
         return await self._products.list(tenant_id, only_active=only_active)
+
+
+class SetProductAvailability:
+    """The "86'd" toggle: mark a product available/unavailable for today. Distinct
+    from deactivating it (a permanent delisting) — availability is a daily flag the
+    QR menu reads to grey out (or hide) a dish that ran out."""
+
+    def __init__(
+        self,
+        products: ProductRepository,
+        tenant_context: TenantContext,
+    ) -> None:
+        self._products = products
+        self._tenant_context = tenant_context
+
+    async def execute(
+        self, *, tenant_id: str, product_id: str, available_today: bool
+    ) -> Product:
+        self._tenant_context.set(tenant_id)
+        product = await self._products.get_by_id(tenant_id, product_id)
+        if product is None:
+            raise ProductNotFound()
+        product.set_availability(available_today)
+        await self._products.save(product)
+        return product
 
 
 class UpdateProductPrice:

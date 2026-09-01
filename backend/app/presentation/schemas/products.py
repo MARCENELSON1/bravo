@@ -11,6 +11,9 @@ class CreateProductRequest(BaseModel):
     category: str | None = Field(default=None, max_length=60)
     # Where it's prepared — defaults to the kitchen; set BAR for drinks/coffee.
     station: Station = Station.KITCHEN
+    # QR menu enrichment (Carta QR F2). Optional; a photo URL + a short description.
+    image_url: str | None = Field(default=None, max_length=2048)
+    description: str | None = Field(default=None, max_length=2000)
 
     @field_validator("name")
     @classmethod
@@ -34,6 +37,13 @@ class ProductResponse(BaseModel):
     category: str | None
     station: str
     active: bool
+    image_url: str | None = None
+    description: str | None = None
+    available_today: bool = True
+
+
+class SetAvailabilityRequest(BaseModel):
+    available_today: bool
 
 
 # --- Productos v2 Tanda B: precios vs inflación + histórico + rotación --------

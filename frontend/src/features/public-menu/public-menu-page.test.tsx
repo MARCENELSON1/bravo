@@ -68,6 +68,31 @@ describe("PublicMenuPage", () => {
     expect(await screen.findByText("Carta en preparación")).toBeInTheDocument()
   })
 
+  it("shows the description and a sold-out tag from the enrichment", async () => {
+    const enriched: PublicMenuDTO = {
+      ...MENU,
+      categories: [
+        {
+          name: "Platos",
+          items: [
+            {
+              id: "9",
+              name: "Milanesa",
+              price_amount: 850000,
+              description: "Con puré",
+              available_today: false,
+            },
+          ],
+        },
+      ],
+    }
+    renderMenu(makeApi(() => Promise.resolve(enriched)))
+
+    expect(await screen.findByText("Milanesa")).toBeInTheDocument()
+    expect(screen.getByText("Con puré")).toBeInTheDocument()
+    expect(screen.getByText("Agotado")).toBeInTheDocument()
+  })
+
   it("calls the waiter with the table token when the button is tapped", async () => {
     const api = makeApi(() => Promise.resolve(MENU))
     renderMenu(api)

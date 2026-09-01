@@ -37,7 +37,12 @@ async def get_public_menu(
                 name=category.name,
                 items=[
                     PublicMenuItemResponse(
-                        id=item.id, name=item.name, price_amount=item.price_amount
+                        id=item.id,
+                        name=item.name,
+                        price_amount=item.price_amount,
+                        image_url=item.image_url,
+                        description=item.description,
+                        available_today=item.available_today,
                     )
                     for item in category.items
                 ],
