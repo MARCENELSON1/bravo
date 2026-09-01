@@ -12,6 +12,7 @@ export const orders = {
   addRound: "Agregar otra ronda",
 
   itemsTitle: "Ítems · {{status}}",
+  customerOrder: "Pedido del cliente",
   print: "Imprimir",
   noItems: "Sin ítems todavía.",
 

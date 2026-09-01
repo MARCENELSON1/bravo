@@ -139,6 +139,12 @@ export interface CreateTableResponse {
   table_id: string
 }
 
+export interface SelectedOptionDTO {
+  option_id: string
+  name: string
+  price_delta: number
+}
+
 export interface OrderItemDTO {
   id: string
   product_id: string
@@ -149,7 +155,12 @@ export interface OrderItemDTO {
   status: ItemStatus
   station: Station
   sent_at: string | null // ISO-8601; how long the item has waited on the KDS
+  // Modificadores elegidos (Carta QR F2). Vacío en la mayoría de las comandas.
+  selected_options?: SelectedOptionDTO[]
 }
+
+// Origen de la comanda (Carta QR F2): la cargó el mozo o el comensal por QR.
+export type OrderSource = "WAITER" | "CUSTOMER_QR"
 
 // One item flattened with its order context — the unit the KDS board renders.
 export interface KdsTicket {
@@ -166,6 +177,7 @@ export interface OrderDTO {
   currency: string
   items: OrderItemDTO[]
   total_amount: number
+  source: OrderSource // Carta QR F2: WAITER | CUSTOMER_QR
   created_at: string | null // ISO-8601; used by the KDS waiting timer
   customer_id: string | null // CRM: cliente atribuido a la comanda
 }

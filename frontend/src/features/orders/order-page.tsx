@@ -204,7 +204,12 @@ export function OrderPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-2">
-            <span>{t("orders.itemsTitle", { status: data.status })}</span>
+            <span className="flex items-center gap-2">
+              {t("orders.itemsTitle", { status: data.status })}
+              {data.source === "CUSTOMER_QR" ? (
+                <Badge variant="secondary">{t("orders.customerOrder")}</Badge>
+              ) : null}
+            </span>
             {canEdit && data.items.length > 0 ? (
               <Button variant="outline" size="sm" onClick={printComanda}>
                 {t("orders.print")}
@@ -224,6 +229,11 @@ export function OrderPage() {
                     ) : null}
                     {it.status !== "PENDING" ? (
                       <span className="ml-1 text-xs text-muted-foreground">· {it.status}</span>
+                    ) : null}
+                    {it.selected_options && it.selected_options.length > 0 ? (
+                      <span className="block text-xs text-muted-foreground">
+                        {it.selected_options.map((o) => o.name).join(" · ")}
+                      </span>
                     ) : null}
                   </span>
                   {it.status === "PENDING" && canEdit ? (

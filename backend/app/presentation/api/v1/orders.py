@@ -79,6 +79,7 @@ def order_to_response(order: Order) -> OrderResponse:
             for item in order.items
         ],
         total_amount=order.total().amount,
+        source=order.source.value,
         created_at=order.created_at.isoformat() if order.created_at else None,
         customer_id=order.customer_id,
     )

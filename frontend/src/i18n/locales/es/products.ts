@@ -98,6 +98,30 @@ export const products = {
     saveError: "No pudimos guardar la receta.",
   },
 
+  // Modificadores (Carta QR F2): opciones que el comensal elige por plato.
+  modifiers: {
+    button: "Opciones",
+    sheetTitle: "Opciones de {{name}}",
+    sheetDescription:
+      "Opcional. Lo que el comensal elige del plato (ej. punto de cocción, agregados).",
+    empty: "Sin opciones todavía. Agregá un grupo.",
+    addGroup: "Agregar grupo",
+    groupNamePlaceholder: "Nombre del grupo (ej. Punto de cocción)",
+    min: "Mín.",
+    max: "Máx.",
+    requiredHint: "Con mín. 1 el grupo es obligatorio.",
+    options: "Opciones",
+    addOption: "Agregar opción",
+    optionNamePlaceholder: "Opción (ej. Con panceta)",
+    optionPricePlaceholder: "Extra",
+    removeGroup: "Quitar grupo",
+    removeOption: "Quitar opción",
+    save: "Guardar opciones",
+    saving: "Guardando…",
+    saved: "Opciones guardadas.",
+    saveError: "No pudimos guardar. Revisá los grupos y opciones.",
+  },
+
   // Ficha del producto (product-ficha.tsx).
   ficha: {
     button: "Ficha",

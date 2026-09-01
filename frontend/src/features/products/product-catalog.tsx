@@ -32,6 +32,7 @@ import {
   mergeCatalogRows,
 } from "@/features/products/catalog-rows"
 import { ComponentRowsEditor } from "@/features/products/preparations-manager"
+import { ModifiersSheet } from "@/features/products/modifiers-editor"
 import { ProductFicha } from "@/features/products/product-ficha"
 import {
   type ComponentDraft,
@@ -312,6 +313,7 @@ export function ProductCatalog({ period }: { period: RangeWindow }) {
                         <div className="flex justify-end gap-1">
                           <ProductFicha product={p} period={period} />
                           <RecipeSheet product={p} />
+                          <ModifiersSheet product={p} />
                         </div>
                       </TableCell>
                     </TableRow>

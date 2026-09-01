@@ -47,6 +47,7 @@ describe("kdsTickets", () => {
     currency: "ARS",
     items,
     total_amount: 0,
+    source: "WAITER",
     created_at: null,
     customer_id: null,
   })

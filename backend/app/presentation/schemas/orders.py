@@ -78,6 +78,8 @@ class OrderResponse(BaseModel):
     currency: str
     items: list[OrderItemResponse]
     total_amount: int
+    # Origen de la comanda (Carta QR F2): WAITER | CUSTOMER_QR. Default WAITER = paridad.
+    source: str = "WAITER"
     # ISO-8601; lets the KDS show how long an order has been waiting.
     created_at: str | None = None
     # CRM: cliente atribuido a la comanda (None → sin atribuir).
