@@ -27,9 +27,7 @@ function updateNavFade(instance: OverlayScrollbars) {
 import { useAuth } from "@/auth/auth-context"
 import { WellnodMark } from "@/components/brand/wellnod-mark"
 import { AppBackground } from "@/components/shell/app-background"
-import { CalendarMenu } from "@/components/shell/calendar-menu"
 import { ClockStatus } from "@/components/shell/clock-status"
-import { Messages } from "@/components/shell/messages"
 import { TopbarClock } from "@/components/shell/topbar-clock"
 import { NAV_GROUPS, NAV_ITEMS } from "@/components/shell/nav-config"
 import type { NavItem } from "@/components/shell/nav-config"
@@ -190,8 +188,6 @@ export function AppShell() {
             {session.tenantName}
           </span>
           <TopbarClock />
-          <CalendarMenu />
-          <Messages />
           <ClockStatus />
         </header>
         <OverlayScrollbarsComponent
