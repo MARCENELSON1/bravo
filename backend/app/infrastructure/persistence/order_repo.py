@@ -96,6 +96,22 @@ class SqlAlchemyOrderRepository(OrderRepository):
             rows = (await session.execute(stmt)).scalars().all()
             return [await self._load(session, row) for row in rows]
 
+    async def list_open_by_session(
+        self, tenant_id: str, session_id: str
+    ) -> list[Order]:
+        async with self._session_factory() as session:
+            stmt = (
+                select(OrderORM)
+                .where(
+                    OrderORM.tenant_id == tenant_id,
+                    OrderORM.session_id == session_id,
+                    OrderORM.status.in_(_ACTIVE_STATUSES),
+                )
+                .order_by(OrderORM.created_at.asc())
+            )
+            rows = (await session.execute(stmt)).scalars().all()
+            return [await self._load(session, row) for row in rows]
+
     async def add(self, order: Order) -> None:
         async with self._session_factory() as session:
             session.add(order_to_orm(order))

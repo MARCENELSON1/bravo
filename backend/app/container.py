@@ -113,6 +113,7 @@ from app.application.order.self_order import (
     SubmitCustomerOrder,
     UpdateSelfOrderSettings,
 )
+from app.application.order.table_bill import GetTableBill
 from app.application.order.use_cases import (
     AddOrderItem,
     AddOrderItemsBatch,
@@ -334,6 +335,9 @@ from app.infrastructure.persistence.sale_facts_repo import SqlAlchemySaleFactsRe
 from app.infrastructure.persistence.sector_repo import SqlAlchemySectorRepository
 from app.infrastructure.persistence.self_order_settings_repo import (
     SqlAlchemySelfOrderSettingsRepository,
+)
+from app.infrastructure.persistence.self_pay_settings_repo import (
+    SqlAlchemySelfPaySettingsRepository,
 )
 from app.infrastructure.persistence.shift_repo import SqlAlchemyShiftRepository
 from app.infrastructure.persistence.staff_report_repo import SqlAlchemyStaffReportReadModel
@@ -1319,6 +1323,20 @@ class Container(containers.DeclarativeContainer):
     )
     self_order_settings_repository = providers.Factory(
         SqlAlchemySelfOrderSettingsRepository, session_factory=db.provided.session
+    )
+    self_pay_settings_repository = providers.Factory(
+        SqlAlchemySelfPaySettingsRepository, session_factory=db.provided.session
+    )
+    get_table_bill = providers.Factory(
+        GetTableBill,
+        token=table_qr_token,
+        tenants=tenant_repository,
+        sessions=table_session_repository,
+        orders=order_repository,
+        payments=payment_repository,
+        settings=self_pay_settings_repository,
+        credentials=payment_credential_repository,
+        tenant_context=tenant_context,
     )
     get_public_menu = providers.Factory(
         GetPublicMenu,

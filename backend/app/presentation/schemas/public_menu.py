@@ -74,3 +74,30 @@ class CustomerOrderResponse(BaseModel):
     status: str
     # ``requires_confirmation`` refleja el gate: true → el mozo tiene que confirmar.
     requires_confirmation: bool
+
+
+class TableBillOptionResponse(BaseModel):
+    name: str
+    price_delta: int
+
+
+class TableBillItemResponse(BaseModel):
+    name: str
+    quantity: int
+    unit_price: int
+    selected_options: list[TableBillOptionResponse] = Field(default_factory=list)
+
+
+class TableBillResponse(BaseModel):
+    """La cuenta de la mesa que ve el comensal (Carta QR F3). Todo server-side:
+    total/pagado/saldo en minor units. ``online_pay_available`` decide si la carta
+    ofrece pagar online o cae a "pagá con el mozo"; ``tips_enabled`` muestra/oculta
+    el selector de propina."""
+
+    currency: str
+    items: list[TableBillItemResponse]
+    total: int
+    paid: int
+    balance: int
+    online_pay_available: bool
+    tips_enabled: bool

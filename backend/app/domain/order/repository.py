@@ -27,6 +27,14 @@ class OrderRepository(ABC):
         """Orders that still occupy a table (everything but PAID/CANCELLED)."""
 
     @abstractmethod
+    async def list_open_by_session(
+        self, tenant_id: str, session_id: str
+    ) -> list[Order]:
+        """Open (not PAID/CANCELLED) orders of a floor session — the running bill of
+        that table (Carta QR F3). Orders carry ``session_id`` but nothing queried by
+        it until now."""
+
+    @abstractmethod
     async def add(self, order: Order) -> None: ...
 
     @abstractmethod

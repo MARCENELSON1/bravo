@@ -8,6 +8,7 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
 from app.application.order.self_order import CustomerOrderLineInput, SubmitCustomerOrder
+from app.application.order.table_bill import GetTableBill
 from app.application.public_menu.use_cases import GetPublicMenu, RequestTableAttention
 from app.container import Container
 from app.domain.order.value_objects import OrderStatus
@@ -20,6 +21,9 @@ from app.presentation.schemas.public_menu import (
     PublicMenuModifierGroupResponse,
     PublicMenuModifierOptionResponse,
     PublicMenuResponse,
+    TableBillItemResponse,
+    TableBillOptionResponse,
+    TableBillResponse,
     TableCallRequest,
     TableCallResponse,
 )
@@ -73,6 +77,35 @@ async def get_public_menu(
             )
             for category in menu.categories
         ],
+    )
+
+
+@router.get("/table/bill", response_model=TableBillResponse)
+@inject
+async def get_table_bill(
+    token: str = Query(...),
+    use_case: GetTableBill = Depends(Provide[Container.get_table_bill]),
+) -> TableBillResponse:
+    bill = await use_case.execute(token=token)
+    return TableBillResponse(
+        currency=bill.currency,
+        items=[
+            TableBillItemResponse(
+                name=item.name,
+                quantity=item.quantity,
+                unit_price=item.unit_price,
+                selected_options=[
+                    TableBillOptionResponse(name=opt.name, price_delta=opt.price_delta)
+                    for opt in item.selected_options
+                ],
+            )
+            for item in bill.items
+        ],
+        total=bill.total,
+        paid=bill.paid,
+        balance=bill.balance,
+        online_pay_available=bill.online_pay_available,
+        tips_enabled=bill.tips_enabled,
     )
 
 

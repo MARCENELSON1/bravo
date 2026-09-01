@@ -57,6 +57,15 @@ class TenantORM(Base):
     self_order_requires_confirmation: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="true"
     )
+    # Pago desde la mesa (Carta QR F3). Deshabilitado por default → la carta mantiene
+    # "llamar mozo"/"pedir cuenta" (paridad F1/F2). tips_enabled ON = ofrece propina
+    # (el dueño la puede apagar desde la UI).
+    self_pay_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
+    self_pay_tips_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="true"
+    )
     # Regional/fiscal spine (Fase 0 internacionalización). Defaults AR → paridad
     # total para los tenants existentes; los resolvers leen estos campos por tenant.
     tax_regime: Mapped[str] = mapped_column(
