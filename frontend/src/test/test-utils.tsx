@@ -32,7 +32,11 @@ export function makeFakeAuthApi(overrides: Partial<AuthApi> = {}): AuthApi {
 
 export function renderWithProviders(
   ui: ReactNode,
-  { authApi, route = "/" }: { authApi?: Partial<AuthApi>; route?: string } = {}
+  {
+    authApi,
+    route = "/",
+    services: servicesOverride,
+  }: { authApi?: Partial<AuthApi>; route?: string; services?: Partial<Services> } = {}
 ) {
   const services: Services = {
     advisorApi: {} as unknown as Services["advisorApi"],
@@ -51,6 +55,7 @@ export function renderWithProviders(
     paymentsApi: {} as unknown as Services["paymentsApi"],
     platformApi: {} as unknown as Services["platformApi"],
     productsApi: {} as unknown as Services["productsApi"],
+    publicMenuApi: {} as unknown as Services["publicMenuApi"],
     realtimeApi: {} as unknown as Services["realtimeApi"],
     reportsApi: {} as unknown as Services["reportsApi"],
     reservationsApi: {} as unknown as Services["reservationsApi"],
@@ -58,6 +63,7 @@ export function renderWithProviders(
     tablesApi: {} as unknown as Services["tablesApi"],
     tenantsApi: {} as unknown as Services["tenantsApi"],
     timeClockApi: {} as unknown as Services["timeClockApi"],
+    ...servicesOverride,
   }
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },

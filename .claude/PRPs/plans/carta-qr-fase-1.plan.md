@@ -63,7 +63,7 @@ Arquitectura de siempre: dominio puro → casos de uso sobre ports → adapters 
 
 ## Troceo sugerido (tandas)
 - **A — Sesión + carta (backend): ✅ HECHA.** Contexto nuevo `public_menu` (NO se tocó el `table_session` del floor, que es la visita/turno de mesa — colisión de nombre evitada). Token firmado **stateless** `HmacTableQrToken` (molde: presence device token) → sin migración. `IssueTableQr` (`GET /tables/{id}/qr`, RBAC OWNER/MANAGER, idempotente) + `GetPublicMenu` (`GET /public/menu?token=…`, sin auth, solo activos y sin costos, agrupado por categoría). Error `invalid_table_qr_token` → 401. Config `table_qr_secret` (cae a `jwt_secret`). Gates: ruff + **615 tests** (14 nuevos: token round-trip/tamper/kind, `group_menu` puro, e2e emisión→carta + aislamiento + token malo).
-- **B — Carta (frontend):** ruta pública + página + cliente API + i18n + estados.
+- **B — Carta (frontend): ✅ HECHA.** Ruta pública `/carta/:token` (fuera de `RequireAuth`), `PublicMenuApi` inyectable (sin auth) + hook `usePublicMenu` + página mobile-first, theme-aware, con estados (cargando / token inválido "pedí el QR" vía code `invalid_table_qr_token` / error / carta vacía). Namespace i18n `publicMenu` ES/EN (ES paridad). `renderWithProviders` extendido para inyectar services fake. Gates: build (tsc) + lint + **214 tests** (3 nuevos: render de carta, estado inválido, vacío). Pendiente: chequeo visual claro/oscuro en navegador (manual).
 - **C — Llamar al mozo / pedir la cuenta:** endpoints + realtime + recepción en el floor.
 - **D — Gestión/impresión de QR** (lado dueño).
 

@@ -18,6 +18,7 @@ import { OrdersApi } from "@/api/orders-api"
 import { PaymentsApi } from "@/api/payments-api"
 import { PlatformApi } from "@/api/platform-api"
 import { ProductsApi } from "@/api/products-api"
+import { PublicMenuApi } from "@/api/public-menu-api"
 import { RealtimeApi } from "@/api/realtime-api"
 import { ReportsApi } from "@/api/reports-api"
 import { ReservationsApi } from "@/api/reservations-api"
@@ -56,6 +57,7 @@ export function ServicesProvider({
       paymentsApi: new PaymentsApi(http),
       platformApi: new PlatformApi(http),
       productsApi: new ProductsApi(http),
+      publicMenuApi: new PublicMenuApi(http),
       realtimeApi: new RealtimeApi(http),
       reportsApi: new ReportsApi(http),
       reservationsApi: new ReservationsApi(http),

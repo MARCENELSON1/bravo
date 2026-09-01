@@ -34,6 +34,7 @@ import { KdsPage } from "@/features/kds/kds-page"
 import { OrderPage } from "@/features/orders/order-page"
 import { ProductsPage } from "@/features/products/products-page"
 import { ReservationsPage } from "@/features/reservations/reservations-page"
+import { PublicMenuPage } from "@/features/public-menu/public-menu-page"
 import { PresenceDisplayPage } from "@/features/timeclock/presence-display-page"
 import { PunchPage } from "@/features/timeclock/punch-page"
 import { StaffPage } from "@/features/timeclock/staff-page"
@@ -46,6 +47,8 @@ export const router = createBrowserRouter([
   { path: "/accept-invitation", element: <AcceptInvitationPage /> },
   { path: "/forgot-password", element: <ForgotPasswordPage /> },
   { path: "/reset-password", element: <ResetPasswordPage /> },
+  // Carta QR de cara al comensal (sin auth; el token porta el tenant).
+  { path: "/carta/:token", element: <PublicMenuPage /> },
   // Local fichaje display (device-authenticated, no employee session).
   { path: "/fichaje", element: <PresenceDisplayPage /> },
 
