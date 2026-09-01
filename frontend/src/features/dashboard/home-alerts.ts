@@ -5,7 +5,12 @@
 // Contrato i18n: no arma texto. Cada alerta devuelve `labelKey` (clave i18next) y,
 // en las que pluralizan, `count`. El componente resuelve el label con `t()`.
 
-export type AlertTone = "attention" | "warn" | "info"
+// Escala de urgencia, de menor a mayor:
+//   good      verde   — las cosas están bien
+//   normal    gris    — algo para revisar, sin urgencia
+//   attention ámbar   — algo para revisar con urgencia
+//   critical  rojo    — algo peligroso, hay que cambiarlo ya
+export type AlertTone = "good" | "normal" | "attention" | "critical"
 
 export interface HomeAlert {
   key: string
@@ -24,6 +29,22 @@ export interface AlertCounts {
   atRisk: number // clientes en riesgo para contactar
 }
 
+// Umbrales de escalada. No son arbitrarios: UNA mesa con la comida lista pasa
+// en cualquier servicio, TRES a la vez significa que el pase se trabó y hay
+// platos enfriándose — eso sí es "peligroso, cambialo ya".
+const TO_SERVE_CRITICAL = 3
+// Un insumo bajo el mínimo se repone sin drama; cinco es que la compra se atrasó
+// y mañana te quedás sin vender algo.
+const LOW_STOCK_ATTENTION = 5
+
+// Orden de la escala, para mostrar lo más urgente primero.
+const SEVERITY: Record<AlertTone, number> = {
+  critical: 0,
+  attention: 1,
+  normal: 2,
+  good: 3,
+}
+
 export function homeAlerts(c: AlertCounts): HomeAlert[] {
   const out: HomeAlert[] = []
 
@@ -33,7 +54,7 @@ export function homeAlerts(c: AlertCounts): HomeAlert[] {
       labelKey: "dashboard.alerts.toServe",
       count: c.toServe,
       to: "/app/floor",
-      tone: "attention",
+      tone: c.toServe >= TO_SERVE_CRITICAL ? "critical" : "attention",
     })
   }
   if (c.toCharge > 0) {
@@ -51,7 +72,7 @@ export function homeAlerts(c: AlertCounts): HomeAlert[] {
       key: "cash",
       labelKey: "dashboard.alerts.cashClosed",
       to: "/app/caja",
-      tone: "warn",
+      tone: "attention",
     })
   }
   if (c.lowStock > 0) {
@@ -60,7 +81,7 @@ export function homeAlerts(c: AlertCounts): HomeAlert[] {
       labelKey: "dashboard.alerts.lowStock",
       count: c.lowStock,
       to: "/app/stock",
-      tone: "info",
+      tone: c.lowStock >= LOW_STOCK_ATTENTION ? "attention" : "normal",
     })
   }
   if (c.atRisk > 0) {
@@ -69,8 +90,11 @@ export function homeAlerts(c: AlertCounts): HomeAlert[] {
       labelKey: "dashboard.alerts.atRisk",
       count: c.atRisk,
       to: "/app/clientes",
-      tone: "info",
+      tone: "normal",
     })
   }
-  return out
+  // Lo más urgente primero: los chips se acomodan en varias filas y el ojo va
+  // arriba a la izquierda. `sort` es estable, así que a igual nivel se conserva
+  // el orden en que se agregaron.
+  return out.sort((a, b) => SEVERITY[a.tone] - SEVERITY[b.tone])
 }

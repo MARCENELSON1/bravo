@@ -52,7 +52,7 @@ describe("floorView", () => {
   it("uses the session state, timer and pax when present", () => {
     const v = floorView(table(order("READY"), session("TO_SERVE", "2026-01-01T12:00:00Z")))
     expect(v.state).toBe("TO_SERVE")
-    expect(v.label).toBe("Para servir ⚡")
+    expect(v.label).toBe("Para servir")
     expect(v.since).toBe("2026-01-01T12:00:00Z")
     expect(v.attention).toBe(true)
     expect(v.pax).toBe(4)

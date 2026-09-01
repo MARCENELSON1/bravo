@@ -73,7 +73,7 @@ export const dashboard = {
     empty: "No hay mesas cargadas.",
     occupied: "ocupadas",
     free: "libres",
-    toServe: "para servir ⚡",
+    toServe: "para servir",
     toCharge: "para cobrar",
   },
 
@@ -93,8 +93,8 @@ export const dashboard = {
     allClear: "Nada urgente por ahora. Todo en orden ✓",
   },
   alerts: {
-    toServe_one: "{{count}} mesa para servir ⚡",
-    toServe_other: "{{count}} mesas para servir ⚡",
+    toServe_one: "{{count}} mesa para servir",
+    toServe_other: "{{count}} mesas para servir",
     toCharge_one: "{{count}} mesa para cobrar",
     toCharge_other: "{{count}} mesas para cobrar",
     cashClosed: "Caja sin abrir",

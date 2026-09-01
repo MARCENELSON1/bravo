@@ -154,7 +154,7 @@ function ExpensesByCategory({ window }: { window: Win }) {
               <span className="truncate">{r.category}</span>
               <span className="flex items-center gap-2 shrink-0 tabular-nums">
                 {r.delta !== 0 ? (
-                  <span className={r.delta > 0 ? "text-xs text-destructive" : "text-xs text-emerald-600"}>
+                  <span className={r.delta > 0 ? "text-xs text-destructive" : "text-xs text-success"}>
                     {r.delta > 0 ? "▲" : "▼"} {formatMoney(Math.abs(r.delta), data.currency)}
                   </span>
                 ) : null}
@@ -232,7 +232,7 @@ function TaxReportStatusCard() {
             : t("reports.taxReport.allReported", { count: d.sent })}
         </p>
         {d.failed > 0 ? (
-          <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
+          <p className="mt-0.5 text-xs text-warning">
             {t("reports.taxReport.failedNote")}
           </p>
         ) : null}
@@ -242,7 +242,7 @@ function TaxReportStatusCard() {
           {run.isPending ? t("reports.taxReport.reporting") : t("reports.taxReport.reportNow")}
         </Button>
       ) : (
-        <span className="shrink-0 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+        <span className="shrink-0 text-sm font-medium text-success">
           {t("reports.taxReport.upToDate")}
         </span>
       )}

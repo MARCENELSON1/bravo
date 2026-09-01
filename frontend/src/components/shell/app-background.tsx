@@ -11,12 +11,12 @@ export function AppBackground() {
       {/* Textura (imagen) semi-transparente encima del gradiente */}
       <div
         aria-hidden
-        className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-50 mix-blend-soft-light dark:hidden"
+        className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-[0.32] mix-blend-soft-light dark:hidden"
         style={{ backgroundImage: "url('/app-bg-light.png')" }}
       />
       <div
         aria-hidden
-        className="fixed inset-0 -z-10 hidden bg-cover bg-center bg-no-repeat opacity-50 mix-blend-soft-light dark:block"
+        className="fixed inset-0 -z-10 hidden bg-cover bg-center bg-no-repeat opacity-[0.32] mix-blend-soft-light dark:block"
         style={{ backgroundImage: "url('/app-bg-dark.png')" }}
       />
       {/* Grano/ruido sutil sobre el fondo */}

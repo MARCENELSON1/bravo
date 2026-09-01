@@ -82,6 +82,17 @@ export const orders = {
   lessQuantity: "Menos cantidad",
   moreQuantity: "Más cantidad",
   noProducts: "Sin productos que coincidan.",
+  // Selector de productos: frecuentes arriba, luego estación → categoría.
+  picker: {
+    frequent: "Frecuentes",
+    all: "Todos",
+    uncategorized: "Sin categoría",
+    uncategorizedSub: "Sin subcategoría",
+    subcategory: "Subcategoría",
+    station: "Estación",
+    category: "Categoría",
+    stationLabels: { KITCHEN: "Cocina", BAR: "Barra" },
+  },
 
   toasts: {
     chargeConfirmed: "¡Cobro confirmado! La comanda quedó pagada.",

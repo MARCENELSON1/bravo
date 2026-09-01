@@ -26,15 +26,15 @@ import {
 import { formatMoney } from "@/lib/money"
 
 const STATUS_STYLE: Record<string, string> = {
-  healthy: "text-emerald-500",
-  warn: "text-amber-500",
-  alert: "text-red-500",
+  healthy: "text-success",
+  warn: "text-warning",
+  alert: "text-destructive",
   neutral: "text-muted-foreground",
 }
 const STATUS_DOT: Record<string, string> = {
-  healthy: "bg-emerald-500",
-  warn: "bg-amber-500",
-  alert: "bg-red-500",
+  healthy: "bg-success",
+  warn: "bg-warning",
+  alert: "bg-destructive",
   neutral: "bg-muted-foreground",
 }
 
@@ -125,7 +125,7 @@ function FinanceBody({
       <GlassCard className="p-6">
         <p className="text-sm text-muted-foreground">{t("finance.hero.netProfit")}</p>
         <p
-          className={`mt-1 text-3xl font-bold tabular-nums sm:text-4xl ${net && net.value < 0 ? "text-red-500" : "text-foreground"}`}
+          className={`mt-1 text-3xl font-bold tabular-nums sm:text-4xl ${net && net.value < 0 ? "text-destructive" : "text-foreground"}`}
         >
           {net ? formatMoney(net.value, data.currency) : "—"}
         </p>
@@ -151,7 +151,7 @@ function FinanceBody({
       </GlassCard>
 
       {!data.configured ? (
-        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-300">
+        <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
           {t("finance.configureCosts")}
         </p>
       ) : null}

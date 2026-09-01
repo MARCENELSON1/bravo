@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { Zap } from "lucide-react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -36,16 +37,16 @@ const SIN_SECTOR = "__none__"
 // Card tone by derived state — attention states pop, "libre" stays neutral (no
 // green, per the spec).
 function cardClass(view: FloorView): string {
-  const base = "cursor-pointer transition-colors "
+  const base = "cursor-pointer transition-colors"
   switch (view.state) {
     case "FREE":
       return base + "hover:bg-muted/50"
     case "TO_SERVE":
-      return base + "border-amber-500/70 bg-amber-50/50 dark:bg-amber-500/10"
+      return base + "border-warning/70 bg-warning/10"
     case "TO_CHARGE":
       return base + "border-primary/70 bg-primary/10"
     case "SERVED":
-      return base + "border-emerald-500/60 bg-emerald-50/40 dark:bg-emerald-500/10"
+      return base + "border-success/60 bg-success/10"
     default:
       return base + "border-primary/40 bg-muted/40"
   }
@@ -85,7 +86,8 @@ function TableCard({
         ) : null}
         {view.state !== "FREE" ? (
           <>
-            <Badge variant={view.attention ? "default" : "secondary"} className="mt-1">
+            <Badge variant={view.attention ? "default" : "secondary"} className="mt-1 gap-1">
+              {view.state === "TO_SERVE" ? <Zap className="size-3" /> : null}
               {t(`floor.state.${view.state}`)}
             </Badge>
             {order ? (
@@ -103,7 +105,7 @@ function TableCard({
                   (view.attention && delay.level === "late"
                     ? "font-medium text-destructive"
                     : view.attention && delay.level === "warn"
-                      ? "font-medium text-amber-600 dark:text-amber-400"
+                      ? "font-medium text-warning"
                       : "text-muted-foreground")
                 }
               >
@@ -286,8 +288,8 @@ export function FloorPage() {
       ) : null}
 
       {attention.length > 0 ? (
-        <section className="flex flex-col gap-2 rounded-xl border border-amber-500/40 bg-amber-50/40 p-3 dark:bg-amber-500/5">
-          <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+        <section className="flex flex-col gap-2 rounded-xl border border-warning/40 bg-warning/10 p-3">
+          <p className="text-xs font-semibold text-warning">
             {t("floor.attention", { count: attention.length })}
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{attention.map(card)}</div>

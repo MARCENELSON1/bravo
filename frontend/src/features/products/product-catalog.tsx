@@ -7,6 +7,7 @@ import type { IngredientDTO, PreparationDTO, RecipeItemDTO } from "@/api/types-i
 import type { ProductDTO } from "@/api/types-operations"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/ui/empty-state"
 import { Input } from "@/components/ui/input"
 import {
   Sheet,
@@ -248,7 +249,7 @@ export function ProductCatalog({ period }: { period: RangeWindow }) {
                         {row.cost !== null && !row.ratioSane ? (
                           <Badge
                             variant="outline"
-                            className="ml-2 align-middle text-xs font-normal text-orange-600"
+                            className="ml-2 align-middle text-xs font-normal text-warning"
                             title={t("products.catalog.incompleteRecipeTitle")}
                           >
                             {t("products.badges.incompleteRecipe")}
@@ -321,11 +322,11 @@ export function ProductCatalog({ period }: { period: RangeWindow }) {
             </Table>
           </div>
         ) : (
-          <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
+          <EmptyState>
             {products.data && products.data.length > 0
               ? t("products.catalog.noMatch")
               : t("products.catalog.empty")}
-          </p>
+          </EmptyState>
         )}
       </div>
 

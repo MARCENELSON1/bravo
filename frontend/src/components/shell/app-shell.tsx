@@ -2,7 +2,7 @@ import { useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { motion } from "motion/react"
 import { Menu } from "lucide-react"
-import type { OverlayScrollbars } from "overlayscrollbars"
+
 import {
   OverlayScrollbarsComponent,
   type OverlayScrollbarsComponentRef,
@@ -13,21 +13,11 @@ const OS_OPTIONS = {
   scrollbars: { theme: "os-theme-wellnod", autoHide: "scroll", autoHideDelay: 800 },
 } as const
 
-// Fade proporcional al scroll: el degradé de cada borde crece desde 0 a medida
-// que hay contenido oculto de ese lado (progresivo, sigue el scroll).
-const FADE_MAX = 28
-function updateNavFade(instance: OverlayScrollbars) {
-  const { host, viewport } = instance.elements()
-  const top = Math.min(viewport.scrollTop, FADE_MAX)
-  const bottomDist = viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop
-  const bottom = Math.min(Math.max(bottomDist, 0), FADE_MAX)
-  host.style.setProperty("--fade-top", `${top}px`)
-  host.style.setProperty("--fade-bottom", `${bottom}px`)
-}
+
 
 import { useAuth } from "@/auth/auth-context"
-import { WellnodMark } from "@/components/brand/wellnod-mark"
 import { AppBackground } from "@/components/shell/app-background"
+import { GLASS_SURFACE } from "@/components/ui/glass-card"
 import { ClockStatus } from "@/components/shell/clock-status"
 import { TopbarClock } from "@/components/shell/topbar-clock"
 import { NAV_GROUPS, NAV_ITEMS } from "@/components/shell/nav-config"
@@ -35,6 +25,7 @@ import type { NavItem } from "@/components/shell/nav-config"
 import { UserMenu } from "@/components/shell/user-menu"
 import { Button } from "@/components/ui/button"
 import { useEdgePeek } from "@/lib/edge-peek"
+import { SCROLL_FADE_EVENTS } from "@/lib/scroll-fade"
 import { useReduceMotion } from "@/lib/reduce-motion"
 import { cn } from "@/lib/utils"
 
@@ -42,9 +33,7 @@ import { cn } from "@/lib/utils"
 // scenic gradient backdrop. Light and dark variants — the theme follows the OS.
 // Wraps the protected /app/* routes (rendered via <Outlet/>).
 
-const GLASS_PANEL =
-  "rounded-2xl border border-black/10 bg-white/60 backdrop-blur-2xl " +
-  "dark:border-white/10 dark:bg-black/30"
+const GLASS_PANEL = GLASS_SURFACE
 
 export function AppShell() {
   const { t } = useTranslation()
@@ -96,7 +85,6 @@ export function AppShell() {
   const sidebar = (
     <div className={cn("flex h-full w-64 flex-col text-sidebar-foreground", GLASS_PANEL)}>
       <div className="flex h-14 translate-y-1 items-center gap-3 px-6">
-        <WellnodMark className="h-11 w-auto shrink-0 text-black dark:text-white" />
         <span className="font-heading translate-y-0.5 text-3xl leading-none">
           <span className="font-bold text-sidebar-foreground">Well</span>
           <span className="-ml-[3px] font-light text-sidebar-foreground/55">nod</span>
@@ -106,9 +94,9 @@ export function AppShell() {
       <OverlayScrollbarsComponent
         ref={navOsRef}
         element="nav"
-        className="nav-scroll-fade min-h-0 flex-1 px-3"
+        className="scroll-fade min-h-0 flex-1 px-3"
         options={OS_OPTIONS}
-        events={{ initialized: updateNavFade, updated: updateNavFade, scroll: updateNavFade }}
+        events={SCROLL_FADE_EVENTS}
         defer
       >
         <div className="flex flex-col gap-1 pb-4 pt-1">
@@ -179,8 +167,9 @@ export function AppShell() {
         <OverlayScrollbarsComponent
           ref={mainOsRef}
           element="main"
-          className="min-h-0 flex-1"
+          className="scroll-fade min-h-0 flex-1"
           options={OS_OPTIONS}
+          events={SCROLL_FADE_EVENTS}
           defer
         >
           <motion.div

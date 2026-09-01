@@ -109,7 +109,7 @@ export function IntegrationsPanel({ embedded = false }: { embedded?: boolean }) 
       ) : data?.connected ? (
         <>
           <div className="flex items-center gap-2 text-sm">
-            <span className="size-2 rounded-full bg-emerald-500" />
+            <span className="size-2 rounded-full bg-success" />
             <span>
               {t("integrations.mp.connected")}
               {data.nickname ? ` · ${data.nickname}` : ""}
@@ -231,7 +231,7 @@ function AfipCard({ embedded = false }: { embedded?: boolean }) {
       ) : data?.connected ? (
         <>
           <div className="flex items-center gap-2 text-sm">
-            <span className="size-2 rounded-full bg-emerald-500" />
+            <span className="size-2 rounded-full bg-success" />
             <span>
               {t("integrations.afip.connected", {
                 cuit: data.cuit,

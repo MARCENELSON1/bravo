@@ -1,6 +1,6 @@
 // Formatting helpers for fichaje (kept out of component files so pages can
 // export only components — Fast Refresh / eslint react-refresh rule).
-import { dateLocale } from "@/lib/format"
+import { dateLocale, dateTimeOptions, timeOptions } from "@/lib/format"
 
 export function formatMinutes(total: number): string {
   const hours = Math.floor(total / 60)
@@ -11,7 +11,7 @@ export function formatMinutes(total: number): string {
 }
 
 export function formatClock(iso: string): string {
-  return new Date(iso).toLocaleTimeString(dateLocale(), { hour: "2-digit", minute: "2-digit" })
+  return new Date(iso).toLocaleTimeString(dateLocale(), timeOptions())
 }
 
 export function formatDate(iso: string): string {
@@ -29,12 +29,7 @@ export function isNextDay(fromIso: string, toIso: string): boolean {
 }
 
 export function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString(dateLocale(), {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
+  return new Date(iso).toLocaleString(dateLocale(), dateTimeOptions())
 }
 
 // Minutes elapsed between an ISO instant and now (never negative).

@@ -39,7 +39,7 @@ describe("homeAlerts", () => {
     expect(out[0].labelKey).toBe("dashboard.alerts.cashClosed")
     expect(out[0].count).toBeUndefined() // la caja no pluraliza
     expect(out[0].to).toBe("/app/caja")
-    expect(out[0].tone).toBe("warn")
+    expect(out[0].tone).toBe("attention")
   })
 
   it("caja desconocida (null) no genera alerta", () => {
@@ -53,11 +53,27 @@ describe("homeAlerts", () => {
     expect(out[0].labelKey).toBe("dashboard.alerts.lowStock")
     expect(out[0].count).toBe(4)
     expect(out[0].to).toBe("/app/stock")
-    expect(out[0].tone).toBe("info")
+    expect(out[0].tone).toBe("normal")
 
     expect(out[1].labelKey).toBe("dashboard.alerts.atRisk")
     expect(out[1].count).toBe(1)
     expect(out[1].to).toBe("/app/clientes")
-    expect(out[1].tone).toBe("info")
+    expect(out[1].tone).toBe("normal")
+  })
+
+  it("servir escala a crítico cuando se acumulan platos listos", () => {
+    expect(homeAlerts({ ...base, toServe: 2 })[0].tone).toBe("attention")
+    expect(homeAlerts({ ...base, toServe: 3 })[0].tone).toBe("critical")
+  })
+
+  it("el stock bajo sube a urgente cuando son muchos insumos", () => {
+    expect(homeAlerts({ ...base, lowStock: 4 })[0].tone).toBe("normal")
+    expect(homeAlerts({ ...base, lowStock: 5 })[0].tone).toBe("attention")
+  })
+
+  it("muestra lo más urgente primero", () => {
+    const out = homeAlerts({ ...base, atRisk: 2, lowStock: 6, toServe: 3 })
+    expect(out.map((a) => a.tone)).toEqual(["critical", "attention", "normal"])
+    expect(out.map((a) => a.key)).toEqual(["to_serve", "low_stock", "at_risk"])
   })
 })

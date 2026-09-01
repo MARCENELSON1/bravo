@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next"
+import { Zap } from "lucide-react"
 import { Link } from "react-router-dom"
 
 import { GlassCard } from "@/components/ui/glass-card"
@@ -34,7 +35,8 @@ export function SalonSnapshot() {
             {t("dashboard.salon.free")}
           </span>
           {s.toServe > 0 ? (
-            <span className="font-medium text-amber-600 dark:text-amber-400">
+            <span className="inline-flex items-center gap-1 font-medium text-warning">
+              <Zap className="size-3" />
               {s.toServe} {t("dashboard.salon.toServe")}
             </span>
           ) : null}
@@ -66,7 +68,7 @@ export function CashSnapshot() {
         <p className="text-sm text-muted-foreground">{t("dashboard.loading")}</p>
       ) : cash.data ? (
         <div className="flex flex-col gap-0.5 text-sm">
-          <span className="font-medium text-emerald-600 dark:text-emerald-400">
+          <span className="font-medium text-success">
             {t("dashboard.cash.open")}
           </span>
           <span className="text-muted-foreground">

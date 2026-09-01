@@ -7,6 +7,7 @@ import { apiErrorText } from "@/api/translate-error"
 import type { IngredientDTO, UnitOfMeasure } from "@/api/types-inventory"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/ui/empty-state"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Input } from "@/components/ui/input"
 import {
@@ -646,9 +647,9 @@ export function StockPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
+            <EmptyState>
               {t("inventory.stock.emptyState")}
-            </p>
+            </EmptyState>
           )}
         </div>
       </section>

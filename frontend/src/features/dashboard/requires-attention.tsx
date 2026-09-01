@@ -11,10 +11,13 @@ import { useFloor } from "@/hooks/use-floor"
 import { useLowStock } from "@/hooks/use-inventory"
 import { floorView } from "@/lib/floor-session"
 
+// Un color por nivel de urgencia (ver AlertTone). El verde queda reservado para
+// "las cosas están bien": nada que pida una acción se pinta de verde.
 const TONE_CLASS: Record<AlertTone, string> = {
-  attention: "border-amber-500/60 bg-amber-50/60 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300",
-  warn: "border-primary/50 bg-primary/10 text-foreground",
-  info: "border-border bg-muted/50 text-foreground",
+  good: "border-primary/50 bg-primary/10 text-primary",
+  normal: "border-border bg-muted/50 text-foreground",
+  attention: "border-warning/60 bg-warning/10 text-warning",
+  critical: "border-destructive/60 bg-destructive/10 text-destructive",
 }
 
 // "Requiere tu atención": la franja operativa del Home. Compone mesas + caja +

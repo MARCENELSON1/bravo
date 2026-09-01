@@ -290,7 +290,7 @@ function CashMovements({ report }: { report: CashReportDTO }) {
                 <span
                   className={
                     "shrink-0 tabular-nums " +
-                    (mv.signed_amount < 0 ? "text-red-600" : "text-emerald-600")
+                    (mv.signed_amount < 0 ? "text-destructive" : "text-success")
                   }
                 >
                   {signedMoney(mv.signed_amount, report.currency)}
@@ -375,9 +375,9 @@ function ClosedArqueo({
                 className={
                   "text-right tabular-nums " +
                   ((line.difference ?? 0) < 0
-                    ? "text-red-600"
+                    ? "text-destructive"
                     : (line.difference ?? 0) > 0
-                      ? "text-amber-600"
+                      ? "text-warning"
                       : "text-muted-foreground")
                 }
               >
@@ -391,9 +391,9 @@ function ClosedArqueo({
           <span
             className={
               (report.difference_total ?? 0) < 0
-                ? "text-red-600"
+                ? "text-destructive"
                 : (report.difference_total ?? 0) > 0
-                  ? "text-amber-600"
+                  ? "text-warning"
                   : ""
             }
           >

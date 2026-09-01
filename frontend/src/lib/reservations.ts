@@ -1,5 +1,5 @@
 import type { ReservationStatus } from "@/api/types-reservations"
-import { dateLocale } from "@/lib/format"
+import { dateLocale, timeOptions } from "@/lib/format"
 
 // Los textos de estado y turno viven en el diccionario i18n
 // (`reservations.statusLabels.*` y `reservations.turnLabels.*`); el consumidor
@@ -18,7 +18,7 @@ export const RESERVATION_STATUS_VARIANT: Record<ReservationStatus, BadgeVariant>
 
 // ISO instant → HH:mm in local time (the agenda shows the hour of the turn).
 export function formatReservedTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString(dateLocale(), { hour: "2-digit", minute: "2-digit" })
+  return new Date(iso).toLocaleTimeString(dateLocale(), timeOptions())
 }
 
 // A date (YYYY-MM-DD) + time (HH:mm) typed by the user → ISO-8601 for the API.

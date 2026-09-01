@@ -32,10 +32,10 @@ function minUnitsForPeriod(period: RangeWindow): number {
 // Color del punto por categoría. Las etiquetas (label/sub) viven en el diccionario
 // bajo `products.menuCategories.<cat>` — la CLAVE es el enum de dominio.
 const CATEGORY_DOT: Record<MenuCategory, string> = {
-  funciona: "bg-emerald-500",
+  funciona: "bg-success",
   oportunidad: "bg-violet-500",
   estable: "bg-sky-500",
-  revisar: "bg-orange-500",
+  revisar: "bg-warning",
   no_vendido: "bg-neutral-500",
   sin_datos: "bg-neutral-400",
 }
@@ -215,8 +215,11 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
           <div className="flex flex-col gap-2">
             {top.map((p, i) => (
               <div key={p.id} className="flex items-baseline justify-between gap-3 text-sm">
-                <span className="min-w-0 flex-1 truncate">
-                  {["🥇", "🥈", "🥉"][i]} {p.name}
+                <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
+                  <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-md border border-border text-[11px] font-semibold tabular-nums text-muted-foreground">
+                    {i + 1}
+                  </span>
+                  <span className="truncate">{p.name}</span>
                 </span>
                 <span className="shrink-0 tabular-nums text-muted-foreground">
                   {t("products.menu.units", { count: p.units })} ·{" "}
@@ -282,7 +285,7 @@ function MenuRow({
       <td className="py-1.5">
         <span className="flex items-center justify-end gap-1.5 text-xs">
           {!p.ratioSane ? (
-            <Badge variant="outline" className="text-xs font-normal text-orange-600">
+            <Badge variant="outline" className="text-xs font-normal text-warning">
               {t("products.badges.incompleteRecipe")}
             </Badge>
           ) : null}

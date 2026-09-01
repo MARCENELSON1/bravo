@@ -7,6 +7,7 @@ import { apiErrorText } from "@/api/translate-error"
 import type { ShiftDTO } from "@/api/types-timeclock"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/ui/empty-state"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Input } from "@/components/ui/input"
 import {
@@ -259,9 +260,9 @@ export function StaffPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
+            <EmptyState>
               {t("timeclock.staff.noReportData")}
-            </p>
+            </EmptyState>
           )}
         </div>
       </section>
@@ -324,9 +325,9 @@ export function StaffPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
+            <EmptyState>
               {t("timeclock.staff.noShifts")}
-            </p>
+            </EmptyState>
           )}
         </div>
       </section>

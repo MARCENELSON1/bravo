@@ -9,7 +9,7 @@ const YEARLY = (monthly: number) => money(Math.round((monthly * 10) / 12))
 // del producto. Para conectar a la API real, se crea otro adapter (HTTP) que cumpla
 // el mismo puerto — sin tocar casos de uso ni UI (OCP).
 //
-// 👉 Editá acá los precios/límites de tus planes.
+// → Editá acá los precios/límites de tus planes.
 const PLANS: readonly Plan[] = [
   {
     id: "emprende",

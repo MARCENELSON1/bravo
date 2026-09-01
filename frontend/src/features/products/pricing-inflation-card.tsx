@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { CircleCheck } from "lucide-react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 
@@ -73,7 +74,8 @@ export function PricingInflationCard() {
       </header>
 
       {laggingCount === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <CircleCheck className="size-4 shrink-0 text-primary" />
           {t("products.pricing.noneLagging")}
         </p>
       ) : (
@@ -122,7 +124,7 @@ function PricingRowItem({ row, currency }: { row: PricingRowDTO; currency: strin
             <span className="font-semibold text-foreground">
               {formatMoney(row.suggested_price_amount, currency)}
             </span>
-            <span className="ml-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+            <span className="ml-1 text-xs font-medium text-warning">
               +{bpsToPct(row.gap_bps)}
             </span>
           </div>

@@ -160,7 +160,7 @@ function FichaBody({ product, period }: { product: ProductDTO; period: RangeWind
           </div>
           {!row.ratio_sane ? (
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-orange-600">
+              <Badge variant="outline" className="text-warning">
                 {t("products.badges.incompleteRecipe")}
               </Badge>
               <span className="text-xs text-muted-foreground">

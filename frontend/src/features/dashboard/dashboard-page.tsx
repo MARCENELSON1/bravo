@@ -10,6 +10,7 @@ import type { FinanceDiagnosticDTO } from "@/api/types-operations"
 import { useAuth } from "@/auth/auth-context"
 import { AnimatedNumber } from "@/components/ui/animated-number"
 import { GlassCard } from "@/components/ui/glass-card"
+import { cn } from "@/lib/utils"
 import { dailyVerdict } from "@/features/dashboard/daily-verdict"
 import {
   CashSnapshot,
@@ -27,9 +28,9 @@ import { formatMoney } from "@/lib/money"
 // 7 niveles del spec. "Arrancás viendo lo único que importa": la ganancia del día.
 
 const TONE_STYLE: Record<string, string> = {
-  good: "text-emerald-500",
-  ok: "text-amber-500",
-  bad: "text-red-500",
+  good: "text-success",
+  ok: "text-warning",
+  bad: "text-destructive",
 }
 
 function todayLabel(t: TFunction): string {
@@ -126,28 +127,65 @@ export function DashboardPage() {
         <p className="text-sm text-muted-foreground">{todayLabel(t)}</p>
       </header>
 
-      {/* NIVEL 1 — Tu ganancia de hoy */}
-      <GlassCard className="p-6">
-        <p className="text-sm text-muted-foreground">{t("dashboard.todayProfit")}</p>
-        <div
-          className={`mt-1 text-3xl font-bold tabular-nums sm:text-4xl ${net < 0 ? "text-red-500" : "text-foreground"}`}
-        >
-          {summary.isPending ? (
-            <span className="text-muted-foreground">—</span>
+      {/* NIVEL 1 + 2 — La ganancia del día y los tres números que la explican.
+          Van en una sola fila: el total a la izquierda y sus partes a la derecha,
+          para que se vea de dónde sale el número sin tener que scrollear. */}
+      <section className="grid grid-cols-1 gap-3 lg:grid-cols-5">
+        <GlassCard className="flex flex-col justify-center p-6 lg:col-span-2">
+          <p className="text-sm text-muted-foreground">{t("dashboard.todayProfit")}</p>
+          <div
+            className={`mt-1 text-3xl font-bold tabular-nums sm:text-4xl ${net < 0 ? "text-destructive" : "text-foreground"}`}
+          >
+            {summary.isPending ? (
+              <span className="text-muted-foreground">—</span>
+            ) : (
+              <AnimatedNumber value={net} format={money} />
+            )}
+          </div>
+          <p className={`mt-2 text-sm font-medium ${TONE_STYLE[verdict.tone]}`}>{verdictMessage}</p>
+          {marginTentative ? (
+            <p className="mt-1 text-xs text-warning">{t("dashboard.profitTentative")}</p>
+          ) : null}
+          {feesTotal > 0 ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t("dashboard.feesDeducted", { amount: money(feesTotal) })}
+            </p>
+          ) : null}
+        </GlassCard>
+
+        <GlassCard className="divide-y divide-border/60 lg:col-span-3">
+          <ProfitPart
+            label={t("dashboard.billedToday")}
+            hint={t("dashboard.paymentsCount", { n: d?.payment_count ?? 0 })}
+            value={money(sales)}
+          />
+          <ProfitPart
+            label={t("dashboard.spentToday")}
+            hint={t("dashboard.expensesRegistered")}
+            value={money(expenses)}
+          />
+          {/* Dedupe (B4): el $ de la ganancia vive en el hero; acá el margen %. */}
+          {marginTentative ? (
+            <ProfitPart
+              label={t("dashboard.marginToday")}
+              hint={t("dashboard.loadExpensesForMargin")}
+              warn
+              muted
+              value="—"
+            />
           ) : (
-            <AnimatedNumber value={net} format={money} />
+            <ProfitPart
+              label={t("dashboard.marginToday")}
+              hint={
+                sales > 0
+                  ? t("dashboard.marginExplain", { margin: marginPer100 })
+                  : t("dashboard.noSalesYet")
+              }
+              value={sales > 0 ? `${marginPer100}%` : "—"}
+            />
           )}
-        </div>
-        <p className={`mt-2 text-sm font-medium ${TONE_STYLE[verdict.tone]}`}>{verdictMessage}</p>
-        {marginTentative ? (
-          <p className="mt-1 text-xs text-amber-500">{t("dashboard.profitTentative")}</p>
-        ) : null}
-        {feesTotal > 0 ? (
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t("dashboard.feesDeducted", { amount: money(feesTotal) })}
-          </p>
-        ) : null}
-      </GlassCard>
+        </GlassCard>
+      </section>
 
       {/* Requiere tu atención — la franja operativa (mesas / caja / stock / clientes) */}
       <RequiresAttention />
@@ -156,45 +194,6 @@ export function DashboardPage() {
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <SalonSnapshot />
         <CashSnapshot />
-      </section>
-
-      {/* NIVEL 2 — Los 3 números que lo explican */}
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <GlassCard className="p-5">
-          <p className="text-sm text-muted-foreground">{t("dashboard.billedToday")}</p>
-          <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{money(sales)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t("dashboard.paymentsCount", { n: d?.payment_count ?? 0 })}
-          </p>
-        </GlassCard>
-        <GlassCard className="p-5">
-          <p className="text-sm text-muted-foreground">{t("dashboard.spentToday")}</p>
-          <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{money(expenses)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{t("dashboard.expensesRegistered")}</p>
-        </GlassCard>
-        <GlassCard className="p-5">
-          <p className="text-sm text-muted-foreground">{t("dashboard.marginToday")}</p>
-          {marginTentative ? (
-            <>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-muted-foreground">—</p>
-              <p className="mt-1 text-xs text-amber-500">
-                {t("dashboard.loadExpensesForMargin")}
-              </p>
-            </>
-          ) : (
-            <>
-              {/* Dedupe (B4): el $ de la ganancia vive en el hero; acá el margen %. */}
-              <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
-                {sales > 0 ? `${marginPer100}%` : "—"}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {sales > 0
-                  ? t("dashboard.marginExplain", { margin: marginPer100 })
-                  : t("dashboard.noSalesYet")}
-              </p>
-            </>
-          )}
-        </GlassCard>
       </section>
 
       {/* NIVEL 3 — Cobros del día por canal (bruto) */}
@@ -235,7 +234,7 @@ export function DashboardPage() {
           className={`border-l-2 p-6 ${alertIsWarn ? "border-l-amber-500" : "border-l-destructive"}`}
         >
           <p
-            className={`text-xs font-semibold uppercase tracking-wide ${alertIsWarn ? "text-amber-600 dark:text-amber-400" : "text-destructive"}`}
+            className={`text-xs font-semibold uppercase tracking-wide ${alertIsWarn ? "text-warning" : "text-destructive"}`}
           >
             {t("dashboard.attentionToday")}
           </p>
@@ -379,6 +378,43 @@ function lastSevenDays(points: { day: string; sales_amount: number }[], weekdays
     cursor.setDate(cursor.getDate() + 1)
   }
   return days
+}
+
+// Una parte de la ganancia: etiqueta y aclaración a la izquierda, número a la
+// derecha. Compacta a propósito — las tres tienen que entrar al lado del total.
+function ProfitPart({
+  label,
+  hint,
+  value,
+  warn,
+  muted,
+}: {
+  label: string
+  hint: string
+  value: string
+  /** La aclaración pide una acción (cargar egresos) en vez de informar. */
+  warn?: boolean
+  /** El número todavía no se puede calcular. */
+  muted?: boolean
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 px-5 py-4">
+      <div className="min-w-0">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className={cn("mt-0.5 text-xs", warn ? "text-warning" : "text-muted-foreground")}>
+          {hint}
+        </p>
+      </div>
+      <p
+        className={cn(
+          "shrink-0 text-2xl font-bold tabular-nums",
+          muted ? "text-muted-foreground" : "text-foreground"
+        )}
+      >
+        {value}
+      </p>
+    </div>
+  )
 }
 
 function RevenueChart({

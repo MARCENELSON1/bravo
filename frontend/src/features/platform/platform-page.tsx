@@ -262,7 +262,7 @@ export function PlatformPage() {
                       <span
                         className={cn(
                           "inline-block size-2 rounded-full",
-                          p.active ? "bg-emerald-500" : "bg-muted-foreground/40"
+                          p.active ? "bg-success" : "bg-muted-foreground/40"
                         )}
                       />
                     </td>

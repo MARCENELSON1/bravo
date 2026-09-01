@@ -5,7 +5,7 @@ import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
 import { apiErrorText } from "@/api/translate-error"
-import { dateLocale } from "@/lib/format"
+import { dateLocale, dateTimeOptions } from "@/lib/format"
 import type { DocType } from "@/api/types-invoicing"
 import type { OrderDTO, PaymentMethod, ProductDTO } from "@/api/types-operations"
 import { useAuth } from "@/auth/auth-context"
@@ -154,12 +154,7 @@ export function OrderPage() {
   }
 
   const printComanda = () => {
-    const printedAt = new Date().toLocaleString(dateLocale(), {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
+    const printedAt = new Date().toLocaleString(dateLocale(), dateTimeOptions())
     printTicket(
       ticketHtml(data, tableLabel, printedAt, undefined, {
         stations: {
@@ -777,12 +772,7 @@ function CobroSection({
   }
 
   const printReceipt = () => {
-    const printedAt = new Date().toLocaleString(dateLocale(), {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
+    const printedAt = new Date().toLocaleString(dateLocale(), dateTimeOptions())
     const confirmedInflows = list.filter(
       (p) => p.direction === "INFLOW" && p.status === "CONFIRMED"
     )
@@ -839,7 +829,7 @@ function CobroSection({
               </Button>
             ) : null}
             {isPaid ? (
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+              <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
                 {t("orders.paid")}
               </span>
             ) : null}
@@ -859,10 +849,10 @@ function CobroSection({
                   <span
                     className={
                       p.status === "CONFIRMED"
-                        ? "text-xs text-emerald-600"
+                        ? "text-xs text-success"
                         : p.status === "REFUNDED"
                           ? "text-xs text-muted-foreground line-through"
-                          : "text-xs text-amber-600"
+                          : "text-xs text-warning"
                     }
                   >
                     {p.status === "CONFIRMED"

@@ -27,7 +27,7 @@ export const floor = {
     FREE: "Available",
     OPEN: "Open",
     IN_KITCHEN: "In kitchen",
-    TO_SERVE: "To serve ⚡",
+    TO_SERVE: "To serve",
     SERVED: "Served",
     TO_CHARGE: "To bill",
     CLOSED: "Closed",
