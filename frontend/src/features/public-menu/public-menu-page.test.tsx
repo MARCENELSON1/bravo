@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 import { screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { Route, Routes } from "react-router-dom"
 
 import { ApiError } from "@/api/api-error"
@@ -8,8 +9,15 @@ import { PublicMenuPage } from "@/features/public-menu/public-menu-page"
 import type { Services } from "@/services/services-context"
 import { renderWithProviders } from "@/test/test-utils"
 
-function renderMenu(getMenu: () => Promise<PublicMenuDTO>) {
-  const publicMenuApi = { getMenu: vi.fn(getMenu) } as unknown as PublicMenuApi
+function makeApi(getMenu: () => Promise<PublicMenuDTO>) {
+  return {
+    getMenu: vi.fn(getMenu),
+    callWaiter: vi.fn().mockResolvedValue(undefined),
+    requestBill: vi.fn().mockResolvedValue(undefined),
+  } as unknown as PublicMenuApi
+}
+
+function renderMenu(publicMenuApi: PublicMenuApi) {
   return renderWithProviders(
     <Routes>
       <Route path="/carta/:token" element={<PublicMenuPage />} />
@@ -36,7 +44,7 @@ const MENU: PublicMenuDTO = {
 
 describe("PublicMenuPage", () => {
   it("renders the branded menu with categories, items and prices", async () => {
-    renderMenu(() => Promise.resolve(MENU))
+    renderMenu(makeApi(() => Promise.resolve(MENU)))
 
     expect(await screen.findByText("Bar Paz")).toBeInTheDocument()
     expect(screen.getByText("Entradas")).toBeInTheDocument()
@@ -47,16 +55,25 @@ describe("PublicMenuPage", () => {
   })
 
   it("shows the friendly invalid-token screen on invalid_table_qr_token", async () => {
-    renderMenu(() =>
-      Promise.reject(new ApiError("invalid_table_qr_token", "El código QR no es válido.", 401))
+    renderMenu(
+      makeApi(() =>
+        Promise.reject(new ApiError("invalid_table_qr_token", "El código QR no es válido.", 401))
+      )
     )
     expect(await screen.findByText("No pudimos abrir la carta")).toBeInTheDocument()
   })
 
   it("shows the empty state when there are no items", async () => {
-    renderMenu(() =>
-      Promise.resolve({ ...MENU, categories: [{ name: "Vacía", items: [] }] })
-    )
+    renderMenu(makeApi(() => Promise.resolve({ ...MENU, categories: [{ name: "Vacía", items: [] }] })))
     expect(await screen.findByText("Carta en preparación")).toBeInTheDocument()
+  })
+
+  it("calls the waiter with the table token when the button is tapped", async () => {
+    const api = makeApi(() => Promise.resolve(MENU))
+    renderMenu(api)
+    await screen.findByText("Bar Paz")
+
+    await userEvent.click(screen.getByRole("button", { name: "Llamar al mozo" }))
+    expect(api.callWaiter).toHaveBeenCalledWith("tok-123")
   })
 })

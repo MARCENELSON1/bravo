@@ -1,11 +1,13 @@
 import type { ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import { useParams } from "react-router-dom"
+import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
 import type { PublicMenuCategoryDTO } from "@/api/public-menu-api"
 import { WellnodMark } from "@/components/brand/wellnod-mark"
-import { usePublicMenu } from "@/hooks/use-public-menu"
+import { Button } from "@/components/ui/button"
+import { useCallWaiter, usePublicMenu, useRequestBill } from "@/hooks/use-public-menu"
 import { formatMoney } from "@/lib/money"
 
 // Carta pública de cara al comensal (ruta /carta/:token, SIN auth). Mobile-first,
@@ -14,6 +16,8 @@ export function PublicMenuPage() {
   const { t } = useTranslation()
   const { token } = useParams<{ token: string }>()
   const { data, isLoading, isError, error } = usePublicMenu(token)
+  const callWaiter = useCallWaiter(token)
+  const requestBill = useRequestBill(token)
 
   if (isLoading) {
     return <StateScreen>{t("publicMenu.loading")}</StateScreen>
@@ -23,15 +27,24 @@ export function PublicMenuPage() {
     // Token malformado/de otro tenant/expirado → pantalla amable "pedí el QR".
     const invalid = isApiError(error) && error.code === "invalid_table_qr_token"
     return (
-      <StateScreen
-        title={t(invalid ? "publicMenu.invalid.title" : "publicMenu.error.title")}
-      >
+      <StateScreen title={t(invalid ? "publicMenu.invalid.title" : "publicMenu.error.title")}>
         {t(invalid ? "publicMenu.invalid.body" : "publicMenu.error.body")}
       </StateScreen>
     )
   }
 
   const categories = data.categories.filter((c) => c.items.length > 0)
+
+  const onCallWaiter = () =>
+    callWaiter.mutate(undefined, {
+      onSuccess: () => toast.success(t("publicMenu.toast.waiterOnTheWay")),
+      onError: () => toast.error(t("publicMenu.toast.failed")),
+    })
+  const onRequestBill = () =>
+    requestBill.mutate(undefined, {
+      onSuccess: () => toast.success(t("publicMenu.toast.billOnTheWay")),
+      onError: () => toast.error(t("publicMenu.toast.failed")),
+    })
 
   return (
     <div className="min-h-svh bg-background text-foreground">
@@ -47,7 +60,7 @@ export function PublicMenuPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-xl px-5 pb-16 pt-6">
+      <main className="mx-auto max-w-xl px-5 pb-28 pt-6">
         {categories.length === 0 ? (
           <StateScreen title={t("publicMenu.empty.title")} bare>
             {t("publicMenu.empty.body")}
@@ -64,11 +77,27 @@ export function PublicMenuPage() {
             ))}
           </div>
         )}
+        <p className="mt-10 text-center text-xs text-muted-foreground">
+          {t("publicMenu.poweredBy")}
+        </p>
       </main>
 
-      <footer className="pb-8 text-center text-xs text-muted-foreground">
-        {t("publicMenu.poweredBy")}
-      </footer>
+      {/* Barra de acciones fija: notifican al salón, no crean orden. */}
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border/60 bg-background/90 px-5 py-3 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-xl gap-3">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={onCallWaiter}
+            disabled={callWaiter.isPending}
+          >
+            {t("publicMenu.actions.callWaiter")}
+          </Button>
+          <Button className="flex-1" onClick={onRequestBill} disabled={requestBill.isPending}>
+            {t("publicMenu.actions.requestBill")}
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }

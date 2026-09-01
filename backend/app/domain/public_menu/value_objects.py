@@ -1,6 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
+
+
+class TableCallKind(StrEnum):
+    """What a diner asked for from the QR menu: the waiter, or the bill."""
+
+    WAITER = "waiter"
+    BILL = "bill"
 
 
 @dataclass(frozen=True)

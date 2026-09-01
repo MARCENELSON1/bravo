@@ -34,6 +34,9 @@ export const floor = {
   },
   toast: {
     added: "Mesa agregada.",
+    // Aviso del comensal desde la carta QR (evento realtime floor.call).
+    callWaiter: "Mesa {{number}} te llama 🙋",
+    bill: "Mesa {{number}} pide la cuenta 🧾",
   },
   errors: {
     openOrder: "No pudimos abrir la comanda.",

@@ -24,3 +24,11 @@ class PublicMenuResponse(BaseModel):
 class IssueTableQrResponse(BaseModel):
     token: str
     url: str
+
+
+class TableCallRequest(BaseModel):
+    token: str
+
+
+class TableCallResponse(BaseModel):
+    status: str = "ok"

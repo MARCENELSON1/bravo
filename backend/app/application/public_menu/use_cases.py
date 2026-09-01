@@ -11,6 +11,8 @@ from app.domain.product.entities import Product
 from app.domain.product.repository import ProductRepository
 from app.domain.public_menu.exceptions import InvalidTableQrToken
 from app.domain.public_menu.ports import TableQrToken
+from app.domain.public_menu.value_objects import TableCallKind
+from app.domain.realtime.ports import DomainEvent, EventBus
 from app.domain.table.exceptions import TableNotFound
 from app.domain.table.repository import TableRepository
 from app.domain.tenant.repository import TenantRepository
@@ -95,4 +97,41 @@ class GetPublicMenu:
             currency=tenant.currency,
             locale=tenant.locale,
             categories=group_menu(products),
+        )
+
+
+class RequestTableAttention:
+    """Public: a diner taps 'call waiter' / 'request bill' from the QR menu. Verify
+    the token, then emit a realtime ``floor.call`` signal to the tenant's floor/
+    cashier (reuses the KDS/floor event bus). Carries the table number so the
+    salon can render "Table N is calling" without another round-trip."""
+
+    def __init__(
+        self,
+        token: TableQrToken,
+        tables: TableRepository,
+        event_bus: EventBus,
+        tenant_context: TenantContext,
+    ) -> None:
+        self._token = token
+        self._tables = tables
+        self._event_bus = event_bus
+        self._tenant_context = tenant_context
+
+    async def execute(self, *, token: str, kind: TableCallKind) -> None:
+        claims = self._token.verify(token)  # raises InvalidTableQrToken
+        self._tenant_context.set(claims.tenant_id)
+        table = await self._tables.get_by_id(claims.tenant_id, claims.table_id)
+        if table is None:
+            raise TableNotFound()
+        await self._event_bus.publish(
+            DomainEvent(
+                type="floor.call",
+                tenant_id=claims.tenant_id,
+                payload={
+                    "table_id": table.id,
+                    "table_number": str(table.number),
+                    "kind": kind.value,
+                },
+            )
         )

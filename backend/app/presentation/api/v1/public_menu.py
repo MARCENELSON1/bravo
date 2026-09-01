@@ -7,12 +7,15 @@ from __future__ import annotations
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
-from app.application.public_menu.use_cases import GetPublicMenu
+from app.application.public_menu.use_cases import GetPublicMenu, RequestTableAttention
 from app.container import Container
+from app.domain.public_menu.value_objects import TableCallKind
 from app.presentation.schemas.public_menu import (
     PublicMenuCategoryResponse,
     PublicMenuItemResponse,
     PublicMenuResponse,
+    TableCallRequest,
+    TableCallResponse,
 )
 
 router = APIRouter(prefix="/public", tags=["public-menu"])
@@ -42,3 +45,23 @@ async def get_public_menu(
             for category in menu.categories
         ],
     )
+
+
+@router.post("/table/call-waiter", response_model=TableCallResponse)
+@inject
+async def call_waiter(
+    body: TableCallRequest,
+    use_case: RequestTableAttention = Depends(Provide[Container.request_table_attention]),
+) -> TableCallResponse:
+    await use_case.execute(token=body.token, kind=TableCallKind.WAITER)
+    return TableCallResponse()
+
+
+@router.post("/table/request-bill", response_model=TableCallResponse)
+@inject
+async def request_bill(
+    body: TableCallRequest,
+    use_case: RequestTableAttention = Depends(Provide[Container.request_table_attention]),
+) -> TableCallResponse:
+    await use_case.execute(token=body.token, kind=TableCallKind.BILL)
+    return TableCallResponse()

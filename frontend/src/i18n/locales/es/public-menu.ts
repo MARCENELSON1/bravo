@@ -16,5 +16,14 @@ export const publicMenu = {
     title: "Algo salió mal",
     body: "No pudimos cargar la carta. Probá de nuevo en un momento.",
   },
+  actions: {
+    callWaiter: "Llamar al mozo",
+    requestBill: "Pedir la cuenta",
+  },
+  toast: {
+    waiterOnTheWay: "El mozo ya viene 🙌",
+    billOnTheWay: "Te llevamos la cuenta 🙌",
+    failed: "No pudimos avisar. Probá de nuevo.",
+  },
   poweredBy: "con Wellnod",
 } as const

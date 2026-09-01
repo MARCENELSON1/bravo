@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { useFloor } from "@/hooks/use-floor"
 import { useCreateOrder } from "@/hooks/use-orders"
+import { useRealtimeEvent } from "@/hooks/use-realtime"
 import { useSectors } from "@/hooks/use-sectors"
 import { useRequestBill } from "@/hooks/use-sessions"
 import { useCreateTable } from "@/hooks/use-tables"
@@ -145,6 +146,14 @@ export function FloorPage() {
   const [searchParams] = useSearchParams()
   const { session } = useAuth()
   const canManage = session?.role === "OWNER" || session?.role === "MANAGER"
+
+  // Aviso del comensal desde la carta QR ("llamar al mozo" / "pedir la cuenta").
+  // Es una notificación (no refetch): mostramos un toast que perdura.
+  useRealtimeEvent("floor", "floor.call", (payload) => {
+    const number = payload.table_number ?? "?"
+    const key = payload.kind === "bill" ? "floor.toast.bill" : "floor.toast.callWaiter"
+    toast(t(key, { number }), { duration: 8000 })
+  })
   const [newNumber, setNewNumber] = useState("")
   const [search, setSearch] = useState("")
   const [chip, setChip] = useState<FloorChip>(() =>

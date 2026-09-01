@@ -79,6 +79,31 @@ async def test_public_menu_rejects_bad_token(client):
     assert missing.status_code == 422  # required query param absent
 
 
+async def test_call_waiter_and_request_bill_accept_a_valid_token(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    table_id = await _table(http, h, 5)
+    token = (await http.get(f"/api/v1/tables/{table_id}/qr", headers=h)).json()["token"]
+
+    waiter = await http.post("/api/v1/public/table/call-waiter", json={"token": token})
+    assert waiter.status_code == 200, waiter.text
+    assert waiter.json()["status"] == "ok"
+
+    bill = await http.post("/api/v1/public/table/request-bill", json={"token": token})
+    assert bill.status_code == 200, bill.text
+
+
+async def test_call_waiter_rejects_bad_token(client):
+    http, fake_email = client
+    await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    bad = await http.post(
+        "/api/v1/public/table/call-waiter", json={"token": "garbage.deadbeef"}
+    )
+    assert bad.status_code == 401
+    assert bad.json()["code"] == "invalid_table_qr_token"
+
+
 async def test_qr_token_is_tenant_isolated(client):
     http, fake_email = client
     # Tenant A with a product.

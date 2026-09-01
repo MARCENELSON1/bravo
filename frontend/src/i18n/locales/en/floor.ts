@@ -34,6 +34,9 @@ export const floor = {
   },
   toast: {
     added: "Table added.",
+    // Diner's ping from the QR menu (realtime floor.call event).
+    callWaiter: "Table {{number}} is calling 🙋",
+    bill: "Table {{number}} asked for the check 🧾",
   },
   errors: {
     openOrder: "We couldn't open the order.",

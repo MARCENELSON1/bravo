@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery } from "@tanstack/react-query"
 
 import { useServices } from "@/services/services-context"
 
@@ -12,4 +12,16 @@ export function usePublicMenu(token: string | undefined) {
     enabled: !!token,
     retry: false,
   })
+}
+
+// "Llamar al mozo": notifica al salón (evento realtime), sin crear orden.
+export function useCallWaiter(token: string | undefined) {
+  const { publicMenuApi } = useServices()
+  return useMutation({ mutationFn: () => publicMenuApi.callWaiter(token!) })
+}
+
+// "Pedir la cuenta": notifica al salón (evento realtime), sin crear orden.
+export function useRequestBill(token: string | undefined) {
+  const { publicMenuApi } = useServices()
+  return useMutation({ mutationFn: () => publicMenuApi.requestBill(token!) })
 }

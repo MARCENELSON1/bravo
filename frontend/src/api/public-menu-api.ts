@@ -34,4 +34,14 @@ export class PublicMenuApi {
       `/public/menu?token=${encodeURIComponent(token)}`
     )
   }
+
+  // "Llamar al mozo" / "Pedir la cuenta": notifican al salón en vivo (sin crear
+  // orden). El token porta el tenant + la mesa.
+  callWaiter(token: string): Promise<void> {
+    return this.http.request<void>("POST", "/public/table/call-waiter", { body: { token } })
+  }
+
+  requestBill(token: string): Promise<void> {
+    return this.http.request<void>("POST", "/public/table/request-bill", { body: { token } })
+  }
 }

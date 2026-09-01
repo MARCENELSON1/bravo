@@ -147,7 +147,11 @@ from app.application.product.use_cases import (
     ListProducts,
     UpdateProductPrice,
 )
-from app.application.public_menu.use_cases import GetPublicMenu, IssueTableQr
+from app.application.public_menu.use_cases import (
+    GetPublicMenu,
+    IssueTableQr,
+    RequestTableAttention,
+)
 from app.application.reporting.dashboard import GetDashboardSummary
 from app.application.reporting.exports import ExportReport
 from app.application.reporting.staff import GetStaffReport
@@ -1289,6 +1293,13 @@ class Container(containers.DeclarativeContainer):
         token=table_qr_token,
         products=product_repository,
         tenants=tenant_repository,
+        tenant_context=tenant_context,
+    )
+    request_table_attention = providers.Factory(
+        RequestTableAttention,
+        token=table_qr_token,
+        tables=table_repository,
+        event_bus=event_bus,
         tenant_context=tenant_context,
     )
 

@@ -16,5 +16,14 @@ export const publicMenu = {
     title: "Something went wrong",
     body: "We couldn't load the menu. Please try again in a moment.",
   },
+  actions: {
+    callWaiter: "Call the server",
+    requestBill: "Ask for the check",
+  },
+  toast: {
+    waiterOnTheWay: "Your server is on the way 🙌",
+    billOnTheWay: "Your check is on the way 🙌",
+    failed: "We couldn't notify. Please try again.",
+  },
   poweredBy: "with Wellnod",
 } as const
