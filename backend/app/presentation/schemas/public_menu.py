@@ -3,6 +3,21 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 
+class PublicMenuModifierOptionResponse(BaseModel):
+    id: str
+    name: str
+    price_delta: int
+
+
+class PublicMenuModifierGroupResponse(BaseModel):
+    id: str
+    name: str
+    min_select: int
+    max_select: int
+    required: bool
+    options: list[PublicMenuModifierOptionResponse]
+
+
 class PublicMenuItemResponse(BaseModel):
     id: str
     name: str
@@ -10,6 +25,7 @@ class PublicMenuItemResponse(BaseModel):
     image_url: str | None = None
     description: str | None = None
     available_today: bool = True
+    modifier_groups: list[PublicMenuModifierGroupResponse] = Field(default_factory=list)
 
 
 class PublicMenuCategoryResponse(BaseModel):
@@ -44,6 +60,8 @@ class CustomerOrderLine(BaseModel):
     product_id: str
     quantity: int = Field(ge=1)
     note: str | None = Field(default=None, max_length=280)
+    # Ids de las opciones de modificador elegidas (el server resuelve precio + min/max).
+    option_ids: list[str] = Field(default_factory=list)
 
 
 class CustomerOrderRequest(BaseModel):

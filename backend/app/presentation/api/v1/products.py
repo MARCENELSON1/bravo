@@ -6,6 +6,12 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query, status
 
 from app.application.inventory.use_cases import GetRecipe, SetRecipe
+from app.application.product.modifiers import (
+    GetProductModifiers,
+    ModifierGroupSpec,
+    ModifierOptionSpec,
+    SetProductModifiers,
+)
 from app.application.product.use_cases import (
     CreateProduct,
     GetPricingInsights,
@@ -19,6 +25,7 @@ from app.container import Container
 from app.domain.identity.tokens import AccessClaims
 from app.domain.inventory.recipe import RecipeItem
 from app.domain.product.entities import Product
+from app.domain.product.modifiers import ModifierGroup
 from app.domain.user.value_objects import Role
 from app.presentation.deps import current_identity
 from app.presentation.rbac import require_roles
@@ -26,6 +33,12 @@ from app.presentation.schemas.inventory import (
     RecipeItemSchema,
     RecipeResponse,
     SetRecipeRequest,
+)
+from app.presentation.schemas.modifiers import (
+    ModifierGroupResponse,
+    ModifierOptionResponse,
+    ProductModifiersResponse,
+    SetModifiersRequest,
 )
 from app.presentation.schemas.products import (
     CreateProductRequest,
@@ -198,6 +211,67 @@ async def get_product_price_history(
             for c in history.changes
         ],
     )
+
+
+# --- Modifiers (opt-in, Carta QR F2 D): choices the diner picks per item -----
+
+
+def _modifiers_response(product_id: str, groups: list[ModifierGroup]) -> ProductModifiersResponse:
+    return ProductModifiersResponse(
+        product_id=product_id,
+        groups=[
+            ModifierGroupResponse(
+                id=g.id,
+                name=g.name,
+                min_select=g.min_select,
+                max_select=g.max_select,
+                required=g.required,
+                options=[
+                    ModifierOptionResponse(id=o.id, name=o.name, price_delta=o.price_delta)
+                    for o in g.options
+                ],
+            )
+            for g in groups
+        ],
+    )
+
+
+@router.get("/{product_id}/modifiers", response_model=ProductModifiersResponse)
+@inject
+async def get_product_modifiers(
+    product_id: str,
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: GetProductModifiers = Depends(Provide[Container.get_product_modifiers]),
+) -> ProductModifiersResponse:
+    groups = await use_case.execute(tenant_id=identity.tenant_id, product_id=product_id)
+    return _modifiers_response(product_id, groups)
+
+
+@router.put("/{product_id}/modifiers", response_model=ProductModifiersResponse)
+@inject
+async def set_product_modifiers(
+    product_id: str,
+    body: SetModifiersRequest,
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: SetProductModifiers = Depends(Provide[Container.set_product_modifiers]),
+) -> ProductModifiersResponse:
+    groups = await use_case.execute(
+        tenant_id=identity.tenant_id,
+        product_id=product_id,
+        groups=[
+            ModifierGroupSpec(
+                name=g.name,
+                min_select=g.min_select,
+                max_select=g.max_select,
+                options=[
+                    ModifierOptionSpec(name=o.name, price_delta=o.price_delta)
+                    for o in g.options
+                ],
+            )
+            for g in body.groups
+        ],
+    )
+    return _modifiers_response(product_id, groups)
 
 
 # --- Recipe (opt-in, Fase 6): a product may or may not have one ----------

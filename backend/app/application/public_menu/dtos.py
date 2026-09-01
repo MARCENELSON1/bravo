@@ -1,6 +1,28 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+
+@dataclass(frozen=True)
+class PublicMenuModifierOption:
+    """A choice inside a public menu item's modifier group (id + display + delta)."""
+
+    id: str
+    name: str
+    price_delta: int
+
+
+@dataclass(frozen=True)
+class PublicMenuModifierGroup:
+    """A modifier group as the diner sees it: the rules (min/max/required) + its
+    options. ``required`` is derived from ``min_select``."""
+
+    id: str
+    name: str
+    min_select: int
+    max_select: int
+    required: bool
+    options: list[PublicMenuModifierOption]
 
 
 @dataclass(frozen=True)
@@ -14,6 +36,7 @@ class PublicMenuItem:
     image_url: str | None = None
     description: str | None = None
     available_today: bool = True
+    modifier_groups: list[PublicMenuModifierGroup] = field(default_factory=list)
 
 
 @dataclass(frozen=True)

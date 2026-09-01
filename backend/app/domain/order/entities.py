@@ -11,7 +11,13 @@ from app.domain.order.exceptions import (
     ItemNotFound,
     ItemNotPending,
 )
-from app.domain.order.value_objects import ItemStatus, OrderSource, OrderStatus, Station
+from app.domain.order.value_objects import (
+    ItemStatus,
+    OrderSource,
+    OrderStatus,
+    SelectedOption,
+    Station,
+)
 from app.domain.shared.exceptions import CurrencyMismatch
 from app.domain.shared.money import Money
 
@@ -42,6 +48,9 @@ class OrderItem:
     status: ItemStatus = ItemStatus.PENDING
     sent_at: datetime | None = None
     ready_at: datetime | None = None
+    # Modificadores elegidos (Carta QR F2 D). Display-only: el price_delta ya está
+    # sumado en unit_price. Vacío → paridad (ítem sin opciones). Snapshot al pedir.
+    selected_options: list[SelectedOption] = field(default_factory=list)
 
     def line_total(self) -> Money:
         return self.unit_price.times(self.quantity)

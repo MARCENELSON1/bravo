@@ -43,7 +43,13 @@ from app.domain.invoice.value_objects import (
     InvoiceType,
 )
 from app.domain.order.entities import Order, OrderItem
-from app.domain.order.value_objects import ItemStatus, OrderSource, OrderStatus, Station
+from app.domain.order.value_objects import (
+    ItemStatus,
+    OrderSource,
+    OrderStatus,
+    SelectedOption,
+    Station,
+)
 from app.domain.payment.credentials import (
     ConnectionStatus,
     PaymentCredential,
@@ -52,6 +58,7 @@ from app.domain.payment.credentials import (
 from app.domain.payment.entities import Payment
 from app.domain.payment.value_objects import PaymentDirection, PaymentMethod, PaymentStatus
 from app.domain.product.entities import Product
+from app.domain.product.modifiers import ModifierGroup, ModifierOption
 from app.domain.reservation.entities import Reservation
 from app.domain.reservation.value_objects import ReservationStatus, ServiceTurn
 from app.domain.shared.money import Money
@@ -84,6 +91,8 @@ from app.infrastructure.persistence.models import (
     PlanORM,
     PreparationItemORM,
     PreparationORM,
+    ProductModifierGroupORM,
+    ProductModifierOptionORM,
     ProductORM,
     RecipeItemORM,
     RecipeORM,
@@ -468,6 +477,14 @@ def order_to_domain(row: OrderORM, item_rows: list[OrderItemORM]) -> Order:
                 status=ItemStatus(item.status),
                 sent_at=item.sent_at,
                 ready_at=item.ready_at,
+                selected_options=[
+                    SelectedOption(
+                        option_id=o["option_id"],
+                        name=o["name"],
+                        price_delta=o["price_delta"],
+                    )
+                    for o in (item.selected_options or [])
+                ],
             )
             for item in item_rows
         ],
@@ -503,6 +520,60 @@ def order_item_to_orm(item: OrderItem, order: Order, position: int) -> OrderItem
         station=item.station.value,
         sent_at=item.sent_at,
         ready_at=item.ready_at,
+        position=position,
+        selected_options=(
+            [
+                {"option_id": o.option_id, "name": o.name, "price_delta": o.price_delta}
+                for o in item.selected_options
+            ]
+            or None
+        ),
+    )
+
+
+# --- Product modifiers (Carta QR F2 D) -------------------------------------
+
+
+def modifier_group_to_domain(
+    group_row: ProductModifierGroupORM, option_rows: list[ProductModifierOptionORM]
+) -> ModifierGroup:
+    return ModifierGroup(
+        id=group_row.id,
+        tenant_id=group_row.tenant_id,
+        product_id=group_row.product_id,
+        name=group_row.name,
+        min_select=group_row.min_select,
+        max_select=group_row.max_select,
+        options=[
+            ModifierOption(id=o.id, name=o.name, price_delta=o.price_delta)
+            for o in sorted(option_rows, key=lambda o: o.position)
+        ],
+    )
+
+
+def modifier_group_to_orm(
+    group: ModifierGroup, position: int
+) -> ProductModifierGroupORM:
+    return ProductModifierGroupORM(
+        id=group.id,
+        tenant_id=group.tenant_id,
+        product_id=group.product_id,
+        name=group.name,
+        min_select=group.min_select,
+        max_select=group.max_select,
+        position=position,
+    )
+
+
+def modifier_option_to_orm(
+    option: ModifierOption, group: ModifierGroup, position: int
+) -> ProductModifierOptionORM:
+    return ProductModifierOptionORM(
+        id=option.id,
+        tenant_id=group.tenant_id,
+        group_id=group.id,
+        name=option.name,
+        price_delta=option.price_delta,
         position=position,
     )
 

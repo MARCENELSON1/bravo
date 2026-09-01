@@ -16,3 +16,13 @@ class InactiveProduct(DomainError):
 class ProductUnavailable(DomainError):
     code = "product_unavailable"
     message = "Ese plato hoy no está disponible."
+
+
+class InvalidModifierGroup(DomainError):
+    code = "invalid_modifier_group"
+    message = "El grupo de opciones no es válido."
+
+
+class InvalidModifierSelection(DomainError):
+    code = "invalid_modifier_selection"
+    message = "Revisá las opciones elegidas del plato."

@@ -361,9 +361,49 @@ class OrderItemORM(Base):
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     ready_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     position: Mapped[int] = mapped_column(Integer, default=0)
+    # Modificadores elegidos (Carta QR F2 D). Snapshot JSON [{option_id,name,price_delta}]
+    # — display-only (el delta ya está en unit_price_amount). Nullable → paridad.
+    selected_options: Mapped[list | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+class ProductModifierGroupORM(Base):
+    """A product's modifier group (ej. "Punto de cocción"). Carta QR F2 D. RLS."""
+
+    __tablename__ = "product_modifier_groups"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    product_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("products.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    min_select: Mapped[int] = mapped_column(Integer, server_default="0")
+    max_select: Mapped[int] = mapped_column(Integer, server_default="1")
+    position: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class ProductModifierOptionORM(Base):
+    """One option inside a modifier group (ej. "+Panceta", price_delta 1200)."""
+
+    __tablename__ = "product_modifier_options"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    group_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False),
+        ForeignKey("product_modifier_groups.id", ondelete="CASCADE"),
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    price_delta: Mapped[int] = mapped_column(BigInteger, server_default="0")
+    position: Mapped[int] = mapped_column(Integer, default=0)
 
 
 # --- Fase 3: pagos (ingresos/egresos, tenant-scoped) -----------------------

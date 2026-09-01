@@ -1,18 +1,33 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+
 from app.application.order.dtos import BatchOrderItemInput
 from app.application.order.use_cases import AddOrderItemsBatch, CreateOrder
 from app.domain.identity.ports import TenantContext
 from app.domain.order.entities import Order
 from app.domain.order.exceptions import SelfOrderDisabled
 from app.domain.order.settings import SelfOrderSettings, SelfOrderSettingsRepository
-from app.domain.order.value_objects import OrderSource
+from app.domain.order.value_objects import OrderSource, SelectedOption
 from app.domain.product.exceptions import InactiveProduct, ProductNotFound, ProductUnavailable
+from app.domain.product.modifier_repository import ModifierRepository
+from app.domain.product.modifiers import select_options
 from app.domain.product.repository import ProductRepository
 from app.domain.public_menu.ports import TableQrToken
 from app.domain.table.exceptions import TableNotFound
 from app.domain.table.repository import TableRepository
 from app.domain.table_session.repository import TableSessionRepository
+
+
+@dataclass(frozen=True)
+class CustomerOrderLineInput:
+    """One cart line from the diner: product + quantity + the modifier option ids
+    they chose (resolved + validated server-side). Only ids — never prices."""
+
+    product_id: str
+    quantity: int
+    note: str | None = None
+    option_ids: list[str] = field(default_factory=list)
 
 # No hay mozo para un pedido del cliente que abre la mesa. UUID nil como sentinel
 # (columna UUID sin FK): el `source=CUSTOMER_QR` es lo que porta el significado, y
@@ -68,6 +83,7 @@ class SubmitCustomerOrder:
         token: TableQrToken,
         settings: SelfOrderSettingsRepository,
         products: ProductRepository,
+        modifiers: ModifierRepository,
         sessions: TableSessionRepository,
         create_order: CreateOrder,
         add_items_batch: AddOrderItemsBatch,
@@ -77,6 +93,7 @@ class SubmitCustomerOrder:
         self._token = token
         self._settings = settings
         self._products = products
+        self._modifiers = modifiers
         self._sessions = sessions
         self._create_order = create_order
         self._add_items_batch = add_items_batch
@@ -84,7 +101,7 @@ class SubmitCustomerOrder:
         self._tenant_context = tenant_context
 
     async def execute(
-        self, *, token: str, lines: list[BatchOrderItemInput]
+        self, *, token: str, lines: list[CustomerOrderLineInput]
     ) -> Order:
         claims = self._token.verify(token)  # raises InvalidTableQrToken
         tenant_id = claims.tenant_id
@@ -98,10 +115,11 @@ class SubmitCustomerOrder:
         if table is None:
             raise TableNotFound()
 
-        # Validate every line against the catalog BEFORE creating anything, so a bad
-        # cart never leaves a half-open order behind. Availability ("86'd") is
-        # checked here — AddOrderItemsBatch only knows about `active`.
-        await self._validate(tenant_id, lines)
+        # Resolve + validate every line against the catalog BEFORE creating
+        # anything, so a bad cart never leaves a half-open order behind. This
+        # checks availability ("86'd") and the modifier min/max, and snapshots the
+        # chosen options' name + price_delta server-side (the cart only sent ids).
+        batch = await self._resolve_lines(tenant_id, lines)
 
         waiter_id = await self._resolve_waiter(tenant_id, claims.table_id)
         created = await self._create_order.execute(
@@ -113,11 +131,14 @@ class SubmitCustomerOrder:
         return await self._add_items_batch.execute(
             tenant_id=tenant_id,
             order_id=created.order_id,
-            items=lines,
+            items=batch,
             send=not settings.requires_confirmation,
         )
 
-    async def _validate(self, tenant_id: str, lines: list[BatchOrderItemInput]) -> None:
+    async def _resolve_lines(
+        self, tenant_id: str, lines: list[CustomerOrderLineInput]
+    ) -> list[BatchOrderItemInput]:
+        resolved: list[BatchOrderItemInput] = []
         for line in lines:
             product = await self._products.get_by_id(tenant_id, line.product_id)
             if product is None:
@@ -126,6 +147,19 @@ class SubmitCustomerOrder:
                 raise InactiveProduct()
             if not product.available_today:
                 raise ProductUnavailable()
+            groups = await self._modifiers.list_for_product(tenant_id, line.product_id)
+            chosen = select_options(groups, line.option_ids)  # InvalidModifierSelection
+            resolved.append(
+                BatchOrderItemInput(
+                    product_id=line.product_id,
+                    quantity=line.quantity,
+                    note=line.note,
+                    selected_options=[
+                        SelectedOption(o.id, o.name, o.price_delta) for o in chosen
+                    ],
+                )
+            )
+        return resolved
 
     async def _resolve_waiter(self, tenant_id: str, table_id: str) -> str:
         session = await self._sessions.get_open_by_table(tenant_id, table_id)

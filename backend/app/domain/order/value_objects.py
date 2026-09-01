@@ -1,6 +1,19 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import StrEnum
+
+
+@dataclass(frozen=True)
+class SelectedOption:
+    """A modifier option chosen for an order line, snapshotted at order time (ej.
+    "+Panceta", price_delta 1200). Display-only: the ``price_delta`` is already
+    folded into the item's ``unit_price``, so the money math never re-reads it —
+    this list just lets the kitchen ticket show the plate's personalisation."""
+
+    option_id: str
+    name: str
+    price_delta: int
 
 
 class OrderStatus(StrEnum):

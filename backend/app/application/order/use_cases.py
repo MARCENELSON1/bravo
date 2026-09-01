@@ -20,6 +20,7 @@ from app.domain.order.value_objects import ItemStatus, OrderSource, OrderStatus,
 from app.domain.product.exceptions import InactiveProduct, ProductNotFound
 from app.domain.product.repository import ProductRepository
 from app.domain.realtime.ports import DomainEvent, EventBus
+from app.domain.shared.money import Money
 from app.domain.table.exceptions import TableNotFound
 from app.domain.table.repository import TableRepository
 from app.domain.table_session.entities import TableSession
@@ -240,15 +241,21 @@ class AddOrderItemsBatch:
             if not product.active:
                 raise InactiveProduct()
             new_id = line.item_id or str(uuid4())
+            # Modificadores: el price_delta se pliega en el unit_price (así toda la
+            # matemática — sale_facts/finanzas/factura — sigue leyendo un solo
+            # número); la lista queda como snapshot para el ticket de cocina.
+            delta = sum(o.price_delta for o in line.selected_options)
+            unit_price = Money(product.price.amount + delta, product.price.currency)
             order.add_item(
                 OrderItem(
                     id=new_id,
                     product_id=product.id,
                     name=product.name,
-                    unit_price=product.price,
+                    unit_price=unit_price,
                     quantity=line.quantity,
                     note=line.note,
                     station=product.station,
+                    selected_options=list(line.selected_options),
                 )
             )
             seen.add(new_id)

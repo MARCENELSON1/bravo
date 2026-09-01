@@ -144,6 +144,10 @@ from app.application.payment.use_cases import (
     RegisterExpense,
     RegisterPayment,
 )
+from app.application.product.modifiers import (
+    GetProductModifiers,
+    SetProductModifiers,
+)
 from app.application.product.use_cases import (
     CreateProduct,
     GetPricingInsights,
@@ -299,6 +303,7 @@ from app.infrastructure.persistence.ingredient_repo import SqlAlchemyIngredientR
 from app.infrastructure.persistence.invitation_repo import SqlAlchemyInvitationRepository
 from app.infrastructure.persistence.invoice_repo import SqlAlchemyInvoiceRepository
 from app.infrastructure.persistence.labor_cost_repo import SqlAlchemyLaborCostReadModel
+from app.infrastructure.persistence.modifier_repo import SqlAlchemyModifierRepository
 from app.infrastructure.persistence.order_repo import SqlAlchemyOrderRepository
 from app.infrastructure.persistence.payment_fee_repo import (
     SqlAlchemyPaymentFeeRateRepository,
@@ -445,6 +450,9 @@ class Container(containers.DeclarativeContainer):
     )
     product_repository = providers.Factory(
         SqlAlchemyProductRepository, session_factory=db.provided.session
+    )
+    modifier_repository = providers.Factory(
+        SqlAlchemyModifierRepository, session_factory=db.provided.session
     )
     price_change_repository = providers.Factory(
         SqlAlchemyPriceChangeRepository, session_factory=db.provided.session
@@ -595,6 +603,15 @@ class Container(containers.DeclarativeContainer):
     )
     set_product_availability = providers.Factory(
         SetProductAvailability, products=product_repository, tenant_context=tenant_context
+    )
+    get_product_modifiers = providers.Factory(
+        GetProductModifiers, modifiers=modifier_repository, tenant_context=tenant_context
+    )
+    set_product_modifiers = providers.Factory(
+        SetProductModifiers,
+        modifiers=modifier_repository,
+        products=product_repository,
+        tenant_context=tenant_context,
     )
     update_product_price = providers.Factory(
         UpdateProductPrice,
@@ -1307,6 +1324,7 @@ class Container(containers.DeclarativeContainer):
         GetPublicMenu,
         token=table_qr_token,
         products=product_repository,
+        modifiers=modifier_repository,
         tenants=tenant_repository,
         settings=self_order_settings_repository,
         tenant_context=tenant_context,
@@ -1333,6 +1351,7 @@ class Container(containers.DeclarativeContainer):
         token=table_qr_token,
         settings=self_order_settings_repository,
         products=product_repository,
+        modifiers=modifier_repository,
         sessions=table_session_repository,
         create_order=create_order,
         add_items_batch=add_order_items_batch,

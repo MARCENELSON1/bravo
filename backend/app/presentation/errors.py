@@ -76,6 +76,8 @@ from app.domain.payment.exceptions import (
 )
 from app.domain.product.exceptions import (
     InactiveProduct,
+    InvalidModifierGroup,
+    InvalidModifierSelection,
     ProductNotFound,
     ProductUnavailable,
 )
@@ -144,6 +146,8 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (ProductNotFound, 404),
     (OrderNotFound, 404),
     (InactiveProduct, 409),
+    (InvalidModifierGroup, 422),
+    (InvalidModifierSelection, 422),
     (InvalidOrderTransition, 409),
     (EmptyOrder, 422),
     (ItemNotFound, 404),

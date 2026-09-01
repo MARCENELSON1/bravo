@@ -48,6 +48,12 @@ class CreateOrderResponse(BaseModel):
     order_id: str
 
 
+class SelectedOptionResponse(BaseModel):
+    option_id: str
+    name: str
+    price_delta: int
+
+
 class OrderItemResponse(BaseModel):
     id: str
     product_id: str
@@ -60,6 +66,8 @@ class OrderItemResponse(BaseModel):
     station: str
     # ISO-8601; lets the KDS order items by how long they've been waiting.
     sent_at: str | None = None
+    # Modificadores elegidos (Carta QR F2 D) — para el ticket de cocina / floor.
+    selected_options: list[SelectedOptionResponse] = []
 
 
 class OrderResponse(BaseModel):

@@ -36,6 +36,7 @@ from app.presentation.schemas.orders import (
     MergeOrdersRequest,
     OrderItemResponse,
     OrderResponse,
+    SelectedOptionResponse,
     SetItemQuantityRequest,
     TaxQuoteResponse,
     TransferOrderRequest,
@@ -68,6 +69,12 @@ def order_to_response(order: Order) -> OrderResponse:
                 status=item.status.value,
                 station=item.station.value,
                 sent_at=item.sent_at.isoformat() if item.sent_at else None,
+                selected_options=[
+                    SelectedOptionResponse(
+                        option_id=o.option_id, name=o.name, price_delta=o.price_delta
+                    )
+                    for o in item.selected_options
+                ],
             )
             for item in order.items
         ],

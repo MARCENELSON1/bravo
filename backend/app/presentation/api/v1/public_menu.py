@@ -7,8 +7,7 @@ from __future__ import annotations
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
-from app.application.order.dtos import BatchOrderItemInput
-from app.application.order.self_order import SubmitCustomerOrder
+from app.application.order.self_order import CustomerOrderLineInput, SubmitCustomerOrder
 from app.application.public_menu.use_cases import GetPublicMenu, RequestTableAttention
 from app.container import Container
 from app.domain.order.value_objects import OrderStatus
@@ -18,6 +17,8 @@ from app.presentation.schemas.public_menu import (
     CustomerOrderResponse,
     PublicMenuCategoryResponse,
     PublicMenuItemResponse,
+    PublicMenuModifierGroupResponse,
+    PublicMenuModifierOptionResponse,
     PublicMenuResponse,
     TableCallRequest,
     TableCallResponse,
@@ -50,6 +51,22 @@ async def get_public_menu(
                         image_url=item.image_url,
                         description=item.description,
                         available_today=item.available_today,
+                        modifier_groups=[
+                            PublicMenuModifierGroupResponse(
+                                id=group.id,
+                                name=group.name,
+                                min_select=group.min_select,
+                                max_select=group.max_select,
+                                required=group.required,
+                                options=[
+                                    PublicMenuModifierOptionResponse(
+                                        id=opt.id, name=opt.name, price_delta=opt.price_delta
+                                    )
+                                    for opt in group.options
+                                ],
+                            )
+                            for group in item.modifier_groups
+                        ],
                     )
                     for item in category.items
                 ],
@@ -88,8 +105,11 @@ async def submit_customer_order(
     order = await use_case.execute(
         token=body.token,
         lines=[
-            BatchOrderItemInput(
-                product_id=line.product_id, quantity=line.quantity, note=line.note
+            CustomerOrderLineInput(
+                product_id=line.product_id,
+                quantity=line.quantity,
+                note=line.note,
+                option_ids=line.option_ids,
             )
             for line in body.lines
         ],
