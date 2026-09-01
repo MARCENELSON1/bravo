@@ -115,8 +115,16 @@ class RegisterPayment:
         amount: int,
         tip: int = 0,
         tax: int = 0,
+        idempotency_key: str | None = None,
     ) -> Payment:
         self._tenant_context.set(tenant_id)
+        # Idempotency (Carta QR F3): a replayed key returns the already-created
+        # payment instead of charging again (a double-tapped online cobro). None →
+        # no lookup (paridad: the cashier flow doesn't pass a key).
+        if idempotency_key is not None:
+            existing = await self._payments.get_by_idempotency_key(tenant_id, idempotency_key)
+            if existing is not None:
+                return existing
         # ``tax`` is the sales-tax portion INCLUDED in ``amount`` (not on top like
         # tip), so it can't be negative nor exceed the charge.
         if amount <= 0 or tip < 0 or tax < 0 or tax > amount:
@@ -153,6 +161,7 @@ class RegisterPayment:
             tax_amount=tax,
             fee_amount=fee,
             net_amount=amount - fee,
+            idempotency_key=idempotency_key,
         )
         payment = await self._gateway.charge(payment=payment)
         await self._payments.add(payment)

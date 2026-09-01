@@ -43,6 +43,10 @@ class Payment:
     counterparty: str | None = None
     description: str | None = None
     external_ref: str | None = None
+    # Idempotency (Carta QR F3): clave que el cliente manda por intento de cobro,
+    # para que un doble-tap del comensal no cree dos charges. None → sin idempotencia
+    # (paridad: el cobro del cajero no la usa).
+    idempotency_key: str | None = None
     created_at: datetime | None = None
     # Transient gateway artifacts (NOT persisted): online gateways set these so
     # the caller can redirect the payer to a checkout link / render a QR. They

@@ -599,6 +599,7 @@ def payment_to_domain(row: PaymentORM) -> Payment:
         counterparty=row.counterparty,
         description=row.description,
         external_ref=row.external_ref,
+        idempotency_key=row.idempotency_key,
         created_at=row.created_at,
     )
 
@@ -622,6 +623,7 @@ def payment_to_orm(payment: Payment) -> PaymentORM:
         counterparty=payment.counterparty,
         description=payment.description,
         external_ref=payment.external_ref,
+        idempotency_key=payment.idempotency_key,
     )
 
 

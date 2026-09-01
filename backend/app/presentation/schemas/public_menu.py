@@ -101,3 +101,31 @@ class TableBillResponse(BaseModel):
     balance: int
     online_pay_available: bool
     tips_enabled: bool
+
+
+class TablePayRequest(BaseModel):
+    """El comensal inicia el pago (Carta QR F3). El monto lo calcula el server
+    (saldo de la orden) — el cliente solo manda token, propina y una clave de
+    idempotencia para que un doble-tap no cobre dos veces."""
+
+    token: str
+    tip: int = Field(default=0, ge=0)
+    idempotency_key: str | None = Field(default=None, max_length=80)
+
+
+class TablePayResponse(BaseModel):
+    payment_id: str
+    order_id: str
+    # PENDING (esperando la pasarela) / CONFIRMED (ya pagó, p.ej. gateway manual).
+    status: str
+    amount: int
+    tip: int
+    # A dónde mandar al comensal a pagar online; null si el cobro ya se confirmó.
+    checkout_url: str | None = None
+
+
+class PublicPaymentStatusResponse(BaseModel):
+    payment_id: str
+    status: str
+    amount: int
+    tip: int

@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.application.order.self_order import CustomerOrderLineInput, SubmitCustomerOrder
 from app.application.order.table_bill import GetTableBill
+from app.application.payment.pay_table_bill import GetPublicPaymentStatus, PayTableBill
 from app.application.public_menu.use_cases import GetPublicMenu, RequestTableAttention
 from app.container import Container
 from app.domain.order.value_objects import OrderStatus
@@ -21,11 +22,14 @@ from app.presentation.schemas.public_menu import (
     PublicMenuModifierGroupResponse,
     PublicMenuModifierOptionResponse,
     PublicMenuResponse,
+    PublicPaymentStatusResponse,
     TableBillItemResponse,
     TableBillOptionResponse,
     TableBillResponse,
     TableCallRequest,
     TableCallResponse,
+    TablePayRequest,
+    TablePayResponse,
 )
 
 router = APIRouter(prefix="/public", tags=["public-menu"])
@@ -106,6 +110,41 @@ async def get_table_bill(
         balance=bill.balance,
         online_pay_available=bill.online_pay_available,
         tips_enabled=bill.tips_enabled,
+    )
+
+
+@router.post("/table/pay", response_model=TablePayResponse)
+@inject
+async def pay_table_bill(
+    body: TablePayRequest,
+    use_case: PayTableBill = Depends(Provide[Container.pay_table_bill]),
+) -> TablePayResponse:
+    result = await use_case.execute(
+        token=body.token, tip=body.tip, idempotency_key=body.idempotency_key
+    )
+    return TablePayResponse(
+        payment_id=result.payment_id,
+        order_id=result.order_id,
+        status=result.status,
+        amount=result.amount,
+        tip=result.tip,
+        checkout_url=result.checkout_url,
+    )
+
+
+@router.get("/table/payment/{payment_id}", response_model=PublicPaymentStatusResponse)
+@inject
+async def get_table_payment_status(
+    payment_id: str,
+    token: str = Query(...),
+    use_case: GetPublicPaymentStatus = Depends(Provide[Container.get_public_payment_status]),
+) -> PublicPaymentStatusResponse:
+    payment = await use_case.execute(token=token, payment_id=payment_id)
+    return PublicPaymentStatusResponse(
+        payment_id=payment.id,
+        status=payment.status.value,
+        amount=payment.amount.amount,
+        tip=payment.tip_amount,
     )
 
 

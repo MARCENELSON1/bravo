@@ -70,9 +70,11 @@ from app.domain.payment.exceptions import (
     InvalidOAuthState,
     InvalidPaymentAmount,
     InvalidWebhookSignature,
+    NothingToPay,
     PaymentGatewayNotConnected,
     PaymentNotFound,
     PaymentNotRefundable,
+    SelfPayDisabled,
 )
 from app.domain.product.exceptions import (
     InactiveProduct,
@@ -165,6 +167,8 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (InvalidWebhookSignature, 401),
     (PaymentGatewayNotConnected, 409),
     (InvalidOAuthState, 400),
+    (SelfPayDisabled, 409),
+    (NothingToPay, 409),
     # Fase 4 — facturación AFIP
     (InvoiceNotFound, 404),
     (OrderNotInvoiceable, 409),

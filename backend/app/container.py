@@ -137,6 +137,8 @@ from app.application.payment.connect_mercadopago import (
     StartMercadoPagoConnection,
 )
 from app.application.payment.fee_rates import GetPaymentFeeRates, UpdatePaymentFeeRates
+from app.application.payment.pay_table_bill import GetPublicPaymentStatus, PayTableBill
+from app.application.payment.self_pay import GetSelfPaySettings, UpdateSelfPaySettings
 from app.application.payment.use_cases import (
     ConfirmGatewayPayment,
     ListExpenses,
@@ -1060,6 +1062,20 @@ class Container(containers.DeclarativeContainer):
         fee_rates=payment_fee_rate_repository,
         tax_outbox=tax_report_ledger,
     )
+    # Cobro del comensal (Carta QR F3): mismo motor que el cajero pero con la
+    # política de caja RELAJADA (cash=None, policy=None) → no exige caja abierta ni
+    # cajero. Proyecta venta/stock/impuesto igual (idempotente en el webhook).
+    register_public_payment = providers.Factory(
+        RegisterPayment,
+        payments=payment_repository,
+        orders=order_repository,
+        gateway=payment_gateway,
+        tenant_context=tenant_context,
+        inventory=consume_recipes_for_order,
+        sales=project_order_sales,
+        fee_rates=payment_fee_rate_repository,
+        tax_outbox=tax_report_ledger,
+    )
     confirm_gateway_payment = providers.Factory(
         ConfirmGatewayPayment,
         payments=payment_repository,
@@ -1336,6 +1352,32 @@ class Container(containers.DeclarativeContainer):
         payments=payment_repository,
         settings=self_pay_settings_repository,
         credentials=payment_credential_repository,
+        tenant_context=tenant_context,
+    )
+    pay_table_bill = providers.Factory(
+        PayTableBill,
+        token=table_qr_token,
+        settings=self_pay_settings_repository,
+        sessions=table_session_repository,
+        orders=order_repository,
+        payments=payment_repository,
+        register_payment=register_public_payment,
+        tenant_context=tenant_context,
+    )
+    get_public_payment_status = providers.Factory(
+        GetPublicPaymentStatus,
+        token=table_qr_token,
+        payments=payment_repository,
+        tenant_context=tenant_context,
+    )
+    get_self_pay_settings = providers.Factory(
+        GetSelfPaySettings,
+        settings=self_pay_settings_repository,
+        tenant_context=tenant_context,
+    )
+    update_self_pay_settings = providers.Factory(
+        UpdateSelfPaySettings,
+        settings=self_pay_settings_repository,
         tenant_context=tenant_context,
     )
     get_public_menu = providers.Factory(

@@ -447,6 +447,9 @@ class PaymentORM(Base):
     counterparty: Mapped[str | None] = mapped_column(String(120), nullable=True)
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)
     external_ref: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    # Idempotency (Carta QR F3): clave del intento de cobro del comensal; un doble-tap
+    # con la misma clave devuelve el pago ya creado. NULL en cobros del cajero (paridad).
+    idempotency_key: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

@@ -31,3 +31,13 @@ class PaymentGatewayNotConnected(DomainError):
 class InvalidOAuthState(DomainError):
     code = "invalid_oauth_state"
     message = "El pedido de conexión no es válido o expiró."
+
+
+class SelfPayDisabled(DomainError):
+    code = "self_pay_disabled"
+    message = "El local no habilitó el pago desde la mesa."
+
+
+class NothingToPay(DomainError):
+    code = "nothing_to_pay"
+    message = "No hay nada para pagar en esta mesa."
