@@ -75,6 +75,13 @@ export interface SelfOrderSettingsDTO {
   requires_confirmation: boolean
 }
 
+// --- Carta QR F3: config del pago desde la mesa ------------------------------
+
+export interface SelfPaySettingsDTO {
+  enabled: boolean
+  tips_enabled: boolean
+}
+
 // --- Productos v2 Tanda B: precios vs inflación + histórico + rotación --------
 
 export interface PricingRowDTO {

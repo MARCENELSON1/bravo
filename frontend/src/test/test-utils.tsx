@@ -61,6 +61,7 @@ export function renderWithProviders(
     reservationsApi: {} as unknown as Services["reservationsApi"],
     sectorsApi: {} as unknown as Services["sectorsApi"],
     selfOrderApi: {} as unknown as Services["selfOrderApi"],
+    selfPayApi: {} as unknown as Services["selfPayApi"],
     tablesApi: {} as unknown as Services["tablesApi"],
     tenantsApi: {} as unknown as Services["tenantsApi"],
     timeClockApi: {} as unknown as Services["timeClockApi"],

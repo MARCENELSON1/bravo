@@ -58,6 +58,15 @@ export const floor = {
       saved: "Settings saved",
       saveFailed: "We couldn't save. Please try again.",
     },
+    selfPay: {
+      title: "Pay at the table",
+      subtitle: "Let diners pay their check from the QR.",
+      enable: "Enable pay at the table",
+      enableHint: "You need MercadoPago connected (Integrations) to charge online.",
+      offerTip: "Offer a tip on the payment screen",
+      saved: "Settings saved",
+      saveFailed: "We couldn't save. Please try again.",
+    },
   },
   errors: {
     openOrder: "We couldn't open the order.",

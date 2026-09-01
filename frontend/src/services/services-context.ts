@@ -22,6 +22,7 @@ import type { ReportsApi } from "@/api/reports-api"
 import type { ReservationsApi } from "@/api/reservations-api"
 import type { SectorsApi } from "@/api/sectors-api"
 import type { SelfOrderApi } from "@/api/self-order-api"
+import type { SelfPayApi } from "@/api/self-pay-api"
 import type { TablesApi } from "@/api/tables-api"
 import type { TenantsApi } from "@/api/tenants-api"
 import type { TimeClockApi } from "@/api/timeclock-api"
@@ -52,6 +53,7 @@ export interface Services {
   reservationsApi: ReservationsApi
   sectorsApi: SectorsApi
   selfOrderApi: SelfOrderApi
+  selfPayApi: SelfPayApi
   tablesApi: TablesApi
   tenantsApi: TenantsApi
   timeClockApi: TimeClockApi

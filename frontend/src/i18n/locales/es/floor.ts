@@ -58,6 +58,15 @@ export const floor = {
       saved: "Config guardada",
       saveFailed: "No pudimos guardar. Probá de nuevo.",
     },
+    selfPay: {
+      title: "Pago desde la mesa",
+      subtitle: "Dejá que el comensal pague su cuenta desde el QR.",
+      enable: "Habilitar cobro desde la mesa",
+      enableHint: "Necesitás MercadoPago conectado (Integraciones) para cobrar online.",
+      offerTip: "Ofrecer propina en la pantalla de pago",
+      saved: "Config guardada",
+      saveFailed: "No pudimos guardar. Probá de nuevo.",
+    },
   },
   errors: {
     openOrder: "No pudimos abrir la comanda.",

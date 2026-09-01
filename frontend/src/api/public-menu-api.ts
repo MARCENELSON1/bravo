@@ -59,6 +59,49 @@ export interface CustomerOrderResultDTO {
   requires_confirmation: boolean
 }
 
+// --- Pago desde la mesa (Carta QR F3) ---------------------------------------
+export interface TableBillOptionDTO {
+  name: string
+  price_delta: number
+}
+
+export interface TableBillItemDTO {
+  name: string
+  quantity: number
+  unit_price: number
+  selected_options?: TableBillOptionDTO[]
+}
+
+// La cuenta de la mesa (todo server-side, en minor units). `online_pay_available`
+// = el local prendió el cobro Y tiene MercadoPago conectado; si no, se cae al
+// "Pedir la cuenta" de F1. `tips_enabled` muestra/oculta el selector de propina.
+export interface TableBillDTO {
+  currency: string
+  items: TableBillItemDTO[]
+  total: number
+  paid: number
+  balance: number
+  online_pay_available: boolean
+  tips_enabled: boolean
+}
+
+export interface TablePayResultDTO {
+  payment_id: string
+  order_id: string
+  status: string
+  amount: number
+  tip: number
+  // A dónde mandar al comensal a pagar online; null si el cobro ya se confirmó.
+  checkout_url?: string | null
+}
+
+export interface PublicPaymentStatusDTO {
+  payment_id: string
+  status: string
+  amount: number
+  tip: number
+}
+
 export class PublicMenuApi {
   private http: HttpClient
 
@@ -90,5 +133,30 @@ export class PublicMenuApi {
     return this.http.request<CustomerOrderResultDTO>("POST", "/public/table/order", {
       body: { token, lines },
     })
+  }
+
+  // La cuenta corriente de la mesa (total/pagado/saldo). Solo lectura.
+  bill(token: string): Promise<TableBillDTO> {
+    return this.http.request<TableBillDTO>(
+      "GET",
+      `/public/table/bill?token=${encodeURIComponent(token)}`
+    )
+  }
+
+  // Inicia el pago del saldo de la mesa. El monto lo calcula el server; el cliente
+  // manda propina + una clave de idempotencia (para que un doble-tap no cobre dos
+  // veces). Si vuelve `checkout_url`, hay que mandar al comensal ahí (MercadoPago).
+  pay(token: string, tip: number, idempotencyKey: string): Promise<TablePayResultDTO> {
+    return this.http.request<TablePayResultDTO>("POST", "/public/table/pay", {
+      body: { token, tip, idempotency_key: idempotencyKey },
+    })
+  }
+
+  // Poll del estado del pago (el estado autoritativo es el webhook, no el charge).
+  paymentStatus(token: string, paymentId: string): Promise<PublicPaymentStatusDTO> {
+    return this.http.request<PublicPaymentStatusDTO>(
+      "GET",
+      `/public/table/payment/${paymentId}?token=${encodeURIComponent(token)}`
+    )
   }
 }

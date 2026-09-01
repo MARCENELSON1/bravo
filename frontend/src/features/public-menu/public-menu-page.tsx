@@ -10,6 +10,7 @@ import type {
   PublicMenuCategoryDTO,
   PublicMenuItemDTO,
   PublicMenuModifierGroupDTO,
+  TableBillDTO,
 } from "@/api/public-menu-api"
 import { WellnodMark } from "@/components/brand/wellnod-mark"
 import { Button } from "@/components/ui/button"
@@ -30,12 +31,27 @@ import {
 } from "@/features/public-menu/public-menu-cart"
 import {
   useCallWaiter,
+  usePayTableBill,
+  usePaymentStatus,
   usePublicMenu,
   useRequestBill,
   useSubmitCustomerOrder,
+  useTableBill,
 } from "@/hooks/use-public-menu"
 import { formatMoney } from "@/lib/money"
 import { cn } from "@/lib/utils"
+
+// El pago iniciado se recuerda por mesa (sessionStorage): si el comensal va a
+// MercadoPago y vuelve, retomamos el poll del estado y le mostramos "pagado".
+const payKey = (token: string) => `wellnod_pay_${token}`
+function readStoredPayment(token: string | undefined): string | null {
+  if (!token) return null
+  try {
+    return sessionStorage.getItem(payKey(token))
+  } catch {
+    return null
+  }
+}
 
 // Carta pública de cara al comensal (ruta /carta/:token, SIN auth). Mobile-first,
 // theme-aware. Con autopedido prendido (F2): carrito line-based (un ítem puede
@@ -47,9 +63,28 @@ export function PublicMenuPage() {
   const callWaiter = useCallWaiter(token)
   const requestBill = useRequestBill(token)
   const submitOrder = useSubmitCustomerOrder(token)
+  const bill = useTableBill(token)
+  const payBill = usePayTableBill(token)
   const [cart, setCart] = useState<CartLine[]>([])
   const [picker, setPicker] = useState<PublicMenuItemDTO | null>(null)
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [payOpen, setPayOpen] = useState(false)
+  const [idemKey, setIdemKey] = useState(() => crypto.randomUUID())
+  const [paymentId, setPaymentId] = useState<string | null>(() => readStoredPayment(token))
+  const paymentStatus = usePaymentStatus(token, paymentId)
+
+  const clearPayment = () => {
+    if (token) {
+      try {
+        sessionStorage.removeItem(payKey(token))
+      } catch {
+        /* private mode / storage blocked → nothing to clear */
+      }
+    }
+    setPaymentId(null)
+    void bill.refetch()
+  }
+  const payStatus = paymentStatus.data?.status
 
   if (isLoading) {
     return <StateScreen>{t("publicMenu.loading")}</StateScreen>
@@ -81,6 +116,36 @@ export function PublicMenuPage() {
         }
       >
         {t(gated ? "publicMenu.sent.gated" : "publicMenu.sent.kitchen")}
+      </StateScreen>
+    )
+  }
+
+  // Pago en curso (recién iniciado o retomado al volver de MercadoPago): la
+  // pantalla de estado toma toda la vista hasta confirmar o volver a la carta.
+  if (paymentId) {
+    if (payStatus === "CONFIRMED") {
+      return (
+        <StateScreen
+          title={t("publicMenu.pay.paid.title")}
+          action={<Button onClick={clearPayment}>{t("publicMenu.menu")}</Button>}
+        >
+          {t("publicMenu.pay.paid.body")}
+        </StateScreen>
+      )
+    }
+    if (payStatus === "FAILED") {
+      return (
+        <StateScreen
+          title={t("publicMenu.pay.failed.title")}
+          action={<Button onClick={clearPayment}>{t("publicMenu.pay.failed.retry")}</Button>}
+        >
+          {t("publicMenu.pay.failed.body")}
+        </StateScreen>
+      )
+    }
+    return (
+      <StateScreen title={t("publicMenu.pay.confirming.title")}>
+        {t("publicMenu.pay.confirming.body")}
       </StateScreen>
     )
   }
@@ -127,6 +192,32 @@ export function PublicMenuPage() {
         )
       },
     })
+
+  // El local ofrece pago online (cobro prendido + MercadoPago conectado) y hay
+  // saldo → mostramos "Pagar" en vez de "Pedir la cuenta" (F1 queda de fallback).
+  const billData = bill.data
+  const canPay = billData?.online_pay_available === true && billData.balance > 0
+  const openPay = () => {
+    setIdemKey(crypto.randomUUID()) // una clave nueva por intento (retries la reusan)
+    setPayOpen(true)
+  }
+  const onPay = (tip: number) =>
+    payBill.mutate(
+      { tip, idempotencyKey: idemKey },
+      {
+        onSuccess: (result) => {
+          try {
+            if (token) sessionStorage.setItem(payKey(token), result.payment_id)
+          } catch {
+            /* private mode → sin persistencia; el flujo sigue en memoria */
+          }
+          setPaymentId(result.payment_id)
+          setPayOpen(false)
+          if (result.checkout_url) window.location.href = result.checkout_url
+        },
+        onError: () => toast.error(t("publicMenu.toast.payFailed")),
+      }
+    )
 
   return (
     <div className="min-h-svh bg-background text-foreground">
@@ -190,14 +281,25 @@ export function PublicMenuPage() {
             >
               {t("publicMenu.actions.callWaiter")}
             </Button>
-            <Button
-              variant={showCartBar ? "outline" : "default"}
-              className="flex-1"
-              onClick={onRequestBill}
-              disabled={requestBill.isPending}
-            >
-              {t("publicMenu.actions.requestBill")}
-            </Button>
+            {canPay ? (
+              <Button
+                variant={showCartBar ? "outline" : "default"}
+                className="flex-1"
+                onClick={openPay}
+                disabled={payBill.isPending}
+              >
+                {t("publicMenu.pay.action")}
+              </Button>
+            ) : (
+              <Button
+                variant={showCartBar ? "outline" : "default"}
+                className="flex-1"
+                onClick={onRequestBill}
+                disabled={requestBill.isPending}
+              >
+                {t("publicMenu.actions.requestBill")}
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -221,7 +323,135 @@ export function PublicMenuPage() {
         onSubmit={onSubmitOrder}
         submitting={submitOrder.isPending}
       />
+
+      {billData ? (
+        <PaySheet
+          open={payOpen}
+          onOpenChange={setPayOpen}
+          bill={billData}
+          onPay={onPay}
+          paying={payBill.isPending}
+        />
+      ) : null}
     </div>
+  )
+}
+
+// Presets de propina (%) sobre el saldo. 0 = sin propina; "custom" abre un monto
+// a mano. El comensal elige; si el dueño la desactivó, el selector no se muestra.
+const TIP_PRESETS = [0, 10, 15, 20] as const
+
+// Pantalla de pago (Sheet inferior): la cuenta + selector de propina + "Pagar $X".
+// El saldo lo pone el server; la propina la elige el comensal (si está habilitada).
+function PaySheet({
+  open,
+  onOpenChange,
+  bill,
+  onPay,
+  paying,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  bill: TableBillDTO
+  onPay: (tip: number) => void
+  paying: boolean
+}) {
+  const { t } = useTranslation()
+  const [tipPct, setTipPct] = useState<number>(0)
+  const [customTip, setCustomTip] = useState<string>("")
+  const [customOpen, setCustomOpen] = useState(false)
+
+  const balance = bill.balance
+  const currency = bill.currency
+  const customMinor = Math.max(0, Math.round(Number(customTip.replace(",", ".")) * 100) || 0)
+  const tip = bill.tips_enabled
+    ? customOpen
+      ? customMinor
+      : Math.round((balance * tipPct) / 100)
+    : 0
+  const total = balance + tip
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="mx-auto max-w-xl gap-0 rounded-t-2xl px-5 pb-5">
+        <SheetHeader className="px-0">
+          <SheetTitle>{t("publicMenu.pay.title")}</SheetTitle>
+        </SheetHeader>
+
+        <div className="max-h-[40svh] divide-y divide-border/50 overflow-y-auto py-1">
+          {bill.items.map((item, i) => (
+            <div key={i} className="flex items-start justify-between gap-3 py-2 text-sm">
+              <span className="min-w-0">
+                <span className="tabular-nums text-muted-foreground">{item.quantity}× </span>
+                {item.name}
+                {item.selected_options && item.selected_options.length > 0 ? (
+                  <span className="block text-xs text-muted-foreground">
+                    {item.selected_options.map((o) => o.name).join(", ")}
+                  </span>
+                ) : null}
+              </span>
+              <span className="shrink-0 tabular-nums">
+                {formatMoney(item.unit_price * item.quantity, currency)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-2 flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">{t("publicMenu.pay.balance")}</span>
+          <span className="tabular-nums font-medium">{formatMoney(balance, currency)}</span>
+        </div>
+
+        {bill.tips_enabled ? (
+          <div className="mt-4">
+            <p className="mb-2 text-sm font-medium">{t("publicMenu.pay.tip")}</p>
+            <div className="flex flex-wrap gap-2">
+              {TIP_PRESETS.map((pct) => (
+                <Button
+                  key={pct}
+                  size="sm"
+                  variant={!customOpen && tipPct === pct ? "default" : "outline"}
+                  onClick={() => {
+                    setCustomOpen(false)
+                    setTipPct(pct)
+                  }}
+                >
+                  {pct === 0 ? t("publicMenu.pay.noTip") : `${pct}%`}
+                </Button>
+              ))}
+              <Button
+                size="sm"
+                variant={customOpen ? "default" : "outline"}
+                onClick={() => setCustomOpen(true)}
+              >
+                {t("publicMenu.pay.tipCustom")}
+              </Button>
+            </div>
+            {customOpen ? (
+              <input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                value={customTip}
+                onChange={(e) => setCustomTip(e.target.value)}
+                aria-label={t("publicMenu.pay.tipCustomLabel")}
+                className="mt-3 w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm tabular-nums outline-none focus:border-primary"
+                placeholder="0"
+              />
+            ) : null}
+          </div>
+        ) : null}
+
+        <Button
+          className="mt-5 w-full justify-between"
+          disabled={paying || total <= 0}
+          onClick={() => onPay(tip)}
+        >
+          <span>{paying ? t("publicMenu.pay.paying") : t("publicMenu.pay.action")}</span>
+          <span className="tabular-nums">{formatMoney(total, currency)}</span>
+        </Button>
+      </SheetContent>
+    </Sheet>
   )
 }
 

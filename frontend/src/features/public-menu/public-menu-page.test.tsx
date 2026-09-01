@@ -1,15 +1,25 @@
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { Route, Routes } from "react-router-dom"
 
 import { ApiError } from "@/api/api-error"
-import type { PublicMenuApi, PublicMenuDTO } from "@/api/public-menu-api"
+import type { PublicMenuApi, PublicMenuDTO, TableBillDTO } from "@/api/public-menu-api"
 import { PublicMenuPage } from "@/features/public-menu/public-menu-page"
 import type { Services } from "@/services/services-context"
 import { renderWithProviders } from "@/test/test-utils"
 
-function makeApi(getMenu: () => Promise<PublicMenuDTO>) {
+const EMPTY_BILL: TableBillDTO = {
+  currency: "ARS",
+  items: [],
+  total: 0,
+  paid: 0,
+  balance: 0,
+  online_pay_available: false,
+  tips_enabled: true,
+}
+
+function makeApi(getMenu: () => Promise<PublicMenuDTO>, bill: TableBillDTO = EMPTY_BILL) {
   return {
     getMenu: vi.fn(getMenu),
     callWaiter: vi.fn().mockResolvedValue(undefined),
@@ -17,6 +27,21 @@ function makeApi(getMenu: () => Promise<PublicMenuDTO>) {
     submitOrder: vi
       .fn()
       .mockResolvedValue({ order_id: "o1", status: "OPEN", requires_confirmation: true }),
+    bill: vi.fn().mockResolvedValue(bill),
+    pay: vi.fn().mockResolvedValue({
+      payment_id: "pay-1",
+      order_id: "o1",
+      status: "CONFIRMED",
+      amount: bill.balance,
+      tip: 0,
+      checkout_url: null,
+    }),
+    paymentStatus: vi.fn().mockResolvedValue({
+      payment_id: "pay-1",
+      status: "CONFIRMED",
+      amount: bill.balance,
+      tip: 0,
+    }),
   } as unknown as PublicMenuApi
 }
 
@@ -46,6 +71,15 @@ const MENU: PublicMenuDTO = {
 }
 
 describe("PublicMenuPage", () => {
+  // El pago iniciado se recuerda en sessionStorage por mesa → aislamos entre tests.
+  beforeEach(() => {
+    try {
+      sessionStorage.clear()
+    } catch {
+      /* storage no disponible en el entorno de test */
+    }
+  })
+
   it("renders the branded menu with categories, items and prices", async () => {
     renderMenu(makeApi(() => Promise.resolve(MENU)))
 
@@ -179,5 +213,36 @@ describe("PublicMenuPage", () => {
     expect(api.submitOrder).toHaveBeenCalledWith("tok-123", [
       { product_id: "9", quantity: 1, option_ids: ["bacon"] },
     ])
+  })
+
+  it("keeps 'Pedir la cuenta' when online pay is unavailable (F1 fallback)", async () => {
+    renderMenu(makeApi(() => Promise.resolve(MENU))) // EMPTY_BILL → online_pay_available false
+    expect(await screen.findByRole("button", { name: "Pedir la cuenta" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Pagar" })).not.toBeInTheDocument()
+  })
+
+  it("offers 'Pagar' and settles the bill via the pay endpoint", async () => {
+    const bill: TableBillDTO = {
+      currency: "ARS",
+      items: [{ name: "Pizza", quantity: 2, unit_price: 1200000 }],
+      total: 2400000,
+      paid: 0,
+      balance: 2400000,
+      online_pay_available: true,
+      tips_enabled: false,
+    }
+    const api = makeApi(() => Promise.resolve(MENU), bill)
+    renderMenu(api)
+
+    // Con pago online disponible, "Pagar" reemplaza "Pedir la cuenta".
+    await userEvent.click(await screen.findByRole("button", { name: "Pagar" }))
+    expect(screen.queryByRole("button", { name: "Pedir la cuenta" })).not.toBeInTheDocument()
+
+    // La hoja muestra el saldo y el botón "Pagar $24.000,00" (server-side).
+    await userEvent.click(await screen.findByRole("button", { name: /Pagar.*24/ }))
+    expect(api.pay).toHaveBeenCalledWith("tok-123", 0, expect.any(String))
+
+    // Confirma (gateway sin checkout_url) → pantalla de pagado.
+    expect(await screen.findByText("¡Pagado! 🎉")).toBeInTheDocument()
   })
 })

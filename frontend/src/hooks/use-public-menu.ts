@@ -34,3 +34,38 @@ export function useSubmitCustomerOrder(token: string | undefined) {
     mutationFn: (lines: CustomerOrderLineDTO[]) => publicMenuApi.submitOrder(token!, lines),
   })
 }
+
+// La cuenta de la mesa (Carta QR F3): total/pagado/saldo + si el local ofrece pago
+// online. Solo lectura; el token es el scope.
+export function useTableBill(token: string | undefined) {
+  const { publicMenuApi } = useServices()
+  return useQuery({
+    queryKey: ["table-bill", token],
+    queryFn: () => publicMenuApi.bill(token!),
+    enabled: !!token,
+    retry: false,
+  })
+}
+
+// Inicia el pago del saldo de la mesa. El monto lo pone el server; el cliente manda
+// propina + clave de idempotencia.
+export function usePayTableBill(token: string | undefined) {
+  const { publicMenuApi } = useServices()
+  return useMutation({
+    mutationFn: ({ tip, idempotencyKey }: { tip: number; idempotencyKey: string }) =>
+      publicMenuApi.pay(token!, tip, idempotencyKey),
+  })
+}
+
+// Poll del estado de un pago iniciado (para mostrar "pagado" al confirmar el
+// webhook). `refetchInterval` mientras siga PENDING; se corta al confirmar/fallar.
+export function usePaymentStatus(token: string | undefined, paymentId: string | null) {
+  const { publicMenuApi } = useServices()
+  return useQuery({
+    queryKey: ["table-payment", token, paymentId],
+    queryFn: () => publicMenuApi.paymentStatus(token!, paymentId!),
+    enabled: !!token && !!paymentId,
+    refetchInterval: (query) =>
+      query.state.data && query.state.data.status !== "PENDING" ? false : 2500,
+  })
+}

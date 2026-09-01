@@ -8,6 +8,7 @@ import type { TableDTO } from "@/api/types-operations"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { useSelfOrderSettings, useUpdateSelfOrderSettings } from "@/hooks/use-self-order"
+import { useSelfPaySettings, useUpdateSelfPaySettings } from "@/hooks/use-self-pay"
 import { useTableQr, useTables } from "@/hooks/use-tables"
 
 // Gestión/impresión de los QR de mesa (lado dueño, OWNER/MANAGER). Pantalla
@@ -43,8 +44,9 @@ export function TableQrPage() {
       </header>
 
       <main className="mx-auto max-w-4xl px-5 py-8">
-        <div className="mb-8 print:hidden">
+        <div className="mb-8 grid gap-5 print:hidden md:grid-cols-2">
           <SelfOrderConfigCard />
+          <SelfPayConfigCard />
         </div>
         {tables.isLoading ? (
           <div className="flex justify-center py-20">
@@ -118,6 +120,67 @@ function SelfOrderConfigCard() {
               <span className="mt-0.5 block text-xs text-muted-foreground">
                 {t("floor.qr.selfOrder.requireConfirmationHint")}
               </span>
+            </span>
+          </label>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Config del pago desde la mesa (Carta QR F3 C): prender el cobro online del
+// comensal + decidir si la pantalla de pago ofrece propina. Off por default →
+// la carta mantiene "Pedir la cuenta" (paridad F1/F2).
+function SelfPayConfigCard() {
+  const { t } = useTranslation()
+  const settings = useSelfPaySettings()
+  const update = useUpdateSelfPaySettings()
+
+  const save = (next: { enabled: boolean; tips_enabled: boolean }) =>
+    update.mutate(next, {
+      onSuccess: () => toast.success(t("floor.qr.selfPay.saved")),
+      onError: () => toast.error(t("floor.qr.selfPay.saveFailed")),
+    })
+
+  const current = settings.data
+  const enabled = current?.enabled ?? false
+  const tipsEnabled = current?.tips_enabled ?? true
+
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card p-5">
+      <h2 className="text-sm font-semibold">{t("floor.qr.selfPay.title")}</h2>
+      <p className="mt-0.5 text-xs text-muted-foreground">{t("floor.qr.selfPay.subtitle")}</p>
+      {settings.isLoading ? (
+        <div className="py-4">
+          <Spinner className="size-4" />
+        </div>
+      ) : (
+        <div className="mt-4 flex flex-col gap-3">
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 accent-primary"
+              checked={enabled}
+              disabled={update.isPending}
+              onChange={(e) => save({ enabled: e.target.checked, tips_enabled: tipsEnabled })}
+            />
+            <span className="text-sm">
+              {t("floor.qr.selfPay.enable")}
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {t("floor.qr.selfPay.enableHint")}
+              </span>
+            </span>
+          </label>
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              className="size-4 accent-primary"
+              checked={tipsEnabled}
+              disabled={!enabled || update.isPending}
+              onChange={(e) => save({ enabled, tips_enabled: e.target.checked })}
+            />
+            <span className={enabled ? "text-sm" : "text-sm text-muted-foreground"}>
+              {t("floor.qr.selfPay.offerTip")}
             </span>
           </label>
         </div>
