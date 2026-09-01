@@ -33,6 +33,7 @@ import { BarPage } from "@/features/kds/bar-page"
 import { KdsPage } from "@/features/kds/kds-page"
 import { OrderPage } from "@/features/orders/order-page"
 import { ProductsPage } from "@/features/products/products-page"
+import { TableQrPage } from "@/features/floor/table-qr-page"
 import { ReservationsPage } from "@/features/reservations/reservations-page"
 import { PublicMenuPage } from "@/features/public-menu/public-menu-page"
 import { PresenceDisplayPage } from "@/features/timeclock/presence-display-page"
@@ -58,6 +59,11 @@ export const router = createBrowserRouter([
     children: [
       // Full-screen (sin el shell/sidebar)
       { path: "/app/config", element: <ConfigPage /> },
+      // Gestión/impresión de QR de mesa (full-screen para imprimir limpio).
+      {
+        element: <RequireRole allow={["OWNER", "MANAGER"]} />,
+        children: [{ path: "/app/mesas-qr", element: <TableQrPage /> }],
+      },
       // Panel de plataforma (super-admin, gateado por el flag platform_admin).
       {
         element: <RequirePlatformAdmin />,

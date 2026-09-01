@@ -1,6 +1,12 @@
 import type { HttpClient } from "@/api/http-client"
 import type { CreateTableResponse, TableDTO } from "@/api/types-operations"
 
+// Token firmado + deep link que codifica el QR de una mesa (carta pública).
+export interface TableQrDTO {
+  token: string
+  url: string
+}
+
 export class TablesApi {
   private http: HttpClient
 
@@ -10,6 +16,11 @@ export class TablesApi {
 
   list(): Promise<TableDTO[]> {
     return this.http.request<TableDTO[]>("GET", "/tables", { auth: true })
+  }
+
+  // Token/URL del QR de la mesa (idempotente; el token es determinístico).
+  qr(tableId: string): Promise<TableQrDTO> {
+    return this.http.request<TableQrDTO>("GET", `/tables/${tableId}/qr`, { auth: true })
   }
 
   create(number: number, name: string | null): Promise<CreateTableResponse> {

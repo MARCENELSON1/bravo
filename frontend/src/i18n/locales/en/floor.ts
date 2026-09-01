@@ -38,6 +38,17 @@ export const floor = {
     callWaiter: "Table {{number}} is calling 🙋",
     bill: "Table {{number}} asked for the check 🧾",
   },
+  // Managing/printing the table QR codes (public menu).
+  qr: {
+    title: "Table QR codes",
+    subtitle: "Print one code per table. Guests scan it to see the menu.",
+    print: "Print",
+    back: "Back",
+    tableLabel: "Table {{number}}",
+    scanHint: "Scan to see the menu",
+    loadError: "We couldn't generate the QR.",
+    empty: "No tables yet. Add tables from the floor.",
+  },
   errors: {
     openOrder: "We couldn't open the order.",
     requestBill: "We couldn't request the bill.",

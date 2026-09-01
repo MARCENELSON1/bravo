@@ -38,6 +38,17 @@ export const floor = {
     callWaiter: "Mesa {{number}} te llama 🙋",
     bill: "Mesa {{number}} pide la cuenta 🧾",
   },
+  // Gestión/impresión de los QR de mesa (carta pública).
+  qr: {
+    title: "QR de las mesas",
+    subtitle: "Imprimí un código por mesa. El cliente lo escanea y ve la carta.",
+    print: "Imprimir",
+    back: "Volver",
+    tableLabel: "Mesa {{number}}",
+    scanHint: "Escaneá para ver la carta",
+    loadError: "No pudimos generar el QR.",
+    empty: "No hay mesas todavía. Agregá mesas en el salón.",
+  },
   errors: {
     openOrder: "No pudimos abrir la comanda.",
     requestBill: "No pudimos pedir la cuenta.",
