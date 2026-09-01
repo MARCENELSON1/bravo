@@ -29,8 +29,10 @@ Al mapear el código, **el motor de cobro ya existe entero** y es reusable:
 - **Paga la cuenta de la MESA entera** (todas las órdenes abiertas de la sesión), no "solo lo mío". Dividir = Tanda D.
 - **Solo métodos online** en el flujo público (MercadoPago/QR); efectivo no tiene sentido remoto. Sin MP conectado → la carta muestra "pagá con el mozo" (degradado, sin romper).
 - **Pagar cierra la orden solo** (vía `_settle_order`/webhook); la mesa se libera cuando todas sus órdenes quedan PAID (lógica de floor existente). Sin gate de mozo (la plata ya entró).
-- **Propina opcional** en la pantalla de pago (presets %); cabalga en `Payment.tip_amount`.
+- **Propina: el comensal elige el monto** (presets % + monto libre), y el **dueño puede desactivar la propina desde la UI** (flag `self_pay_tips_enabled`, config). Cabalga en `Payment.tip_amount`. **[DECIDIDO por el usuario 2026-09-01.]**
 - **Factura**: NO en el MVP (requiere doc_type/doc_number del comensal); gancho para después.
+
+> **Decisiones fijadas por el usuario (2026-09-01):** alcance **A–D** (incluye dividir la cuenta); propina **elegible por el comensal y desactivable por el dueño**; implementación en **sesión fresca**.
 
 ---
 
@@ -42,7 +44,7 @@ Arquitectura de siempre. Reusa `payment` (motor+gateway+webhook), `public_menu` 
    - `OrderRepository.list_open_by_session(tenant_id, session_id)` (o `list_open_by_table`) + adapter en `order_repo.py`. Filtra órdenes no PAID/CANCELLED de la sesión abierta del floor.
    - Caso de uso `GetTableBill(token)`: verifica token → `get_open_by_table` → junta las órdenes → devuelve **DTO**: ítems (nombre, cantidad, unit_price, modificadores), **total**, **pagado** (`Σ INFLOW confirmados` vía `payments.list_by_order`), **saldo**, `currency`, y **`online_pay_available`** (si el tenant tiene MP conectado + `self_pay_enabled`).
    - Endpoint público `GET /public/table/bill?token=` (sin auth). Solo lectura, sin plata → tanda de fundación segura.
-2. **Config del tenant** `self_pay_enabled` (espeja `self_order_enabled` de F2: flag en `tenants`, default **off**). `GET/PUT /self-pay/settings` (OWNER/MANAGER). Migración chica.
+2. **Config del tenant** `self_pay_enabled` + `self_pay_tips_enabled` (espejan `self_order_enabled` de F2: flags en `tenants`, `self_pay_enabled` default **off**; `self_pay_tips_enabled` default **on** = ofrece propina salvo que el dueño la apague). `GET/PUT /self-pay/settings` (OWNER/MANAGER). Migración chica. El `GetTableBill` devuelve `tips_enabled` para que el front muestre/oculte el selector de propina.
 3. **Caso de uso público `PayTableBill`** (`application/payment/` o `application/order/`):
    - `execute(token, tip=0, amount=None, idempotency_key)`: verifica token → gate `self_pay_enabled` (`SelfPayDisabled` 409) → resuelve la(s) orden(es) de la mesa → **monto = saldo calculado en el server** (o el parcial de Tanda D) → **reusa `RegisterPayment` con la política de caja relajada** (`cash=None`, sin `NoOpenCashSession`), `method=MERCADOPAGO` → `gateway.charge()` → devuelve `{ payment_id, status, checkout_url|null }`.
    - **Idempotencia**: guardar/consultar por `idempotency_key` (evita doble charge por doble-tap). Puede ser el `external_ref` o una columna nueva.
@@ -55,10 +57,10 @@ Arquitectura de siempre. Reusa `payment` (motor+gateway+webhook), `public_menu` 
 
 ## Frontend (`frontend/`)
 
-1. **Pantalla "Pagar"** en la carta pública (extiende `public-menu-page`): botón "Pagar" (o reemplaza "Pedir la cuenta" cuando hay `online_pay_available`) → pantalla con **la cuenta** (ítems + total + saldo), **selector de propina** (0/10/15% presets), y "Pagar $X".
+1. **Pantalla "Pagar"** en la carta pública (extiende `public-menu-page`): botón "Pagar" (o reemplaza "Pedir la cuenta" cuando hay `online_pay_available`) → pantalla con **la cuenta** (ítems + total + saldo), **selector de propina** (presets % + monto libre; **se oculta si `tips_enabled` está off**), y "Pagar $X".
 2. **Redirect + poll**: `POST /public/table/pay` → si `checkout_url`, redirige a MP; al volver (o en un `GET payment/{id}` que pollea), muestra **"¡Pagado! 🎉"**. Reusa el patrón de estados de la carta.
 3. **Degradado**: sin `online_pay_available`, la carta mantiene "Pedir la cuenta" (F1) — nada de pago online.
-4. **Lado dueño — config**: toggle "Cobro desde la mesa" en `/app/mesas-qr` (junto al de autopedido de F2), contra `GET/PUT /self-pay/settings`. Un aviso si MP no está conectado (link a conectar).
+4. **Lado dueño — config**: toggles "Cobro desde la mesa" **y "Ofrecer propina"** en `/app/mesas-qr` (junto al de autopedido de F2), contra `GET/PUT /self-pay/settings`. Un aviso si MP no está conectado (link a conectar).
 5. **Split (Tanda D)**: elegir "pagar todo / pagar mi parte / pagar $X"; parciales acumulan (el motor ya lo soporta).
 
 ## Validación (gates del proyecto)
@@ -85,13 +87,12 @@ Cada tanda cierra con sus gates. A→C es el MVP del pago desde la mesa; D agreg
 
 ---
 
-## Decisiones abiertas (confirmar antes de implementar)
-Con defaults ya elegidos (arriba), pero conviene confirmar:
-1. **Pagar-después + cuenta de la mesa entera** (no "solo lo mío") para el MVP. ¿OK?
-2. **Solo pago online** (MercadoPago) en la carta; sin MP conectado → "pagá con el mozo". ¿OK, o querés también "avisar que pago en efectivo con el mozo" como acción?
-3. **Propina en la pantalla de pago** (presets %). ¿Qué presets (0/10/15/20)? ¿Va al MVP o se difiere?
-4. **Dividir la cuenta**: ¿va como Tanda D del MVP o se difiere a una fase aparte? (El motor ya lo soporta; es UI + un monto parcial.)
-5. **Factura para el comensal**: ¿se difiere (recomendado) o entra?
+## Decisiones (resueltas 2026-09-01)
+1. ✅ **Pagar-después + cuenta de la mesa entera** (no "solo lo mío") para el MVP; el parcial llega en la Tanda D.
+2. ✅ **Solo pago online** (MercadoPago) en la carta; sin MP conectado → "pagá con el mozo" (degradado).
+3. ✅ **Propina: el comensal elige** (presets % + monto libre) y el **dueño la puede desactivar desde la UI** (`self_pay_tips_enabled`). Presets sugeridos 0/10/15/20 (afinar en implementación).
+4. ✅ **Dividir la cuenta**: entra como **Tanda D del alcance** (el usuario eligió A–D).
+5. ✅ **Factura para el comensal**: se **difiere** (tanda futura E).
 
 ## Próximo
 Aprobar este plan (y las 5 decisiones) → `/prp-implement` por tandas (A→D). Al terminar F3, la Carta QR cierra el loop completo (ver → pedir → pagar). Posibles siguientes: factura del comensal, o loyalty/CRM del comensal (identificación opcional que quedó como gancho en F2).
