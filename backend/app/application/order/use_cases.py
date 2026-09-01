@@ -16,7 +16,7 @@ from app.domain.order.exceptions import (
     OrderNotFound,
 )
 from app.domain.order.repository import OrderRepository
-from app.domain.order.value_objects import ItemStatus, OrderStatus, Station
+from app.domain.order.value_objects import ItemStatus, OrderSource, OrderStatus, Station
 from app.domain.product.exceptions import InactiveProduct, ProductNotFound
 from app.domain.product.repository import ProductRepository
 from app.domain.realtime.ports import DomainEvent, EventBus
@@ -61,6 +61,7 @@ class CreateOrder:
         waiter_id: str,
         table_id: str,
         order_id: str | None = None,
+        source: OrderSource = OrderSource.WAITER,
     ) -> CreateOrderResult:
         self._tenant_context.set(tenant_id)
         if order_id is not None:
@@ -92,6 +93,7 @@ class CreateOrder:
             waiter_id=waiter_id,
             currency=tenant.currency,
             session_id=session.id,
+            source=source,
         )
         await self._orders.add(order)
         await self._event_bus.publish(_floor_changed(order))  # table → occupied

@@ -11,3 +11,8 @@ class ProductNotFound(DomainError):
 class InactiveProduct(DomainError):
     code = "inactive_product"
     message = "El producto no está disponible."
+
+
+class ProductUnavailable(DomainError):
+    code = "product_unavailable"
+    message = "Ese plato hoy no está disponible."

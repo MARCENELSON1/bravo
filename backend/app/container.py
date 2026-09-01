@@ -108,6 +108,11 @@ from app.application.invoice.connect_afip import (
 )
 from app.application.invoice.use_cases import GetOrderInvoice, IssueInvoice, ListInvoices
 from app.application.marketing.submit_lead import SubmitLead
+from app.application.order.self_order import (
+    GetSelfOrderSettings,
+    SubmitCustomerOrder,
+    UpdateSelfOrderSettings,
+)
 from app.application.order.use_cases import (
     AddOrderItem,
     AddOrderItemsBatch,
@@ -322,6 +327,9 @@ from app.infrastructure.persistence.reservation_repo import (
 from app.infrastructure.persistence.reset_token_repo import SqlAlchemyResetTokenRepository
 from app.infrastructure.persistence.sale_facts_repo import SqlAlchemySaleFactsRepository
 from app.infrastructure.persistence.sector_repo import SqlAlchemySectorRepository
+from app.infrastructure.persistence.self_order_settings_repo import (
+    SqlAlchemySelfOrderSettingsRepository,
+)
 from app.infrastructure.persistence.shift_repo import SqlAlchemyShiftRepository
 from app.infrastructure.persistence.staff_report_repo import SqlAlchemyStaffReportReadModel
 from app.infrastructure.persistence.stock_movement_repo import (
@@ -1304,6 +1312,30 @@ class Container(containers.DeclarativeContainer):
         token=table_qr_token,
         tables=table_repository,
         event_bus=event_bus,
+        tenant_context=tenant_context,
+    )
+    self_order_settings_repository = providers.Factory(
+        SqlAlchemySelfOrderSettingsRepository, session_factory=db.provided.session
+    )
+    get_self_order_settings = providers.Factory(
+        GetSelfOrderSettings,
+        settings=self_order_settings_repository,
+        tenant_context=tenant_context,
+    )
+    update_self_order_settings = providers.Factory(
+        UpdateSelfOrderSettings,
+        settings=self_order_settings_repository,
+        tenant_context=tenant_context,
+    )
+    submit_customer_order = providers.Factory(
+        SubmitCustomerOrder,
+        token=table_qr_token,
+        settings=self_order_settings_repository,
+        products=product_repository,
+        sessions=table_session_repository,
+        create_order=create_order,
+        add_items_batch=add_order_items_batch,
+        tables=table_repository,
         tenant_context=tenant_context,
     )
 

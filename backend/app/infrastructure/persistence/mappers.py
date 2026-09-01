@@ -43,7 +43,7 @@ from app.domain.invoice.value_objects import (
     InvoiceType,
 )
 from app.domain.order.entities import Order, OrderItem
-from app.domain.order.value_objects import ItemStatus, OrderStatus, Station
+from app.domain.order.value_objects import ItemStatus, OrderSource, OrderStatus, Station
 from app.domain.payment.credentials import (
     ConnectionStatus,
     PaymentCredential,
@@ -455,6 +455,7 @@ def order_to_domain(row: OrderORM, item_rows: list[OrderItemORM]) -> Order:
         status=OrderStatus(row.status),
         session_id=row.session_id,
         customer_id=row.customer_id,
+        source=OrderSource(row.source),
         items=[
             OrderItem(
                 id=item.id,
@@ -484,6 +485,7 @@ def order_to_orm(order: Order) -> OrderORM:
         session_id=order.session_id,
         customer_id=order.customer_id,
         currency=order.currency,
+        source=order.source.value,
     )
 
 

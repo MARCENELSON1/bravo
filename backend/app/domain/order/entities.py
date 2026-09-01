@@ -11,7 +11,7 @@ from app.domain.order.exceptions import (
     ItemNotFound,
     ItemNotPending,
 )
-from app.domain.order.value_objects import ItemStatus, OrderStatus, Station
+from app.domain.order.value_objects import ItemStatus, OrderSource, OrderStatus, Station
 from app.domain.shared.exceptions import CurrencyMismatch
 from app.domain.shared.money import Money
 
@@ -71,6 +71,9 @@ class Order:
     # CRM: cliente atribuido a la comanda (para el historial de compras). None → sin
     # atribuir (no cuenta a ningún cliente; nada se infla).
     customer_id: str | None = None
+    # Origen de la comanda (Carta QR F2). WAITER por default → paridad; CUSTOMER_QR
+    # = la cargó el comensal desde el QR.
+    source: OrderSource = OrderSource.WAITER
 
     # --- item editing (only while the item is still PENDING) ----------------
 

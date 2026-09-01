@@ -37,3 +37,11 @@ class Station(StrEnum):
 
     KITCHEN = "KITCHEN"
     BAR = "BAR"
+
+
+class OrderSource(StrEnum):
+    """Who originated the order. Defaults to WAITER (parity); CUSTOMER_QR marks an
+    order the diner placed from the QR menu (Carta QR F2) — for metrics + the gate."""
+
+    WAITER = "WAITER"
+    CUSTOMER_QR = "CUSTOMER_QR"

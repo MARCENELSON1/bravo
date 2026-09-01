@@ -44,3 +44,8 @@ class OrderHasAuthorizedInvoice(DomainError):
         "No se puede reabrir: la comanda ya tiene un comprobante fiscal autorizado. "
         "Emití una nota de crédito."
     )
+
+
+class SelfOrderDisabled(DomainError):
+    code = "self_order_disabled"
+    message = "El autopedido no está habilitado en este local."

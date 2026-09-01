@@ -49,6 +49,14 @@ class TenantORM(Base):
     blind_cash_count: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="false"
     )
+    # Autopedido (Carta QR F2). Deshabilitado por default → la carta es solo lectura
+    # (paridad). requires_confirmation ON = el mozo confirma el pedido del cliente.
+    self_order_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
+    self_order_requires_confirmation: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="true"
+    )
     # Regional/fiscal spine (Fase 0 internacionalización). Defaults AR → paridad
     # total para los tenants existentes; los resolvers leen estos campos por tenant.
     tax_regime: Mapped[str] = mapped_column(
@@ -325,6 +333,8 @@ class OrderORM(Base):
     # CRM: cliente atribuido a la comanda (para el historial de compras). Nullable.
     customer_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True, index=True)
     currency: Mapped[str] = mapped_column(String(3))
+    # Origen de la comanda (Carta QR F2). Default WAITER → paridad.
+    source: Mapped[str] = mapped_column(String(16), server_default="WAITER")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

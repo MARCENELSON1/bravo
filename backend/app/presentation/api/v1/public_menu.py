@@ -7,10 +7,15 @@ from __future__ import annotations
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
+from app.application.order.dtos import BatchOrderItemInput
+from app.application.order.self_order import SubmitCustomerOrder
 from app.application.public_menu.use_cases import GetPublicMenu, RequestTableAttention
 from app.container import Container
+from app.domain.order.value_objects import OrderStatus
 from app.domain.public_menu.value_objects import TableCallKind
 from app.presentation.schemas.public_menu import (
+    CustomerOrderRequest,
+    CustomerOrderResponse,
     PublicMenuCategoryResponse,
     PublicMenuItemResponse,
     PublicMenuResponse,
@@ -70,3 +75,26 @@ async def request_bill(
 ) -> TableCallResponse:
     await use_case.execute(token=body.token, kind=TableCallKind.BILL)
     return TableCallResponse()
+
+
+@router.post("/table/order", response_model=CustomerOrderResponse)
+@inject
+async def submit_customer_order(
+    body: CustomerOrderRequest,
+    use_case: SubmitCustomerOrder = Depends(Provide[Container.submit_customer_order]),
+) -> CustomerOrderResponse:
+    order = await use_case.execute(
+        token=body.token,
+        lines=[
+            BatchOrderItemInput(
+                product_id=line.product_id, quantity=line.quantity, note=line.note
+            )
+            for line in body.lines
+        ],
+    )
+    # OPEN = ítems PENDING sin marchar → el gate estaba ON (el mozo confirma).
+    return CustomerOrderResponse(
+        order_id=order.id,
+        status=order.status.value,
+        requires_confirmation=order.status is OrderStatus.OPEN,
+    )

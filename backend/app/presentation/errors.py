@@ -64,6 +64,7 @@ from app.domain.order.exceptions import (
     ItemNotPending,
     OrderHasAuthorizedInvoice,
     OrderNotFound,
+    SelfOrderDisabled,
 )
 from app.domain.payment.exceptions import (
     InvalidOAuthState,
@@ -73,7 +74,11 @@ from app.domain.payment.exceptions import (
     PaymentNotFound,
     PaymentNotRefundable,
 )
-from app.domain.product.exceptions import InactiveProduct, ProductNotFound
+from app.domain.product.exceptions import (
+    InactiveProduct,
+    ProductNotFound,
+    ProductUnavailable,
+)
 from app.domain.public_menu.exceptions import InvalidTableQrToken
 from app.domain.reservation.exceptions import (
     InvalidPartySize,
@@ -204,8 +209,10 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (CashSessionAlreadyOpen, 409),
     (NoOpenCashSession, 409),
     (CashSessionAlreadyClosed, 409),
-    # Carta QR (autopedido F1) — token de carta pública
+    # Carta QR (autopedido F1/F2) — token de carta pública + autopedido
     (InvalidTableQrToken, 401),
+    (ProductUnavailable, 409),
+    (SelfOrderDisabled, 409),
     # Fase 11 — copiloto IA
     (CopilotDisabled, 409),
     (UnsafeQuery, 422),

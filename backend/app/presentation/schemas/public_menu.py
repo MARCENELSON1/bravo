@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PublicMenuItemResponse(BaseModel):
@@ -35,3 +35,21 @@ class TableCallRequest(BaseModel):
 
 class TableCallResponse(BaseModel):
     status: str = "ok"
+
+
+class CustomerOrderLine(BaseModel):
+    product_id: str
+    quantity: int = Field(ge=1)
+    note: str | None = Field(default=None, max_length=280)
+
+
+class CustomerOrderRequest(BaseModel):
+    token: str
+    lines: list[CustomerOrderLine] = Field(min_length=1)
+
+
+class CustomerOrderResponse(BaseModel):
+    order_id: str
+    status: str
+    # ``requires_confirmation`` refleja el gate: true → el mozo tiene que confirmar.
+    requires_confirmation: bool
