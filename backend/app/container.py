@@ -147,6 +147,7 @@ from app.application.product.use_cases import (
     ListProducts,
     UpdateProductPrice,
 )
+from app.application.public_menu.use_cases import GetPublicMenu, IssueTableQr
 from app.application.reporting.dashboard import GetDashboardSummary
 from app.application.reporting.exports import ExportReport
 from app.application.reporting.staff import GetStaffReport
@@ -348,6 +349,7 @@ from app.infrastructure.persistence.user_repo import SqlAlchemyUserRepository
 from app.infrastructure.persistence.verification_token_repo import (
     SqlAlchemyVerificationTokenRepository,
 )
+from app.infrastructure.public_menu.signed_table_qr import HmacTableQrToken
 from app.infrastructure.realtime.memory_bus import InMemoryEventBus
 from app.infrastructure.security.fernet_cipher import FernetTokenCipher
 from app.infrastructure.security.hasher import Argon2Hasher
@@ -1268,6 +1270,25 @@ class Container(containers.DeclarativeContainer):
         PunchWithPresence,
         presence=presence_token,
         punch=punch,
+        tenant_context=tenant_context,
+    )
+
+    # --- Carta QR (autopedido F1): token firmado de mesa + carta pública ---
+    table_qr_token = providers.Singleton(
+        HmacTableQrToken, secret=config.provided.effective_table_qr_secret
+    )
+    issue_table_qr = providers.Factory(
+        IssueTableQr,
+        token=table_qr_token,
+        tables=table_repository,
+        tenant_context=tenant_context,
+        app_base_url=config.provided.app_base_url,
+    )
+    get_public_menu = providers.Factory(
+        GetPublicMenu,
+        token=table_qr_token,
+        products=product_repository,
+        tenants=tenant_repository,
         tenant_context=tenant_context,
     )
 

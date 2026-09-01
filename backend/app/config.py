@@ -144,6 +144,15 @@ class Settings(BaseSettings):
         """Dedicated presence-signing secret, falling back to the JWT secret."""
         return self.presence_secret or self.jwt_secret
 
+    # Firma de los tokens de carta pública (QR de mesa). Cae al jwt_secret si no se
+    # setea. Debe ser ESTABLE en el tiempo: el QR está impreso en la mesa.
+    table_qr_secret: str = ""
+
+    @property
+    def effective_table_qr_secret(self) -> str:
+        """Table-QR signing secret, falling back to the JWT secret."""
+        return self.table_qr_secret or self.jwt_secret
+
     # Asesor financiero (Fase 9). Capa LLM grounded, APAGADA por default: "off" =
     # narración determinística (plantillas); "claude" = Claude narra/sintetiza
     # sobre los números ya calculados (nunca calcula). Prender sólo con evals.

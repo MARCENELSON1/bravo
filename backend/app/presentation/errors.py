@@ -74,6 +74,7 @@ from app.domain.payment.exceptions import (
     PaymentNotRefundable,
 )
 from app.domain.product.exceptions import InactiveProduct, ProductNotFound
+from app.domain.public_menu.exceptions import InvalidTableQrToken
 from app.domain.reservation.exceptions import (
     InvalidPartySize,
     InvalidReservationTransition,
@@ -203,6 +204,8 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (CashSessionAlreadyOpen, 409),
     (NoOpenCashSession, 409),
     (CashSessionAlreadyClosed, 409),
+    # Carta QR (autopedido F1) — token de carta pública
+    (InvalidTableQrToken, 401),
     # Fase 11 — copiloto IA
     (CopilotDisabled, 409),
     (UnsafeQuery, 422),

@@ -62,7 +62,7 @@ Arquitectura de siempre: dominio puro → casos de uso sobre ports → adapters 
 - **i18n del contenido:** los nombres de producto los carga el dueño (español); la **UI** de la carta es bilingüe, el **contenido** queda en el idioma que cargó el local (igual que hoy). Traducción de contenido = fuera de scope.
 
 ## Troceo sugerido (tandas)
-- **A — Sesión + carta (backend):** token service + `GetPublicMenu` + router público + tests.
+- **A — Sesión + carta (backend): ✅ HECHA.** Contexto nuevo `public_menu` (NO se tocó el `table_session` del floor, que es la visita/turno de mesa — colisión de nombre evitada). Token firmado **stateless** `HmacTableQrToken` (molde: presence device token) → sin migración. `IssueTableQr` (`GET /tables/{id}/qr`, RBAC OWNER/MANAGER, idempotente) + `GetPublicMenu` (`GET /public/menu?token=…`, sin auth, solo activos y sin costos, agrupado por categoría). Error `invalid_table_qr_token` → 401. Config `table_qr_secret` (cae a `jwt_secret`). Gates: ruff + **615 tests** (14 nuevos: token round-trip/tamper/kind, `group_menu` puro, e2e emisión→carta + aislamiento + token malo).
 - **B — Carta (frontend):** ruta pública + página + cliente API + i18n + estados.
 - **C — Llamar al mozo / pedir la cuenta:** endpoints + realtime + recepción en el floor.
 - **D — Gestión/impresión de QR** (lado dueño).
