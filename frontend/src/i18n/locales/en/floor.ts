@@ -48,6 +48,16 @@ export const floor = {
     scanHint: "Scan to see the menu",
     loadError: "We couldn't generate the QR.",
     empty: "No tables yet. Add tables from the floor.",
+    selfOrder: {
+      title: "Self-ordering",
+      subtitle: "Let diners place their order from the QR.",
+      enable: "Enable QR self-ordering",
+      requireConfirmation: "Require the server to confirm the order",
+      requireConfirmationHint:
+        "Recommended: the order lands on the ticket and the server confirms it (fires to the kitchen).",
+      saved: "Settings saved",
+      saveFailed: "We couldn't save. Please try again.",
+    },
   },
   errors: {
     openOrder: "We couldn't open the order.",

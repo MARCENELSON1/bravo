@@ -108,9 +108,9 @@ describe("PublicMenuPage", () => {
   it("hides the cart when self-order is disabled (F1 parity)", async () => {
     renderMenu(makeApi(() => Promise.resolve(MENU))) // self_order_enabled ausente
     await screen.findByText("Bar Paz")
-    // Sin steppers ni botón de envío: la carta se comporta como en F1.
+    // Sin steppers ni botón de pedido: la carta se comporta como en F1.
     expect(screen.queryByRole("button", { name: "Sumar uno" })).not.toBeInTheDocument()
-    expect(screen.queryByText(/Enviar el pedido/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Ver pedido/)).not.toBeInTheDocument()
   })
 
   it("builds a cart and submits the order server-side (prices never sent)", async () => {
@@ -122,12 +122,62 @@ describe("PublicMenuPage", () => {
 
     // Sumo 2 empanadas (la primera "+" en el DOM es la de Empanada).
     await userEvent.click(screen.getAllByRole("button", { name: "Sumar uno" })[0])
-    await userEvent.click(screen.getAllByRole("button", { name: "Sumar uno" })[0]) // ahora [− 1 +]
+    await userEvent.click(screen.getAllByRole("button", { name: "Sumar uno" })[0]) // [− 1 +]
 
-    await userEvent.click(screen.getByRole("button", { name: /Enviar el pedido/ }))
+    // Abro la revisión del pedido y envío.
+    await userEvent.click(screen.getByRole("button", { name: /Ver pedido/ }))
+    await userEvent.click(screen.getByRole("button", { name: "Enviar el pedido" }))
 
     expect(api.submitOrder).toHaveBeenCalledWith("tok-123", [{ product_id: "1", quantity: 2 }])
     // Gate ON → mensaje "el mozo lo confirma".
     expect(await screen.findByText("¡Pedido enviado!")).toBeInTheDocument()
+  })
+
+  it("picks a modifier and sends the chosen option id (min/max gated)", async () => {
+    const withMods: PublicMenuDTO = {
+      ...MENU,
+      self_order_enabled: true,
+      self_order_requires_confirmation: false,
+      categories: [
+        {
+          name: "Platos",
+          items: [
+            {
+              id: "9",
+              name: "Bife",
+              price_amount: 1200000,
+              modifier_groups: [
+                {
+                  id: "g1",
+                  name: "Cocción",
+                  min_select: 1,
+                  max_select: 1,
+                  required: true,
+                  options: [
+                    { id: "rare", name: "Jugosa", price_delta: 0 },
+                    { id: "bacon", name: "Con panceta", price_delta: 300000 },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+    const api = makeApi(() => Promise.resolve(withMods))
+    renderMenu(api)
+    await screen.findByText("Bife")
+
+    // Ítem con modificadores → "Agregar" abre el picker.
+    await userEvent.click(screen.getByRole("button", { name: /Agregar/ }))
+    await userEvent.click(await screen.findByLabelText(/Con panceta/))
+    await userEvent.click(screen.getByRole("button", { name: "Agregar al pedido" }))
+
+    await userEvent.click(screen.getByRole("button", { name: /Ver pedido/ }))
+    await userEvent.click(screen.getByRole("button", { name: "Enviar el pedido" }))
+
+    expect(api.submitOrder).toHaveBeenCalledWith("tok-123", [
+      { product_id: "9", quantity: 1, option_ids: ["bacon"] },
+    ])
   })
 })

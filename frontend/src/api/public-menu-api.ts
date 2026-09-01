@@ -1,6 +1,21 @@
 import type { HttpClient } from "@/api/http-client"
 
 // Carta pública (QR de mesa). Endpoint SIN auth: el token firmado porta el tenant.
+export interface PublicMenuModifierOptionDTO {
+  id: string
+  name: string
+  price_delta: number
+}
+
+export interface PublicMenuModifierGroupDTO {
+  id: string
+  name: string
+  min_select: number
+  max_select: number
+  required: boolean
+  options: PublicMenuModifierOptionDTO[]
+}
+
 export interface PublicMenuItemDTO {
   id: string
   name: string
@@ -9,6 +24,7 @@ export interface PublicMenuItemDTO {
   image_url?: string | null
   description?: string | null
   available_today?: boolean
+  modifier_groups?: PublicMenuModifierGroupDTO[]
 }
 
 export interface PublicMenuCategoryDTO {
@@ -34,6 +50,7 @@ export interface CustomerOrderLineDTO {
   product_id: string
   quantity: number
   note?: string | null
+  option_ids?: string[]
 }
 
 export interface CustomerOrderResultDTO {

@@ -2,10 +2,12 @@ import { ArrowLeft, Printer } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 
 import type { TableDTO } from "@/api/types-operations"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
+import { useSelfOrderSettings, useUpdateSelfOrderSettings } from "@/hooks/use-self-order"
 import { useTableQr, useTables } from "@/hooks/use-tables"
 
 // Gestión/impresión de los QR de mesa (lado dueño, OWNER/MANAGER). Pantalla
@@ -41,6 +43,9 @@ export function TableQrPage() {
       </header>
 
       <main className="mx-auto max-w-4xl px-5 py-8">
+        <div className="mb-8 print:hidden">
+          <SelfOrderConfigCard />
+        </div>
         {tables.isLoading ? (
           <div className="flex justify-center py-20">
             <Spinner />
@@ -55,6 +60,68 @@ export function TableQrPage() {
           </div>
         )}
       </main>
+    </div>
+  )
+}
+
+// Config del autopedido (Carta QR F2 E): prender el autopedido + el gate de
+// confirmación del mozo. Sin autopedido, la carta QR queda de solo lectura (F1).
+function SelfOrderConfigCard() {
+  const { t } = useTranslation()
+  const settings = useSelfOrderSettings()
+  const update = useUpdateSelfOrderSettings()
+
+  const save = (next: { enabled: boolean; requires_confirmation: boolean }) =>
+    update.mutate(next, {
+      onSuccess: () => toast.success(t("floor.qr.selfOrder.saved")),
+      onError: () => toast.error(t("floor.qr.selfOrder.saveFailed")),
+    })
+
+  const current = settings.data
+  const enabled = current?.enabled ?? false
+  const requiresConfirmation = current?.requires_confirmation ?? true
+
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card p-5">
+      <h2 className="text-sm font-semibold">{t("floor.qr.selfOrder.title")}</h2>
+      <p className="mt-0.5 text-xs text-muted-foreground">{t("floor.qr.selfOrder.subtitle")}</p>
+      {settings.isLoading ? (
+        <div className="py-4">
+          <Spinner className="size-4" />
+        </div>
+      ) : (
+        <div className="mt-4 flex flex-col gap-3">
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              className="size-4 accent-primary"
+              checked={enabled}
+              disabled={update.isPending}
+              onChange={(e) =>
+                save({ enabled: e.target.checked, requires_confirmation: requiresConfirmation })
+              }
+            />
+            <span className="text-sm">{t("floor.qr.selfOrder.enable")}</span>
+          </label>
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 accent-primary"
+              checked={requiresConfirmation}
+              disabled={!enabled || update.isPending}
+              onChange={(e) =>
+                save({ enabled, requires_confirmation: e.target.checked })
+              }
+            />
+            <span className={enabled ? "text-sm" : "text-sm text-muted-foreground"}>
+              {t("floor.qr.selfOrder.requireConfirmation")}
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {t("floor.qr.selfOrder.requireConfirmationHint")}
+              </span>
+            </span>
+          </label>
+        </div>
+      )}
     </div>
   )
 }

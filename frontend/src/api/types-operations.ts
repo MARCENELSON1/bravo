@@ -33,6 +33,48 @@ export interface CreateProductResponse {
   product_id: string
 }
 
+// --- Carta QR F2 D/E: modificadores de producto -----------------------------
+
+export interface ModifierOptionDTO {
+  id: string
+  name: string
+  price_delta: number // minor units, ≥ 0
+}
+
+export interface ModifierGroupDTO {
+  id: string
+  name: string
+  min_select: number
+  max_select: number
+  required: boolean
+  options: ModifierOptionDTO[]
+}
+
+export interface ProductModifiersDTO {
+  product_id: string
+  groups: ModifierGroupDTO[]
+}
+
+// Lo que el dueño envía (sin ids — se mintean en el server).
+export interface ModifierOptionInput {
+  name: string
+  price_delta: number
+}
+
+export interface ModifierGroupInput {
+  name: string
+  min_select: number
+  max_select: number
+  options: ModifierOptionInput[]
+}
+
+// --- Carta QR F2 B/E: config del autopedido ---------------------------------
+
+export interface SelfOrderSettingsDTO {
+  enabled: boolean
+  requires_confirmation: boolean
+}
+
 // --- Productos v2 Tanda B: precios vs inflación + histórico + rotación --------
 
 export interface PricingRowDTO {

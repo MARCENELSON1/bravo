@@ -24,9 +24,21 @@ export const publicMenu = {
   cart: {
     increase: "Add one",
     decrease: "Remove one",
+    add: "Add",
+    review: "View order",
+    title: "Your order",
+    empty: "You haven't picked anything yet.",
+    remove: "Remove",
     send: "Send order",
     sending: "Sending…",
     total: "Total",
+  },
+  picker: {
+    required: "Required",
+    pickOne: "Pick one option",
+    upTo: "Up to {{max}}",
+    atLeast: "Pick at least {{min}}",
+    add: "Add to order",
   },
   sent: {
     title: "Order sent!",

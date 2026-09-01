@@ -24,9 +24,21 @@ export const publicMenu = {
   cart: {
     increase: "Sumar uno",
     decrease: "Quitar uno",
+    add: "Agregar",
+    review: "Ver pedido",
+    title: "Tu pedido",
+    empty: "Todavía no elegiste nada.",
+    remove: "Quitar",
     send: "Enviar el pedido",
     sending: "Enviando…",
     total: "Total",
+  },
+  picker: {
+    required: "Obligatorio",
+    pickOne: "Elegí una opción",
+    upTo: "Hasta {{max}}",
+    atLeast: "Elegí al menos {{min}}",
+    add: "Agregar al pedido",
   },
   sent: {
     title: "¡Pedido enviado!",

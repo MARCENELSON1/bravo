@@ -2,8 +2,10 @@ import type { HttpClient } from "@/api/http-client"
 import type { AnalyticsQuery } from "@/api/types-analytics"
 import type {
   CreateProductResponse,
+  ModifierGroupInput,
   PricingInsightsDTO,
   ProductDTO,
+  ProductModifiersDTO,
   ProductPriceHistoryDTO,
   ProductRotationDTO,
   Station,
@@ -52,6 +54,24 @@ export class ProductsApi {
       "GET",
       `/products/${productId}/price-history`,
       { auth: true }
+    )
+  }
+
+  // --- Carta QR F2 D/E: modificadores ----------------------------------------
+
+  modifiers(productId: string): Promise<ProductModifiersDTO> {
+    return this.http.request<ProductModifiersDTO>(
+      "GET",
+      `/products/${productId}/modifiers`,
+      { auth: true }
+    )
+  }
+
+  setModifiers(productId: string, groups: ModifierGroupInput[]): Promise<ProductModifiersDTO> {
+    return this.http.request<ProductModifiersDTO>(
+      "PUT",
+      `/products/${productId}/modifiers`,
+      { body: { groups }, auth: true }
     )
   }
 

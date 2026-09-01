@@ -23,6 +23,7 @@ import { RealtimeApi } from "@/api/realtime-api"
 import { ReportsApi } from "@/api/reports-api"
 import { ReservationsApi } from "@/api/reservations-api"
 import { SectorsApi } from "@/api/sectors-api"
+import { SelfOrderApi } from "@/api/self-order-api"
 import { TablesApi } from "@/api/tables-api"
 import { TenantsApi } from "@/api/tenants-api"
 import { TimeClockApi } from "@/api/timeclock-api"
@@ -62,6 +63,7 @@ export function ServicesProvider({
       reportsApi: new ReportsApi(http),
       reservationsApi: new ReservationsApi(http),
       sectorsApi: new SectorsApi(http),
+      selfOrderApi: new SelfOrderApi(http),
       tablesApi: new TablesApi(http),
       tenantsApi: new TenantsApi(http),
       timeClockApi: new TimeClockApi(http),
