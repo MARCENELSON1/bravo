@@ -319,13 +319,121 @@ class Strings {
   String get setOpenMinutes => _en ? 'Open minutes/day' : 'Minutos abiertos/día';
   String get setSave => _en ? 'Save' : 'Guardar';
   String get setSaved => _en ? 'Settings saved' : 'Ajustes guardados';
+  String get cancel => _en ? 'Cancel' : 'Cancelar';
+  String get setDelete => _en ? 'Delete' : 'Eliminar';
+  String get setEdit => _en ? 'Edit' : 'Editar';
   String get ajustesSubtitle =>
       _en ? 'Manage your data and preferences.' : 'Gestioná tus datos y preferencias.';
+  String get financeConfigTitle =>
+      _en ? 'Finance settings' : 'Configuración de finanzas';
+  String get financeConfigOpen =>
+      _en ? 'Finance settings' : 'Configuración de finanzas';
   String get editSoon => _en ? 'Coming soon' : 'Próximamente';
   String get reduceMotion => _en ? 'Reduce motion' : 'Reducir movimiento';
   String get reduceMotionDesc => _en
       ? 'Turns off interface animations.'
       : 'Desactiva las animaciones de la interfaz.';
+
+  // Ajustes › Caja y pagos (paridad con la web)
+  String get cashRequireOpenTitle =>
+      _en ? 'Require open cash session' : 'Apertura de caja obligatoria';
+  String get cashRequireOpenDesc => _en
+      ? "You can't take payments without an open cash session."
+      : 'No se puede cobrar sin una caja abierta.';
+  String get cashBlindTitle => _en ? 'Blind count' : 'Arqueo ciego';
+  String get cashBlindDesc => _en
+      ? 'On close, the cashier counts without seeing the expected total (the difference comes out honest).'
+      : 'Al cerrar caja, el cajero cuenta sin ver el esperado (la diferencia sale honesta).';
+  String get cashSaveError => _en
+      ? "We couldn't save the setting."
+      : 'No pudimos guardar el ajuste.';
+  String get commissionsTitle =>
+      _en ? 'Commissions by payment method' : 'Comisiones por medio de pago';
+  String get commissionsDesc => _en
+      ? 'What the gateway keeps from each payment. With this, Home shows the real profit after commissions. Empty = 0%.'
+      : 'Lo que se queda la pasarela de cada cobro. Con esto, el Inicio te muestra la ganancia real después de comisiones. Vacío = 0%.';
+  String get commissionsInvalid => _en
+      ? 'Invalid commission (0 to 100%).'
+      : 'Comisión inválida (entre 0 y 100%).';
+  String get commissionsSaved =>
+      _en ? 'Commissions saved.' : 'Comisiones guardadas.';
+  String get commissionsSaveError => _en
+      ? "We couldn't save the commissions."
+      : 'No pudimos guardar las comisiones.';
+  String get commissionsSave =>
+      _en ? 'Save commissions' : 'Guardar comisiones';
+  String payMethodLabel(String method) => switch (method) {
+        'CARD' => _en ? 'Card' : 'Tarjeta',
+        'MERCADOPAGO' => 'MercadoPago',
+        'QR' => 'QR',
+        'CASH' => _en ? 'Cash' : 'Efectivo',
+        'TRANSFER' => _en ? 'Transfer' : 'Transferencia',
+        _ => method,
+      };
+
+  // Ajustes › Salones y mesas
+  String get sectorsTitle => _en ? 'Sectors' : 'Sectores';
+  String get sectorsDesc => _en
+      ? 'Dining room, terrace, bar… Organize your floor.'
+      : 'Salón, terraza, barra… Organizá tu piso.';
+  String get sectorsEmpty => _en ? 'No sectors yet.' : 'Sin sectores todavía.';
+  String get sectorAdd => _en ? 'Add sector' : 'Agregar sector';
+  String get sectorName => _en ? 'Sector name' : 'Nombre del sector';
+  String get sectorSaved => _en ? 'Sector saved.' : 'Sector guardado.';
+  String get sectorDeleted => _en ? 'Sector deleted.' : 'Sector eliminado.';
+  String sectorDeleteConfirm(String name) =>
+      _en ? 'Delete "$name"?' : '¿Eliminar "$name"?';
+  String get sectorSaveError =>
+      _en ? "We couldn't save the sector." : 'No pudimos guardar el sector.';
+
+  // Ajustes › Equipo
+  String get inviteTitle => _en ? 'Invite a user' : 'Invitar un usuario';
+  String get inviteDesc => _en
+      ? 'They get an email to join your venue with the chosen role.'
+      : 'Le llega un email para sumarse a tu local con el rol elegido.';
+  String get inviteEmail => _en ? 'Email' : 'Email';
+  String get inviteRole => _en ? 'Role' : 'Rol';
+  String get inviteSend => _en ? 'Send invitation' : 'Enviar invitación';
+  String get inviteSent => _en ? 'Invitation sent.' : 'Invitación enviada.';
+  String get inviteEmailInvalid =>
+      _en ? 'Enter a valid email.' : 'Ingresá un email válido.';
+  String get inviteError =>
+      _en ? "We couldn't send the invitation." : 'No pudimos enviar la invitación.';
+
+  // Ajustes › Datos del local (fiscal)
+  String get fiscalTitle => _en ? 'Fiscal data' : 'Datos fiscales';
+  String get fiscalCountry => _en ? 'Country' : 'País';
+  String get fiscalCurrency => _en ? 'Currency' : 'Moneda';
+  String get fiscalRegime => _en ? 'Tax regime' : 'Régimen fiscal';
+  String get fiscalStreet => _en ? 'Street' : 'Calle';
+  String get fiscalCity => _en ? 'City' : 'Ciudad';
+  String get fiscalState => _en ? 'State / Province' : 'Provincia';
+  String get fiscalZip => _en ? 'ZIP' : 'Código postal';
+  String get fiscalSave => _en ? 'Save address' : 'Guardar dirección';
+  String get fiscalSaved =>
+      _en ? 'Fiscal address saved.' : 'Dirección fiscal guardada.';
+  String get fiscalError =>
+      _en ? "We couldn't save the address." : 'No pudimos guardar la dirección.';
+
+  // Ajustes › Integraciones (Mercado Pago)
+  String get mpTitle => 'Mercado Pago';
+  String get mpDesc => _en
+      ? 'Connect your account to collect online payments.'
+      : 'Conectá tu cuenta para cobrar pagos online.';
+  String get mpConnected => _en ? 'Connected' : 'Conectado';
+  String get mpNotConnected => _en ? 'Not connected' : 'Sin conectar';
+  String get mpConnect => _en ? 'Connect' : 'Conectar';
+  String get mpDisconnect => _en ? 'Disconnect' : 'Desconectar';
+  String get mpDisconnected =>
+      _en ? 'Mercado Pago disconnected.' : 'Mercado Pago desconectado.';
+  String get mpTestMode => _en ? 'Test mode' : 'Modo prueba';
+  String get mpLiveMode => _en ? 'Live mode' : 'Modo producción';
+  String get mpOpenError => _en
+      ? "We couldn't open the connection page."
+      : 'No pudimos abrir la página de conexión.';
+  String get mpError => _en
+      ? "We couldn't complete the operation."
+      : 'No pudimos completar la operación.';
 
   // Recetas (Fase 6)
   String get recetaTitle => _en ? 'Recipe' : 'Receta';

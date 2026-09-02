@@ -7,7 +7,21 @@ import '../../l10n/strings.dart';
 import '../../theme/theme_controller.dart';
 import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
+import 'caja_settings_section.dart';
+import 'equipo_settings_section.dart';
+import 'integraciones_settings_section.dart';
+import 'negocio_settings_section.dart';
+import 'salones_settings_section.dart';
 import 'settings_sections.dart';
+
+/// Filas placeholder que se ocultan porque la sección ya las renderiza como
+/// controles reales (para no mostrarlas dos veces).
+const _functionalRows = <String, Set<String>>{
+  'caja': {'Apertura de caja obligatoria', 'Arqueo ciego'},
+  'salones': {'Sectores'},
+  'negocio': {'Dirección'},
+  'integraciones': {'Mercado Pago'},
+};
 
 /// Ajustes (Fase 6) — portado 1:1 de la config del web: 13 tabs. Apariencia es
 /// funcional (tema + reducir movimiento); las demás secciones se irán volviendo
@@ -61,6 +75,9 @@ class _TabView extends ConsumerWidget {
     final session =
         sessionState is SessionAuthenticated ? sessionState.session : null;
 
+    final hidden = _functionalRows[tab.id] ?? const <String>{};
+    final rows = [for (final r in tab.rows) if (!hidden.contains(r.es)) r];
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -68,20 +85,41 @@ class _TabView extends ConsumerWidget {
           _appearance(context, ref, s),
           const SizedBox(height: 16),
         ],
-        GlassPanel(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Material(
-            type: MaterialType.transparency,
-            child: Column(
-              children: [
-                for (var i = 0; i < tab.rows.length; i++) ...[
-                  if (i > 0) const Divider(height: 1),
-                  _row(context, s, en, tab.rows[i], session),
+        if (tab.id == 'caja') ...[
+          const CajaSettingsSection(),
+          const SizedBox(height: 16),
+        ],
+        if (tab.id == 'salones') ...[
+          const SalonesSettingsSection(),
+          const SizedBox(height: 16),
+        ],
+        if (tab.id == 'negocio') ...[
+          const NegocioSettingsSection(),
+          const SizedBox(height: 16),
+        ],
+        if (tab.id == 'equipo') ...[
+          const EquipoSettingsSection(),
+          const SizedBox(height: 16),
+        ],
+        if (tab.id == 'integraciones') ...[
+          const IntegracionesSettingsSection(),
+          const SizedBox(height: 16),
+        ],
+        if (rows.isNotEmpty)
+          GlassPanel(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Material(
+              type: MaterialType.transparency,
+              child: Column(
+                children: [
+                  for (var i = 0; i < rows.length; i++) ...[
+                    if (i > 0) const Divider(height: 1),
+                    _row(context, s, en, rows[i], session),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
-        ),
       ],
     );
   }

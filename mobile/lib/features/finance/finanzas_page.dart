@@ -6,6 +6,7 @@ import '../../l10n/strings.dart';
 import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../util/money.dart';
+import 'advisor_settings_page.dart';
 import 'finance_repository.dart';
 
 /// Finanzas (Fase 6, consulta): cobrado neto, comisiones, resumen y alertas.
@@ -18,7 +19,20 @@ class FinanzasPage extends ConsumerWidget {
     final async = ref.watch(financeOverviewProvider);
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text(s.finanzasTitle), backgroundColor: Colors.transparent),
+      appBar: AppBar(
+        title: Text(s.finanzasTitle),
+        backgroundColor: Colors.transparent,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.tune),
+            tooltip: s.financeConfigOpen,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                  builder: (_) => const AdvisorSettingsPage()),
+            ),
+          ),
+        ],
+      ),
       body: Stack(
         children: [
           const AppBackground(),
