@@ -5,11 +5,14 @@ back to the frontend."""
 
 from __future__ import annotations
 
+import logging
 from typing import Annotated
 
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import RedirectResponse
+
+logger = logging.getLogger(__name__)
 
 from app.application.payment.connect_mercadopago import (
     CompleteMercadoPagoConnection,
@@ -52,6 +55,9 @@ async def callback(
     try:
         await use_case.execute(code=code, state=state)
     except Exception:
+        # No filtramos el secreto ni el code, pero sí el tipo/mensaje del error para
+        # diagnosticar (state inválido/expirado, invalid_grant, redirect mismatch…).
+        logger.warning("mercadopago oauth callback failed", exc_info=True)
         return RedirectResponse(url=f"{target}?mp=error", status_code=302)
     return RedirectResponse(url=f"{target}?mp=ok", status_code=302)
 
