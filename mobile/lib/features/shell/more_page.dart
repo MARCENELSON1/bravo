@@ -5,6 +5,9 @@ import '../../auth/session.dart';
 import '../../auth/session_notifier.dart';
 import '../../l10n/strings.dart';
 import '../../ui/glass_panel.dart';
+import '../finance/finanzas_page.dart';
+import '../invoices/comprobantes_page.dart';
+import '../products/productos_page.dart';
 import '../settings/printer_page.dart';
 import '../timeclock/fichaje_page.dart';
 import '../tips/tips_page.dart';
@@ -41,6 +44,17 @@ class MorePage extends ConsumerWidget {
                 const Divider(height: 1),
                 _tile(context, Icons.print_outlined, s.printerTitle,
                     const PrinterPage()),
+                if (isAdmin) ...[
+                  const Divider(height: 1),
+                  _tile(context, Icons.inventory_2_outlined, s.productosTitle,
+                      const ProductosPage()),
+                  const Divider(height: 1),
+                  _tile(context, Icons.account_balance_wallet_outlined,
+                      s.finanzasTitle, const FinanzasPage()),
+                  const Divider(height: 1),
+                  _tile(context, Icons.receipt_long_outlined,
+                      s.comprobantesTitle, const ComprobantesPage()),
+                ],
               ],
             ),
           ),

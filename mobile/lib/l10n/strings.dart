@@ -245,6 +245,19 @@ class Strings {
   String get copilotEmpty => _en
       ? 'e.g. how much did I sell today? what is my most profitable dish?'
       : 'Ej: ¿cuánto vendí hoy? ¿cuál es mi plato más rentable?';
+
+  // Pantallas pesadas (Fase 6, consulta)
+  String get finanzasTitle => _en ? 'Finance' : 'Finanzas';
+  String get finanzasCollected => _en ? 'Net collected' : 'Cobrado neto';
+  String get finanzasCommissions => _en ? 'Commissions' : 'Comisiones';
+  String get finanzasNotConfigured =>
+      _en ? 'Set up your costs on the web' : 'Configurá tus costos en el web';
+  String get comprobantesTitle => _en ? 'Invoices' : 'Comprobantes';
+  String get comprobantesEmpty => _en ? 'No invoices' : 'Sin comprobantes';
+  String get productosTitle => _en ? 'Products' : 'Productos';
+  String get productosEmpty => _en ? 'No products' : 'Sin productos';
+  String get productoUnavailable => _en ? 'Unavailable today' : 'No disponible hoy';
+  String get consultaOnly => _en ? 'View only · edit on the web' : 'Solo consulta · editá en el web';
 }
 
 extension StringsX on BuildContext {
