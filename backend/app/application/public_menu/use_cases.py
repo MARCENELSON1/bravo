@@ -18,9 +18,15 @@ from app.domain.public_menu.exceptions import InvalidTableQrToken
 from app.domain.public_menu.ports import TableQrToken
 from app.domain.public_menu.value_objects import TableCallKind
 from app.domain.realtime.ports import DomainEvent, EventBus
+from app.domain.shared.rate_limiter import RateLimiter
 from app.domain.table.exceptions import TableNotFound
 from app.domain.table.repository import TableRepository
 from app.domain.tenant.repository import TenantRepository
+
+# Rate limits (por mesa) de los endpoints públicos de la Carta QR — barandas de
+# abuso sobre superficie sin auth (el token es el único scope).
+_ATTENTION_LIMIT = 8  # llamar mozo / pedir cuenta
+_ATTENTION_WINDOW_S = 60
 
 
 def _public_modifier_groups(groups: list[ModifierGroup]) -> list[PublicMenuModifierGroup]:
@@ -156,14 +162,21 @@ class RequestTableAttention:
         tables: TableRepository,
         event_bus: EventBus,
         tenant_context: TenantContext,
+        rate_limiter: RateLimiter,
     ) -> None:
         self._token = token
         self._tables = tables
         self._event_bus = event_bus
         self._tenant_context = tenant_context
+        self._rate_limiter = rate_limiter
 
     async def execute(self, *, token: str, kind: TableCallKind) -> None:
         claims = self._token.verify(token)  # raises InvalidTableQrToken
+        await self._rate_limiter.check(
+            f"attention:{claims.tenant_id}:{claims.table_id}",
+            limit=_ATTENTION_LIMIT,
+            window_seconds=_ATTENTION_WINDOW_S,
+        )
         self._tenant_context.set(claims.tenant_id)
         table = await self._tables.get_by_id(claims.tenant_id, claims.table_id)
         if table is None:

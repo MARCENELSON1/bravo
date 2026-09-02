@@ -21,7 +21,13 @@ from app.domain.payment.value_objects import (
     PaymentStatus,
 )
 from app.domain.public_menu.ports import TableQrToken
+from app.domain.shared.rate_limiter import RateLimiter
 from app.domain.table_session.repository import TableSessionRepository
+
+# Rate limit (por mesa) del pago desde la mesa — mueve plata: baranda ajustada. La
+# idempotency key ya dedupe el mismo intento; esto acota intentos con claves nuevas.
+_PAY_LIMIT = 6
+_PAY_WINDOW_S = 60
 
 
 @dataclass(frozen=True)
@@ -59,6 +65,7 @@ class PayTableBill:
         register_payment: RegisterPayment,
         tenant_context: TenantContext,
         app_base_url: str,
+        rate_limiter: RateLimiter,
     ) -> None:
         self._token = token
         self._settings = settings
@@ -68,6 +75,7 @@ class PayTableBill:
         self._register_payment = register_payment
         self._tenant_context = tenant_context
         self._app_base_url = app_base_url
+        self._rate_limiter = rate_limiter
 
     async def execute(
         self,
@@ -84,6 +92,11 @@ class PayTableBill:
         client can neither overpay nor change what's owed."""
         claims = self._token.verify(token)  # raises InvalidTableQrToken
         tenant_id = claims.tenant_id
+        await self._rate_limiter.check(
+            f"pay:{tenant_id}:{claims.table_id}",
+            limit=_PAY_LIMIT,
+            window_seconds=_PAY_WINDOW_S,
+        )
         self._tenant_context.set(tenant_id)
 
         cfg = await self._settings.get(tenant_id)

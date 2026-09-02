@@ -92,6 +92,7 @@ from app.domain.reservation.exceptions import (
 from app.domain.shared.exceptions import (
     CurrencyMismatch,
     InvalidMoneyAmount,
+    RateLimited,
     UnsupportedCurrency,
 )
 from app.domain.table.exceptions import TableNotFound
@@ -221,6 +222,7 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (InvalidTableQrToken, 401),
     (ProductUnavailable, 409),
     (SelfOrderDisabled, 409),
+    (RateLimited, 429),
     # Fase 11 — copiloto IA
     (CopilotDisabled, 409),
     (UnsafeQuery, 422),

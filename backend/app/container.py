@@ -377,6 +377,7 @@ from app.infrastructure.public_menu.signed_table_qr import HmacTableQrToken
 from app.infrastructure.realtime.memory_bus import InMemoryEventBus
 from app.infrastructure.security.fernet_cipher import FernetTokenCipher
 from app.infrastructure.security.hasher import Argon2Hasher
+from app.infrastructure.security.rate_limiter import InMemoryRateLimiter
 from app.infrastructure.security.tenant_context import ContextVarTenantContext
 from app.infrastructure.security.token_service import JwtTokenService
 from app.infrastructure.tax.reporter_resolver import DbTaxJarReporterResolver
@@ -1327,6 +1328,9 @@ class Container(containers.DeclarativeContainer):
     )
 
     # --- Carta QR (autopedido F1): token firmado de mesa + carta pública ---
+    # Rate limiter en memoria (baranda de abuso de los endpoints públicos). Singleton
+    # → el estado (hits por mesa) vive mientras corre el proceso.
+    public_rate_limiter = providers.Singleton(InMemoryRateLimiter)
     table_qr_token = providers.Singleton(
         HmacTableQrToken, secret=config.provided.effective_table_qr_secret
     )
@@ -1364,6 +1368,7 @@ class Container(containers.DeclarativeContainer):
         register_payment=register_public_payment,
         tenant_context=tenant_context,
         app_base_url=config.provided.app_base_url,
+        rate_limiter=public_rate_limiter,
     )
     get_public_payment_status = providers.Factory(
         GetPublicPaymentStatus,
@@ -1396,6 +1401,7 @@ class Container(containers.DeclarativeContainer):
         tables=table_repository,
         event_bus=event_bus,
         tenant_context=tenant_context,
+        rate_limiter=public_rate_limiter,
     )
     get_self_order_settings = providers.Factory(
         GetSelfOrderSettings,
@@ -1418,6 +1424,7 @@ class Container(containers.DeclarativeContainer):
         add_items_batch=add_order_items_batch,
         tables=table_repository,
         tenant_context=tenant_context,
+        rate_limiter=public_rate_limiter,
     )
 
     # --- Fase 6: inventario (casos de uso; repos arriba, antes de pagos) ---

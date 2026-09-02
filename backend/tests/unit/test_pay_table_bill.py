@@ -27,6 +27,7 @@ from app.domain.public_menu.exceptions import InvalidTableQrToken
 from app.domain.shared.money import Money
 from app.domain.table_session.entities import TableSession
 from app.infrastructure.public_menu.signed_table_qr import HmacTableQrToken
+from app.infrastructure.security.rate_limiter import InMemoryRateLimiter
 from tests.fakes import FakeTenantContext
 
 _SECRET = "s3cr3t"
@@ -161,6 +162,7 @@ def _use_case(
         register_payment=spy,  # type: ignore[arg-type]
         tenant_context=FakeTenantContext(),
         app_base_url="https://app.wellnod.test",
+        rate_limiter=InMemoryRateLimiter(),
     )
     return uc, token, spy
 

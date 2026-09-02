@@ -9,6 +9,7 @@ from app.domain.realtime.ports import DomainEvent
 from app.domain.table.entities import Table
 from app.domain.table.exceptions import TableNotFound
 from app.infrastructure.public_menu.signed_table_qr import HmacTableQrToken
+from app.infrastructure.security.rate_limiter import InMemoryRateLimiter
 from tests.fakes import FakeTenantContext
 
 
@@ -36,6 +37,7 @@ def _use_case(table: Table | None, secret: str = "s3cr3t"):
         tables=_FakeTables(table),  # type: ignore[arg-type]
         event_bus=bus,  # type: ignore[arg-type]
         tenant_context=FakeTenantContext(),
+        rate_limiter=InMemoryRateLimiter(),
     )
     return uc, token, bus
 

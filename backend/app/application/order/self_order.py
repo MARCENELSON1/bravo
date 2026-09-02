@@ -14,9 +14,14 @@ from app.domain.product.modifier_repository import ModifierRepository
 from app.domain.product.modifiers import select_options
 from app.domain.product.repository import ProductRepository
 from app.domain.public_menu.ports import TableQrToken
+from app.domain.shared.rate_limiter import RateLimiter
 from app.domain.table.exceptions import TableNotFound
 from app.domain.table.repository import TableRepository
 from app.domain.table_session.repository import TableSessionRepository
+
+# Rate limit (por mesa) del autopedido — baranda de abuso (endpoint público).
+_ORDER_LIMIT = 12  # varias rondas ok, pero no spam a la cocina
+_ORDER_WINDOW_S = 60
 
 
 @dataclass(frozen=True)
@@ -89,6 +94,7 @@ class SubmitCustomerOrder:
         add_items_batch: AddOrderItemsBatch,
         tables: TableRepository,
         tenant_context: TenantContext,
+        rate_limiter: RateLimiter,
     ) -> None:
         self._token = token
         self._settings = settings
@@ -99,12 +105,18 @@ class SubmitCustomerOrder:
         self._add_items_batch = add_items_batch
         self._tables = tables
         self._tenant_context = tenant_context
+        self._rate_limiter = rate_limiter
 
     async def execute(
         self, *, token: str, lines: list[CustomerOrderLineInput]
     ) -> Order:
         claims = self._token.verify(token)  # raises InvalidTableQrToken
         tenant_id = claims.tenant_id
+        await self._rate_limiter.check(
+            f"order:{tenant_id}:{claims.table_id}",
+            limit=_ORDER_LIMIT,
+            window_seconds=_ORDER_WINDOW_S,
+        )
         self._tenant_context.set(tenant_id)
 
         settings = await self._settings.get(tenant_id)

@@ -242,3 +242,19 @@ async def test_pay_rejects_a_bad_token(client):
     res = await http.post("/api/v1/public/table/pay", json={"token": "garbage.deadbeef"})
     assert res.status_code == 401
     assert res.json()["code"] == "invalid_table_qr_token"
+
+
+async def test_public_endpoints_are_rate_limited(client):
+    """A leaked/abused table token can't hammer the floor: call-waiter is capped
+    per table (8/min) → the 9th within the window is 429."""
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    token = await _qr_token(http, h, 13)
+
+    for _ in range(8):
+        ok = await http.post("/api/v1/public/table/call-waiter", json={"token": token})
+        assert ok.status_code == 200, ok.text
+    blocked = await http.post("/api/v1/public/table/call-waiter", json={"token": token})
+    assert blocked.status_code == 429
+    assert blocked.json()["code"] == "rate_limited"
