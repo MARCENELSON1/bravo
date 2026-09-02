@@ -224,9 +224,19 @@ export function PublicMenuPage() {
           } catch {
             /* private mode → sin persistencia; el flujo sigue en memoria */
           }
-          setPaymentId(result.payment_id)
           setPayOpen(false)
-          if (result.checkout_url) window.location.href = result.checkout_url
+          if (result.checkout_url) {
+            // Redirigimos a MercadoPago. OJO: NO seteamos paymentId acá — si lo
+            // hiciéramos, arrancaría el poll de estado y la navegación saliente lo
+            // abortaría, lo que React Query marca como error y hace parpadear la
+            // pantalla de "pago fallido". Al volver de MP el pago se retoma solo
+            // (sessionStorage / external_reference).
+            window.location.href = result.checkout_url
+          } else {
+            // Sin checkout_url (el gateway ya confirmó, ej. manual): mostramos el
+            // estado ahora, sin redirect.
+            setPaymentId(result.payment_id)
+          }
         },
         onError: () => toast.error(t("publicMenu.toast.payFailed")),
       }
