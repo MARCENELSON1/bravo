@@ -5,8 +5,9 @@ import '../../auth/session.dart';
 import '../../auth/session_notifier.dart';
 import '../../l10n/strings.dart';
 import '../../ui/app_background.dart';
-import '../../ui/glass_panel.dart';
 import '../cashier/cashier_page.dart';
+import '../crm/clientes_page.dart';
+import '../finance/finanzas_page.dart';
 import '../floor/floor_page.dart';
 import '../home/home_page.dart';
 import '../kds/kds_page.dart';
@@ -74,7 +75,10 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
         return [
           home,
           floor,
-          _TabDef(Icons.point_of_sale_outlined, s.navCashier, _Placeholder(s.navCashier)),
+          // El mozo no tiene Caja (es de CASHIER/MANAGER/OWNER); sí Clientes,
+          // igual que en el nav del web.
+          _TabDef(Icons.people_alt_outlined, s.clientesTitle,
+              const ClientesPage()),
           more,
         ];
       case Role.kitchen:
@@ -101,7 +105,7 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
         return [
           home,
           floor,
-          _TabDef(Icons.insights_outlined, s.navFinance, _Placeholder(s.navFinance)),
+          _TabDef(Icons.insights_outlined, s.navFinance, const FinanzasPage()),
           more,
         ];
     }
@@ -115,27 +119,3 @@ class _TabDef {
   final Widget page;
 }
 
-class _Placeholder extends StatelessWidget {
-  const _Placeholder(this.title);
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.s;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: GlassPanel(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(title, style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 8),
-              Text('${s.comingSoon} · F1'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
