@@ -5,6 +5,7 @@ import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
 import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
+import '../../ui/state_views.dart';
 import 'customer_repository.dart';
 
 /// Clientes / CRM (Fase 6): búsqueda, alta y edición.
@@ -49,11 +50,9 @@ class _ClientesPageState extends ConsumerState<ClientesPage> {
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(e is ApiError ? e.message : '$e'),
-                ),
+              error: (e, _) => ErrorView(
+                error: e,
+                onRetry: () => ref.invalidate(customersProvider),
               ),
               data: (list) => _content(s, list),
             ),
@@ -72,7 +71,10 @@ class _ClientesPageState extends ConsumerState<ClientesPage> {
                 c.name.toLowerCase().contains(q) ||
                 (c.phone?.contains(q) ?? false))
             .toList();
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: () async => ref.invalidate(customersProvider),
+      child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
         TextField(
@@ -101,6 +103,7 @@ class _ClientesPageState extends ConsumerState<ClientesPage> {
             ),
           ),
       ],
+      ),
     );
   }
 

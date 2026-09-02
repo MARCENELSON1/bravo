@@ -5,6 +5,7 @@ import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
 import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
+import '../../ui/state_views.dart';
 import '../../util/money.dart';
 import 'inventory_repository.dart';
 
@@ -30,22 +31,37 @@ class _InsumosPageState extends ConsumerState<InsumosPage> {
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(e is ApiError ? e.message : '$e'),
-                ),
+              error: (e, _) => ErrorView(
+                error: e,
+                onRetry: () => ref.invalidate(ingredientsProvider),
               ),
               data: (items) {
-                if (items.isEmpty) return Center(child: Text(s.insumosEmpty));
+                Future<void> refresh() async =>
+                    ref.invalidate(ingredientsProvider);
+                if (items.isEmpty) {
+                  return RefreshIndicator(
+                    onRefresh: refresh,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                            height: 280,
+                            child: EmptyView(message: s.insumosEmpty)),
+                      ],
+                    ),
+                  );
+                }
                 final sorted = [...items]..sort((a, b) {
                     if (a.isBelowMin == b.isBelowMin) return 0;
                     return a.isBelowMin ? -1 : 1;
                   });
-                return ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    GlassPanel(
+                return RefreshIndicator(
+                  onRefresh: refresh,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      GlassPanel(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Material(
                         type: MaterialType.transparency,
@@ -60,6 +76,7 @@ class _InsumosPageState extends ConsumerState<InsumosPage> {
                       ),
                     ),
                   ],
+                  ),
                 );
               },
             ),

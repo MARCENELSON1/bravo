@@ -25,13 +25,27 @@ class CopilotPage extends ConsumerStatefulWidget {
 
 class _CopilotPageState extends ConsumerState<CopilotPage> {
   final _input = TextEditingController();
+  final _scroll = ScrollController();
   final _messages = <_Message>[];
   bool _loading = false;
 
   @override
   void dispose() {
     _input.dispose();
+    _scroll.dispose();
     super.dispose();
+  }
+
+  /// Baja al último mensaje después de pintar (nuevo mensaje o respuesta).
+  void _scrollToEnd() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scroll.hasClients) return;
+      _scroll.animateTo(
+        _scroll.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   Future<void> _send() async {
@@ -42,6 +56,7 @@ class _CopilotPageState extends ConsumerState<CopilotPage> {
       _loading = true;
       _input.clear();
     });
+    _scrollToEnd();
     try {
       final answer = await ref.read(copilotRepositoryProvider).ask(q);
       setState(() =>
@@ -50,6 +65,7 @@ class _CopilotPageState extends ConsumerState<CopilotPage> {
       setState(() => _messages.add(_Message(isUser: false, text: e.message)));
     } finally {
       if (mounted) setState(() => _loading = false);
+      _scrollToEnd();
     }
   }
 
@@ -78,6 +94,7 @@ class _CopilotPageState extends ConsumerState<CopilotPage> {
                           ),
                         )
                       : ListView.builder(
+                          controller: _scroll,
                           padding: const EdgeInsets.all(16),
                           itemCount: _messages.length,
                           itemBuilder: (context, i) => _bubble(_messages[i]),

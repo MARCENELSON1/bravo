@@ -5,6 +5,7 @@ import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
 import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
+import '../../ui/state_views.dart';
 import 'supplier_repository.dart';
 
 /// Proveedores (Fase 6): lista + alta/edición.
@@ -36,33 +37,50 @@ class _ProveedoresPageState extends ConsumerState<ProveedoresPage> {
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(e is ApiError ? e.message : '$e'),
-                ),
+              error: (e, _) => ErrorView(
+                error: e,
+                onRetry: () => ref.invalidate(suppliersProvider),
               ),
-              data: (list) => list.isEmpty
-                  ? Center(child: Text(s.proveedoresEmpty))
-                  : ListView(
-                      padding: const EdgeInsets.all(16),
+              data: (list) {
+                Future<void> refresh() async =>
+                    ref.invalidate(suppliersProvider);
+                if (list.isEmpty) {
+                  return RefreshIndicator(
+                    onRefresh: refresh,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       children: [
-                        GlassPanel(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Material(
-                            type: MaterialType.transparency,
-                            child: Column(
-                              children: [
-                                for (var i = 0; i < list.length; i++) ...[
-                                  if (i > 0) const Divider(height: 1),
-                                  _tile(s, list[i]),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
+                        SizedBox(
+                            height: 280,
+                            child: EmptyView(message: s.proveedoresEmpty)),
                       ],
                     ),
+                  );
+                }
+                return RefreshIndicator(
+                  onRefresh: refresh,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      GlassPanel(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: Column(
+                            children: [
+                              for (var i = 0; i < list.length; i++) ...[
+                                if (i > 0) const Divider(height: 1),
+                                _tile(s, list[i]),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],

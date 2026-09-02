@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
 import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
+import '../../ui/state_views.dart';
 import '../../util/money.dart';
 import 'invoice_repository.dart';
 
@@ -28,33 +28,50 @@ class ComprobantesPage extends ConsumerWidget {
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(e is ApiError ? e.message : '$e'),
-                ),
+              error: (e, _) => ErrorView(
+                error: e,
+                onRetry: () => ref.invalidate(invoicesProvider),
               ),
-              data: (invoices) => invoices.isEmpty
-                  ? Center(child: Text(s.comprobantesEmpty))
-                  : ListView(
-                      padding: const EdgeInsets.all(16),
+              data: (invoices) {
+                Future<void> refresh() async =>
+                    ref.invalidate(invoicesProvider);
+                if (invoices.isEmpty) {
+                  return RefreshIndicator(
+                    onRefresh: refresh,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       children: [
-                        GlassPanel(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Material(
-                            type: MaterialType.transparency,
-                            child: Column(
-                              children: [
-                                for (var i = 0; i < invoices.length; i++) ...[
-                                  if (i > 0) const Divider(height: 1),
-                                  _tile(invoices[i]),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
+                        SizedBox(
+                            height: 280,
+                            child: EmptyView(message: s.comprobantesEmpty)),
                       ],
                     ),
+                  );
+                }
+                return RefreshIndicator(
+                  onRefresh: refresh,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      GlassPanel(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: Column(
+                            children: [
+                              for (var i = 0; i < invoices.length; i++) ...[
+                                if (i > 0) const Divider(height: 1),
+                                _tile(invoices[i]),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
+import '../../theme/colors.dart';
 import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../util/money.dart';
@@ -124,7 +125,7 @@ class FinanzasPage extends ConsumerWidget {
 
   Color _severityColor(BuildContext context, String severity) => switch (severity) {
         'critical' => Theme.of(context).colorScheme.error,
-        'warn' || 'warning' => const Color(0xFFE0A800),
+        'warn' || 'warning' => WellnodPalette.warn,
         _ => Theme.of(context).colorScheme.onSurfaceVariant,
       };
 }

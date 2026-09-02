@@ -46,6 +46,10 @@ class WellnodPalette {
   final Color ring;
   final Color sidebar;
 
+  /// Ámbar de "atención/demora" (mesa o comanda que se está pasando de tiempo).
+  /// Único token semántico de warning; sirve para claro y oscuro.
+  static const Color warn = Color(0xFFE0A800);
+
   /// `:root` (index.css:54-87)
   static const WellnodPalette light = WellnodPalette(
     background: Color(0xFFFFFFFF),

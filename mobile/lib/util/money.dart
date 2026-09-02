@@ -1,8 +1,24 @@
 import 'package:intl/intl.dart';
 
-/// Los montos vienen en unidades menores (centavos). Formatea a moneda es-AR.
+/// Locale + símbolo por moneda (para respetar el agrupamiento correcto:
+/// AR usa 1.234,56 y US usa 1,234.56).
+const _currencyFormats = <String, ({String locale, String symbol})>{
+  'ARS': (locale: 'es_AR', symbol: r'$ '),
+  'USD': (locale: 'en_US', symbol: r'US$ '),
+  'EUR': (locale: 'es_ES', symbol: '€ '),
+  'BRL': (locale: 'pt_BR', symbol: r'R$ '),
+  'CLP': (locale: 'es_CL', symbol: r'$ '),
+  'MXN': (locale: 'es_MX', symbol: r'$ '),
+  'UYU': (locale: 'es_UY', symbol: r'$U '),
+};
+
+/// Los montos vienen en unidades menores (centavos). Formatea según la moneda
+/// del tenant (default AR). Antes ignoraba `currency` y siempre usaba es-AR.
 String formatMoney(int amount, String currency) {
-  final f = NumberFormat.currency(locale: 'es_AR', symbol: r'$ ', decimalDigits: 2);
+  final fmt = _currencyFormats[currency.toUpperCase()] ??
+      (locale: 'es_AR', symbol: '${currency.toUpperCase()} ');
+  final f = NumberFormat.currency(
+      locale: fmt.locale, symbol: fmt.symbol, decimalDigits: 2);
   return f.format(amount / 100);
 }
 

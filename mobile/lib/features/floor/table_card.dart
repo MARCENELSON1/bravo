@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/strings.dart';
+import '../../theme/colors.dart';
 import '../../ui/glass_panel.dart';
 import '../../util/money.dart';
 import 'floor_dtos.dart';
@@ -29,6 +30,7 @@ class TableCard extends StatelessWidget {
       onTap: onOpen,
       borderRadius: BorderRadius.circular(16),
       child: GlassPanel(
+        blur: false, // grilla de mesas: sin blur por-tarjeta (perf)
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,7 +103,7 @@ class TableCard extends StatelessWidget {
   Color _accent(FloorStatus status, ColorScheme scheme) {
     switch (status) {
       case FloorStatus.toServe:
-        return const Color(0xFFE0A800); // ámbar
+        return WellnodPalette.warn; // ámbar de atención
       case FloorStatus.toCharge:
         return scheme.primary;
       case FloorStatus.served:

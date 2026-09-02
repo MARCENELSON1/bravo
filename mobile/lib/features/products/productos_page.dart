@@ -5,6 +5,7 @@ import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
 import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
+import '../../ui/state_views.dart';
 import '../../util/money.dart';
 import '../order/order_providers.dart';
 import '../order/product_dtos.dart';
@@ -38,33 +39,50 @@ class _ProductosPageState extends ConsumerState<ProductosPage> {
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(e is ApiError ? e.message : '$e'),
-                ),
+              error: (e, _) => ErrorView(
+                error: e,
+                onRetry: () => ref.invalidate(productsProvider),
               ),
-              data: (products) => products.isEmpty
-                  ? Center(child: Text(s.productosEmpty))
-                  : ListView(
-                      padding: const EdgeInsets.all(16),
+              data: (products) {
+                Future<void> refresh() async =>
+                    ref.invalidate(productsProvider);
+                if (products.isEmpty) {
+                  return RefreshIndicator(
+                    onRefresh: refresh,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       children: [
-                        GlassPanel(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Material(
-                            type: MaterialType.transparency,
-                            child: Column(
-                              children: [
-                                for (var i = 0; i < products.length; i++) ...[
-                                  if (i > 0) const Divider(height: 1),
-                                  _row(s, products[i]),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
+                        SizedBox(
+                            height: 280,
+                            child: EmptyView(message: s.productosEmpty)),
                       ],
                     ),
+                  );
+                }
+                return RefreshIndicator(
+                  onRefresh: refresh,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      GlassPanel(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: Column(
+                            children: [
+                              for (var i = 0; i < products.length; i++) ...[
+                                if (i > 0) const Divider(height: 1),
+                                _row(s, products[i]),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],

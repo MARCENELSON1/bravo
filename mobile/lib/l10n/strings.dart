@@ -320,6 +320,9 @@ class Strings {
   String get setSave => _en ? 'Save' : 'Guardar';
   String get setSaved => _en ? 'Settings saved' : 'Ajustes guardados';
   String get cancel => _en ? 'Cancel' : 'Cancelar';
+  String get passwordShow => _en ? 'Show password' : 'Mostrar contraseña';
+  String get passwordHide => _en ? 'Hide password' : 'Ocultar contraseña';
+  String get retry => _en ? 'Retry' : 'Reintentar';
   String get setDelete => _en ? 'Delete' : 'Eliminar';
   String get setEdit => _en ? 'Edit' : 'Editar';
   String get ajustesSubtitle =>

@@ -44,7 +44,14 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
       body: Stack(
         children: [
           const AppBackground(),
-          SafeArea(child: tabs[safeIndex].page),
+          // IndexedStack mantiene vivas todas las tabs → conservan scroll,
+          // formularios y conexiones en vivo al cambiar de una a otra.
+          SafeArea(
+            child: IndexedStack(
+              index: safeIndex,
+              children: [for (final t in tabs) t.page],
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: NavigationBar(
