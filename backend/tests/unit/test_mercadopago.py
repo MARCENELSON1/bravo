@@ -93,6 +93,35 @@ async def test_charge_online_uses_tenant_token_and_stays_pending() -> None:
     assert "3000.0" in captured["body"]
 
 
+async def test_charge_sets_back_urls_and_auto_return_when_return_url_given() -> None:
+    captured: dict[str, str] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = request.content.decode()
+        return httpx.Response(201, json={"id": "pref-1", "sandbox_init_point": "https://mp/x"})
+
+    payment = _payment()
+    payment.return_url = "https://app.wellnod.test/carta/tok-abc"
+    await _gateway(handler).charge(payment=payment)
+
+    assert '"back_urls"' in captured["body"]
+    assert "https://app.wellnod.test/carta/tok-abc" in captured["body"]
+    assert '"auto_return"' in captured["body"]
+
+
+async def test_charge_omits_back_urls_without_a_return_url() -> None:
+    captured: dict[str, str] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = request.content.decode()
+        return httpx.Response(201, json={"id": "pref-1", "sandbox_init_point": "https://mp/x"})
+
+    await _gateway(handler).charge(payment=_payment())  # no return_url (cashier flow)
+
+    assert "back_urls" not in captured["body"]
+    assert "auto_return" not in captured["body"]
+
+
 async def test_charge_raises_when_tenant_not_connected() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         raise AssertionError("must not call MercadoPago when not connected")

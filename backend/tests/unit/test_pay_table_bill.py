@@ -83,6 +83,7 @@ class _SpyRegisterPayment:
         amount: int,
         tip: int = 0,
         idempotency_key: str | None = None,
+        return_url: str | None = None,
     ) -> Payment:
         self.calls.append(
             {
@@ -91,6 +92,7 @@ class _SpyRegisterPayment:
                 "amount": amount,
                 "tip": tip,
                 "idempotency_key": idempotency_key,
+                "return_url": return_url,
             }
         )
         return Payment(
@@ -158,6 +160,7 @@ def _use_case(
         payments=_FakePayments(payments),  # type: ignore[arg-type]
         register_payment=spy,  # type: ignore[arg-type]
         tenant_context=FakeTenantContext(),
+        app_base_url="https://app.wellnod.test",
     )
     return uc, token, spy
 
@@ -197,6 +200,22 @@ async def test_charges_the_oldest_unpaid_order_first() -> None:
 
     assert spy.calls[0]["order_id"] == "o2"
     assert spy.calls[0]["amount"] == 700000
+
+
+async def test_passes_a_return_url_back_to_the_table_menu() -> None:
+    orders = [_order("o1", [_item(1000000, 1)])]
+    uc, token, spy = _use_case(
+        session=TableSession(id="sess-1", tenant_id="t1", table_id="tbl-1"),
+        orders=orders,
+        payments={},
+        settings=SelfPaySettings(enabled=True),
+    )
+
+    issued = token.issue("t1", "tbl-1")
+    await uc.execute(token=issued)
+
+    # MercadoPago sends the diner back to THEIR table's QR menu after paying.
+    assert spy.calls[0]["return_url"] == f"https://app.wellnod.test/carta/{issued}"
 
 
 async def test_partial_amount_splits_the_bill() -> None:

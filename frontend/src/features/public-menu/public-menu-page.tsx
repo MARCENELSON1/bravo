@@ -2,7 +2,7 @@ import { Minus, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
 import type { ReactNode } from "react"
 import { useTranslation } from "react-i18next"
-import { useParams } from "react-router-dom"
+import { useParams, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
@@ -53,12 +53,24 @@ function readStoredPayment(token: string | undefined): string | null {
   }
 }
 
+// Al volver de MercadoPago retomamos el pago: primero por nuestro marcador
+// (sessionStorage, misma sesión); si se perdió, por el `external_reference` que MP
+// agrega a la URL (`<tenant>:<payment_id>`) → así el "¡Pagado!" aparece igual.
+function resumePaymentId(token: string | undefined, params: URLSearchParams): string | null {
+  const stored = readStoredPayment(token)
+  if (stored) return stored
+  const ref = params.get("external_reference")
+  if (ref && ref.includes(":")) return ref.split(":")[1] || null
+  return null
+}
+
 // Carta pública de cara al comensal (ruta /carta/:token, SIN auth). Mobile-first,
 // theme-aware. Con autopedido prendido (F2): carrito line-based (un ítem puede
 // entrar con distintos modificadores) + picker de opciones + envío.
 export function PublicMenuPage() {
   const { t } = useTranslation()
   const { token } = useParams<{ token: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { data, isLoading, isError, error } = usePublicMenu(token)
   const callWaiter = useCallWaiter(token)
   const requestBill = useRequestBill(token)
@@ -70,7 +82,9 @@ export function PublicMenuPage() {
   const [reviewOpen, setReviewOpen] = useState(false)
   const [payOpen, setPayOpen] = useState(false)
   const [idemKey, setIdemKey] = useState(() => crypto.randomUUID())
-  const [paymentId, setPaymentId] = useState<string | null>(() => readStoredPayment(token))
+  const [paymentId, setPaymentId] = useState<string | null>(() =>
+    resumePaymentId(token, searchParams)
+  )
   const paymentStatus = usePaymentStatus(token, paymentId)
 
   const clearPayment = () => {
@@ -80,6 +94,11 @@ export function PublicMenuPage() {
       } catch {
         /* private mode / storage blocked → nothing to clear */
       }
+    }
+    // Sacamos los params que agregó MercadoPago para que un refresh no vuelva a
+    // retomar el pago ya cerrado.
+    if (searchParams.has("external_reference")) {
+      setSearchParams({}, { replace: true })
     }
     setPaymentId(null)
     void bill.refetch()
@@ -133,7 +152,7 @@ export function PublicMenuPage() {
         </StateScreen>
       )
     }
-    if (payStatus === "FAILED") {
+    if (payStatus === "FAILED" || paymentStatus.isError) {
       return (
         <StateScreen
           title={t("publicMenu.pay.failed.title")}

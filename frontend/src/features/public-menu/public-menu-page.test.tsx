@@ -267,4 +267,21 @@ describe("PublicMenuPage", () => {
 
     expect(api.pay).toHaveBeenCalledWith("tok-123", 0, 1200000, expect.any(String))
   })
+
+  it("resumes the payment when returning from MercadoPago (external_reference)", async () => {
+    const api = makeApi(() => Promise.resolve(MENU))
+    renderWithProviders(
+      <Routes>
+        <Route path="/carta/:token" element={<PublicMenuPage />} />
+      </Routes>,
+      {
+        route: "/carta/tok-123?external_reference=t1:pay-1&status=approved",
+        services: { publicMenuApi: api } as Partial<Services>,
+      }
+    )
+
+    // Sin sessionStorage: el pago se retoma del external_reference que agrega MP.
+    expect(await screen.findByText("¡Pagado! 🎉")).toBeInTheDocument()
+    expect(api.paymentStatus).toHaveBeenCalledWith("tok-123", "pay-1")
+  })
 })

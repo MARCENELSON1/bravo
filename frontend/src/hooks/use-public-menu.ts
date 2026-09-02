@@ -72,6 +72,9 @@ export function usePaymentStatus(token: string | undefined, paymentId: string | 
     queryKey: ["table-payment", token, paymentId],
     queryFn: () => publicMenuApi.paymentStatus(token!, paymentId!),
     enabled: !!token && !!paymentId,
+    // Un pago inexistente (404) no reintenta → surface el error rápido (el gate lo
+    // trata como fallido). Mientras siga PENDING, pollea cada 2,5s.
+    retry: false,
     refetchInterval: (query) =>
       query.state.data && query.state.data.status !== "PENDING" ? false : 2500,
   })

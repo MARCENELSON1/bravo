@@ -53,6 +53,10 @@ class Payment:
     # stay None for already-collected payments (cash/card/transfer).
     checkout_url: str | None = None
     qr_data: str | None = None
+    # Transient INPUT to the gateway (NOT persisted): where the online provider
+    # should send the payer back after paying (MercadoPago ``back_urls``). Set by
+    # the caller before ``charge``; None → the provider uses no return URL.
+    return_url: str | None = None
 
     def confirm(self) -> None:
         self.status = PaymentStatus.CONFIRMED

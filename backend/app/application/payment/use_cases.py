@@ -116,6 +116,7 @@ class RegisterPayment:
         tip: int = 0,
         tax: int = 0,
         idempotency_key: str | None = None,
+        return_url: str | None = None,
     ) -> Payment:
         self._tenant_context.set(tenant_id)
         # Idempotency (Carta QR F3): a replayed key returns the already-created
@@ -162,6 +163,7 @@ class RegisterPayment:
             fee_amount=fee,
             net_amount=amount - fee,
             idempotency_key=idempotency_key,
+            return_url=return_url,
         )
         payment = await self._gateway.charge(payment=payment)
         await self._payments.add(payment)

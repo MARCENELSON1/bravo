@@ -103,6 +103,16 @@ class MercadoPagoGateway(PaymentGateway, PaymentNotificationGateway):
         }
         if self._notification_url:
             body["notification_url"] = self._notification_url
+        # Return the payer to where the caller says (the table's QR menu) after
+        # paying. ``auto_return=approved`` skips MP's "volver al sitio" step on
+        # success; pending/failure still land on the same URL via its button.
+        if payment.return_url:
+            body["back_urls"] = {
+                "success": payment.return_url,
+                "pending": payment.return_url,
+                "failure": payment.return_url,
+            }
+            body["auto_return"] = "approved"
         if self._marketplace_fee > 0:
             body["marketplace_fee"] = self._marketplace_fee / _MINOR_UNIT
 

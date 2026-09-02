@@ -58,6 +58,7 @@ class PayTableBill:
         payments: PaymentRepository,
         register_payment: RegisterPayment,
         tenant_context: TenantContext,
+        app_base_url: str,
     ) -> None:
         self._token = token
         self._settings = settings
@@ -66,6 +67,7 @@ class PayTableBill:
         self._payments = payments
         self._register_payment = register_payment
         self._tenant_context = tenant_context
+        self._app_base_url = app_base_url
 
     async def execute(
         self,
@@ -108,6 +110,11 @@ class PayTableBill:
                 raise InvalidPaymentAmount()
             charge_amount = amount
 
+        # Where MercadoPago returns the diner after paying: back to THEIR table's
+        # QR menu, so the page resumes and shows "paid" (the online flow otherwise
+        # strands them on MP's success page).
+        return_url = f"{self._app_base_url.rstrip('/')}/carta/{token}"
+
         payment = await self._register_payment.execute(
             tenant_id=tenant_id,
             order_id=order.id,
@@ -115,6 +122,7 @@ class PayTableBill:
             amount=charge_amount,
             tip=tip,
             idempotency_key=idempotency_key,
+            return_url=return_url,
         )
         return PublicPaymentResult(
             payment_id=payment.id,

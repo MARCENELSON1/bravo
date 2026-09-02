@@ -1363,6 +1363,7 @@ class Container(containers.DeclarativeContainer):
         payments=payment_repository,
         register_payment=register_public_payment,
         tenant_context=tenant_context,
+        app_base_url=config.provided.app_base_url,
     )
     get_public_payment_status = providers.Factory(
         GetPublicPaymentStatus,
