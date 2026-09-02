@@ -228,6 +228,23 @@ class Strings {
 
   // Más (hub)
   String get moreTitle => _en ? 'More' : 'Más';
+
+  // Home (Fase 5)
+  String get homeToday => _en ? 'Today' : 'Hoy';
+  String get homeNet => _en ? 'Profit' : 'Ganancia';
+  String get homeSales => _en ? 'Sales' : 'Ventas';
+  String get homeCollected => _en ? 'Collected' : 'Cobrado';
+  String get homeActiveOrders => _en ? 'Active orders' : 'Órdenes activas';
+  String get homeAvgTicket => _en ? 'Avg ticket' : 'Ticket promedio';
+  String get askCopilot => _en ? 'Ask the copilot' : 'Preguntar al copiloto';
+
+  // Copiloto (Fase 5)
+  String get copilotTitle => _en ? 'Copilot' : 'Copiloto';
+  String get copilotHint =>
+      _en ? 'Ask about your business' : 'Preguntá sobre tu negocio';
+  String get copilotEmpty => _en
+      ? 'e.g. how much did I sell today? what is my most profitable dish?'
+      : 'Ej: ¿cuánto vendí hoy? ¿cuál es mi plato más rentable?';
 }
 
 extension StringsX on BuildContext {

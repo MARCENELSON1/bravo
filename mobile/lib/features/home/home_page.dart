@@ -5,6 +5,9 @@ import '../../auth/session_notifier.dart';
 import '../../l10n/strings.dart';
 import '../../theme/theme_controller.dart';
 import '../../ui/glass_panel.dart';
+import '../../util/money.dart';
+import '../copilot/copilot_page.dart';
+import 'home_repository.dart';
 
 /// Home mínimo de F0: saluda con los datos de `/me`, permite cambiar tema e
 /// idioma, y cerrar sesión. Prueba de punta a punta de la fundación.
@@ -22,6 +25,7 @@ class HomePage extends ConsumerWidget {
     final session = sessionState.session;
     final mode = ref.watch(themeModeProvider);
     final locale = ref.watch(localeProvider);
+    final dashboard = ref.watch(dashboardProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -49,6 +53,56 @@ class HomePage extends ConsumerWidget {
                 Text(s.homeSubtitle, style: theme.textTheme.bodySmall),
               ],
             ),
+          ),
+          const SizedBox(height: 16),
+          GlassPanel(
+            child: dashboard.when(
+              loading: () => const SizedBox(
+                height: 44,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (e, _) => Text(s.homeSubtitle),
+              data: (d) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text('${s.homeNet} · ${s.homeToday}',
+                          style: theme.textTheme.titleSmall),
+                      const Spacer(),
+                      Text(
+                        formatMoney(d.net, d.currency),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 20,
+                    runSpacing: 10,
+                    children: [
+                      _kpi(theme, s.homeSales, formatMoney(d.sales, d.currency)),
+                      _kpi(theme, s.homeCollected,
+                          formatMoney(d.collectedNet, d.currency)),
+                      _kpi(theme, s.homeActiveOrders, '${d.activeOrders}'),
+                      _kpi(theme, s.homeAvgTicket,
+                          formatMoney(d.avgTicket, d.currency)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CopilotPage()),
+            ),
+            icon: const Icon(Icons.auto_awesome),
+            label: Text(s.askCopilot),
           ),
           const SizedBox(height: 16),
           GlassPanel(
@@ -93,4 +147,17 @@ class HomePage extends ConsumerWidget {
       ),
     );
   }
+
+  Widget _kpi(ThemeData theme, String label, String value) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label,
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(value,
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+        ],
+      );
 }
