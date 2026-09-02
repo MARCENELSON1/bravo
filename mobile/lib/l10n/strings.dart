@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import '../auth/session.dart';
 import '../features/cashier/payment_dtos.dart';
 import '../features/floor/floor_view.dart';
+import '../features/invoices/invoice_repository.dart';
 import '../features/order/order_dtos.dart';
 
 /// i18n mínimo ES/EN sin codegen (F0). Fallback a español (paridad AR): el
@@ -268,6 +269,18 @@ class Strings {
   String get waste => _en ? 'Waste' : 'Merma';
   String get qtyLabel => _en ? 'Quantity' : 'Cantidad';
   String get unitCostLabel => _en ? 'Unit cost' : 'Costo unitario';
+
+  // Facturación AFIP (Fase 6)
+  String get facturar => _en ? 'Invoice (AFIP)' : 'Facturar (AFIP)';
+  String get docNumber => _en ? 'Document number' : 'N° de documento';
+  String get docTypeLabel => _en ? 'Document type' : 'Tipo de documento';
+  String get invoiceIssued => _en ? 'Invoice issued' : 'Comprobante emitido';
+  String docTypeName(DocType t) => switch (t) {
+        DocType.cuit => 'CUIT',
+        DocType.cuil => 'CUIL',
+        DocType.dni => 'DNI',
+        DocType.consumidorFinal => _en ? 'Final consumer' : 'Consumidor final',
+      };
 }
 
 extension StringsX on BuildContext {

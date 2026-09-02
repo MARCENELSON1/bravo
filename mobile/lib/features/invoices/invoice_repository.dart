@@ -47,6 +47,20 @@ class Invoice {
       );
 }
 
+enum DocType {
+  cuit,
+  cuil,
+  dni,
+  consumidorFinal;
+
+  String get api => switch (this) {
+        DocType.cuit => 'CUIT',
+        DocType.cuil => 'CUIL',
+        DocType.dni => 'DNI',
+        DocType.consumidorFinal => 'CONSUMIDOR_FINAL',
+      };
+}
+
 class InvoiceRepository {
   InvoiceRepository(this._dio);
 
@@ -62,6 +76,38 @@ class InvoiceRepository {
       throw toApiError(e);
     }
   }
+
+  /// Comprobante ya emitido para una orden, o null si no hay.
+  Future<Invoice?> forOrder(String orderId) async {
+    try {
+      final res = await _dio.get<dynamic>('/orders/$orderId/invoice');
+      if (res.data is! Map) return null;
+      return Invoice.fromJson(Map<String, dynamic>.from(res.data as Map));
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      if (code == 404 || code == 422) return null;
+      throw toApiError(e);
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
+  /// Emite el comprobante fiscal de la orden (AFIP → CAE).
+  Future<Invoice> issueForOrder(
+    String orderId, {
+    required DocType docType,
+    String? docNumber,
+  }) async {
+    try {
+      final res = await _dio.post<dynamic>(
+        '/orders/$orderId/invoice',
+        data: {'doc_type': docType.api, 'doc_number': ?docNumber},
+      );
+      return Invoice.fromJson(Map<String, dynamic>.from(res.data as Map));
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
 }
 
 final invoiceRepositoryProvider = Provider<InvoiceRepository>(
@@ -70,4 +116,9 @@ final invoiceRepositoryProvider = Provider<InvoiceRepository>(
 
 final invoicesProvider = FutureProvider.autoDispose<List<Invoice>>(
   (ref) => ref.read(invoiceRepositoryProvider).list(),
+);
+
+final orderInvoiceProvider =
+    FutureProvider.autoDispose.family<Invoice?, String>(
+  (ref, orderId) => ref.read(invoiceRepositoryProvider).forOrder(orderId),
 );

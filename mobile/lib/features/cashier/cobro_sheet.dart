@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
 import '../../util/money.dart';
+import '../invoices/invoice_repository.dart';
 import '../order/order_providers.dart';
 import 'cash_providers.dart';
 import 'payment_dtos.dart';
@@ -125,6 +126,8 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
                 icon: const Icon(Icons.lock_open_outlined),
                 label: Text(s.cobroReopen),
               ),
+              const SizedBox(height: 8),
+              _invoiceSection(s),
             ],
             if (payments.isNotEmpty) ...[
               const Divider(height: 24),
@@ -203,6 +206,80 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
       ref.invalidate(orderPaymentsProvider(orderId));
       ref.invalidate(orderControllerProvider(orderId));
       if (mounted) Navigator.of(context).pop();
+    } on ApiError catch (e) {
+      _toast(e.message);
+    }
+  }
+
+  Widget _invoiceSection(Strings s) {
+    final invoice = ref.watch(orderInvoiceProvider(orderId)).valueOrNull;
+    if (invoice != null) {
+      final num = '${invoice.pointOfSale ?? ''}-${invoice.number ?? ''}';
+      final cae = invoice.cae != null ? ' · CAE ${invoice.cae}' : '';
+      return Text('${s.invoiceIssued}: ${invoice.type} $num$cae');
+    }
+    return FilledButton.icon(
+      onPressed: _factura,
+      icon: const Icon(Icons.receipt_long_outlined),
+      label: Text(s.facturar),
+    );
+  }
+
+  Future<void> _factura() async {
+    final s = context.s;
+    var docType = DocType.consumidorFinal;
+    final numCtrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialog) => AlertDialog(
+          title: Text(s.facturar),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<DocType>(
+                initialValue: docType,
+                decoration: InputDecoration(labelText: s.docTypeLabel),
+                items: [
+                  for (final t in DocType.values)
+                    DropdownMenuItem(value: t, child: Text(s.docTypeName(t))),
+                ],
+                onChanged: (v) {
+                  if (v != null) setDialog(() => docType = v);
+                },
+              ),
+              if (docType != DocType.consumidorFinal) ...[
+                const SizedBox(height: 8),
+                TextField(
+                  controller: numCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: s.docNumber),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(s.facturar),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ref.read(invoiceRepositoryProvider).issueForOrder(
+            orderId,
+            docType: docType,
+            docNumber:
+                docType == DocType.consumidorFinal ? null : numCtrl.text.trim(),
+          );
+      ref.invalidate(orderInvoiceProvider(orderId));
     } on ApiError catch (e) {
       _toast(e.message);
     }
