@@ -324,6 +324,7 @@ class Strings {
   String get passwordHide => _en ? 'Hide password' : 'Ocultar contraseña';
   String get retry => _en ? 'Retry' : 'Reintentar';
   String get confirm => _en ? 'Confirm' : 'Confirmar';
+  String get add => _en ? 'Add' : 'Agregar';
   String get refundConfirmTitle =>
       _en ? 'Refund this payment?' : '¿Reembolsar este pago?';
   String get refundConfirmBody => _en
