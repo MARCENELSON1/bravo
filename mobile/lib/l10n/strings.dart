@@ -307,6 +307,18 @@ class Strings {
   String get clienteNew => _en ? 'New customer' : 'Nuevo cliente';
   String get clienteEmail => 'Email';
   String get clienteNoContact => _en ? 'Do not contact' : 'No contactar';
+
+  // Ajustes (Fase 6)
+  String get ajustesTitle => _en ? 'Settings' : 'Ajustes';
+  String get setLaborCost => _en ? 'Monthly labor cost' : 'Costo laboral mensual';
+  String get setOtherFixed => _en ? 'Other monthly fixed' : 'Otros fijos mensuales';
+  String get setTargetFoodCost => _en ? 'Target food cost %' : 'Food cost objetivo %';
+  String get setVat => _en ? 'VAT %' : 'IVA %';
+  String get setInflation => _en ? 'Monthly inflation %' : 'Inflación mensual %';
+  String get setSeats => _en ? 'Seats' : 'Cubiertos';
+  String get setOpenMinutes => _en ? 'Open minutes/day' : 'Minutos abiertos/día';
+  String get setSave => _en ? 'Save' : 'Guardar';
+  String get setSaved => _en ? 'Settings saved' : 'Ajustes guardados';
 }
 
 extension StringsX on BuildContext {
