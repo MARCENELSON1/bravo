@@ -289,6 +289,16 @@ class Strings {
   String get repTopProducts => _en ? 'Top products' : 'Top productos';
   String get repPaymentMix => _en ? 'Payment mix' : 'Mix de pagos';
   String repUnits(int n) => _en ? '$n units' : '$n u.';
+
+  // Proveedores (Fase 6)
+  String get proveedoresTitle => _en ? 'Suppliers' : 'Proveedores';
+  String get proveedoresEmpty => _en ? 'No suppliers' : 'Sin proveedores';
+  String get provNew => _en ? 'New supplier' : 'Nuevo proveedor';
+  String get provName => _en ? 'Name' : 'Nombre';
+  String get provContact => _en ? 'Contact' : 'Contacto';
+  String get provPhone => _en ? 'Phone' : 'Teléfono';
+  String get provNotes => _en ? 'Notes' : 'Notas';
+  String get provActive => _en ? 'Active' : 'Activo';
 }
 
 extension StringsX on BuildContext {
