@@ -6,6 +6,7 @@ import '../../auth/session_notifier.dart';
 import '../../l10n/strings.dart';
 import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
+import '../cashier/cashier_page.dart';
 import '../floor/floor_page.dart';
 import '../home/home_page.dart';
 import '../kds/kds_page.dart';
@@ -84,7 +85,7 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
         return [
           home,
           floor,
-          _TabDef(Icons.point_of_sale_outlined, s.navCashier, _Placeholder(s.navCashier)),
+          _TabDef(Icons.point_of_sale_outlined, s.cashierTitle, const CashierPage()),
           more,
         ];
       case Role.owner:

@@ -6,6 +6,7 @@ import '../../data/offline/sync_indicator.dart';
 import '../../data/printing/escpos_ticket.dart';
 import '../../data/printing/printer_providers.dart';
 import '../../l10n/strings.dart';
+import '../cashier/cobro_sheet.dart';
 import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../util/money.dart';
@@ -121,6 +122,12 @@ class _OrderPageState extends ConsumerState<OrderPage> {
           icon: const Icon(Icons.send),
           label: Text(s.marchCount(order.pendingCount)),
         ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: _openCobro,
+          icon: const Icon(Icons.payments_outlined),
+          label: Text(s.cobro),
+        ),
         const SizedBox(height: 12),
         GlassPanel(
           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -219,6 +226,18 @@ class _OrderPageState extends ConsumerState<OrderPage> {
 
   OrderController get _ctrl =>
       ref.read(orderControllerProvider(orderId).notifier);
+
+  void _openCobro() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => SizedBox(
+        height: MediaQuery.of(context).size.height * 0.85,
+        child: CobroSheet(orderId: orderId),
+      ),
+    );
+  }
 
   Future<void> _openPicker() async {
     await showModalBottomSheet<void>(

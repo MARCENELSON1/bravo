@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../auth/session.dart';
+import '../features/cashier/payment_dtos.dart';
 import '../features/floor/floor_view.dart';
 import '../features/order/order_dtos.dart';
 
@@ -164,6 +165,43 @@ class Strings {
         return _en ? 'Cancelled' : 'Anulado';
     }
   }
+
+  // Caja (Fase 3)
+  String get cashierTitle => _en ? 'Register' : 'Caja';
+  String get cashierClosed => _en ? 'Register closed' : 'Caja cerrada';
+  String get cashierOpen => _en ? 'Open register' : 'Abrir caja';
+  String get cashierClose => _en ? 'Close register' : 'Cerrar caja';
+  String get cashierOpeningFloat => _en ? 'Opening float' : 'Fondo inicial';
+  String get cashierArqueo => _en ? 'Z report' : 'Arqueo Z';
+  String get cashierExpected => _en ? 'Expected' : 'Esperado';
+  String get cashierCounted => _en ? 'Counted' : 'Contado';
+  String get cashierDifference => _en ? 'Difference' : 'Diferencia';
+  String get cashierTips => _en ? 'Tips' : 'Propinas';
+  String get cashierCountPrompt =>
+      _en ? 'Count cash per method' : 'Contá por método';
+  String get cashierClosed2 => _en ? 'Register closed' : 'Caja cerrada';
+
+  // Cobro
+  String get cobro => _en ? 'Charge' : 'Cobrar';
+  String get cobroRemaining => _en ? 'Remaining' : 'Restante';
+  String get cobroAmount => _en ? 'Amount' : 'Monto';
+  String get cobroTip => _en ? 'Tip' : 'Propina';
+  String get cobroMethod => _en ? 'Method' : 'Método';
+  String get cobroRegister => _en ? 'Register payment' : 'Registrar pago';
+  String get cobroPayments => _en ? 'Payments' : 'Pagos';
+  String get cobroPaid => _en ? 'Paid' : 'Pagado';
+  String get cobroNoSession => _en ? 'No open register' : 'No hay caja abierta';
+  String get cobroRefund => _en ? 'Refund' : 'Reembolsar';
+  String get cobroReopen => _en ? 'Reopen order' : 'Reabrir orden';
+  String get presetTotal => _en ? 'Total' : 'Total';
+
+  String methodLabel(PaymentMethod m) => switch (m) {
+        PaymentMethod.cash => _en ? 'Cash' : 'Efectivo',
+        PaymentMethod.card => _en ? 'Card' : 'Tarjeta',
+        PaymentMethod.transfer => _en ? 'Transfer' : 'Transferencia',
+        PaymentMethod.mercadopago => 'MercadoPago',
+        PaymentMethod.qr => 'QR',
+      };
 }
 
 extension StringsX on BuildContext {
