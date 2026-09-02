@@ -202,6 +202,32 @@ class Strings {
         PaymentMethod.mercadopago => 'MercadoPago',
         PaymentMethod.qr => 'QR',
       };
+
+  // Fichaje (Fase 4)
+  String get fichajeTitle => _en ? 'Time clock' : 'Fichaje';
+  String get clockIn => _en ? 'Clock in' : 'Fichar entrada';
+  String get clockOut => _en ? 'Clock out' : 'Fichar salida';
+  String get notClockedIn => _en ? 'Not clocked in' : 'No estás fichado';
+  String clockedInSince(String time) =>
+      _en ? 'On shift since $time' : 'En turno desde $time';
+  String get workedTime => _en ? 'Worked' : 'Trabajado';
+  String get recentShifts => _en ? 'Recent shifts' : 'Turnos recientes';
+  String durationLabel(int minutes) {
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    return h > 0 ? '${h}h ${m}m' : '${m}m';
+  }
+
+  // Propinas (Fase 4)
+  String get tipsTitle => _en ? 'Tips' : 'Propinas';
+  String get tipsEarned => _en ? 'Earned' : 'Ganado';
+  String get tipsPaid => _en ? 'Paid' : 'Pagado';
+  String get tipsPending => _en ? 'Pending' : 'Pendiente';
+  String get tipsPay => _en ? 'Pay out' : 'Pagar';
+  String get tipsEmpty => _en ? 'No tips' : 'Sin propinas';
+
+  // Más (hub)
+  String get moreTitle => _en ? 'More' : 'Más';
 }
 
 extension StringsX on BuildContext {

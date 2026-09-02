@@ -11,6 +11,7 @@ import '../floor/floor_page.dart';
 import '../home/home_page.dart';
 import '../kds/kds_page.dart';
 import '../order/order_dtos.dart';
+import 'more_page.dart';
 
 /// Shell con bottom nav por rol (espeja `role-landing.tsx` + la navegación del
 /// front). En F0, todas las tabs menos "Inicio" son placeholders (llegan en F1).
@@ -59,7 +60,7 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
 
   List<_TabDef> _tabsForRole(Role role, Strings s) {
     final home = _TabDef(Icons.home_outlined, s.navHome, const HomePage());
-    final more = _TabDef(Icons.grid_view_outlined, s.navMore, _Placeholder(s.navMore));
+    final more = _TabDef(Icons.grid_view_outlined, s.navMore, const MorePage());
     final floor = _TabDef(Icons.tab_outlined, s.navFloor, const FloorPage());
     switch (role) {
       case Role.waiter:
