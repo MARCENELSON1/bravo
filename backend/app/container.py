@@ -1010,6 +1010,7 @@ class Container(containers.DeclarativeContainer):
         oauth=mercadopago_oauth,
         cipher=token_cipher,
         fallback_token=config.provided.mp_access_token,
+        force_sandbox=config.provided.mp_force_sandbox,
     )
 
     # Online gateway (MercadoPago): resolves the tenant's OWN token per charge;

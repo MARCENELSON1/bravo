@@ -3,7 +3,40 @@ from __future__ import annotations
 from cryptography.fernet import Fernet
 
 from app.application.payment.connect_mercadopago import sign_oauth_state, verify_oauth_state
+from app.infrastructure.payments.credentials_resolver import DbPaymentCredentialsResolver
 from app.infrastructure.security.fernet_cipher import FernetTokenCipher
+
+
+class _NoCredsRepo:
+    async def get_by_tenant(self, tenant_id: str, provider: str) -> None:
+        return None
+
+    async def get_by_account_id(self, account_id: str) -> None:
+        return None
+
+
+async def test_resolver_fallback_force_sandbox_marks_sandbox() -> None:
+    # Token de test user (APP_USR-, "parece prod") + force_sandbox → checkout sandbox.
+    resolver = DbPaymentCredentialsResolver(
+        credentials=_NoCredsRepo(),  # type: ignore[arg-type]
+        oauth=None,  # type: ignore[arg-type]
+        cipher=None,  # type: ignore[arg-type]
+        fallback_token="APP_USR-test-seller-token",
+        force_sandbox=True,
+    )
+    creds = await resolver.for_tenant("t1")
+    assert creds.live_mode is False
+
+
+async def test_resolver_fallback_app_usr_is_live_without_force() -> None:
+    resolver = DbPaymentCredentialsResolver(
+        credentials=_NoCredsRepo(),  # type: ignore[arg-type]
+        oauth=None,  # type: ignore[arg-type]
+        cipher=None,  # type: ignore[arg-type]
+        fallback_token="APP_USR-real-prod-token",
+    )
+    creds = await resolver.for_tenant("t1")
+    assert creds.live_mode is True  # sin force_sandbox: la heurística lo toma como prod
 
 
 def test_cipher_roundtrip() -> None:

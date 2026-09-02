@@ -31,19 +31,29 @@ class DbPaymentCredentialsResolver(PaymentCredentialsResolver):
         oauth: OAuthPaymentProvider,
         cipher: TokenCipher,
         fallback_token: str = "",
+        force_sandbox: bool = False,
     ) -> None:
         self._credentials = credentials
         self._oauth = oauth
         self._cipher = cipher
         self._fallback_token = fallback_token
+        self._force_sandbox = force_sandbox
 
     async def for_tenant(self, tenant_id: str) -> ResolvedCredentials:
         credential = await self._credentials.get_by_tenant(tenant_id, _PROVIDER)
         if credential is None:
             if self._fallback_token:
+                # ``live_mode`` picks init_point (prod) vs sandbox_init_point. El
+                # prefijo TEST- delata un token sandbox, PERO el token de un test user
+                # es APP_USR- (parece prod). ``force_sandbox`` fuerza el checkout de
+                # sandbox para deploys de prueba con credenciales de un usuario de test.
+                live_mode = (
+                    False
+                    if self._force_sandbox
+                    else not self._fallback_token.startswith("TEST-")
+                )
                 return ResolvedCredentials(
-                    access_token=self._fallback_token,
-                    live_mode=not self._fallback_token.startswith("TEST-"),
+                    access_token=self._fallback_token, live_mode=live_mode
                 )
             raise PaymentGatewayNotConnected()
 
