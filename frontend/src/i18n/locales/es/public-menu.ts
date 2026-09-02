@@ -82,6 +82,10 @@ export const publicMenu = {
       title: "¡Pagado! 🎉",
       body: "¡Gracias! Ya está saldada tu cuenta.",
     },
+    receipt: {
+      paid: "Pagaste",
+      nonFiscal: "Comprobante no fiscal",
+    },
     confirming: {
       title: "Estamos confirmando tu pago…",
       body: "Puede tardar unos segundos. No cierres esta pantalla.",

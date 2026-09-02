@@ -137,7 +137,11 @@ from app.application.payment.connect_mercadopago import (
     StartMercadoPagoConnection,
 )
 from app.application.payment.fee_rates import GetPaymentFeeRates, UpdatePaymentFeeRates
-from app.application.payment.pay_table_bill import GetPublicPaymentStatus, PayTableBill
+from app.application.payment.pay_table_bill import (
+    GetPublicPaymentReceipt,
+    GetPublicPaymentStatus,
+    PayTableBill,
+)
 from app.application.payment.self_pay import GetSelfPaySettings, UpdateSelfPaySettings
 from app.application.payment.use_cases import (
     ConfirmGatewayPayment,
@@ -1374,6 +1378,14 @@ class Container(containers.DeclarativeContainer):
         GetPublicPaymentStatus,
         token=table_qr_token,
         payments=payment_repository,
+        tenant_context=tenant_context,
+    )
+    get_public_payment_receipt = providers.Factory(
+        GetPublicPaymentReceipt,
+        token=table_qr_token,
+        payments=payment_repository,
+        orders=order_repository,
+        tenants=tenant_repository,
         tenant_context=tenant_context,
     )
     get_self_pay_settings = providers.Factory(

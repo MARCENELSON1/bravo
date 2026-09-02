@@ -31,6 +31,7 @@ import {
 } from "@/features/public-menu/public-menu-cart"
 import {
   useCallWaiter,
+  usePaymentReceipt,
   usePayTableBill,
   usePaymentStatus,
   usePublicMenu,
@@ -143,14 +144,7 @@ export function PublicMenuPage() {
   // pantalla de estado toma toda la vista hasta confirmar o volver a la carta.
   if (paymentId) {
     if (payStatus === "CONFIRMED") {
-      return (
-        <StateScreen
-          title={t("publicMenu.pay.paid.title")}
-          action={<Button onClick={clearPayment}>{t("publicMenu.menu")}</Button>}
-        >
-          {t("publicMenu.pay.paid.body")}
-        </StateScreen>
-      )
+      return <PaidScreen token={token} paymentId={paymentId} onDone={clearPayment} />
     }
     if (payStatus === "FAILED" || paymentStatus.isError) {
       return (
@@ -902,6 +896,89 @@ function CartReviewSheet({
       </SheetContent>
     </Sheet>
   )
+}
+
+// Pantalla de "¡Pagado!" con el recibo (no fiscal): local + ítems + monto pagado
+// + propina + fecha. El recibo se pide una vez, con el pago ya confirmado; si aún
+// no llegó, se muestra igual el "¡Pagado!" (el recibo es aditivo).
+function PaidScreen({
+  token,
+  paymentId,
+  onDone,
+}: {
+  token: string | undefined
+  paymentId: string
+  onDone: () => void
+}) {
+  const { t } = useTranslation()
+  const receipt = usePaymentReceipt(token, paymentId, true)
+  const r = receipt.data
+
+  return (
+    <div className="flex min-h-svh flex-col items-center justify-center bg-background px-6 py-10 text-foreground">
+      <div className="w-full max-w-sm">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <WellnodMark className="mb-2 h-9 w-auto text-foreground/80" />
+          <h1 className="text-lg font-semibold">{t("publicMenu.pay.paid.title")}</h1>
+          <p className="max-w-xs text-sm text-muted-foreground">{t("publicMenu.pay.paid.body")}</p>
+        </div>
+
+        {r ? (
+          <div className="mt-6 rounded-2xl border border-border/60 bg-card p-5">
+            <p className="text-center text-sm font-semibold">{r.venue_name}</p>
+            {r.paid_at ? (
+              <p className="mt-0.5 text-center text-xs text-muted-foreground">
+                {formatDateTime(r.paid_at, r.currency)}
+              </p>
+            ) : null}
+            {r.items.length > 0 ? (
+              <ul className="mt-4 divide-y divide-border/50">
+                {r.items.map((item, i) => (
+                  <li key={i} className="flex items-start justify-between gap-3 py-1.5 text-sm">
+                    <span className="min-w-0">
+                      <span className="tabular-nums text-muted-foreground">{item.quantity}× </span>
+                      {item.name}
+                    </span>
+                    <span className="shrink-0 tabular-nums">
+                      {formatMoney(item.unit_price * item.quantity, r.currency)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <div className="mt-3 border-t border-border/60 pt-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{t("publicMenu.pay.receipt.paid")}</span>
+                <span className="tabular-nums font-medium">{formatMoney(r.amount, r.currency)}</span>
+              </div>
+              {r.tip > 0 ? (
+                <div className="mt-1 flex justify-between">
+                  <span className="text-muted-foreground">{t("publicMenu.pay.tip")}</span>
+                  <span className="tabular-nums">{formatMoney(r.tip, r.currency)}</span>
+                </div>
+              ) : null}
+            </div>
+            <p className="mt-3 text-center text-[11px] text-muted-foreground">
+              {t("publicMenu.pay.receipt.nonFiscal")}
+            </p>
+          </div>
+        ) : null}
+
+        <Button className="mt-6 w-full" onClick={onDone}>
+          {t("publicMenu.menu")}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function formatDateTime(iso: string, currency: string): string {
+  const locale = currency?.toUpperCase() === "USD" ? "en-US" : "es-AR"
+  try {
+    return new Date(iso).toLocaleString(locale, { dateStyle: "short", timeStyle: "short" })
+  } catch {
+    return ""
+  }
 }
 
 // Pantalla centrada para los estados (cargando / carta vacía / token inválido /

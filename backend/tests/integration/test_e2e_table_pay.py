@@ -236,6 +236,48 @@ async def test_split_amount_over_balance_is_rejected(client):
     assert pay.json()["code"] == "invalid_payment_amount"
 
 
+async def test_receipt_after_paying(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    pid = await _product(http, h, "Pizza", 1200000)
+    await _enable_self_order(http, h)
+    await _enable_self_pay(http, h)
+    token = await _qr_token(http, h, 14)
+    await _submit(http, token, pid, 2)  # total 2_400_000
+
+    pay = await http.post("/api/v1/public/table/pay", json={"token": token, "tip": 100000})
+    payment_id = pay.json()["payment_id"]
+
+    receipt = await http.get(
+        f"/api/v1/public/table/receipt/{payment_id}", params={"token": token}
+    )
+    assert receipt.status_code == 200, receipt.text
+    body = receipt.json()
+    assert body["venue_name"]  # el nombre del local (onboarding)
+    assert body["currency"] == "ARS"
+    assert body["amount"] == 2400000
+    assert body["tip"] == 100000
+    assert body["method"] == "MERCADOPAGO"
+    assert body["items"][0]["name"] == "Pizza"
+    assert body["items"][0]["quantity"] == 2
+    assert body["paid_at"]
+
+
+async def test_receipt_404_for_unknown_payment(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    token = await _qr_token(http, h, 15)
+
+    res = await http.get(
+        "/api/v1/public/table/receipt/00000000-0000-0000-0000-000000000000",
+        params={"token": token},
+    )
+    assert res.status_code == 404
+    assert res.json()["code"] == "payment_not_found"
+
+
 async def test_pay_rejects_a_bad_token(client):
     http, fake_email = client
     await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")

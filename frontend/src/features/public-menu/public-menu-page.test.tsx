@@ -42,6 +42,15 @@ function makeApi(getMenu: () => Promise<PublicMenuDTO>, bill: TableBillDTO = EMP
       amount: bill.balance,
       tip: 0,
     }),
+    receipt: vi.fn().mockResolvedValue({
+      venue_name: "Bar Paz",
+      currency: "ARS",
+      items: bill.items,
+      amount: bill.balance,
+      tip: 0,
+      method: "MERCADOPAGO",
+      paid_at: "2026-09-01T20:00:00Z",
+    }),
   } as unknown as PublicMenuApi
 }
 
@@ -243,8 +252,11 @@ describe("PublicMenuPage", () => {
     // "Pagar todo" (default) → amount null; el server cobra el saldo vigente.
     expect(api.pay).toHaveBeenCalledWith("tok-123", 0, null, expect.any(String))
 
-    // Confirma (gateway sin checkout_url) → pantalla de pagado.
+    // Confirma (gateway sin checkout_url) → pantalla de pagado con el recibo.
     expect(await screen.findByText("¡Pagado! 🎉")).toBeInTheDocument()
+    expect(await screen.findByText("Comprobante no fiscal")).toBeInTheDocument()
+    expect(screen.getByText("Pagaste")).toBeInTheDocument()
+    expect(api.receipt).toHaveBeenCalledWith("tok-123", "pay-1")
   })
 
   it("splits the bill and pays only my share", async () => {

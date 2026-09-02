@@ -82,6 +82,10 @@ export const publicMenu = {
       title: "Paid! 🎉",
       body: "Thank you! Your check is settled.",
     },
+    receipt: {
+      paid: "You paid",
+      nonFiscal: "Non-fiscal receipt",
+    },
     confirming: {
       title: "We're confirming your payment…",
       body: "This can take a few seconds. Please keep this screen open.",

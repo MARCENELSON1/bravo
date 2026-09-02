@@ -9,7 +9,11 @@ from fastapi import APIRouter, Depends, Query
 
 from app.application.order.self_order import CustomerOrderLineInput, SubmitCustomerOrder
 from app.application.order.table_bill import GetTableBill
-from app.application.payment.pay_table_bill import GetPublicPaymentStatus, PayTableBill
+from app.application.payment.pay_table_bill import (
+    GetPublicPaymentReceipt,
+    GetPublicPaymentStatus,
+    PayTableBill,
+)
 from app.application.public_menu.use_cases import GetPublicMenu, RequestTableAttention
 from app.container import Container
 from app.domain.order.value_objects import OrderStatus
@@ -22,7 +26,9 @@ from app.presentation.schemas.public_menu import (
     PublicMenuModifierGroupResponse,
     PublicMenuModifierOptionResponse,
     PublicMenuResponse,
+    PublicPaymentReceiptResponse,
     PublicPaymentStatusResponse,
+    PublicReceiptItemResponse,
     TableBillItemResponse,
     TableBillOptionResponse,
     TableBillResponse,
@@ -148,6 +154,36 @@ async def get_table_payment_status(
         status=payment.status.value,
         amount=payment.amount.amount,
         tip=payment.tip_amount,
+    )
+
+
+@router.get("/table/receipt/{payment_id}", response_model=PublicPaymentReceiptResponse)
+@inject
+async def get_table_payment_receipt(
+    payment_id: str,
+    token: str = Query(...),
+    use_case: GetPublicPaymentReceipt = Depends(Provide[Container.get_public_payment_receipt]),
+) -> PublicPaymentReceiptResponse:
+    receipt = await use_case.execute(token=token, payment_id=payment_id)
+    return PublicPaymentReceiptResponse(
+        venue_name=receipt.venue_name,
+        currency=receipt.currency,
+        items=[
+            PublicReceiptItemResponse(
+                name=item.name,
+                quantity=item.quantity,
+                unit_price=item.unit_price,
+                selected_options=[
+                    TableBillOptionResponse(name=opt.name, price_delta=opt.price_delta)
+                    for opt in item.selected_options
+                ],
+            )
+            for item in receipt.items
+        ],
+        amount=receipt.amount,
+        tip=receipt.tip,
+        method=receipt.method,
+        paid_at=receipt.paid_at,
     )
 
 

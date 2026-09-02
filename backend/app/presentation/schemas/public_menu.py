@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -131,3 +133,22 @@ class PublicPaymentStatusResponse(BaseModel):
     status: str
     amount: int
     tip: int
+
+
+class PublicReceiptItemResponse(BaseModel):
+    name: str
+    quantity: int
+    unit_price: int
+    selected_options: list[TableBillOptionResponse] = Field(default_factory=list)
+
+
+class PublicPaymentReceiptResponse(BaseModel):
+    """Recibo NO fiscal del comensal tras pagar (Carta QR F3). No es factura AFIP."""
+
+    venue_name: str
+    currency: str
+    items: list[PublicReceiptItemResponse]
+    amount: int
+    tip: int
+    method: str
+    paid_at: datetime | None = None

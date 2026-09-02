@@ -102,6 +102,24 @@ export interface PublicPaymentStatusDTO {
   tip: number
 }
 
+export interface PublicReceiptItemDTO {
+  name: string
+  quantity: number
+  unit_price: number
+  selected_options?: TableBillOptionDTO[]
+}
+
+// Recibo NO fiscal del comensal tras pagar (no es factura AFIP).
+export interface PublicPaymentReceiptDTO {
+  venue_name: string
+  currency: string
+  items: PublicReceiptItemDTO[]
+  amount: number
+  tip: number
+  method: string
+  paid_at?: string | null
+}
+
 export class PublicMenuApi {
   private http: HttpClient
 
@@ -163,6 +181,15 @@ export class PublicMenuApi {
     return this.http.request<PublicPaymentStatusDTO>(
       "GET",
       `/public/table/payment/${paymentId}?token=${encodeURIComponent(token)}`
+    )
+  }
+
+  // Recibo del pago confirmado (local + ítems + monto + propina). Solo con el pago
+  // ya confirmado; 404 si no.
+  receipt(token: string, paymentId: string): Promise<PublicPaymentReceiptDTO> {
+    return this.http.request<PublicPaymentReceiptDTO>(
+      "GET",
+      `/public/table/receipt/${paymentId}?token=${encodeURIComponent(token)}`
     )
   }
 }

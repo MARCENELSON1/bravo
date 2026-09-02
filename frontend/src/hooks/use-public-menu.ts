@@ -64,6 +64,22 @@ export function usePayTableBill(token: string | undefined) {
   })
 }
 
+// Recibo del pago confirmado (local + ítems + monto + propina). Se pide una vez,
+// cuando el pago ya está CONFIRMED.
+export function usePaymentReceipt(
+  token: string | undefined,
+  paymentId: string | null,
+  enabled: boolean
+) {
+  const { publicMenuApi } = useServices()
+  return useQuery({
+    queryKey: ["table-receipt", token, paymentId],
+    queryFn: () => publicMenuApi.receipt(token!, paymentId!),
+    enabled: !!token && !!paymentId && enabled,
+    retry: false,
+  })
+}
+
 // Poll del estado de un pago iniciado (para mostrar "pagado" al confirmar el
 // webhook). `refetchInterval` mientras siga PENDING; se corta al confirmar/fallar.
 export function usePaymentStatus(token: string | undefined, paymentId: string | null) {
