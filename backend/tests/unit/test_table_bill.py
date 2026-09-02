@@ -143,7 +143,6 @@ def _use_case(
     payments: dict[str, list[Payment]],
     settings: SelfPaySettings,
     credential: PaymentCredential | None,
-    assume_connected: bool = False,
 ) -> tuple[GetTableBill, HmacTableQrToken]:
     token = HmacTableQrToken(secret=_SECRET)
     uc = GetTableBill(
@@ -155,7 +154,6 @@ def _use_case(
         settings=_FakeSettings(settings),  # type: ignore[arg-type]
         credentials=_FakeCredentials(credential),  # type: ignore[arg-type]
         tenant_context=FakeTenantContext(),
-        assume_connected=assume_connected,
     )
     return uc, token
 
@@ -316,23 +314,6 @@ async def test_online_pay_available_requires_enabled_and_connected(
     bill = await uc.execute(token=token.issue("t1", "tbl-1"))
 
     assert bill.online_pay_available is expected
-
-
-async def test_assume_connected_makes_online_pay_available_without_a_credential() -> None:
-    # Single-account/demo: sin credencial OAuth por tenant, pero con el flag → online.
-    uc, token = _use_case(
-        tenant=_tenant(),
-        session=None,
-        orders=[],
-        payments={},
-        settings=SelfPaySettings(enabled=True),
-        credential=None,
-        assume_connected=True,
-    )
-
-    bill = await uc.execute(token=token.issue("t1", "tbl-1"))
-
-    assert bill.online_pay_available is True
 
 
 async def test_bad_token_rejected() -> None:

@@ -1361,7 +1361,6 @@ class Container(containers.DeclarativeContainer):
         settings=self_pay_settings_repository,
         credentials=payment_credential_repository,
         tenant_context=tenant_context,
-        assume_connected=config.provided.self_pay_assume_connected,
     )
     pay_table_bill = providers.Factory(
         PayTableBill,

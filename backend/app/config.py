@@ -97,12 +97,6 @@ class Settings(BaseSettings):
     mp_oauth_redirect_uri: str = ""
     # Optional marketplace fee retained by NÚCLEO per charge, in minor units (0 = off).
     mp_marketplace_fee: int = 0
-    # Modo single-account (Carta QR F3): tratar la plataforma como "MP conectado" para
-    # el pago desde la mesa aunque el tenant no haya hecho OAuth — el cobro usa el
-    # token de plataforma (``mp_access_token``) como vendedor. OFF por default (en
-    # multi-tenant real cada local conecta su propia cuenta por OAuth). Para deploys
-    # single-account/demo se prende y el botón "Pagar" aparece sin OAuth por tenant.
-    self_pay_assume_connected: bool = False
     # TTL of the signed OAuth ``state`` (anti-CSRF), minutes.
     oauth_state_ttl_min: int = 10
 
