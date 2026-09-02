@@ -137,7 +137,7 @@ Login (por rol) → **bottom nav por rol** (mozo: Piso · Comanda · Caja · Má
 |---|------|-------------|--------|----------|---------|----------|
 | 0 | Fundaciones | Scaffold `mobile/`, auth móvil (riesgo #1), codegen OpenAPI→Dart, `ThemeData` (tokens), shell de navegación (bottom nav por rol), login→Home mínimo. iOS+Android. | in-progress | - | - | `plans/mobile-fase-0-fundaciones.plan.md` |
 | 1 | Piso + Comanda + Contingencia | Plano de salón en vivo, comanda (grilla+carrito), enviar/editar/anular, mover/unir mesas, **cola local + sync**, **impresión ESC/POS BT**. (Modificadores del mozo diferidos = paridad web; escaneo QR-cámara → fase posterior.) | complete | - | 0 | `plans/mobile-fase-1-piso-comanda.plan.md` |
-| 2 | KDS | Cola de platos en tiempo real (SSE), avanzar estado por `OrderItem`, marcar listo, **push** plato-listo. | pending | with 3 | 1 | - |
+| 2 | KDS | Cola de platos en tiempo real (SSE + poll), avanzar estado por `OrderItem` (bump 1×1), demora. (Push plato-listo diferido.) | complete | with 3 | 1 | (directo, sin plan doc) |
 | 3 | Caja | Cobro (efectivo/MP/tarjeta), split, propina, apertura/cierre y arqueo Z, recibo, reembolso/anulación. | pending | with 2 | 1 | - |
 | 4 | Propinas + Fichaje | Propinas por mozo/liquidación, Fichaje (TimeClock). | pending | with 5 | 3 | - |
 | 5 | Home + Copiloto | Home operativo (ganancia del día, alerta), Copiloto/Asesor (LLM), push de alertas. | pending | with 4 | 1 | - |
