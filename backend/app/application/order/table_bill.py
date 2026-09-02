@@ -63,6 +63,7 @@ class GetTableBill:
         settings: SelfPaySettingsRepository,
         credentials: PaymentCredentialRepository,
         tenant_context: TenantContext,
+        assume_connected: bool = False,
     ) -> None:
         self._token = token
         self._tenants = tenants
@@ -72,6 +73,7 @@ class GetTableBill:
         self._settings = settings
         self._credentials = credentials
         self._tenant_context = tenant_context
+        self._assume_connected = assume_connected
 
     async def execute(self, *, token: str) -> TableBill:
         claims = self._token.verify(token)  # raises InvalidTableQrToken
@@ -134,5 +136,9 @@ class GetTableBill:
         )
 
     async def _mp_connected(self, tenant_id: str) -> bool:
+        # Single-account/demo: la plataforma cobra con su propio token → se ofrece
+        # pago online sin OAuth por tenant.
+        if self._assume_connected:
+            return True
         credential = await self._credentials.get_by_tenant(tenant_id, _PROVIDER)
         return credential is not None and credential.status is ConnectionStatus.CONNECTED
