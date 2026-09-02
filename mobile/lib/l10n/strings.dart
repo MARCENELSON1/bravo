@@ -123,6 +123,22 @@ class Strings {
   String pendingSync(int n) =>
       _en ? '$n to sync' : '$n por sincronizar';
 
+  // Impresora ESC/POS
+  String get printerTitle => _en ? 'Printer' : 'Impresora';
+  String get printerCurrent => _en ? 'Current printer' : 'Impresora actual';
+  String get printerNone => _en ? 'None' : 'Ninguna';
+  String get printerPaired => _en ? 'Paired devices' : 'Dispositivos vinculados';
+  String get printerRescan => _en ? 'Rescan' : 'Reescanear';
+  String get printerTest => _en ? 'Test print' : 'Imprimir prueba';
+  String get printerSaved => _en ? 'Printer saved' : 'Impresora guardada';
+  String get printerBtOff =>
+      _en ? 'Bluetooth is off' : 'El Bluetooth está apagado';
+  String get printerNoDevices =>
+      _en ? 'No paired printers' : 'No hay impresoras vinculadas';
+  String get printerTestSent => _en ? 'Test sent' : 'Prueba enviada';
+  String get printerNoPrinter =>
+      _en ? 'No printer selected' : 'No hay impresora seleccionada';
+
   String itemStatusLabel(ItemStatus st) {
     switch (st) {
       case ItemStatus.pending:

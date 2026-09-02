@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../data/offline/sync_indicator.dart';
+import '../../data/printing/escpos_ticket.dart';
+import '../../data/printing/printer_providers.dart';
 import '../../l10n/strings.dart';
 import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../util/money.dart';
 import '../floor/floor_dtos.dart';
 import '../floor/floor_providers.dart';
+import '../settings/printer_page.dart';
 import 'order_dtos.dart';
 import 'order_providers.dart';
 import 'product_dtos.dart';
@@ -39,7 +42,15 @@ class _OrderPageState extends ConsumerState<OrderPage> {
       appBar: AppBar(
         title: Text(s.orderTitle),
         backgroundColor: Colors.transparent,
-        actions: const [SyncIndicator()],
+        actions: [
+          const SyncIndicator(),
+          IconButton(
+            icon: const Icon(Icons.print_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PrinterPage()),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: async.hasValue
           ? FloatingActionButton.extended(
@@ -249,12 +260,28 @@ class _OrderPageState extends ConsumerState<OrderPage> {
   Future<void> _march() async {
     try {
       await _ctrl.send();
+      await _printTicket(); // best-effort: si no hay impresora, no bloquea
       if (!mounted) return;
       ref.read(floorProvider.notifier).refresh();
       Navigator.of(context).pop();
     } on ApiError catch (e) {
       _toast(e.message);
     }
+  }
+
+  Future<void> _printTicket() async {
+    final order = ref.read(orderControllerProvider(orderId)).valueOrNull;
+    if (order == null) return;
+    String? label;
+    final tables = ref.read(floorProvider).valueOrNull ?? const <FloorTable>[];
+    for (final t in tables) {
+      if (t.id == order.tableId) {
+        label = t.name ?? context.s.tableLabel(t.number);
+        break;
+      }
+    }
+    final bytes = await buildKitchenTicket(order, tableLabel: label);
+    await ref.read(printerServiceProvider).printBytes(bytes);
   }
 
   Future<void> _moveToFree() async {
