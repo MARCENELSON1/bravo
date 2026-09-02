@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
+import '../../ui/state_views.dart';
 import '../../util/money.dart';
 import '../invoices/invoice_repository.dart';
 import '../order/order_providers.dart';
@@ -191,6 +192,14 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
   }
 
   Future<void> _refund(String paymentId) async {
+    final s = context.s;
+    final ok = await confirmDialog(
+      context,
+      title: s.refundConfirmTitle,
+      message: s.refundConfirmBody,
+      confirmLabel: s.cobroRefund,
+    );
+    if (!ok) return;
     try {
       await ref.read(paymentRepositoryProvider).refund(paymentId);
       ref.invalidate(orderPaymentsProvider(orderId));
@@ -201,6 +210,14 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
   }
 
   Future<void> _reopen() async {
+    final s = context.s;
+    final ok = await confirmDialog(
+      context,
+      title: s.reopenConfirmTitle,
+      message: s.reopenConfirmBody,
+      confirmLabel: s.cobroReopen,
+    );
+    if (!ok) return;
     try {
       await ref.read(paymentRepositoryProvider).reopen(orderId);
       ref.invalidate(orderPaymentsProvider(orderId));

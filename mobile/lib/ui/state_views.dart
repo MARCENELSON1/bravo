@@ -1,7 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../api/api_error.dart';
 import '../l10n/strings.dart';
+
+/// Diálogo de confirmación reutilizable para acciones destructivas o fiscales
+/// (anular, reembolsar, reabrir, borrar). Devuelve `true` si el usuario confirma.
+Future<bool> confirmDialog(
+  BuildContext context, {
+  required String title,
+  String? message,
+  String? confirmLabel,
+  bool destructive = true,
+}) async {
+  final s = context.s;
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(title),
+      content: message == null ? null : Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text(s.cancel),
+        ),
+        FilledButton(
+          style: destructive
+              ? FilledButton.styleFrom(
+                  backgroundColor: Theme.of(ctx).colorScheme.error)
+              : null,
+          onPressed: () {
+            HapticFeedback.mediumImpact();
+            Navigator.pop(ctx, true);
+          },
+          child: Text(confirmLabel ?? s.confirm),
+        ),
+      ],
+    ),
+  );
+  return result ?? false;
+}
 
 /// Estado de error uniforme: ícono + mensaje (traducido si es `ApiError`) +
 /// botón de reintento opcional. Reemplaza los `Text('$e')` sueltos.

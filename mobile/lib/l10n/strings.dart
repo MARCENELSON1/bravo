@@ -323,6 +323,17 @@ class Strings {
   String get passwordShow => _en ? 'Show password' : 'Mostrar contraseña';
   String get passwordHide => _en ? 'Hide password' : 'Ocultar contraseña';
   String get retry => _en ? 'Retry' : 'Reintentar';
+  String get confirm => _en ? 'Confirm' : 'Confirmar';
+  String get refundConfirmTitle =>
+      _en ? 'Refund this payment?' : '¿Reembolsar este pago?';
+  String get refundConfirmBody => _en
+      ? 'The payment will be reversed. This affects the cash register.'
+      : 'Se revierte el cobro. Impacta en la caja.';
+  String get reopenConfirmTitle =>
+      _en ? 'Reopen this order?' : '¿Reabrir esta orden?';
+  String get reopenConfirmBody => _en
+      ? 'Payments will be reversed so you can charge again.'
+      : 'Se revierten los cobros para poder volver a cobrar.';
   String get setDelete => _en ? 'Delete' : 'Eliminar';
   String get setEdit => _en ? 'Edit' : 'Editar';
   String get ajustesSubtitle =>
