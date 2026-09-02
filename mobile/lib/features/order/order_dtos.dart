@@ -76,6 +76,18 @@ class OrderItem {
 
   int get lineTotal => unitPriceAmount * quantity;
 
+  OrderItem copyWith({int? quantity}) => OrderItem(
+        id: id,
+        productId: productId,
+        name: name,
+        unitPriceAmount: unitPriceAmount,
+        quantity: quantity ?? this.quantity,
+        status: status,
+        station: station,
+        note: note,
+        selectedOptions: selectedOptions,
+      );
+
   factory OrderItem.fromJson(Map<String, dynamic> j) => OrderItem(
         id: j['id'] as String,
         productId: j['product_id'] as String,
@@ -116,6 +128,16 @@ class Order {
 
   int get pendingCount =>
       items.where((i) => i.status.isPending).fold(0, (a, i) => a + i.quantity);
+
+  Order copyWith({List<OrderItem>? items, int? totalAmount}) => Order(
+        id: id,
+        tableId: tableId,
+        status: status,
+        currency: currency,
+        items: items ?? this.items,
+        totalAmount: totalAmount ?? this.totalAmount,
+        createdAt: createdAt,
+      );
 
   factory Order.fromJson(Map<String, dynamic> j) => Order(
         id: j['id'] as String,

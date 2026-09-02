@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../auth/session.dart';
 import '../features/floor/floor_view.dart';
+import '../features/order/order_dtos.dart';
 
 /// i18n mínimo ES/EN sin codegen (F0). Fallback a español (paridad AR): el
 /// idioma efectivo sale de `Localizations.localeOf(context)`, que el framework
@@ -104,12 +105,36 @@ class Strings {
     }
   }
 
-  // Comanda (stub Tanda 1)
+  // Comanda
   String get orderTitle => _en ? 'Order' : 'Comanda';
-  String get orderStubHint =>
-      _en ? 'Capture arrives in Tanda 2' : 'La captura llega en la Tanda 2';
   String get orderTotal => _en ? 'Total' : 'Total';
   String get orderEmpty => _en ? 'No items yet' : 'Sin ítems todavía';
+  String get addProducts => _en ? 'Add products' : 'Agregar productos';
+  String get searchProduct => _en ? 'Search product' : 'Buscar producto';
+  String get done => _en ? 'Done' : 'Listo';
+  String marchCount(int n) => _en ? 'Send to kitchen ($n)' : 'Marchar ($n)';
+  String get moveTable => _en ? 'Move to a free table' : 'Mover a mesa libre';
+  String get mergeTable => _en ? 'Merge another table here' : 'Unir otra mesa acá';
+  String get noFreeTables => _en ? 'No free tables' : 'No hay mesas libres';
+  String get noOtherTables => _en ? 'No other tables' : 'No hay otras mesas';
+  String tableLabel(int number) => _en ? 'Table $number' : 'Mesa $number';
+
+  String itemStatusLabel(ItemStatus st) {
+    switch (st) {
+      case ItemStatus.pending:
+        return _en ? 'Pending' : 'Pendiente';
+      case ItemStatus.sent:
+        return _en ? 'In kitchen' : 'En cocina';
+      case ItemStatus.preparing:
+        return _en ? 'Preparing' : 'Preparando';
+      case ItemStatus.ready:
+        return _en ? 'Ready' : 'Listo';
+      case ItemStatus.served:
+        return _en ? 'Served' : 'Servido';
+      case ItemStatus.cancelled:
+        return _en ? 'Cancelled' : 'Anulado';
+    }
+  }
 }
 
 extension StringsX on BuildContext {

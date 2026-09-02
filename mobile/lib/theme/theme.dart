@@ -67,7 +67,9 @@ ThemeData _build(WellnodPalette p, Brightness brightness) {
       style: FilledButton.styleFrom(
         backgroundColor: p.primary,
         foregroundColor: p.primaryForeground,
-        minimumSize: const Size.fromHeight(52),
+        // Alto mínimo 52; ancho mínimo 0 (Size.fromHeight fuerza ancho ∞ y
+        // rompe cualquier FilledButton dentro de un Row).
+        minimumSize: const Size(0, 52),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(WellnodRadii.md),
         ),
