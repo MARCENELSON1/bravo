@@ -299,6 +299,14 @@ class Strings {
   String get provPhone => _en ? 'Phone' : 'Teléfono';
   String get provNotes => _en ? 'Notes' : 'Notas';
   String get provActive => _en ? 'Active' : 'Activo';
+
+  // CRM / Clientes (Fase 6)
+  String get clientesTitle => _en ? 'Customers' : 'Clientes';
+  String get clientesEmpty => _en ? 'No customers' : 'Sin clientes';
+  String get clientesSearch => _en ? 'Search customer' : 'Buscar cliente';
+  String get clienteNew => _en ? 'New customer' : 'Nuevo cliente';
+  String get clienteEmail => 'Email';
+  String get clienteNoContact => _en ? 'Do not contact' : 'No contactar';
 }
 
 extension StringsX on BuildContext {

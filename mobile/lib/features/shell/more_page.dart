@@ -5,6 +5,7 @@ import '../../auth/session.dart';
 import '../../auth/session_notifier.dart';
 import '../../l10n/strings.dart';
 import '../../ui/glass_panel.dart';
+import '../crm/clientes_page.dart';
 import '../finance/finanzas_page.dart';
 import '../inventory/insumos_page.dart';
 import '../inventory/proveedores_page.dart';
@@ -66,6 +67,9 @@ class MorePage extends ConsumerWidget {
                   const Divider(height: 1),
                   _tile(context, Icons.bar_chart_outlined, s.reportesTitle,
                       const ReportesPage()),
+                  const Divider(height: 1),
+                  _tile(context, Icons.people_alt_outlined, s.clientesTitle,
+                      const ClientesPage()),
                 ],
               ],
             ),
