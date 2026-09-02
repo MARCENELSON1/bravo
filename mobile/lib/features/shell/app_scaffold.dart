@@ -6,6 +6,7 @@ import '../../auth/session_notifier.dart';
 import '../../l10n/strings.dart';
 import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
+import '../floor/floor_page.dart';
 import '../home/home_page.dart';
 
 /// Shell con bottom nav por rol (espeja `role-landing.tsx` + la navegación del
@@ -56,11 +57,12 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
   List<_TabDef> _tabsForRole(Role role, Strings s) {
     final home = _TabDef(Icons.home_outlined, s.navHome, const HomePage());
     final more = _TabDef(Icons.grid_view_outlined, s.navMore, _Placeholder(s.navMore));
+    final floor = _TabDef(Icons.tab_outlined, s.navFloor, const FloorPage());
     switch (role) {
       case Role.waiter:
         return [
           home,
-          _TabDef(Icons.tab_outlined, s.navFloor, _Placeholder(s.navFloor)),
+          floor,
           _TabDef(Icons.point_of_sale_outlined, s.navCashier, _Placeholder(s.navCashier)),
           more,
         ];
@@ -74,6 +76,7 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
       case Role.cashier:
         return [
           home,
+          floor,
           _TabDef(Icons.point_of_sale_outlined, s.navCashier, _Placeholder(s.navCashier)),
           more,
         ];
@@ -81,6 +84,7 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
       case Role.manager:
         return [
           home,
+          floor,
           _TabDef(Icons.insights_outlined, s.navFinance, _Placeholder(s.navFinance)),
           more,
         ];

@@ -136,7 +136,7 @@ Login (por rol) → **bottom nav por rol** (mozo: Piso · Comanda · Caja · Má
 | # | Fase | Descripción | Status | Parallel | Depends | PRP Plan |
 |---|------|-------------|--------|----------|---------|----------|
 | 0 | Fundaciones | Scaffold `mobile/`, auth móvil (riesgo #1), codegen OpenAPI→Dart, `ThemeData` (tokens), shell de navegación (bottom nav por rol), login→Home mínimo. iOS+Android. | in-progress | - | - | `plans/mobile-fase-0-fundaciones.plan.md` |
-| 1 | Piso + Comanda + Contingencia | Plano de salón en vivo, comanda (grilla+modificadores+carrito), enviar/editar/anular, mover/unir mesas, escaneo QR (cámara), **cola local + sync**, **impresión ESC/POS BLE**. | pending | - | 0 | - |
+| 1 | Piso + Comanda + Contingencia | Plano de salón en vivo, comanda (grilla+modificadores+carrito), enviar/editar/anular, mover/unir mesas, escaneo QR (cámara), **cola local + sync**, **impresión ESC/POS BLE**. | in-progress | - | 0 | `plans/mobile-fase-1-piso-comanda.plan.md` |
 | 2 | KDS | Cola de platos en tiempo real (SSE), avanzar estado por `OrderItem`, marcar listo, **push** plato-listo. | pending | with 3 | 1 | - |
 | 3 | Caja | Cobro (efectivo/MP/tarjeta), split, propina, apertura/cierre y arqueo Z, recibo, reembolso/anulación. | pending | with 2 | 1 | - |
 | 4 | Propinas + Fichaje | Propinas por mozo/liquidación, Fichaje (TimeClock). | pending | with 5 | 3 | - |

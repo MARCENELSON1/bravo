@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../auth/session.dart';
+import '../features/floor/floor_view.dart';
 
 /// i18n mínimo ES/EN sin codegen (F0). Fallback a español (paridad AR): el
 /// idioma efectivo sale de `Localizations.localeOf(context)`, que el framework
@@ -65,6 +66,50 @@ class Strings {
         return _en ? 'Cashier' : 'Cajero';
     }
   }
+
+  // Piso (Fase 1)
+  String get floorTitle => _en ? 'Floor' : 'Piso';
+  String get floorSubtitle =>
+      _en ? 'Live tables by sector' : 'Mesas en vivo por sector';
+  String get floorSearch => _en ? 'Search table' : 'Buscar mesa';
+  String floorAttention(int count) =>
+      _en ? 'Need attention · $count' : 'Requieren atención · $count';
+  String get floorRequestBill => _en ? 'Ask for bill' : 'Pedir cuenta';
+  String get floorEmpty => _en ? 'No tables' : 'Sin mesas';
+  String paxLabel(int pax) => '· ${pax}p';
+  String minutesLabel(int m) => "$m′";
+
+  String get chipAll => _en ? 'All' : 'Todas';
+  String get chipToServe => _en ? 'To serve' : 'A servir';
+  String get chipToCharge => _en ? 'To charge' : 'A cobrar';
+  String get chipMine => _en ? 'Mine' : 'Mías';
+  String get chipFree => _en ? 'Free' : 'Libres';
+
+  String floorState(FloorStatus s) {
+    switch (s) {
+      case FloorStatus.free:
+        return _en ? 'Free' : 'Libre';
+      case FloorStatus.open:
+        return _en ? 'Open' : 'Abierta';
+      case FloorStatus.inKitchen:
+        return _en ? 'In kitchen' : 'En cocina';
+      case FloorStatus.toServe:
+        return _en ? 'To serve' : 'A servir';
+      case FloorStatus.served:
+        return _en ? 'Served' : 'Servida';
+      case FloorStatus.toCharge:
+        return _en ? 'To charge' : 'A cobrar';
+      case FloorStatus.closed:
+        return _en ? 'Closed' : 'Cerrada';
+    }
+  }
+
+  // Comanda (stub Tanda 1)
+  String get orderTitle => _en ? 'Order' : 'Comanda';
+  String get orderStubHint =>
+      _en ? 'Capture arrives in Tanda 2' : 'La captura llega en la Tanda 2';
+  String get orderTotal => _en ? 'Total' : 'Total';
+  String get orderEmpty => _en ? 'No items yet' : 'Sin ítems todavía';
 }
 
 extension StringsX on BuildContext {
