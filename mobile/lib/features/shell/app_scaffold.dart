@@ -8,6 +8,8 @@ import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../floor/floor_page.dart';
 import '../home/home_page.dart';
+import '../kds/kds_page.dart';
+import '../order/order_dtos.dart';
 
 /// Shell con bottom nav por rol (espeja `role-landing.tsx` + la navegación del
 /// front). En F0, todas las tabs menos "Inicio" son placeholders (llegan en F1).
@@ -68,9 +70,14 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
         ];
       case Role.kitchen:
       case Role.bar:
+        final station = role == Role.bar ? Station.bar : Station.kitchen;
         return [
           home,
-          _TabDef(Icons.restaurant_outlined, s.navKitchen, _Placeholder(s.navKitchen)),
+          _TabDef(
+            role == Role.bar ? Icons.local_bar_outlined : Icons.restaurant_outlined,
+            role == Role.bar ? s.kdsBar : s.kdsKitchen,
+            KdsPage(station: station),
+          ),
           more,
         ];
       case Role.cashier:
