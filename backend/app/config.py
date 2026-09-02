@@ -88,10 +88,6 @@ class Settings(BaseSettings):
     payment_gateway: Literal["manual", "mercadopago"] = "manual"
     mp_access_token: str = ""
     mp_webhook_secret: str = ""
-    # Fuerza el checkout de MercadoPago a sandbox (usa ``sandbox_init_point``) aunque
-    # el token de fallback sea APP_USR- (que la heurística tomaría como prod). Para
-    # probar single-account con las credenciales de un usuario de prueba. OFF en prod.
-    mp_force_sandbox: bool = False
     # Fernet key (url-safe base64, 32 bytes) to encrypt tenants' gateway tokens
     # at rest — Fase 3.5 (MercadoPago OAuth por tenant). Env only.
     credentials_encryption_key: str = ""
