@@ -12,8 +12,6 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import RedirectResponse
 
-logger = logging.getLogger(__name__)
-
 from app.application.payment.connect_mercadopago import (
     CompleteMercadoPagoConnection,
     DisconnectMercadoPago,
@@ -27,6 +25,8 @@ from app.domain.user.value_objects import Role
 from app.presentation.deps import current_identity
 from app.presentation.rbac import require_roles
 from app.presentation.schemas.integrations import ConnectUrlResponse, MpConnectionResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/integrations/mercadopago", tags=["integrations"])
 
