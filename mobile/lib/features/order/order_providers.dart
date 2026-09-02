@@ -21,7 +21,7 @@ final productRepositoryProvider = Provider<ProductRepository>(
   (ref) => ProductRepository(ref.read(apiDioProvider)),
 );
 
-final productsProvider = FutureProvider<List<Product>>(
+final productsProvider = FutureProvider.autoDispose<List<Product>>(
   (ref) => ref.read(productRepositoryProvider).products(),
 );
 

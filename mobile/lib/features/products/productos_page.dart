@@ -9,13 +9,20 @@ import '../../util/money.dart';
 import '../order/order_providers.dart';
 import '../order/product_dtos.dart';
 
-/// Productos (Fase 6, consulta): catálogo con precio y disponibilidad. La
-/// edición (costos, recetas, menu engineering) sigue en el web.
-class ProductosPage extends ConsumerWidget {
+/// Productos (Fase 6): catálogo con precio + toggle "86" (disponible hoy).
+/// La edición de costos/recetas/menu-engineering sigue en el web.
+class ProductosPage extends ConsumerStatefulWidget {
   const ProductosPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProductosPage> createState() => _ProductosPageState();
+}
+
+class _ProductosPageState extends ConsumerState<ProductosPage> {
+  final Map<String, bool> _override = {};
+
+  @override
+  Widget build(BuildContext context) {
     final s = context.s;
     final async = ref.watch(productsProvider);
     return Scaffold(
@@ -42,17 +49,6 @@ class ProductosPage extends ConsumerWidget {
                       padding: const EdgeInsets.all(16),
                       children: [
                         GlassPanel(
-                          child: Text(s.consultaOnly,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant)),
-                        ),
-                        const SizedBox(height: 12),
-                        GlassPanel(
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Material(
                             type: MaterialType.transparency,
@@ -60,7 +56,7 @@ class ProductosPage extends ConsumerWidget {
                               children: [
                                 for (var i = 0; i < products.length; i++) ...[
                                   if (i > 0) const Divider(height: 1),
-                                  _tile(context, s, products[i]),
+                                  _row(s, products[i]),
                                 ],
                               ],
                             ),
@@ -75,15 +71,32 @@ class ProductosPage extends ConsumerWidget {
     );
   }
 
-  Widget _tile(BuildContext context, Strings s, Product p) {
-    final parts = <String>[
-      if (p.category != null && p.category!.isNotEmpty) p.category!,
-      if (!p.orderable) s.productoUnavailable,
-    ];
-    return ListTile(
+  Widget _row(Strings s, Product p) {
+    final available = _override[p.id] ?? p.availableToday;
+    return SwitchListTile(
+      value: available && p.active,
+      onChanged: p.active ? (v) => _toggle(p, v) : null,
       title: Text(p.name),
-      subtitle: parts.isEmpty ? null : Text(parts.join(' · ')),
-      trailing: Text(formatMoney(p.priceAmount, p.currency)),
+      subtitle: Text(
+        [
+          formatMoney(p.priceAmount, p.currency),
+          if (p.category != null && p.category!.isNotEmpty) p.category!,
+          if (!available) s.productoUnavailable,
+        ].join(' · '),
+      ),
     );
+  }
+
+  Future<void> _toggle(Product p, bool value) async {
+    setState(() => _override[p.id] = value);
+    try {
+      await ref.read(productRepositoryProvider).setAvailability(p.id, value);
+    } on ApiError catch (e) {
+      setState(() => _override[p.id] = !value);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    }
   }
 }

@@ -18,4 +18,16 @@ class ProductRepository {
       throw toApiError(e);
     }
   }
+
+  /// Marca un producto disponible/no-disponible hoy ("86").
+  Future<void> setAvailability(String productId, bool availableToday) async {
+    try {
+      await _dio.put<dynamic>(
+        '/products/$productId/availability',
+        data: {'available_today': availableToday},
+      );
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
 }

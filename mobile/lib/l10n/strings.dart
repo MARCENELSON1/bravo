@@ -258,6 +258,10 @@ class Strings {
   String get productosEmpty => _en ? 'No products' : 'Sin productos';
   String get productoUnavailable => _en ? 'Unavailable today' : 'No disponible hoy';
   String get consultaOnly => _en ? 'View only · edit on the web' : 'Solo consulta · editá en el web';
+  String get insumosTitle => _en ? 'Ingredients' : 'Insumos';
+  String get insumosEmpty => _en ? 'No ingredients' : 'Sin insumos';
+  String get insumosBelowMin => _en ? 'Below minimum' : 'Bajo mínimo';
+  String get insumosStock => _en ? 'Stock' : 'Stock';
 }
 
 extension StringsX on BuildContext {
