@@ -9,6 +9,7 @@ import '../finance/finanzas_page.dart';
 import '../inventory/insumos_page.dart';
 import '../invoices/comprobantes_page.dart';
 import '../products/productos_page.dart';
+import '../reports/reportes_page.dart';
 import '../settings/printer_page.dart';
 import '../timeclock/fichaje_page.dart';
 import '../tips/tips_page.dart';
@@ -58,6 +59,9 @@ class MorePage extends ConsumerWidget {
                   const Divider(height: 1),
                   _tile(context, Icons.receipt_long_outlined,
                       s.comprobantesTitle, const ComprobantesPage()),
+                  const Divider(height: 1),
+                  _tile(context, Icons.bar_chart_outlined, s.reportesTitle,
+                      const ReportesPage()),
                 ],
               ],
             ),

@@ -281,6 +281,14 @@ class Strings {
         DocType.dni => 'DNI',
         DocType.consumidorFinal => _en ? 'Final consumer' : 'Consumidor final',
       };
+
+  // Reportes (Fase 6, consulta)
+  String get reportesTitle => _en ? 'Reports' : 'Reportes';
+  String get repMargin => _en ? 'Gross margin' : 'Margen bruto';
+  String get repOrders => _en ? 'Orders' : 'Órdenes';
+  String get repTopProducts => _en ? 'Top products' : 'Top productos';
+  String get repPaymentMix => _en ? 'Payment mix' : 'Mix de pagos';
+  String repUnits(int n) => _en ? '$n units' : '$n u.';
 }
 
 extension StringsX on BuildContext {
