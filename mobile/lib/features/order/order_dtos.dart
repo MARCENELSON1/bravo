@@ -61,6 +61,7 @@ class OrderItem {
     required this.status,
     required this.station,
     this.note,
+    this.sentAt,
     this.selectedOptions = const [],
   });
 
@@ -72,6 +73,7 @@ class OrderItem {
   final ItemStatus status;
   final Station station;
   final String? note;
+  final DateTime? sentAt;
   final List<SelectedOption> selectedOptions;
 
   int get lineTotal => unitPriceAmount * quantity;
@@ -85,6 +87,7 @@ class OrderItem {
         status: status,
         station: station,
         note: note,
+        sentAt: sentAt,
         selectedOptions: selectedOptions,
       );
 
@@ -97,6 +100,7 @@ class OrderItem {
         status: ItemStatus.fromApi(j['status'] as String),
         station: Station.fromApi(j['station'] as String),
         note: j['note'] as String?,
+        sentAt: _parseDate(j['sent_at']),
         selectedOptions: ((j['selected_options'] as List?) ?? const [])
             .map((e) => SelectedOption.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList(),

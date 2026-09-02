@@ -139,6 +139,15 @@ class Strings {
   String get printerNoPrinter =>
       _en ? 'No printer selected' : 'No hay impresora seleccionada';
 
+  // KDS (Fase 2)
+  String get kdsKitchen => _en ? 'Kitchen' : 'Cocina';
+  String get kdsBar => 'Bar';
+  String get kdsEmpty => _en ? 'No pending items' : 'Sin pedidos pendientes';
+  String get kdsStart => _en ? 'Start' : 'Empezar';
+  String get kdsReady => _en ? 'Ready' : 'Listo';
+  String get kdsDelayed => _en ? 'Late' : 'Demora';
+  String get kdsUnknownTable => _en ? 'Table —' : 'Mesa —';
+
   String itemStatusLabel(ItemStatus st) {
     switch (st) {
       case ItemStatus.pending:
