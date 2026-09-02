@@ -8,6 +8,7 @@ import '../../ui/glass_panel.dart';
 import '../../util/money.dart';
 import '../order/order_providers.dart';
 import '../order/product_dtos.dart';
+import 'recipe_page.dart';
 
 /// Productos (Fase 6): catálogo con precio + toggle "86" (disponible hoy).
 /// La edición de costos/recetas/menu-engineering sigue en el web.
@@ -74,6 +75,11 @@ class _ProductosPageState extends ConsumerState<ProductosPage> {
   Widget _row(Strings s, Product p) {
     final available = _override[p.id] ?? p.availableToday;
     return ListTile(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RecipePage(productId: p.id, productName: p.name),
+        ),
+      ),
       title: Text(p.name),
       subtitle: Text(
         [

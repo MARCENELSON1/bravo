@@ -319,6 +319,13 @@ class Strings {
   String get setOpenMinutes => _en ? 'Open minutes/day' : 'Minutos abiertos/día';
   String get setSave => _en ? 'Save' : 'Guardar';
   String get setSaved => _en ? 'Settings saved' : 'Ajustes guardados';
+
+  // Recetas (Fase 6)
+  String get recetaTitle => _en ? 'Recipe' : 'Receta';
+  String get recetaEmpty => _en ? 'No recipe yet' : 'Sin receta todavía';
+  String get recetaAdd => _en ? 'Add ingredient' : 'Agregar insumo';
+  String get recetaPrep => _en ? 'Preparation' : 'Preparación';
+  String get recetaSaved => _en ? 'Recipe saved' : 'Receta guardada';
 }
 
 extension StringsX on BuildContext {
