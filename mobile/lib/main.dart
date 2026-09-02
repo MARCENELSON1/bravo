@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'data/offline/sync_service_provider.dart';
 import 'router/router.dart';
 import 'theme/theme.dart';
 import 'theme/theme_controller.dart';
@@ -18,11 +19,23 @@ Future<void> main() async {
   );
 }
 
-class WellnodApp extends ConsumerWidget {
+class WellnodApp extends ConsumerStatefulWidget {
   const WellnodApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WellnodApp> createState() => _WellnodAppState();
+}
+
+class _WellnodAppState extends ConsumerState<WellnodApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Arranca el drenado de la cola de contingencia (al reconectar).
+    ref.read(syncServiceProvider).start();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     final mode = ref.watch(themeModeProvider);
     final locale = ref.watch(localeProvider);

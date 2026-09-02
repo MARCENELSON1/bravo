@@ -4,6 +4,10 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Wellnod usa Bluetooth para imprimir la comanda en la impresora térmica del local.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Wellnod usa Bluetooth para imprimir la comanda en la impresora térmica del local.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
