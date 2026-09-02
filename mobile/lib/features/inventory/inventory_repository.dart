@@ -56,6 +56,34 @@ class InventoryRepository {
       throw toApiError(e);
     }
   }
+
+  /// Registra una compra: suma `qty` al stock con su costo unitario.
+  Future<void> purchase(
+    String ingredientId, {
+    required int qty,
+    required int unitCostAmount,
+  }) async {
+    try {
+      await _dio.post<dynamic>(
+        '/inventory/ingredients/$ingredientId/purchase',
+        data: {'qty': qty, 'unit_cost_amount': unitCostAmount},
+      );
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
+  /// Registra una merma: descuenta `qty` del stock.
+  Future<void> waste(String ingredientId, {required int qty, String? note}) async {
+    try {
+      await _dio.post<dynamic>(
+        '/inventory/ingredients/$ingredientId/waste',
+        data: {'qty': qty, 'note': ?note},
+      );
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
 }
 
 final inventoryRepositoryProvider = Provider<InventoryRepository>(

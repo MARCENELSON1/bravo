@@ -8,20 +8,22 @@ import '../../ui/glass_panel.dart';
 import '../../util/money.dart';
 import 'inventory_repository.dart';
 
-/// Insumos (Fase 6, consulta): stock y costo por insumo, los bajo-mínimo primero.
-class InsumosPage extends ConsumerWidget {
+/// Insumos (Fase 6): stock y costo, bajo-mínimo primero, con compra y merma.
+class InsumosPage extends ConsumerStatefulWidget {
   const InsumosPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<InsumosPage> createState() => _InsumosPageState();
+}
+
+class _InsumosPageState extends ConsumerState<InsumosPage> {
+  @override
+  Widget build(BuildContext context) {
     final s = context.s;
     final async = ref.watch(ingredientsProvider);
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Text(s.insumosTitle),
-        backgroundColor: Colors.transparent,
-      ),
+      appBar: AppBar(title: Text(s.insumosTitle), backgroundColor: Colors.transparent),
       body: Stack(
         children: [
           const AppBackground(),
@@ -51,7 +53,7 @@ class InsumosPage extends ConsumerWidget {
                           children: [
                             for (var i = 0; i < sorted.length; i++) ...[
                               if (i > 0) const Divider(height: 1),
-                              _row(context, s, sorted[i]),
+                              _row(s, sorted[i]),
                             ],
                           ],
                         ),
@@ -67,9 +69,10 @@ class InsumosPage extends ConsumerWidget {
     );
   }
 
-  Widget _row(BuildContext context, Strings s, Ingredient ing) {
+  Widget _row(Strings s, Ingredient ing) {
     final scheme = Theme.of(context).colorScheme;
     return ListTile(
+      onTap: () => _actions(s, ing),
       title: Row(
         children: [
           Flexible(child: Text(ing.name)),
@@ -90,5 +93,124 @@ class InsumosPage extends ConsumerWidget {
       subtitle: Text('${s.insumosStock}: ${ing.stockQty} ${ing.unit} · mín ${ing.minQty}'),
       trailing: Text(formatMoney(ing.unitCostAmount, ing.currency)),
     );
+  }
+
+  void _actions(Strings s, Ingredient ing) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(ing.name, style: Theme.of(ctx).textTheme.titleMedium),
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_shopping_cart_outlined),
+              title: Text(s.purchase),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _purchase(s, ing);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_sweep_outlined),
+              title: Text(s.waste),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _waste(s, ing);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _purchase(Strings s, Ingredient ing) async {
+    final qtyCtrl = TextEditingController();
+    final costCtrl = TextEditingController(
+        text: (ing.unitCostAmount / 100).toStringAsFixed(2));
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('${s.purchase} · ${ing.name}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: qtyCtrl,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: '${s.qtyLabel} (${ing.unit})'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: costCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(labelText: s.unitCostLabel),
+            ),
+          ],
+        ),
+        actions: _dialogActions(ctx),
+      ),
+    );
+    if (ok != true) return;
+    final qty = int.tryParse(qtyCtrl.text.trim()) ?? 0;
+    final cost = pesosToMinor(costCtrl.text) ?? 0;
+    if (qty <= 0) return;
+    try {
+      await ref
+          .read(inventoryRepositoryProvider)
+          .purchase(ing.id, qty: qty, unitCostAmount: cost);
+      ref.invalidate(ingredientsProvider);
+    } on ApiError catch (e) {
+      _toast(e.message);
+    }
+  }
+
+  Future<void> _waste(Strings s, Ingredient ing) async {
+    final qtyCtrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('${s.waste} · ${ing.name}'),
+        content: TextField(
+          controller: qtyCtrl,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(labelText: '${s.qtyLabel} (${ing.unit})'),
+        ),
+        actions: _dialogActions(ctx),
+      ),
+    );
+    if (ok != true) return;
+    final qty = int.tryParse(qtyCtrl.text.trim()) ?? 0;
+    if (qty <= 0) return;
+    try {
+      await ref.read(inventoryRepositoryProvider).waste(ing.id, qty: qty);
+      ref.invalidate(ingredientsProvider);
+    } on ApiError catch (e) {
+      _toast(e.message);
+    }
+  }
+
+  List<Widget> _dialogActions(BuildContext ctx) => [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
+        ),
+      ];
+
+  void _toast(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 }

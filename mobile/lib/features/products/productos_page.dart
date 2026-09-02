@@ -73,18 +73,67 @@ class _ProductosPageState extends ConsumerState<ProductosPage> {
 
   Widget _row(Strings s, Product p) {
     final available = _override[p.id] ?? p.availableToday;
-    return SwitchListTile(
-      value: available && p.active,
-      onChanged: p.active ? (v) => _toggle(p, v) : null,
+    return ListTile(
       title: Text(p.name),
       subtitle: Text(
         [
-          formatMoney(p.priceAmount, p.currency),
           if (p.category != null && p.category!.isNotEmpty) p.category!,
           if (!available) s.productoUnavailable,
         ].join(' · '),
       ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextButton(
+            onPressed: () => _editPrice(s, p),
+            child: Text(formatMoney(p.priceAmount, p.currency)),
+          ),
+          Switch(
+            value: available && p.active,
+            onChanged: p.active ? (v) => _toggle(p, v) : null,
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<void> _editPrice(Strings s, Product p) async {
+    final ctrl =
+        TextEditingController(text: (p.priceAmount / 100).toStringAsFixed(2));
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('${s.editPrice} · ${p.name}'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(labelText: s.newPrice),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final amount = pesosToMinor(ctrl.text) ?? 0;
+    if (amount <= 0) return;
+    try {
+      await ref.read(productRepositoryProvider).updatePrice(p.id, amount);
+      ref.invalidate(productsProvider);
+    } on ApiError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    }
   }
 
   Future<void> _toggle(Product p, bool value) async {

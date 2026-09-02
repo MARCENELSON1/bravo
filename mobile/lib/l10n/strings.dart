@@ -262,6 +262,12 @@ class Strings {
   String get insumosEmpty => _en ? 'No ingredients' : 'Sin insumos';
   String get insumosBelowMin => _en ? 'Below minimum' : 'Bajo mínimo';
   String get insumosStock => _en ? 'Stock' : 'Stock';
+  String get editPrice => _en ? 'Edit price' : 'Editar precio';
+  String get newPrice => _en ? 'New price' : 'Nuevo precio';
+  String get purchase => _en ? 'Purchase' : 'Comprar';
+  String get waste => _en ? 'Waste' : 'Merma';
+  String get qtyLabel => _en ? 'Quantity' : 'Cantidad';
+  String get unitCostLabel => _en ? 'Unit cost' : 'Costo unitario';
 }
 
 extension StringsX on BuildContext {
