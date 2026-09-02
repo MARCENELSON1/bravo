@@ -109,6 +109,37 @@ async def test_charge_sets_back_urls_and_auto_return_when_return_url_given() -> 
     assert '"auto_return"' in captured["body"]
 
 
+async def test_charge_includes_the_tip_in_what_the_payer_is_charged() -> None:
+    captured: dict[str, str] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = request.content.decode()
+        return httpx.Response(201, json={"id": "pref-1", "sandbox_init_point": "https://mp/x"})
+
+    payment = _payment()  # amount 300000 (=3000.0)
+    payment.tip_amount = 50000  # +500.0 tip → must be charged online, not dropped
+    await _gateway(handler).charge(payment=payment)
+
+    import json
+
+    body = json.loads(captured["body"])
+    prices = [i["unit_price"] for i in body["items"]]
+    assert 3000.0 in prices and 500.0 in prices  # sale + tip both charged
+    assert any(i["title"] == "Propina" for i in body["items"])
+
+
+async def test_charge_has_no_tip_item_when_tip_is_zero() -> None:
+    captured: dict[str, str] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = request.content.decode()
+        return httpx.Response(201, json={"id": "pref-1", "sandbox_init_point": "https://mp/x"})
+
+    await _gateway(handler).charge(payment=_payment())  # tip_amount defaults to 0
+
+    assert "Propina" not in captured["body"]
+
+
 async def test_charge_omits_back_urls_without_a_return_url() -> None:
     captured: dict[str, str] = {}
 

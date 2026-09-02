@@ -90,15 +90,29 @@ class MercadoPagoGateway(PaymentGateway, PaymentNotificationGateway):
             return payment
 
         creds = await self._resolver.for_tenant(payment.tenant_id)
-        body: dict[str, object] = {
-            "items": [
+        # The tip rides ON TOP of the sale amount and MUST be part of what the payer
+        # is charged online (unlike cash, where it's handed over physically). We
+        # itemise it so the checkout shows sale + propina; the payment record still
+        # keeps ``amount`` and ``tip_amount`` split for the arqueo/finance side.
+        items: list[dict[str, object]] = [
+            {
+                "title": payment.description or "Cobro",
+                "quantity": 1,
+                "currency_id": payment.amount.currency,
+                "unit_price": payment.amount.amount / _MINOR_UNIT,
+            }
+        ]
+        if payment.tip_amount > 0:
+            items.append(
                 {
-                    "title": payment.description or "Cobro",
+                    "title": "Propina",
                     "quantity": 1,
                     "currency_id": payment.amount.currency,
-                    "unit_price": payment.amount.amount / _MINOR_UNIT,
+                    "unit_price": payment.tip_amount / _MINOR_UNIT,
                 }
-            ],
+            )
+        body: dict[str, object] = {
+            "items": items,
             "external_reference": f"{payment.tenant_id}:{payment.id}",
         }
         if self._notification_url:
