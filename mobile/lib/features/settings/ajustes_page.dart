@@ -1,156 +1,184 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../api/api_error.dart';
+import '../../auth/session.dart';
+import '../../auth/session_notifier.dart';
 import '../../l10n/strings.dart';
+import '../../theme/theme_controller.dart';
 import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
-import '../../util/money.dart';
-import 'advisor_settings_repository.dart';
+import 'settings_sections.dart';
 
-/// Ajustes (Fase 6): config del asesor/finanzas (costos fijos, food cost
-/// objetivo, IVA, inflación, cubiertos, horario). Los `%` se guardan como bps.
-class AjustesPage extends ConsumerStatefulWidget {
+/// Ajustes (Fase 6) — portado 1:1 de la config del web: 13 tabs. Apariencia es
+/// funcional (tema + reducir movimiento); las demás secciones se irán volviendo
+/// reales por tanda (caja, salones, integraciones, equipo, negocio, IA). El
+/// resto de las filas son "Próximamente", igual que en la web.
+class AjustesPage extends ConsumerWidget {
   const AjustesPage({super.key});
 
   @override
-  ConsumerState<AjustesPage> createState() => _AjustesPageState();
-}
-
-class _AjustesPageState extends ConsumerState<AjustesPage> {
-  final _labor = TextEditingController();
-  final _other = TextEditingController();
-  final _foodCost = TextEditingController();
-  final _vat = TextEditingController();
-  final _inflation = TextEditingController();
-  final _seats = TextEditingController();
-  final _minutes = TextEditingController();
-  bool _filled = false;
-
-  @override
-  void dispose() {
-    for (final c in [_labor, _other, _foodCost, _vat, _inflation, _seats, _minutes]) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  void _fill(AdvisorSettings s) {
-    _labor.text = (s.monthlyLaborCost / 100).toStringAsFixed(2);
-    _other.text = (s.monthlyOtherFixedCosts / 100).toStringAsFixed(2);
-    _foodCost.text = (s.targetFoodCostBps / 100).toStringAsFixed(2);
-    _vat.text = (s.defaultVatBps / 100).toStringAsFixed(2);
-    _inflation.text = (s.monthlyInflationBps / 100).toStringAsFixed(2);
-    _seats.text = '${s.seats}';
-    _minutes.text = '${s.dailyOpenMinutes}';
-    _filled = true;
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = context.s;
-    final async = ref.watch(advisorSettingsProvider);
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text(s.ajustesTitle), backgroundColor: Colors.transparent),
-      body: Stack(
-        children: [
-          const AppBackground(),
-          SafeArea(
-            child: async.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(e is ApiError ? e.message : '$e'),
-                ),
-              ),
-              data: (settings) {
-                if (!_filled) _fill(settings);
-                return _form(s);
-              },
-            ),
+    final en = Localizations.localeOf(context).languageCode == 'en';
+    return DefaultTabController(
+      length: settingsTabs.length,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(s.ajustesTitle),
+          backgroundColor: Colors.transparent,
+          bottom: TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: [for (final t in settingsTabs) Tab(text: t.title(en))],
           ),
-        ],
+        ),
+        body: Stack(
+          children: [
+            const AppBackground(),
+            SafeArea(
+              top: false,
+              child: TabBarView(
+                children: [for (final t in settingsTabs) _TabView(tab: t)],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _form(Strings s) {
+class _TabView extends ConsumerWidget {
+  const _TabView({required this.tab});
+  final SettingsTab tab;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = context.s;
+    final en = Localizations.localeOf(context).languageCode == 'en';
+    final sessionState = ref.watch(sessionProvider);
+    final session =
+        sessionState is SessionAuthenticated ? sessionState.session : null;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (tab.id == 'apariencia') ...[
+          _appearance(context, ref, s),
+          const SizedBox(height: 16),
+        ],
         GlassPanel(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _money(_labor, s.setLaborCost),
-              _money(_other, s.setOtherFixed),
-              _num(_foodCost, s.setTargetFoodCost),
-              _num(_vat, s.setVat),
-              _num(_inflation, s.setInflation),
-              _int(_seats, s.setSeats),
-              _int(_minutes, s.setOpenMinutes),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: _save,
-                icon: const Icon(Icons.save_outlined),
-                label: Text(s.setSave),
-              ),
-            ],
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Material(
+            type: MaterialType.transparency,
+            child: Column(
+              children: [
+                for (var i = 0; i < tab.rows.length; i++) ...[
+                  if (i > 0) const Divider(height: 1),
+                  _row(context, s, en, tab.rows[i], session),
+                ],
+              ],
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _money(TextEditingController c, String label) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: TextField(
-          controller: c,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(labelText: label),
-        ),
-      );
-
-  Widget _num(TextEditingController c, String label) => _money(c, label);
-
-  Widget _int(TextEditingController c, String label) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: TextField(
-          controller: c,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(labelText: label),
-        ),
-      );
-
-  int _pctToBps(TextEditingController c) {
-    final v = double.tryParse(c.text.trim().replaceAll(',', '.')) ?? 0;
-    return (v * 100).round();
+  Widget _appearance(BuildContext context, WidgetRef ref, Strings s) {
+    final mode = ref.watch(themeModeProvider);
+    final reduceMotion = ref.watch(reduceMotionProvider);
+    return GlassPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(s.theme, style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 8),
+          SegmentedButton<ThemeMode>(
+            segments: [
+              ButtonSegment(value: ThemeMode.light, label: Text(s.themeLight)),
+              ButtonSegment(value: ThemeMode.dark, label: Text(s.themeDark)),
+              ButtonSegment(value: ThemeMode.system, label: Text(s.themeSystem)),
+            ],
+            selected: {mode},
+            onSelectionChanged: (sel) =>
+                ref.read(themeModeProvider.notifier).set(sel.first),
+          ),
+          const Divider(height: 24),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: reduceMotion,
+            onChanged: (v) => ref.read(reduceMotionProvider.notifier).set(v),
+            title: Text(s.reduceMotion),
+            subtitle: Text(s.reduceMotionDesc),
+          ),
+        ],
+      ),
+    );
   }
 
-  Future<void> _save() async {
-    final s = context.s;
-    try {
-      await ref.read(advisorSettingsRepositoryProvider).update(
-            monthlyLaborCost: pesosToMinor(_labor.text) ?? 0,
-            monthlyOtherFixedCosts: pesosToMinor(_other.text) ?? 0,
-            targetFoodCostBps: _pctToBps(_foodCost),
-            seats: int.tryParse(_seats.text.trim()) ?? 0,
-            dailyOpenMinutes: int.tryParse(_minutes.text.trim()) ?? 0,
-            monthlyInflationBps: _pctToBps(_inflation),
-            defaultVatBps: _pctToBps(_vat),
-          );
-      ref.invalidate(advisorSettingsProvider);
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(s.setSaved)));
-      }
-    } on ApiError catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.message)));
-      }
+  Widget _row(
+    BuildContext context,
+    Strings s,
+    bool en,
+    SettingRow r,
+    Session? session,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    final value = _dyn(r.dyn, session) ?? r.value(en);
+
+    Widget? trailing;
+    if (r.toggle) {
+      trailing = const Switch(value: false, onChanged: null); // deshabilitado
+    } else if (value != null) {
+      trailing = Text(value,
+          style: TextStyle(color: scheme.onSurfaceVariant));
+    } else if (r.action != null) {
+      trailing = TextButton(
+        onPressed: () => ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(s.editSoon))),
+        style: TextButton.styleFrom(
+          foregroundColor:
+              r.danger ? scheme.error : scheme.onSurfaceVariant,
+        ),
+        child: Text(settingsActionLabel(r.action!, en)),
+      );
     }
+
+    return ListTile(
+      leading: r.dyn == 'avatar'
+          ? CircleAvatar(
+              backgroundColor: scheme.primary,
+              child: Text(_initials(session),
+                  style: TextStyle(
+                      color: scheme.onPrimary, fontWeight: FontWeight.w600)),
+            )
+          : null,
+      title: Text(r.label(en),
+          style: r.danger ? TextStyle(color: scheme.error) : null),
+      subtitle: r.desc(en) == null ? null : Text(r.desc(en)!),
+      trailing: trailing,
+    );
+  }
+
+  String? _dyn(String? dyn, Session? session) {
+    if (session == null || dyn == null) return null;
+    return switch (dyn) {
+      'name' => session.displayName,
+      'email' => session.email,
+      'tenant' => session.tenantName,
+      _ => null,
+    };
+  }
+
+  String _initials(Session? session) {
+    final base = session?.name?.trim().isNotEmpty == true
+        ? session!.name!.trim()
+        : (session?.email ?? '?');
+    final parts = base.split(RegExp(r'[ @.]')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+    return (parts[0].substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
   }
 }

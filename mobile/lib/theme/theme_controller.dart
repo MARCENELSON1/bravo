@@ -55,3 +55,20 @@ class LocaleController extends Notifier<Locale?> {
 
 final localeProvider =
     NotifierProvider<LocaleController, Locale?>(LocaleController.new);
+
+const String _reduceMotionKey = 'wellnod:reduce-motion'; // misma key que la web
+
+/// Reducir movimiento (accesibilidad): desactiva las animaciones de la interfaz.
+class ReduceMotionController extends Notifier<bool> {
+  @override
+  bool build() =>
+      ref.read(sharedPreferencesProvider).getBool(_reduceMotionKey) ?? false;
+
+  Future<void> set(bool value) async {
+    state = value;
+    await ref.read(sharedPreferencesProvider).setBool(_reduceMotionKey, value);
+  }
+}
+
+final reduceMotionProvider =
+    NotifierProvider<ReduceMotionController, bool>(ReduceMotionController.new);

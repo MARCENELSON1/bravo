@@ -319,6 +319,13 @@ class Strings {
   String get setOpenMinutes => _en ? 'Open minutes/day' : 'Minutos abiertos/día';
   String get setSave => _en ? 'Save' : 'Guardar';
   String get setSaved => _en ? 'Settings saved' : 'Ajustes guardados';
+  String get ajustesSubtitle =>
+      _en ? 'Manage your data and preferences.' : 'Gestioná tus datos y preferencias.';
+  String get editSoon => _en ? 'Coming soon' : 'Próximamente';
+  String get reduceMotion => _en ? 'Reduce motion' : 'Reducir movimiento';
+  String get reduceMotionDesc => _en
+      ? 'Turns off interface animations.'
+      : 'Desactiva las animaciones de la interfaz.';
 
   // Recetas (Fase 6)
   String get recetaTitle => _en ? 'Recipe' : 'Receta';
