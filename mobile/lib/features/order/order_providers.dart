@@ -4,6 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../api/api_client.dart';
+import '../../api/api_error.dart';
+import '../../data/offline/order_op.dart';
+import '../../data/offline/sync_providers.dart';
+import '../../data/offline/sync_queue.dart';
 import '../../theme/theme_controller.dart';
 import '../floor/floor_providers.dart';
 import 'order_dtos.dart';
@@ -35,6 +39,7 @@ class OrderController extends AutoDisposeFamilyAsyncNotifier<Order, String> {
   Future<Order> build(String arg) => ref.read(orderRepositoryProvider).get(arg);
 
   OrderRepository get _repo => ref.read(orderRepositoryProvider);
+  SyncQueue get _queue => ref.read(syncQueueProvider);
   Order get _current => state.value!;
 
   Future<void> _serialized(Future<void> Function() action) {
@@ -59,9 +64,15 @@ class OrderController extends AutoDisposeFamilyAsyncNotifier<Order, String> {
         state = AsyncData(
           await _repo.addItem(arg, id: itemId, productId: p.id, quantity: qty),
         );
-      } catch (e) {
-        state = AsyncData(await _repo.get(arg));
-        rethrow;
+      } on ApiError catch (e) {
+        if (e.code == 'network_error') {
+          await _queue.enqueue(OrderOp.addItem(
+              orderId: arg, itemId: itemId, productId: p.id, quantity: qty));
+          // se mantiene el estado optimista; se drena al reconectar
+        } else {
+          state = AsyncData(await _repo.get(arg));
+          rethrow;
+        }
       }
     });
   }
@@ -72,9 +83,14 @@ class OrderController extends AutoDisposeFamilyAsyncNotifier<Order, String> {
     await _serialized(() async {
       try {
         state = AsyncData(await _repo.setQuantity(arg, itemId, qty));
-      } catch (e) {
-        state = AsyncData(await _repo.get(arg));
-        rethrow;
+      } on ApiError catch (e) {
+        if (e.code == 'network_error') {
+          await _queue.enqueue(
+              OrderOp.setQty(orderId: arg, itemId: itemId, quantity: qty));
+        } else {
+          state = AsyncData(await _repo.get(arg));
+          rethrow;
+        }
       }
     });
   }
@@ -84,23 +100,54 @@ class OrderController extends AutoDisposeFamilyAsyncNotifier<Order, String> {
     await _serialized(() async {
       try {
         state = AsyncData(await _repo.removeItem(arg, itemId));
-      } catch (e) {
-        state = AsyncData(await _repo.get(arg));
-        rethrow;
+      } on ApiError catch (e) {
+        if (e.code == 'network_error') {
+          await _queue
+              .enqueue(OrderOp.removeItem(orderId: arg, itemId: itemId));
+        } else {
+          state = AsyncData(await _repo.get(arg));
+          rethrow;
+        }
       }
     });
   }
 
   Future<void> send() => _serialized(() async {
-        state = AsyncData(await _repo.send(arg));
+        try {
+          state = AsyncData(await _repo.send(arg));
+        } on ApiError catch (e) {
+          if (e.code == 'network_error') {
+            await _queue.enqueue(OrderOp.send(orderId: arg));
+          } else {
+            rethrow;
+          }
+        }
       });
 
   Future<void> transfer(String tableId) => _serialized(() async {
-        state = AsyncData(await _repo.transfer(arg, tableId));
+        try {
+          state = AsyncData(await _repo.transfer(arg, tableId));
+        } on ApiError catch (e) {
+          if (e.code == 'network_error') {
+            await _queue
+                .enqueue(OrderOp.transfer(orderId: arg, tableId: tableId));
+          } else {
+            rethrow;
+          }
+        }
       });
 
   Future<void> merge(String sourceOrderId) => _serialized(() async {
-        state = AsyncData(await _repo.merge(arg, sourceOrderId));
+        try {
+          state = AsyncData(await _repo.merge(arg, sourceOrderId));
+        } on ApiError catch (e) {
+          if (e.code == 'network_error') {
+            await _queue.enqueue(
+                OrderOp.merge(orderId: arg, sourceOrderId: sourceOrderId));
+          } else {
+            rethrow;
+          }
+        }
       });
 }
 

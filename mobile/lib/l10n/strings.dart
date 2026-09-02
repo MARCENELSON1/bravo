@@ -119,6 +119,10 @@ class Strings {
   String get noOtherTables => _en ? 'No other tables' : 'No hay otras mesas';
   String tableLabel(int number) => _en ? 'Table $number' : 'Mesa $number';
 
+  // Modo contingencia (sync)
+  String pendingSync(int n) =>
+      _en ? '$n to sync' : '$n por sincronizar';
+
   String itemStatusLabel(ItemStatus st) {
     switch (st) {
       case ItemStatus.pending:

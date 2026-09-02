@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
+import '../../data/offline/sync_indicator.dart';
 import '../../l10n/strings.dart';
 import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
@@ -35,7 +36,11 @@ class _OrderPageState extends ConsumerState<OrderPage> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text(s.orderTitle), backgroundColor: Colors.transparent),
+      appBar: AppBar(
+        title: Text(s.orderTitle),
+        backgroundColor: Colors.transparent,
+        actions: const [SyncIndicator()],
+      ),
       floatingActionButton: async.hasValue
           ? FloatingActionButton.extended(
               onPressed: _openPicker,
