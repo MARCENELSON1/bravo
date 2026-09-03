@@ -123,6 +123,7 @@ from app.application.order.use_cases import (
     GetKdsOrders,
     GetOrder,
     ListOrders,
+    ListPendingQrOrders,
     MergeOrders,
     RemoveOrderItem,
     ReopenOrder,
@@ -191,6 +192,7 @@ from app.application.table_session.sectors import (
     UpdateSector,
 )
 from app.application.table_session.use_cases import (
+    AssignTableWaiter,
     OpenSession,
     RequestBill,
     SetSessionPax,
@@ -683,6 +685,12 @@ class Container(containers.DeclarativeContainer):
         sessions=table_session_repository,
         tenant_context=tenant_context,
     )
+    assign_table_waiter = providers.Factory(
+        AssignTableWaiter,
+        sessions=table_session_repository,
+        orders=order_repository,
+        tenant_context=tenant_context,
+    )
     list_sectors = providers.Factory(
         ListSectors, sectors=sector_repository, tenant_context=tenant_context
     )
@@ -780,6 +788,7 @@ class Container(containers.DeclarativeContainer):
     send_order = providers.Factory(
         SendOrder,
         orders=order_repository,
+        assign_waiter=assign_table_waiter,
         tenant_context=tenant_context,
         event_bus=event_bus,
     )
@@ -815,6 +824,9 @@ class Container(containers.DeclarativeContainer):
     )
     get_kds_orders = providers.Factory(
         GetKdsOrders, orders=order_repository, tenant_context=tenant_context
+    )
+    list_pending_qr = providers.Factory(
+        ListPendingQrOrders, orders=order_repository, tenant_context=tenant_context
     )
 
     # --- Fase 6 (repos de inventario + consumo por venta) ---

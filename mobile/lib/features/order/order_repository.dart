@@ -78,10 +78,47 @@ class OrderRepository {
     }
   }
 
-  /// Marcha a cocina (PENDING → SENT).
+  /// Marcha a cocina (PENDING → SENT). Confirmar un pedido QR pasa por acá: el
+  /// mozo que lo confirma queda dueño de la mesa (Fase 2, backend).
   Future<Order> send(String orderId) async {
     try {
       final res = await _dio.post<dynamic>('/orders/$orderId/send');
+      return await _order(res, orderId);
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
+  /// Bandeja "QR por confirmar": pedidos que el comensal hizo por QR y siguen
+  /// OPEN (sin marchar). El mozo confirma uno con [send].
+  Future<List<Order>> pendingQr() async {
+    try {
+      final res = await _dio.get<dynamic>('/orders/pending-qr');
+      return (res.data as List)
+          .map((e) => Order.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
+  /// Tomar una mesa huérfana: el mozo que llama queda dueño (409 si ya tiene dueño).
+  Future<Order> claim(String orderId) async {
+    try {
+      final res = await _dio.post<dynamic>('/orders/$orderId/claim');
+      return await _order(res, orderId);
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
+  /// Reasignar el mozo dueño de la mesa (encargado): pisa el dueño actual.
+  Future<Order> assignWaiter(String orderId, String waiterId) async {
+    try {
+      final res = await _dio.post<dynamic>(
+        '/orders/$orderId/assign-waiter',
+        data: {'waiter_id': waiterId},
+      );
       return await _order(res, orderId);
     } catch (e) {
       throw toApiError(e);

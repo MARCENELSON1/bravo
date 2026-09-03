@@ -51,6 +51,14 @@ class _OrderPageState extends ConsumerState<OrderPage> {
               MaterialPageRoute(builder: (_) => const PrinterPage()),
             ),
           ),
+          PopupMenuButton<String>(
+            onSelected: (v) {
+              if (v == 'claim') _claim(s);
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(value: 'claim', child: Text(s.claimTable)),
+            ],
+          ),
         ],
       ),
       floatingActionButton: async.hasValue
@@ -78,6 +86,18 @@ class _OrderPageState extends ConsumerState<OrderPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _claim(Strings s) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(orderRepositoryProvider).claim(orderId);
+      ref.invalidate(orderControllerProvider(orderId));
+      ref.read(floorProvider.notifier).refresh();
+      messenger.showSnackBar(SnackBar(content: Text(s.claimDone)));
+    } on ApiError catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
   }
 
   Widget _content(BuildContext context, Strings s, Order order) {

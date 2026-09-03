@@ -43,3 +43,8 @@ class TableSession:
     merged_into_id: str | None = None
     customer_id: str | None = None
     notes: str | None = None
+
+    def assign_waiter(self, waiter_id: str) -> None:
+        """Set (or change) the owner of the visit. Único punto de mutación del
+        dueño tras abrir la sesión: lo usan confirmar-QR, tomar mesa y reasignar."""
+        self.waiter_id = waiter_id

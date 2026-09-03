@@ -6,6 +6,7 @@ from app.application.analytics.ports import SalesProjector
 from app.application.clock import utcnow
 from app.application.inventory.ports import InventoryConsumer
 from app.application.order.dtos import BatchOrderItemInput, CreateOrderResult
+from app.application.table_session.use_cases import AssignTableWaiter
 from app.domain.identity.ports import TenantContext
 from app.domain.invoice.repository import InvoiceRepository
 from app.domain.invoice.value_objects import InvoiceStatus
@@ -313,23 +314,42 @@ def _order_ready(order: Order, table_number: str) -> DomainEvent:
 
 
 class SendOrder:
+    """March an order to the kitchen (PENDING→SENT). Confirming a QR order goes
+    through here: the waiter who marches it becomes the table's owner (Fase 2),
+    but only if the table is still orphan — a table already owned is left as is."""
+
     def __init__(
         self,
         orders: OrderRepository,
+        assign_waiter: AssignTableWaiter,
         tenant_context: TenantContext,
         event_bus: EventBus,
     ) -> None:
         self._orders = orders
+        self._assign_waiter = assign_waiter
         self._tenant_context = tenant_context
         self._event_bus = event_bus
 
-    async def execute(self, *, tenant_id: str, order_id: str) -> Order:
+    async def execute(
+        self, *, tenant_id: str, order_id: str, waiter_id: str | None = None
+    ) -> Order:
         self._tenant_context.set(tenant_id)
         order = await self._orders.get_by_id(tenant_id, order_id)
         if order is None:
             raise OrderNotFound()
         marched = order.march(utcnow())
         await self._orders.save(order)
+        # Confirmar = quedar dueño de la mesa huérfana (Caso B). No roba una mesa
+        # que ya tiene dueño; y estampa las órdenes vivas (para el aviso "listo").
+        if waiter_id and order.session_id:
+            await self._assign_waiter.execute(
+                tenant_id=tenant_id,
+                session_id=order.session_id,
+                waiter_id=waiter_id,
+                only_if_unassigned=True,
+                conflict_raises=False,
+            )
+            order = await self._orders.get_by_id(tenant_id, order_id) or order
         for event in _kds_changed(order, {it.station for it in marched}):
             await self._event_bus.publish(event)
         await self._event_bus.publish(_floor_changed(order))
@@ -557,3 +577,16 @@ class GetKdsOrders:
     ) -> list[Order]:
         self._tenant_context.set(tenant_id)
         return await self._orders.list_kds(tenant_id, station)
+
+
+class ListPendingQrOrders:
+    """The "QR por confirmar" tray: orders a diner placed by QR that are still
+    OPEN (not marched to the kitchen). A waiter confirms one via ``SendOrder``."""
+
+    def __init__(self, orders: OrderRepository, tenant_context: TenantContext) -> None:
+        self._orders = orders
+        self._tenant_context = tenant_context
+
+    async def execute(self, *, tenant_id: str) -> list[Order]:
+        self._tenant_context.set(tenant_id)
+        return await self._orders.list_pending_qr(tenant_id)

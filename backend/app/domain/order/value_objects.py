@@ -58,3 +58,9 @@ class OrderSource(StrEnum):
 
     WAITER = "WAITER"
     CUSTOMER_QR = "CUSTOMER_QR"
+
+
+# Sentinel del mozo cuando una orden nace sin dueño humano (autopedido QR que abre
+# la mesa): UUID nil en la columna (sin FK). El significado lo porta `source`; una
+# sesión con este waiter cuenta como "huérfana" y se reasigna al confirmar.
+CUSTOMER_WAITER_ID = "00000000-0000-0000-0000-000000000000"

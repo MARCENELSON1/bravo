@@ -44,6 +44,11 @@ class MergeOrdersRequest(BaseModel):
     source_order_id: str
 
 
+class AssignWaiterRequest(BaseModel):
+    # Reasignar el mozo dueño de la mesa (encargado). El user_id del nuevo mozo.
+    waiter_id: str
+
+
 class CreateOrderResponse(BaseModel):
     order_id: str
 

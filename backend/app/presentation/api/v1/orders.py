@@ -13,6 +13,7 @@ from app.application.order.use_cases import (
     CreateOrder,
     GetOrder,
     ListOrders,
+    ListPendingQrOrders,
     MergeOrders,
     RemoveOrderItem,
     ReopenOrder,
@@ -20,6 +21,7 @@ from app.application.order.use_cases import (
     SetItemQuantity,
     TransferOrder,
 )
+from app.application.table_session.use_cases import AssignTableWaiter
 from app.application.tax.quote_order_tax import QuoteOrderTax
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
@@ -31,6 +33,7 @@ from app.presentation.schemas.customers import AssignCustomerRequest
 from app.presentation.schemas.orders import (
     AddOrderItemRequest,
     AddOrderItemsBatchRequest,
+    AssignWaiterRequest,
     CreateOrderRequest,
     CreateOrderResponse,
     MergeOrdersRequest,
@@ -107,6 +110,18 @@ async def list_orders(
     identity: AccessClaims = Depends(current_identity),
     use_case: ListOrders = Depends(Provide[Container.list_orders]),
 ) -> list[OrderResponse]:
+    orders = await use_case.execute(tenant_id=identity.tenant_id)
+    return [order_to_response(o) for o in orders]
+
+
+@router.get("/pending-qr", response_model=list[OrderResponse])
+@inject
+async def list_pending_qr_orders(
+    identity: AccessClaims = Depends(require_roles(*_FLOOR_ROLES)),
+    use_case: ListPendingQrOrders = Depends(Provide[Container.list_pending_qr]),
+) -> list[OrderResponse]:
+    """Bandeja "QR por confirmar": pedidos que el comensal hizo por QR y siguen
+    OPEN (sin marchar). Un mozo confirma uno con ``POST /orders/{id}/send``."""
     orders = await use_case.execute(tenant_id=identity.tenant_id)
     return [order_to_response(o) for o in orders]
 
@@ -260,7 +275,58 @@ async def send_order(
     identity: AccessClaims = Depends(require_roles(*_FLOOR_ROLES)),
     use_case: SendOrder = Depends(Provide[Container.send_order]),
 ) -> OrderResponse:
-    order = await use_case.execute(tenant_id=identity.tenant_id, order_id=order_id)
+    # Confirmar = marchar + quedar dueño de la mesa huérfana (el que confirma).
+    order = await use_case.execute(
+        tenant_id=identity.tenant_id, order_id=order_id, waiter_id=identity.user_id
+    )
+    return order_to_response(order)
+
+
+@router.post("/{order_id}/claim", response_model=OrderResponse)
+@inject
+async def claim_order(
+    order_id: str,
+    identity: AccessClaims = Depends(require_roles(*_FLOOR_ROLES)),
+    get_use_case: GetOrder = Depends(Provide[Container.get_order]),
+    assign: AssignTableWaiter = Depends(Provide[Container.assign_table_waiter]),
+) -> OrderResponse:
+    """Tomar una mesa huérfana: el mozo que llama queda dueño (409 si ya tiene
+    dueño). Para mesas de autopedido QR que nadie confirmó todavía."""
+    order = await get_use_case.execute(tenant_id=identity.tenant_id, order_id=order_id)
+    if order.session_id:
+        await assign.execute(
+            tenant_id=identity.tenant_id,
+            session_id=order.session_id,
+            waiter_id=identity.user_id,
+            only_if_unassigned=True,
+            conflict_raises=True,
+        )
+        order = await get_use_case.execute(
+            tenant_id=identity.tenant_id, order_id=order_id
+        )
+    return order_to_response(order)
+
+
+@router.post("/{order_id}/assign-waiter", response_model=OrderResponse)
+@inject
+async def assign_order_waiter(
+    order_id: str,
+    body: AssignWaiterRequest,
+    identity: AccessClaims = Depends(require_roles(*_MANAGER_ROLES)),
+    get_use_case: GetOrder = Depends(Provide[Container.get_order]),
+    assign: AssignTableWaiter = Depends(Provide[Container.assign_table_waiter]),
+) -> OrderResponse:
+    """Reasignar el mozo dueño de la mesa (encargado): pisa el dueño actual."""
+    order = await get_use_case.execute(tenant_id=identity.tenant_id, order_id=order_id)
+    if order.session_id:
+        await assign.execute(
+            tenant_id=identity.tenant_id,
+            session_id=order.session_id,
+            waiter_id=body.waiter_id,
+        )
+        order = await get_use_case.execute(
+            tenant_id=identity.tenant_id, order_id=order_id
+        )
     return order_to_response(order)
 
 

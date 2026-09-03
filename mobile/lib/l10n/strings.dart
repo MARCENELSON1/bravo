@@ -338,6 +338,20 @@ class Strings {
   String get readyModalTitleNoTable => _en ? 'Order ready' : 'Comanda lista';
   String get comandaEmpty => _en ? 'No items.' : 'Sin ítems.';
 
+  // Asignación por confirmación / bandeja QR (Fase 2)
+  String pendingQrTitle(int count) =>
+      _en ? 'QR to confirm ($count)' : 'QR por confirmar ($count)';
+  String pendingQrItems(int count) =>
+      _en ? '$count items' : '$count ítems';
+  String get pendingQrConfirm => _en ? 'Confirm' : 'Confirmar';
+  String get pendingQrTable => _en ? 'Table' : 'Mesa';
+  String get pendingQrConfirmed =>
+      _en ? 'Order confirmed — the table is yours.' : 'Comanda confirmada — la mesa es tuya.';
+  String get claimTable => _en ? 'Take table' : 'Tomar mesa';
+  String get claimDone => _en ? 'Table is yours now.' : 'La mesa quedó a tu nombre.';
+  String get reassignWaiter => _en ? 'Change waiter' : 'Cambiar mozo';
+  String get reassignDone => _en ? 'Waiter reassigned.' : 'Mozo reasignado.';
+
   // Copiloto (Fase 5)
   String get copilotTitle => _en ? 'Copilot' : 'Copiloto';
   String get copilotHint =>

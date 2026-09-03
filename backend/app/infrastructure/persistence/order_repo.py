@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.order.entities import Order
 from app.domain.order.repository import OrderRepository
-from app.domain.order.value_objects import ItemStatus, OrderStatus, Station
+from app.domain.order.value_objects import ItemStatus, OrderSource, OrderStatus, Station
 from app.infrastructure.persistence.database import SessionFactory
 from app.infrastructure.persistence.mappers import (
     order_item_to_orm,
@@ -106,6 +106,20 @@ class SqlAlchemyOrderRepository(OrderRepository):
                     OrderORM.tenant_id == tenant_id,
                     OrderORM.session_id == session_id,
                     OrderORM.status.in_(_ACTIVE_STATUSES),
+                )
+                .order_by(OrderORM.created_at.asc())
+            )
+            rows = (await session.execute(stmt)).scalars().all()
+            return [await self._load(session, row) for row in rows]
+
+    async def list_pending_qr(self, tenant_id: str) -> list[Order]:
+        async with self._session_factory() as session:
+            stmt = (
+                select(OrderORM)
+                .where(
+                    OrderORM.tenant_id == tenant_id,
+                    OrderORM.status == OrderStatus.OPEN.value,
+                    OrderORM.source == OrderSource.CUSTOMER_QR.value,
                 )
                 .order_by(OrderORM.created_at.asc())
             )

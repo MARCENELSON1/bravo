@@ -13,6 +13,7 @@ import 'floor_dtos.dart';
 import 'floor_filter.dart';
 import 'floor_providers.dart';
 import 'floor_view.dart';
+import 'pending_qr_tray.dart';
 import 'table_card.dart';
 
 /// Plano de salón en vivo (Tanda 1). Espeja `frontend/src/features/floor/floor-page.tsx`:
@@ -100,6 +101,8 @@ class _FloorPageState extends ConsumerState<FloorPage> {
           ),
           const SizedBox(height: 12),
           _chips(s),
+          const SizedBox(height: 14),
+          const PendingQrTray(),
           if (attention.isNotEmpty) ...[
             const SizedBox(height: 14),
             Text(s.floorAttention(attention.length),

@@ -8,7 +8,11 @@ from app.domain.identity.ports import TenantContext
 from app.domain.order.entities import Order
 from app.domain.order.exceptions import SelfOrderDisabled
 from app.domain.order.settings import SelfOrderSettings, SelfOrderSettingsRepository
-from app.domain.order.value_objects import OrderSource, SelectedOption
+from app.domain.order.value_objects import (
+    CUSTOMER_WAITER_ID,
+    OrderSource,
+    SelectedOption,
+)
 from app.domain.product.exceptions import InactiveProduct, ProductNotFound, ProductUnavailable
 from app.domain.product.modifier_repository import ModifierRepository
 from app.domain.product.modifiers import select_options
@@ -34,10 +38,9 @@ class CustomerOrderLineInput:
     note: str | None = None
     option_ids: list[str] = field(default_factory=list)
 
-# No hay mozo para un pedido del cliente que abre la mesa. UUID nil como sentinel
-# (columna UUID sin FK): el `source=CUSTOMER_QR` es lo que porta el significado, y
-# el mozo queda como el de la sesión si la mesa ya estaba abierta.
-_CUSTOMER_WAITER_ID = "00000000-0000-0000-0000-000000000000"
+# Sentinel del mozo del autopedido (definido en el dominio, compartido con la
+# asignación por confirmación). Alias local para no tocar el resto del archivo.
+_CUSTOMER_WAITER_ID = CUSTOMER_WAITER_ID
 
 
 class GetSelfOrderSettings:

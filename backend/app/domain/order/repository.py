@@ -35,6 +35,11 @@ class OrderRepository(ABC):
         it until now."""
 
     @abstractmethod
+    async def list_pending_qr(self, tenant_id: str) -> list[Order]:
+        """QR orders still waiting to be confirmed: ``status=OPEN`` +
+        ``source=CUSTOMER_QR`` (the "QR por confirmar" tray, Fase 2)."""
+
+    @abstractmethod
     async def add(self, order: Order) -> None: ...
 
     @abstractmethod

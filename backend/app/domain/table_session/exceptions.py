@@ -11,3 +11,8 @@ class SessionNotFound(DomainError):
 class SectorNotFound(DomainError):
     code = "sector_not_found"
     message = "No encontramos el sector indicado."
+
+
+class TableAlreadyAssigned(DomainError):
+    code = "table_already_assigned"
+    message = "La mesa ya tiene un mozo a cargo."

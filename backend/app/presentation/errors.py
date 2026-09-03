@@ -96,7 +96,11 @@ from app.domain.shared.exceptions import (
     UnsupportedCurrency,
 )
 from app.domain.table.exceptions import TableNotFound
-from app.domain.table_session.exceptions import SectorNotFound, SessionNotFound
+from app.domain.table_session.exceptions import (
+    SectorNotFound,
+    SessionNotFound,
+    TableAlreadyAssigned,
+)
 from app.domain.tax.exceptions import (
     InvalidTaxProviderCredential,
     TaxProviderUnavailable,
@@ -144,6 +148,7 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     # Fase 2 — comandas/productos/mesas + Money
     (TableNotFound, 404),
     (SessionNotFound, 404),
+    (TableAlreadyAssigned, 409),
     (SectorNotFound, 404),
     (CustomerNotFound, 404),
     (ProductNotFound, 404),

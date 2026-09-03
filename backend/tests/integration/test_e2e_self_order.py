@@ -117,6 +117,78 @@ async def test_unavailable_product_is_rejected(client):
     assert res.json()["code"] == "product_unavailable"
 
 
+async def _me(http, h) -> str:
+    return (await http.get("/api/v1/me", headers=h)).json()["user_id"]
+
+
+async def _qr_order(http, h, number, pid) -> str:
+    token = await _qr_token(http, h, number)
+    res = await http.post(
+        "/api/v1/public/table/order",
+        json={"token": token, "lines": [{"product_id": pid, "quantity": 1}]},
+    )
+    assert res.status_code == 200, res.text
+    return res.json()["order_id"]
+
+
+async def test_pending_qr_tray_and_confirm_assigns(client):
+    """Fase 2: un pedido QR OPEN aparece en la bandeja; al confirmarlo (marchar),
+    la mesa queda a nombre del que confirma y sale de la bandeja."""
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    owner_id = await _me(http, h)
+    pid = await _product(http, h, "Pizza", 1200000)
+    await _enable(http, h, requires_confirmation=True)
+    order_id = await _qr_order(http, h, 9, pid)
+
+    tray = await http.get("/api/v1/orders/pending-qr", headers=h)
+    assert tray.status_code == 200, tray.text
+    assert [o["id"] for o in tray.json()] == [order_id]
+    assert tray.json()[0]["source"] == "CUSTOMER_QR"
+    assert tray.json()[0]["waiter_id"] == "00000000-0000-0000-0000-000000000000"
+
+    sent = await http.post(f"/api/v1/orders/{order_id}/send", headers=h)
+    assert sent.status_code == 200, sent.text
+    assert sent.json()["status"] == "SENT"
+    # estampado en la orden → el aviso "listo" (Fase 1) le llega al confirmante
+    assert sent.json()["waiter_id"] == owner_id
+
+    assert (await http.get("/api/v1/orders/pending-qr", headers=h)).json() == []
+
+
+async def test_claim_orphan_qr_table(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    owner_id = await _me(http, h)
+    pid = await _product(http, h, "Pizza", 1200000)
+    await _enable(http, h, requires_confirmation=True)
+    order_id = await _qr_order(http, h, 10, pid)
+
+    claimed = await http.post(f"/api/v1/orders/{order_id}/claim", headers=h)
+    assert claimed.status_code == 200, claimed.text
+    assert claimed.json()["waiter_id"] == owner_id
+
+
+async def test_manager_assign_waiter(client):
+    http, fake_email = client
+    tokens = await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")
+    h = _auth(tokens)
+    owner_id = await _me(http, h)
+    pid = await _product(http, h, "Pizza", 1200000)
+    await _enable(http, h, requires_confirmation=True)
+    order_id = await _qr_order(http, h, 11, pid)
+
+    res = await http.post(
+        f"/api/v1/orders/{order_id}/assign-waiter",
+        json={"waiter_id": owner_id},
+        headers=h,
+    )
+    assert res.status_code == 200, res.text
+    assert res.json()["waiter_id"] == owner_id
+
+
 async def test_order_endpoint_rejects_bad_token(client):
     http, fake_email = client
     await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com")

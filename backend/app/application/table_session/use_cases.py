@@ -4,10 +4,12 @@ from uuid import uuid4
 
 from app.application.clock import utcnow
 from app.domain.identity.ports import TenantContext
+from app.domain.order.repository import OrderRepository
+from app.domain.order.value_objects import CUSTOMER_WAITER_ID
 from app.domain.table.exceptions import TableNotFound
 from app.domain.table.repository import TableRepository
 from app.domain.table_session.entities import TableSession
-from app.domain.table_session.exceptions import SessionNotFound
+from app.domain.table_session.exceptions import SessionNotFound, TableAlreadyAssigned
 from app.domain.table_session.repository import TableSessionRepository
 from app.domain.table_session.value_objects import SessionStatus
 
@@ -102,4 +104,56 @@ class RequestBill:
         if session.bill_requested_at is None:
             session.bill_requested_at = utcnow()
             await self._sessions.save(session)
+        return session
+
+
+class AssignTableWaiter:
+    """The single use case that sets/updates the owner of a table's visit.
+
+    Used by: confirming a QR order (the waiter who marches it becomes the owner),
+    a waiter *claiming* an orphan table, and a manager *reassigning* the waiter.
+    It also stamps the session's live orders with the new owner, so the Fase 1
+    ``order.ready`` alert (which reads ``order.waiter_id``) reaches the right waiter.
+
+    ``only_if_unassigned`` guards the *claim* path: a plain waiter can only take a
+    table that has no real owner yet (``waiter_id`` None or the QR nil sentinel);
+    a manager reassign passes it as False to override an existing owner."""
+
+    def __init__(
+        self,
+        sessions: TableSessionRepository,
+        orders: OrderRepository,
+        tenant_context: TenantContext,
+    ) -> None:
+        self._sessions = sessions
+        self._orders = orders
+        self._tenant_context = tenant_context
+
+    async def execute(
+        self,
+        *,
+        tenant_id: str,
+        session_id: str,
+        waiter_id: str,
+        only_if_unassigned: bool = False,
+        conflict_raises: bool = True,
+    ) -> TableSession:
+        self._tenant_context.set(tenant_id)
+        session = await self._sessions.get_by_id(tenant_id, session_id)
+        if session is None:
+            raise SessionNotFound()
+        is_orphan = session.waiter_id in (None, CUSTOMER_WAITER_ID)
+        already_mine = session.waiter_id == waiter_id
+        if only_if_unassigned and not is_orphan and not already_mine:
+            # Otro mozo ya es dueño. Claim → 409; confirmar-al-marchar → no-op.
+            if conflict_raises:
+                raise TableAlreadyAssigned()
+            return session
+        session.assign_waiter(waiter_id)
+        await self._sessions.save(session)
+        # Estampar las órdenes vivas: el aviso "listo" (Fase 1) usa order.waiter_id.
+        for order in await self._orders.list_open_by_session(tenant_id, session_id):
+            if order.waiter_id != waiter_id:
+                order.waiter_id = waiter_id
+                await self._orders.save(order)
         return session

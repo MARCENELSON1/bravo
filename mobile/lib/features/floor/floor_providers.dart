@@ -54,3 +54,11 @@ class FloorNotifier extends AsyncNotifier<List<FloorTable>> {
 
 final floorProvider =
     AsyncNotifierProvider<FloorNotifier, List<FloorTable>>(FloorNotifier.new);
+
+/// Bandeja "QR por confirmar" (Fase 2): pedidos QR OPEN sin marchar. Se re-lee
+/// cada vez que el piso cambia (SSE `floor.changed` / poll), así aparece un
+/// pedido nuevo o desaparece uno recién confirmado sin lógica extra.
+final pendingQrProvider = FutureProvider.autoDispose((ref) {
+  ref.watch(floorProvider);
+  return ref.read(orderRepositoryProvider).pendingQr();
+});
