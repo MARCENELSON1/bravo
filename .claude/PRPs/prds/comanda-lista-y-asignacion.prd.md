@@ -129,7 +129,7 @@ La cocina/barra (`KITCHEN`/`BAR`) — ellos disparan el `READY` pero no reciben 
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 |---|-------|-------------|--------|----------|---------|----------|
-| 1 | Aviso "comanda lista" | Evento `OrderReadyToServe` + aviso en vivo (SSE) + modal en mobile (Casos A/B/C) | in-progress | - | - | `.claude/PRPs/plans/comanda-lista-aviso.plan.md` |
+| 1 | Aviso "comanda lista" | Evento `OrderReadyToServe` + aviso en vivo (SSE) + modal en mobile (Casos A/B/C) | complete | - | - | `.claude/PRPs/plans/comanda-lista-aviso.plan.md` |
 | 2 | Asignación por confirmación | Asignar al confirmar QR (B) + bandeja "QR por confirmar" + caso de uso (re)asignar mozo | pending | - | 1 | - |
 | 3 | Modo Autoservicio (Caso C) | Selector de modo + pagar-primero (orden retenida + checkout por-orden + marcha por pago) + auto-asignación (round-robin/pool) + aviso "te asignaron" | pending | - | 2 | - |
 | 4 | Push real | Port `NotificationService` + adapter APNs/FCM + deep-link (app cerrada) — refuerza A/B/C | pending | - | 1 | - |
