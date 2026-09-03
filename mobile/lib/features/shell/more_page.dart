@@ -15,6 +15,7 @@ import '../inventory/proveedores_page.dart';
 import '../invoices/comprobantes_page.dart';
 import '../products/productos_page.dart';
 import '../reports/reportes_page.dart';
+import '../timeclock/staff_page.dart';
 import '../settings/ajustes_page.dart';
 import '../settings/printer_page.dart';
 import '../timeclock/fichaje_page.dart';
@@ -48,6 +49,9 @@ class MorePage extends ConsumerWidget {
                   const Divider(height: 1),
                   _tile(context, Icons.volunteer_activism_outlined, s.tipsTitle,
                       const TipsPage()),
+                  const Divider(height: 1),
+                  _tile(context, Icons.badge_outlined, s.staffTitle,
+                      const StaffPage()),
                 ],
                 const Divider(height: 1),
                 _tile(context, Icons.print_outlined, s.printerTitle,

@@ -470,6 +470,54 @@ class Strings {
       : 'Sin esto, la carta mantiene "Pedir la cuenta".';
   String get selfPayOfferTip => _en ? 'Offer tip' : 'Ofrecer propina';
 
+  // Personal (staff)
+  String get staffTitle => _en ? 'Staff' : 'Personal';
+  String get staffSubtitle => _en
+      ? 'Hours, shifts and hourly rate.'
+      : 'Horas, turnos y valor por hora.';
+  String get staffReportTitle => _en ? 'Report' : 'Reporte';
+  String get staffShiftsTitle => _en ? 'Shifts' : 'Turnos';
+  String get staffEmployee => _en ? 'Employee' : 'Empleado';
+  String get staffHours => _en ? 'Hours' : 'Horas';
+  String get staffOvertime => _en ? 'Overtime' : 'Extra';
+  String get staffTables => _en ? 'Tables' : 'Mesas';
+  String get staffSales => _en ? 'Sales' : 'Ventas';
+  String get staffHourlyRate => _en ? 'Hourly rate' : 'Valor/hora';
+  String get staffNoReport =>
+      _en ? 'No data in the period.' : 'Sin datos en el período.';
+  String get staffNoShifts =>
+      _en ? 'No shifts in the period.' : 'Sin turnos en el período.';
+  String get staffInProgress => _en ? 'In progress' : 'En curso';
+  String get staffClockIn => _en ? 'Clock in' : 'Entrada';
+  String get staffClockOut => _en ? 'Clock out' : 'Salida';
+  String get staffAdjust => _en ? 'Adjust' : 'Ajustar';
+  String get staffAdjustTitle => _en ? 'Correct shift' : 'Corregir turno';
+  String get staffAdjusted => _en ? 'Shift corrected.' : 'Turno corregido.';
+  String get staffAdjustError =>
+      _en ? "We couldn't correct the shift." : 'No pudimos corregir el turno.';
+  String get staffSetRate => _en ? 'Hourly rate' : 'Valor por hora';
+  String get staffRateSaved => _en ? 'Rate saved.' : 'Valor guardado.';
+  String get staffRateError =>
+      _en ? "We couldn't save the rate." : 'No pudimos guardar el valor.';
+  String get staffInvalidRate =>
+      _en ? 'Enter a valid rate.' : 'Ingresá un valor válido.';
+  String get staffRateNone => _en ? 'Set rate' : 'Cargar valor';
+  String formatMinutes(int m) {
+    final h = m ~/ 60;
+    final min = m % 60;
+    if (h == 0) return '${min}m';
+    if (min == 0) return '${h}h';
+    return '${h}h ${min}m';
+  }
+
+  String shiftSourceLabel(String source) => switch (source) {
+        'QR' || 'qr' => 'QR',
+        'MANUAL' || 'manual' => _en ? 'Manual' : 'Manual',
+        'ADJUSTED' || 'adjusted' => _en ? 'Adjusted' : 'Ajustado',
+        'KIOSK' || 'kiosk' => _en ? 'Kiosk' : 'Kiosco',
+        _ => source,
+      };
+
   // Proveedores (Fase 6)
   String get proveedoresTitle => _en ? 'Suppliers' : 'Proveedores';
   String get proveedoresEmpty => _en ? 'No suppliers' : 'Sin proveedores';
