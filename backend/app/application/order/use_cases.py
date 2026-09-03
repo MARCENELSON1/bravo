@@ -313,6 +313,20 @@ def _order_ready(order: Order, table_number: str) -> DomainEvent:
     )
 
 
+def _autoclose_prepaid_if_served(order: Order) -> bool:
+    """A Self-service order (Fase 3) is paid in full before it ever marches, so once
+    it's SERVED the visit is done: flip it to PAID so it drops off the floor's active
+    list and the table frees on its own (the confirmed payment already covers it).
+    Returns whether the status changed. No-op for pay-at-the-end orders."""
+    if (
+        order.status is OrderStatus.SERVED
+        and order.source is OrderSource.CUSTOMER_QR_PREPAID
+    ):
+        order.mark_paid()
+        return True
+    return False
+
+
 class SendOrder:
     """March an order to the kitchen (PENDING→SENT). Confirming a QR order goes
     through here: the waiter who marches it becomes the table's owner (Fase 2),
@@ -385,6 +399,9 @@ class AdvanceItem:
             await self._event_bus.publish(event)
         await self._event_bus.publish(_floor_changed(order))
         await self._publish_ready_if_complete(tenant_id, order)
+        if _autoclose_prepaid_if_served(order):
+            await self._orders.save(order)
+            await self._event_bus.publish(_floor_changed(order))
         return order
 
     async def _publish_ready_if_complete(self, tenant_id: str, order: Order) -> None:
@@ -437,6 +454,9 @@ class AdvanceOrder:
             table = await self._tables.get_by_id(tenant_id, order.table_id)
             number = str(table.number) if table is not None else ""
             await self._event_bus.publish(_order_ready(order, number))
+        if _autoclose_prepaid_if_served(order):
+            await self._orders.save(order)
+            await self._event_bus.publish(_floor_changed(order))
         return order
 
 

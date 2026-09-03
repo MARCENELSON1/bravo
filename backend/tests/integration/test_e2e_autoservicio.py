@@ -87,6 +87,13 @@ async def test_selfservice_holds_then_pay_marches_and_assigns(mp_client):  # noq
     assert got["status"] == "SENT"
     assert got["waiter_id"] == waiter_id
 
+    # 4) servir la comanda → auto-cierra (PAID) y libera la mesa (ya estaba paga)
+    for action in ("preparing", "ready", "served"):
+        r = await http.post(f"/api/v1/orders/{order_id}/{action}", headers=h)
+        assert r.status_code == 200, r.text
+    served = (await http.get(f"/api/v1/orders/{order_id}", headers=h)).json()
+    assert served["status"] == "PAID"
+
 
 async def test_selfservice_without_clocked_in_waiter_marches_orphan(mp_client):  # noqa: F811
     http, fake_email, _ = mp_client
