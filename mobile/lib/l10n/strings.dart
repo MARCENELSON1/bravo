@@ -376,6 +376,14 @@ class Strings {
   String get docNumber => _en ? 'Document number' : 'N° de documento';
   String get docTypeLabel => _en ? 'Document type' : 'Tipo de documento';
   String get invoiceIssued => _en ? 'Invoice issued' : 'Comprobante emitido';
+  String invoiceStatusLabel(String status) => switch (status) {
+        'AUTHORIZED' => _en ? 'Authorized' : 'Autorizado',
+        'DRAFT' => _en ? 'Draft' : 'Borrador',
+        'REJECTED' => _en ? 'Rejected' : 'Rechazado',
+        _ => status,
+      };
+  String invoiceCaeExpiration(String date) =>
+      _en ? 'CAE exp. $date' : 'Vto. CAE $date';
   String docTypeName(DocType t) => switch (t) {
         DocType.cuit => 'CUIT',
         DocType.cuil => 'CUIL',
@@ -390,6 +398,22 @@ class Strings {
   String get repTopProducts => _en ? 'Top products' : 'Top productos';
   String get repPaymentMix => _en ? 'Payment mix' : 'Mix de pagos';
   String repUnits(int n) => _en ? '$n units' : '$n u.';
+  String get repSummaryTitle => _en ? 'Summary' : 'Resumen';
+  String get repSales => _en ? 'Sales' : 'Ventas';
+  String get repCollectedNet => _en ? 'Net collected' : 'Cobrado neto';
+  String get repExpenses => _en ? 'Expenses' : 'Gastos';
+  String get repProfit => _en ? 'Profit' : 'Ganancia';
+  String get repSalesByDay => _en ? 'Sales by day' : 'Ventas por día';
+  String get repSalesByDayEmpty =>
+      _en ? 'No sales in the period.' : 'Sin ventas en el período.';
+  String get repExpensesByCategory =>
+      _en ? 'Expenses by category' : 'Gastos por categoría';
+  String get repExpensesEmpty => _en
+      ? 'No expenses recorded in the period.'
+      : 'Sin gastos registrados en el período.';
+  String get repTotal => _en ? 'Total' : 'Total';
+  String get repSalesCol => _en ? 'Sales' : 'Ventas';
+  String get repMarginCol => _en ? 'Margin' : 'Margen';
 
   // Proveedores (Fase 6)
   String get proveedoresTitle => _en ? 'Suppliers' : 'Proveedores';

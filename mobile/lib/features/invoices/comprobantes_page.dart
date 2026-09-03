@@ -62,7 +62,7 @@ class ComprobantesPage extends ConsumerWidget {
                             children: [
                               for (var i = 0; i < invoices.length; i++) ...[
                                 if (i > 0) const Divider(height: 1),
-                                _tile(invoices[i]),
+                                _tile(context, s, invoices[i]),
                               ],
                             ],
                           ),
@@ -79,15 +79,58 @@ class ComprobantesPage extends ConsumerWidget {
     );
   }
 
-  Widget _tile(Invoice inv) {
+  Widget _tile(BuildContext context, Strings s, Invoice inv) {
+    final scheme = Theme.of(context).colorScheme;
     final label = inv.number == null
         ? inv.type
         : '${inv.type} ${inv.pointOfSale ?? ''}-${inv.number}';
-    final subtitle = inv.cae == null ? inv.status : 'CAE ${inv.cae} · ${inv.status}';
+    final sub = <String>[
+      if (inv.cae != null) 'CAE ${inv.cae}',
+      if (inv.caeExpiration != null) s.invoiceCaeExpiration(inv.caeExpiration!),
+    ].join(' · ');
     return ListTile(
-      title: Text(label),
-      subtitle: Text(subtitle),
-      trailing: Text(formatMoney(inv.total, inv.currency)),
+      title: Row(
+        children: [
+          Flexible(child: Text(label)),
+          const SizedBox(width: 8),
+          _statusBadge(context, s, inv.status),
+        ],
+      ),
+      subtitle: (sub.isEmpty && inv.rejection == null)
+          ? null
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (sub.isNotEmpty)
+                  Text(sub,
+                      style: TextStyle(
+                          fontSize: 12, color: scheme.onSurfaceVariant)),
+                if (inv.rejection != null)
+                  Text(inv.rejection!,
+                      style: TextStyle(fontSize: 12, color: scheme.error)),
+              ],
+            ),
+      trailing: Text(formatMoney(inv.total, inv.currency),
+          style: const TextStyle(fontWeight: FontWeight.w600)),
+    );
+  }
+
+  Widget _statusBadge(BuildContext context, Strings s, String status) {
+    final scheme = Theme.of(context).colorScheme;
+    final color = switch (status) {
+      'AUTHORIZED' => scheme.primary,
+      'REJECTED' => scheme.error,
+      _ => scheme.onSurfaceVariant,
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(s.invoiceStatusLabel(status),
+          style: TextStyle(
+              color: color, fontSize: 11, fontWeight: FontWeight.w600)),
     );
   }
 }

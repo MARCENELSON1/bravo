@@ -18,6 +18,8 @@ class Invoice {
     this.number,
     this.pointOfSale,
     this.cae,
+    this.caeExpiration,
+    this.rejection,
   });
 
   final String id;
@@ -31,6 +33,8 @@ class Invoice {
   final int? number;
   final int? pointOfSale;
   final String? cae;
+  final String? caeExpiration;
+  final String? rejection;
 
   factory Invoice.fromJson(Map<String, dynamic> j) => Invoice(
         id: j['id'] as String,
@@ -44,6 +48,8 @@ class Invoice {
         number: j['number'] as int?,
         pointOfSale: j['point_of_sale'] as int?,
         cae: j['cae'] as String?,
+        caeExpiration: j['cae_expiration'] as String?,
+        rejection: j['rejection'] as String?,
       );
 }
 
