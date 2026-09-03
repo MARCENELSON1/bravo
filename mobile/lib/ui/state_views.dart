@@ -4,6 +4,29 @@ import 'package:flutter/services.dart';
 import '../api/api_error.dart';
 import '../l10n/strings.dart';
 
+/// Grilla de 2 columnas con altura flexible (sin aspect-ratio fijo → no hay
+/// overflow por montos largos). Cada fila iguala alturas con IntrinsicHeight.
+Widget twoColGrid(List<Widget> cards) {
+  final rows = <Widget>[];
+  for (var i = 0; i < cards.length; i += 2) {
+    final right = i + 1 < cards.length ? cards[i + 1] : null;
+    rows.add(Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: cards[i]),
+            const SizedBox(width: 10),
+            Expanded(child: right ?? const SizedBox.shrink()),
+          ],
+        ),
+      ),
+    ));
+  }
+  return Column(children: rows);
+}
+
 /// Diálogo de confirmación reutilizable para acciones destructivas o fiscales
 /// (anular, reembolsar, reabrir, borrar). Devuelve `true` si el usuario confirma.
 Future<bool> confirmDialog(

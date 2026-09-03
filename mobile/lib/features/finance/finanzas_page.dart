@@ -320,85 +320,86 @@ class _FinanzasPageState extends ConsumerState<FinanzasPage> {
     for (final key in _health) {
       final k = fin.kpi(key);
       if (k == null) continue;
-      cards.add(GlassPanel(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                        color: _statusColor(k.status, scheme),
-                        shape: BoxShape.circle)),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(s.financeKpiLabel(key),
-                      style: TextStyle(
-                          color: scheme.onSurfaceVariant, fontSize: 13)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(_kpiValue(k, fin.currency),
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: _statusColor(k.status, scheme))),
-            Text(s.financeStatusAction(k.status),
-                style:
-                    TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
-          ],
-        ),
+      cards.add(_metricCard(
+        context,
+        label: s.financeKpiLabel(key),
+        value: _kpiValue(k, fin.currency),
+        valueColor: _statusColor(k.status, scheme),
+        footer: s.financeStatusAction(k.status),
+        dotColor: _statusColor(k.status, scheme),
       ));
     }
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 1.9,
-      children: cards,
-    );
+    return twoColGrid(cards);
   }
 
   Widget _kpiGrid(BuildContext context, Strings s, FinanceOverview fin) {
     final scheme = Theme.of(context).colorScheme;
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 1.7,
-      children: [
-        for (final k in fin.kpis)
-          GlassPanel(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(s.financeKpiLabel(k.key),
+    return twoColGrid([
+      for (final k in fin.kpis)
+        _metricCard(
+          context,
+          label: s.financeKpiLabel(k.key),
+          value: _kpiValue(k, fin.currency),
+          valueColor: _statusColor(k.status, scheme),
+          footer: _kpiDelta(k, fin.currency) ?? '—',
+        ),
+    ]);
+  }
+
+  Widget _metricCard(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required Color valueColor,
+    String? footer,
+    Color? dotColor,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    return GlassPanel(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              if (dotColor != null) ...[
+                Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                        color: dotColor, shape: BoxShape.circle)),
+                const SizedBox(width: 6),
+              ],
+              Flexible(
+                child: Text(label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                         color: scheme.onSurfaceVariant, fontSize: 13)),
-                const SizedBox(height: 2),
-                Text(_kpiValue(k, fin.currency),
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: _statusColor(k.status, scheme))),
-                Text(_kpiDelta(k, fin.currency) ?? '—',
-                    style: TextStyle(
-                        color: scheme.onSurfaceVariant, fontSize: 12)),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(value,
+                  maxLines: 1,
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: valueColor)),
             ),
           ),
-      ],
+          if (footer != null)
+            Text(footer,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+        ],
+      ),
     );
   }
 }
