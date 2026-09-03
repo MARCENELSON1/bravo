@@ -188,6 +188,13 @@ class Settings(BaseSettings):
     realtime_token_ttl_s: int = 60
     realtime_heartbeat_s: int = 15
 
+    # Push (Fase 4). "none" = no-op (default, seguro); "fcm" = Firebase Cloud
+    # Messaging (entrega a iOS por APNs + Android). Las credenciales del server son
+    # el service-account JSON del proyecto Firebase (ruta o JSON inline).
+    push_provider: Literal["none", "fcm"] = "none"
+    # Ruta al service-account JSON del proyecto Firebase (el project_id sale de ahí).
+    fcm_credentials_path: str = ""
+
     @model_validator(mode="after")
     def _reject_insecure_production(self) -> "Settings":
         """Fail fast on insecure configuration outside of dev."""
@@ -204,6 +211,8 @@ class Settings(BaseSettings):
             problems.append("EMAIL_TRANSPORT must be 'resend' or 'smtp' (console logs tokens)")
         if self.email_transport == "resend" and not self.resend_api_key:
             problems.append("RESEND_API_KEY must be set when EMAIL_TRANSPORT=resend")
+        if self.push_provider == "fcm" and not self.fcm_credentials_path:
+            problems.append("FCM_CREDENTIALS_PATH must be set when PUSH_PROVIDER=fcm")
         if self.lead_gateway == "log" and self.env == "production":
             problems.append("LEAD_GATEWAY must be 'twenty' (log discards landing leads)")
         if self.lead_gateway == "twenty" and not (self.twenty_base_url and self.twenty_api_key):

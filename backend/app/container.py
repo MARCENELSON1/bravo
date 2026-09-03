@@ -108,6 +108,7 @@ from app.application.invoice.connect_afip import (
 )
 from app.application.invoice.use_cases import GetOrderInvoice, IssueInvoice, ListInvoices
 from app.application.marketing.submit_lead import SubmitLead
+from app.application.notification.use_cases import RegisterDeviceToken
 from app.application.order.auto_assign import AutoAssignWaiter
 from app.application.order.self_order import (
     GetSelfOrderSettings,
@@ -244,6 +245,8 @@ from app.infrastructure.invoicing.fake_invoicing import FakeInvoicing
 from app.infrastructure.llm.client import AnthropicClient
 from app.infrastructure.marketing.log_lead_gateway import LogLeadGateway
 from app.infrastructure.marketing.twenty_lead_gateway import TwentyLeadGateway
+from app.infrastructure.notification.fcm_service import FcmPushService
+from app.infrastructure.notification.null_service import NullPushService
 from app.infrastructure.payments.credentials_resolver import DbPaymentCredentialsResolver
 from app.infrastructure.payments.manual_gateway import ManualPaymentGateway
 from app.infrastructure.payments.mercadopago_gateway import MercadoPagoGateway
@@ -298,6 +301,9 @@ from app.infrastructure.persistence.customer_stats_repo import (
 )
 from app.infrastructure.persistence.dashboard_repo import SqlAlchemyDashboardReadModel
 from app.infrastructure.persistence.database import Database
+from app.infrastructure.persistence.device_token_repo import (
+    SqlAlchemyDeviceTokenRepository,
+)
 from app.infrastructure.persistence.finance_repo import (
     SqlAlchemyExpenseBreakdownReadModel,
     SqlAlchemyFinanceCommissionsReadModel,
@@ -433,6 +439,19 @@ class Container(containers.DeclarativeContainer):
             from_email=config.provided.from_email,
         ),
     )
+    # Push (Fase 4): none = no-op (default, seguro); fcm = envío real por FCM.
+    device_token_repository = providers.Factory(
+        SqlAlchemyDeviceTokenRepository, session_factory=db.provided.session
+    )
+    push_service = providers.Selector(
+        config.provided.push_provider,
+        none=providers.Singleton(NullPushService),
+        fcm=providers.Singleton(
+            FcmPushService,
+            device_tokens=device_token_repository,
+            credentials_path=config.provided.fcm_credentials_path,
+        ),
+    )
     lead_gateway = providers.Selector(
         config.provided.lead_gateway,
         log=providers.Singleton(LogLeadGateway),
@@ -486,6 +505,11 @@ class Container(containers.DeclarativeContainer):
     )
     refresh_token_repository = providers.Factory(
         SqlAlchemyRefreshTokenRepository, session_factory=db.provided.session
+    )
+    register_device_token = providers.Factory(
+        RegisterDeviceToken,
+        devices=device_token_repository,
+        tenant_context=tenant_context,
     )
     reset_token_repository = providers.Factory(
         SqlAlchemyResetTokenRepository, session_factory=db.provided.session
@@ -803,6 +827,7 @@ class Container(containers.DeclarativeContainer):
         tables=table_repository,
         tenant_context=tenant_context,
         event_bus=event_bus,
+        notifications=push_service,
     )
     advance_item = providers.Factory(
         AdvanceItem,
@@ -810,6 +835,7 @@ class Container(containers.DeclarativeContainer):
         tables=table_repository,
         tenant_context=tenant_context,
         event_bus=event_bus,
+        notifications=push_service,
     )
     transfer_order = providers.Factory(
         TransferOrder,
@@ -1128,6 +1154,8 @@ class Container(containers.DeclarativeContainer):
         send_order=send_order,
         auto_assign=auto_assign_waiter,
         event_bus=event_bus,
+        push=push_service,
+        tables=table_repository,
     )
     register_expense = providers.Factory(
         RegisterExpense,

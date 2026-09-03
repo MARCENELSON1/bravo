@@ -20,6 +20,7 @@ from app.presentation.api.v1 import (
     cashier,
     copilot,
     customers,
+    devices,
     expenses,
     finance,
     floor,
@@ -83,6 +84,7 @@ def create_app() -> FastAPI:
     app.include_router(users.router, prefix="/api/v1")
     app.include_router(ping.router, prefix="/api/v1")
     app.include_router(me.router, prefix="/api/v1")
+    app.include_router(devices.router, prefix="/api/v1")
     app.include_router(tables.router, prefix="/api/v1")
     app.include_router(sectors.router, prefix="/api/v1")
     app.include_router(customers.router, prefix="/api/v1")

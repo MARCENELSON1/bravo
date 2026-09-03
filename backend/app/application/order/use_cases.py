@@ -10,6 +10,7 @@ from app.application.table_session.use_cases import AssignTableWaiter
 from app.domain.identity.ports import TenantContext
 from app.domain.invoice.repository import InvoiceRepository
 from app.domain.invoice.value_objects import InvoiceStatus
+from app.domain.notification.ports import NotificationService, PushMessage
 from app.domain.order.entities import Order, OrderItem
 from app.domain.order.exceptions import (
     InvalidOrderTransition,
@@ -18,7 +19,13 @@ from app.domain.order.exceptions import (
     OrderNotFullyPaid,
 )
 from app.domain.order.repository import OrderRepository
-from app.domain.order.value_objects import ItemStatus, OrderSource, OrderStatus, Station
+from app.domain.order.value_objects import (
+    CUSTOMER_WAITER_ID,
+    ItemStatus,
+    OrderSource,
+    OrderStatus,
+    Station,
+)
 from app.domain.payment.repository import PaymentRepository
 from app.domain.payment.value_objects import PaymentDirection, PaymentStatus
 from app.domain.product.exceptions import InactiveProduct, ProductNotFound
@@ -316,6 +323,29 @@ def _order_ready(order: Order, table_number: str) -> DomainEvent:
     )
 
 
+async def _notify_order_ready(
+    notifications: NotificationService, order: Order, table_number: str
+) -> None:
+    """Push "Mesa N lista" al mozo dueño (Fase 4), en paralelo al SSE. Salta si la
+    orden no tiene dueño real (mesa QR huérfana / sentinel)."""
+    if not order.waiter_id or order.waiter_id == CUSTOMER_WAITER_ID:
+        return
+    title = f"Mesa {table_number} lista" if table_number else "Comanda lista"
+    await notifications.notify_user(
+        tenant_id=order.tenant_id,
+        user_id=order.waiter_id,
+        message=PushMessage(
+            title=title,
+            body="Tu comanda está lista para servir.",
+            data={
+                "kind": "order.ready",
+                "order_id": order.id,
+                "table_number": table_number,
+            },
+        ),
+    )
+
+
 class SendOrder:
     """March an order to the kitchen (PENDING→SENT). Confirming a QR order goes
     through here: the waiter who marches it becomes the table's owner (Fase 2),
@@ -369,11 +399,13 @@ class AdvanceItem:
         tables: TableRepository,
         tenant_context: TenantContext,
         event_bus: EventBus,
+        notifications: NotificationService,
     ) -> None:
         self._orders = orders
         self._tables = tables
         self._tenant_context = tenant_context
         self._event_bus = event_bus
+        self._notifications = notifications
 
     async def execute(
         self, *, tenant_id: str, order_id: str, item_id: str, action: str
@@ -396,6 +428,7 @@ class AdvanceItem:
             table = await self._tables.get_by_id(tenant_id, order.table_id)
             number = str(table.number) if table is not None else ""
             await self._event_bus.publish(_order_ready(order, number))
+            await _notify_order_ready(self._notifications, order, number)
 
 
 class AdvanceOrder:
@@ -411,11 +444,13 @@ class AdvanceOrder:
         tables: TableRepository,
         tenant_context: TenantContext,
         event_bus: EventBus,
+        notifications: NotificationService,
     ) -> None:
         self._orders = orders
         self._tables = tables
         self._tenant_context = tenant_context
         self._event_bus = event_bus
+        self._notifications = notifications
 
     async def execute(self, *, tenant_id: str, order_id: str, action: str) -> Order:
         self._tenant_context.set(tenant_id)
@@ -440,6 +475,7 @@ class AdvanceOrder:
             table = await self._tables.get_by_id(tenant_id, order.table_id)
             number = str(table.number) if table is not None else ""
             await self._event_bus.publish(_order_ready(order, number))
+            await _notify_order_ready(self._notifications, order, number)
         return order
 
 

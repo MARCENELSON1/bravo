@@ -147,6 +147,25 @@ class RefreshTokenORM(Base):
     )
 
 
+class DeviceTokenORM(Base):
+    """Push token for a user's device (Fase 4). Tenant+user scoped; ``token`` unique."""
+
+    __tablename__ = "device_tokens"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    token: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    platform: Mapped[str] = mapped_column(String(10))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 class PasswordResetTokenORM(Base):
     __tablename__ = "password_reset_tokens"
 

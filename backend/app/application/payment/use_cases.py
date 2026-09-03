@@ -12,6 +12,7 @@ from app.domain.cashier.exceptions import NoOpenCashSession
 from app.domain.cashier.policy import CashSessionPolicy
 from app.domain.cashier.repository import CashSessionRepository
 from app.domain.identity.ports import TenantContext
+from app.domain.notification.ports import NotificationService, PushMessage
 from app.domain.order.entities import Order
 from app.domain.order.exceptions import OrderNotFound
 from app.domain.order.repository import OrderRepository
@@ -32,6 +33,7 @@ from app.domain.payment.repository import PaymentFeeRateRepository, PaymentRepos
 from app.domain.payment.value_objects import PaymentDirection, PaymentMethod, PaymentStatus
 from app.domain.realtime.ports import DomainEvent, EventBus
 from app.domain.shared.money import Money
+from app.domain.table.repository import TableRepository
 from app.domain.tenant.exceptions import TenantNotFound
 from app.domain.tenant.repository import TenantRepository
 
@@ -330,6 +332,8 @@ class ConfirmGatewayPayment:
         send_order: SendOrder | None = None,
         auto_assign: AutoAssignWaiter | None = None,
         event_bus: EventBus | None = None,
+        push: NotificationService | None = None,
+        tables: TableRepository | None = None,
     ) -> None:
         self._payments = payments
         self._orders = orders
@@ -344,6 +348,9 @@ class ConfirmGatewayPayment:
         self._send_order = send_order
         self._auto_assign = auto_assign
         self._event_bus = event_bus
+        # Push "te asignaron" (Fase 4). `tables` resuelve el nº de mesa del mensaje.
+        self._push = push
+        self._tables = tables
 
     async def execute(
         self,
@@ -443,8 +450,35 @@ class ConfirmGatewayPayment:
             sales=self._sales,
             tax_outbox=self._tax_outbox,
         )
-        if waiter_id and self._event_bus is not None:
-            await self._event_bus.publish(_table_assigned(order, waiter_id))
+        if waiter_id:
+            if self._event_bus is not None:
+                await self._event_bus.publish(_table_assigned(order, waiter_id))
+            await self._notify_assigned(tenant_id, order, waiter_id)
+
+    async def _notify_assigned(
+        self, tenant_id: str, order: Order, waiter_id: str
+    ) -> None:
+        """Push "Te asignaron la Mesa N" al mozo auto-asignado (Fase 4)."""
+        if self._push is None:
+            return
+        number = ""
+        if self._tables is not None:
+            table = await self._tables.get_by_id(tenant_id, order.table_id)
+            number = str(table.number) if table is not None else ""
+        title = f"Te asignaron la Mesa {number}" if number else "Te asignaron una mesa"
+        await self._push.notify_user(
+            tenant_id=tenant_id,
+            user_id=waiter_id,
+            message=PushMessage(
+                title=title,
+                body="Un pedido QR pagó y quedó a tu cargo.",
+                data={
+                    "kind": "table.assigned",
+                    "order_id": order.id,
+                    "table_number": number,
+                },
+            ),
+        )
 
     async def _resolve_seller_token(self, account_id: str | None) -> str | None:
         """Map the provider seller id (from the notification) to the tenant's

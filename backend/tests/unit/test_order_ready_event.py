@@ -44,6 +44,14 @@ class _SpyBus:
         self.published.append(event)
 
 
+class _SpyPush:
+    def __init__(self) -> None:
+        self.sent: list[tuple[str, str, str]] = []  # (user_id, title, order_id)
+
+    async def notify_user(self, *, tenant_id, user_id, message) -> None:
+        self.sent.append((user_id, message.title, message.data.get("order_id", "")))
+
+
 def _item(name: str = "Milanesa") -> OrderItem:
     return OrderItem(
         id=str(uuid4()),
@@ -64,13 +72,16 @@ def _sent_order(*items: OrderItem) -> Order:
     return order
 
 
-def _advance_item_uc(order: Order, table: Table | None) -> tuple[AdvanceItem, _SpyBus]:
+def _advance_item_uc(
+    order: Order, table: Table | None, push: _SpyPush | None = None
+) -> tuple[AdvanceItem, _SpyBus]:
     bus = _SpyBus()
     uc = AdvanceItem(
         orders=_FakeOrders(order),  # type: ignore[arg-type]
         tables=_FakeTables(table),  # type: ignore[arg-type]
         tenant_context=FakeTenantContext(),
         event_bus=bus,  # type: ignore[arg-type]
+        notifications=push or _SpyPush(),  # type: ignore[arg-type]
     )
     return uc, bus
 
@@ -135,6 +146,7 @@ async def test_advance_order_ready_emits() -> None:
         tables=_FakeTables(Table(id="tb1", tenant_id="t1", number=9)),  # type: ignore[arg-type]
         tenant_context=FakeTenantContext(),
         event_bus=bus,  # type: ignore[arg-type]
+        notifications=_SpyPush(),  # type: ignore[arg-type]
     )
 
     await uc.execute(tenant_id="t1", order_id=order.id, action="preparing")
@@ -142,3 +154,19 @@ async def test_advance_order_ready_emits() -> None:
 
     assert len(_readies(bus)) == 1
     assert _readies(bus)[0].payload["table_number"] == "9"
+
+
+async def test_push_notifies_waiter_on_ready() -> None:
+    i1, i2 = _item("Milanesa"), _item("Ensalada")
+    order = _sent_order(i1, i2)
+    push = _SpyPush()
+    uc, _ = _advance_item_uc(order, Table(id="tb1", tenant_id="t1", number=7), push)
+
+    # No push hasta que la orden entera queda READY.
+    await uc.execute(tenant_id="t1", order_id=order.id, item_id=i1.id, action="preparing")
+    await uc.execute(tenant_id="t1", order_id=order.id, item_id=i1.id, action="ready")
+    assert push.sent == []
+
+    await uc.execute(tenant_id="t1", order_id=order.id, item_id=i2.id, action="preparing")
+    await uc.execute(tenant_id="t1", order_id=order.id, item_id=i2.id, action="ready")
+    assert push.sent == [("w1", "Mesa 7 lista", order.id)]
