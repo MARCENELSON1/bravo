@@ -5,14 +5,17 @@ from uuid import uuid4
 
 from app.application.analytics.ports import SalesProjector
 from app.application.inventory.ports import InventoryConsumer
+from app.application.order.auto_assign import AutoAssignWaiter
+from app.application.order.use_cases import SendOrder
 from app.application.tax.reporting import TaxReportLedger
 from app.domain.cashier.exceptions import NoOpenCashSession
 from app.domain.cashier.policy import CashSessionPolicy
 from app.domain.cashier.repository import CashSessionRepository
 from app.domain.identity.ports import TenantContext
+from app.domain.order.entities import Order
 from app.domain.order.exceptions import OrderNotFound
 from app.domain.order.repository import OrderRepository
-from app.domain.order.value_objects import OrderStatus
+from app.domain.order.value_objects import ItemStatus, OrderSource, OrderStatus
 from app.domain.payment.entities import Payment
 from app.domain.payment.exceptions import (
     InvalidPaymentAmount,
@@ -27,6 +30,7 @@ from app.domain.payment.ports import (
 )
 from app.domain.payment.repository import PaymentFeeRateRepository, PaymentRepository
 from app.domain.payment.value_objects import PaymentDirection, PaymentMethod, PaymentStatus
+from app.domain.realtime.ports import DomainEvent, EventBus
 from app.domain.shared.money import Money
 from app.domain.tenant.exceptions import TenantNotFound
 from app.domain.tenant.repository import TenantRepository
@@ -65,17 +69,54 @@ async def _settle_order(
     if paid >= order.total().amount and order.status is not OrderStatus.PAID:
         order.mark_paid()
         await orders.save(order)
-        if inventory is not None:
-            await inventory.consume_for_order(tenant_id, order_id)
-        if sales is not None:
-            await sales.project_order(tenant_id, order_id)
-        if tax_outbox is not None and sum(p.tax_amount for p in inflow_confirmed) > 0:
-            # Secondary to the cobro: a reporting bug must never break a charge,
-            # so failures are logged and left for the drain to retry.
-            try:
-                await tax_outbox.enqueue(tenant_id, order_id)
-            except Exception:  # noqa: BLE001
-                logger.warning("tax report enqueue failed for order %s", order_id, exc_info=True)
+        await _fire_sale_effects(
+            tenant_id,
+            order_id,
+            tax_collected=sum(p.tax_amount for p in inflow_confirmed),
+            inventory=inventory,
+            sales=sales,
+            tax_outbox=tax_outbox,
+        )
+
+
+async def _fire_sale_effects(
+    tenant_id: str,
+    order_id: str,
+    *,
+    tax_collected: int,
+    inventory: InventoryConsumer | None = None,
+    sales: SalesProjector | None = None,
+    tax_outbox: TaxReportLedger | None = None,
+) -> None:
+    """The post-sale collaborators, all idempotent and all behind a port: discount
+    recipe stock, project the canonical sale facts, and (only if tax was collected)
+    enqueue the sale for the tax provider. Fired on the PAID transition (pay-at-end)
+    and on the prepay march (Self-service, Fase 3) — the sale is real either way."""
+    if inventory is not None:
+        await inventory.consume_for_order(tenant_id, order_id)
+    if sales is not None:
+        await sales.project_order(tenant_id, order_id)
+    if tax_outbox is not None and tax_collected > 0:
+        # Secondary to the cobro: a reporting bug must never break a charge,
+        # so failures are logged and left for the drain to retry.
+        try:
+            await tax_outbox.enqueue(tenant_id, order_id)
+        except Exception:  # noqa: BLE001
+            logger.warning("tax report enqueue failed for order %s", order_id, exc_info=True)
+
+
+def _table_assigned(order: Order, waiter_id: str) -> DomainEvent:
+    """Auto-assignment aviso (Fase 3): tell the assigned waiter the table is theirs.
+    The client resolves the table number from the floor."""
+    return DomainEvent(
+        type="table.assigned",
+        tenant_id=order.tenant_id,
+        payload={
+            "order_id": order.id,
+            "table_id": order.table_id,
+            "waiter_id": waiter_id,
+        },
+    )
 
 
 class RegisterPayment:
@@ -286,6 +327,9 @@ class ConfirmGatewayPayment:
         inventory: InventoryConsumer | None = None,
         sales: SalesProjector | None = None,
         tax_outbox: TaxReportLedger | None = None,
+        send_order: SendOrder | None = None,
+        auto_assign: AutoAssignWaiter | None = None,
+        event_bus: EventBus | None = None,
     ) -> None:
         self._payments = payments
         self._orders = orders
@@ -295,6 +339,11 @@ class ConfirmGatewayPayment:
         self._inventory = inventory
         self._sales = sales
         self._tax_outbox = tax_outbox
+        # Autoservicio (Fase 3): al confirmar el pago de una orden retenida hay que
+        # marcharla (`send_order`) y auto-asignar un mozo (`auto_assign`).
+        self._send_order = send_order
+        self._auto_assign = auto_assign
+        self._event_bus = event_bus
 
     async def execute(
         self,
@@ -335,19 +384,67 @@ class ConfirmGatewayPayment:
                 payment.net_amount = payment.amount.amount - status.fee_amount
             await self._payments.save(payment)
             if payment.order_id is not None:
-                await _settle_order(
-                    self._payments,
-                    self._orders,
-                    tenant_id,
-                    payment.order_id,
-                    self._inventory,
-                    self._sales,
-                    self._tax_outbox,
-                )
+                order = await self._orders.get_by_id(tenant_id, payment.order_id)
+                if order is not None and self._is_prepaid_held(order):
+                    await self._march_prepaid_order(tenant_id, order)
+                else:
+                    await _settle_order(
+                        self._payments,
+                        self._orders,
+                        tenant_id,
+                        payment.order_id,
+                        self._inventory,
+                        self._sales,
+                        self._tax_outbox,
+                    )
         elif status.status is PaymentStatus.FAILED:
             payment.fail()
             payment.external_ref = status.gateway_payment_id
             await self._payments.save(payment)
+
+    def _is_prepaid_held(self, order: Order) -> bool:
+        """A Self-service order retained off the kitchen (paid-first): still has
+        PENDING items, and the march/auto-assign collaborators are wired."""
+        return (
+            order.source is OrderSource.CUSTOMER_QR_PREPAID
+            and self._send_order is not None
+            and any(it.status is ItemStatus.PENDING for it in order.items)
+        )
+
+    async def _march_prepaid_order(self, tenant_id: str, order: Order) -> None:
+        """Pago-primero confirmado ⇒ marchar a cocina + auto-asignar un mozo. NO
+        marca la orden PAID: el pago confirmado ya es la verdad y el ciclo de cocina
+        sigue vivo (SENT→READY dispara el aviso "listo" de Fase 1). Los efectos de
+        venta (stock/ventas/IVA) se disparan acá porque la venta es real."""
+        if self._send_order is None:
+            return
+        confirmed = await self._payments.list_by_order(tenant_id, order.id)
+        inflow = [
+            p
+            for p in confirmed
+            if p.direction is PaymentDirection.INFLOW
+            and p.status is PaymentStatus.CONFIRMED
+        ]
+        if sum(p.amount.amount for p in inflow) < order.total().amount:
+            return  # pago parcial → esperar el resto antes de marchar
+        waiter_id = (
+            await self._auto_assign.execute(tenant_id=tenant_id)
+            if self._auto_assign is not None
+            else None
+        )
+        await self._send_order.execute(
+            tenant_id=tenant_id, order_id=order.id, waiter_id=waiter_id
+        )
+        await _fire_sale_effects(
+            tenant_id,
+            order.id,
+            tax_collected=sum(p.tax_amount for p in inflow),
+            inventory=self._inventory,
+            sales=self._sales,
+            tax_outbox=self._tax_outbox,
+        )
+        if waiter_id and self._event_bus is not None:
+            await self._event_bus.publish(_table_assigned(order, waiter_id))
 
     async def _resolve_seller_token(self, account_id: str | None) -> str | None:
         """Map the provider seller id (from the notification) to the tenant's

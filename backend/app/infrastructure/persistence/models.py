@@ -57,6 +57,11 @@ class TenantORM(Base):
     self_order_requires_confirmation: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="true"
     )
+    # Autoservicio (Carta QR F3, Fase 3): retiene la orden fuera de la cocina hasta
+    # que se paga; el webhook de pago la marcha + auto-asigna. Default false → paridad.
+    self_order_prepay_required: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
     # Pago desde la mesa (Carta QR F3). Deshabilitado por default → la carta mantiene
     # "llamar mozo"/"pedir cuenta" (paridad F1/F2). tips_enabled ON = ofrece propina
     # (el dueño la puede apagar desde la UI).
@@ -343,7 +348,7 @@ class OrderORM(Base):
     customer_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True, index=True)
     currency: Mapped[str] = mapped_column(String(3))
     # Origen de la comanda (Carta QR F2). Default WAITER → paridad.
-    source: Mapped[str] = mapped_column(String(16), server_default="WAITER")
+    source: Mapped[str] = mapped_column(String(32), server_default="WAITER")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

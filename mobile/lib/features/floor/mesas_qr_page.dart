@@ -143,10 +143,21 @@ class _SelfOrderCard extends ConsumerStatefulWidget {
 class _SelfOrderCardState extends ConsumerState<_SelfOrderCard> {
   bool _saving = false;
 
-  Future<void> _save(SelfOrderSettings next) async {
+  Future<void> _saveMode(String mode) async {
     setState(() => _saving = true);
     try {
-      await ref.read(tableQrRepositoryProvider).updateSelfOrder(next);
+      await ref.read(tableQrRepositoryProvider).updateSelfOrderMode(mode);
+      // Autoservicio necesita el pago en mesa → prenderlo si hace falta.
+      if (mode == 'SELF_SERVICE') {
+        final pay = ref.read(selfPaySettingsProvider).valueOrNull;
+        if (pay == null || !pay.enabled) {
+          await ref.read(tableQrRepositoryProvider).updateSelfPay(
+                (pay ?? const SelfPaySettings(enabled: false, tipsEnabled: true))
+                    .copyWith(enabled: true),
+              );
+          ref.invalidate(selfPaySettingsProvider);
+        }
+      }
       ref.invalidate(selfOrderSettingsProvider);
     } catch (e) {
       if (mounted) {
@@ -179,22 +190,22 @@ class _SelfOrderCardState extends ConsumerState<_SelfOrderCard> {
             error: (e, _) => Text(e is ApiError ? e.message : s.settingsSaveError),
             data: (v) => Column(
               children: [
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: v.enabled,
-                  onChanged:
-                      _saving ? null : (x) => _save(v.copyWith(enabled: x)),
-                  title: Text(s.selfOrderEnable),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: v.requiresConfirmation,
-                  onChanged: (_saving || !v.enabled)
-                      ? null
-                      : (x) => _save(v.copyWith(requiresConfirmation: x)),
-                  title: Text(s.selfOrderRequireConfirm),
-                  subtitle: Text(s.selfOrderRequireConfirmHint),
-                ),
+                for (final mode in const ['READ_ONLY', 'SALON', 'SELF_SERVICE'])
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      v.mode == mode
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                      color: v.mode == mode
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    title: Text(s.selfOrderMode(mode)),
+                    subtitle: Text(s.selfOrderModeHint(mode)),
+                    onTap:
+                        (_saving || v.mode == mode) ? null : () => _saveMode(mode),
+                  ),
               ],
             ),
           ),

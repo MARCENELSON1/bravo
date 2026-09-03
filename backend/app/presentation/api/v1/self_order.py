@@ -13,6 +13,7 @@ from app.application.order.self_order import (
 )
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
+from app.domain.order.settings import SelfOrderMode, SelfOrderSettings
 from app.domain.user.value_objects import Role
 from app.presentation.rbac import require_roles
 from app.presentation.schemas.self_order import (
@@ -23,6 +24,15 @@ from app.presentation.schemas.self_order import (
 router = APIRouter(prefix="/self-order", tags=["self-order"])
 
 
+def _to_response(settings: SelfOrderSettings) -> SelfOrderSettingsResponse:
+    return SelfOrderSettingsResponse(
+        enabled=settings.enabled,
+        requires_confirmation=settings.requires_confirmation,
+        prepay_required=settings.prepay_required,
+        mode=settings.mode.value,
+    )
+
+
 @router.get("/settings", response_model=SelfOrderSettingsResponse)
 @inject
 async def get_self_order_settings(
@@ -30,9 +40,7 @@ async def get_self_order_settings(
     use_case: GetSelfOrderSettings = Depends(Provide[Container.get_self_order_settings]),
 ) -> SelfOrderSettingsResponse:
     settings = await use_case.execute(tenant_id=identity.tenant_id)
-    return SelfOrderSettingsResponse(
-        enabled=settings.enabled, requires_confirmation=settings.requires_confirmation
-    )
+    return _to_response(settings)
 
 
 @router.put("/settings", response_model=SelfOrderSettingsResponse)
@@ -42,11 +50,11 @@ async def update_self_order_settings(
     identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
     use_case: UpdateSelfOrderSettings = Depends(Provide[Container.update_self_order_settings]),
 ) -> SelfOrderSettingsResponse:
+    mode = SelfOrderMode(body.mode) if body.mode is not None else None
     settings = await use_case.execute(
         tenant_id=identity.tenant_id,
+        mode=mode,
         enabled=body.enabled,
         requires_confirmation=body.requires_confirmation,
     )
-    return SelfOrderSettingsResponse(
-        enabled=settings.enabled, requires_confirmation=settings.requires_confirmation
-    )
+    return _to_response(settings)

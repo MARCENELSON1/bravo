@@ -32,6 +32,19 @@ class SqlAlchemyShiftRepository(ShiftRepository):
             row = (await session.execute(stmt)).scalars().first()
             return shift_to_domain(row) if row is not None else None
 
+    async def list_open(self, tenant_id: str) -> list[Shift]:
+        async with self._session_factory() as session:
+            stmt = (
+                select(ShiftORM)
+                .where(
+                    ShiftORM.tenant_id == tenant_id,
+                    ShiftORM.status == ShiftStatus.OPEN.value,
+                )
+                .order_by(ShiftORM.clock_in_at.asc())
+            )
+            rows = (await session.execute(stmt)).scalars().all()
+            return [shift_to_domain(r) for r in rows]
+
     async def get_by_id(self, tenant_id: str, shift_id: str) -> Shift | None:
         async with self._session_factory() as session:
             stmt = select(ShiftORM).where(

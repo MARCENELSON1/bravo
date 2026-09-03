@@ -16,7 +16,7 @@ from app.application.payment.pay_table_bill import (
 )
 from app.application.public_menu.use_cases import GetPublicMenu, RequestTableAttention
 from app.container import Container
-from app.domain.order.value_objects import OrderStatus
+from app.domain.order.value_objects import OrderSource, OrderStatus
 from app.domain.public_menu.value_objects import TableCallKind
 from app.presentation.schemas.public_menu import (
     CustomerOrderRequest,
@@ -225,9 +225,12 @@ async def submit_customer_order(
             for line in body.lines
         ],
     )
-    # OPEN = ítems PENDING sin marchar → el gate estaba ON (el mozo confirma).
+    # OPEN = ítems PENDING sin marchar. Autoservicio (source PREPAID) → el comensal
+    # paga primero; Salón (source CUSTOMER_QR + OPEN) → el mozo confirma.
+    prepay = order.source is OrderSource.CUSTOMER_QR_PREPAID
     return CustomerOrderResponse(
         order_id=order.id,
         status=order.status.value,
-        requires_confirmation=order.status is OrderStatus.OPEN,
+        requires_confirmation=(order.status is OrderStatus.OPEN) and not prepay,
+        prepay_required=prepay,
     )

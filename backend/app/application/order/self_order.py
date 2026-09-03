@@ -7,7 +7,11 @@ from app.application.order.use_cases import AddOrderItemsBatch, CreateOrder
 from app.domain.identity.ports import TenantContext
 from app.domain.order.entities import Order
 from app.domain.order.exceptions import SelfOrderDisabled
-from app.domain.order.settings import SelfOrderSettings, SelfOrderSettingsRepository
+from app.domain.order.settings import (
+    SelfOrderMode,
+    SelfOrderSettings,
+    SelfOrderSettingsRepository,
+)
 from app.domain.order.value_objects import (
     CUSTOMER_WAITER_ID,
     OrderSource,
@@ -65,12 +69,26 @@ class UpdateSelfOrderSettings:
         self._tenant_context = tenant_context
 
     async def execute(
-        self, *, tenant_id: str, enabled: bool, requires_confirmation: bool
+        self,
+        *,
+        tenant_id: str,
+        mode: SelfOrderMode | None = None,
+        enabled: bool | None = None,
+        requires_confirmation: bool | None = None,
     ) -> SelfOrderSettings:
+        """Set the policy. Prefer ``mode`` (Salón/Autoservicio/Solo-lectura), which
+        derives the flags; the raw ``enabled``/``requires_confirmation`` are kept for
+        back-compat (Fase 1/2 clients) and never turn prepay on."""
         self._tenant_context.set(tenant_id)
-        settings = SelfOrderSettings(
-            enabled=enabled, requires_confirmation=requires_confirmation
-        )
+        if mode is not None:
+            settings = SelfOrderSettings.from_mode(mode)
+        else:
+            settings = SelfOrderSettings(
+                enabled=bool(enabled),
+                requires_confirmation=(
+                    True if requires_confirmation is None else requires_confirmation
+                ),
+            )
         await self._settings.update(tenant_id, settings)
         return settings
 
@@ -136,18 +154,24 @@ class SubmitCustomerOrder:
         # chosen options' name + price_delta server-side (the cart only sent ids).
         batch = await self._resolve_lines(tenant_id, lines)
 
+        # Autoservicio (Fase 3): la orden se RETIENE fuera de la cocina (no marcha)
+        # hasta que el pago confirma; la marca `CUSTOMER_QR_PREPAID` la separa de la
+        # bandeja "QR por confirmar" (Salón) y la webhook la marcha + auto-asigna.
+        prepay = settings.prepay_required
         waiter_id = await self._resolve_waiter(tenant_id, claims.table_id)
         created = await self._create_order.execute(
             tenant_id=tenant_id,
             waiter_id=waiter_id,
             table_id=claims.table_id,
-            source=OrderSource.CUSTOMER_QR,
+            source=(
+                OrderSource.CUSTOMER_QR_PREPAID if prepay else OrderSource.CUSTOMER_QR
+            ),
         )
         return await self._add_items_batch.execute(
             tenant_id=tenant_id,
             order_id=created.order_id,
             items=batch,
-            send=not settings.requires_confirmation,
+            send=(not prepay) and (not settings.requires_confirmation),
         )
 
     async def _resolve_lines(

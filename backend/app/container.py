@@ -108,6 +108,7 @@ from app.application.invoice.connect_afip import (
 )
 from app.application.invoice.use_cases import GetOrderInvoice, IssueInvoice, ListInvoices
 from app.application.marketing.submit_lead import SubmitLead
+from app.application.order.auto_assign import AutoAssignWaiter
 from app.application.order.self_order import (
     GetSelfOrderSettings,
     SubmitCustomerOrder,
@@ -454,6 +455,9 @@ class Container(containers.DeclarativeContainer):
     )
     table_session_repository = providers.Factory(
         SqlAlchemyTableSessionRepository, session_factory=db.provided.session
+    )
+    shift_repository = providers.Factory(
+        SqlAlchemyShiftRepository, session_factory=db.provided.session
     )
     sector_repository = providers.Factory(
         SqlAlchemySectorRepository, session_factory=db.provided.session
@@ -1095,6 +1099,13 @@ class Container(containers.DeclarativeContainer):
         fee_rates=payment_fee_rate_repository,
         tax_outbox=tax_report_ledger,
     )
+    auto_assign_waiter = providers.Factory(
+        AutoAssignWaiter,
+        shifts=shift_repository,
+        users=user_repository,
+        sessions=table_session_repository,
+        tenant_context=tenant_context,
+    )
     confirm_gateway_payment = providers.Factory(
         ConfirmGatewayPayment,
         payments=payment_repository,
@@ -1105,6 +1116,9 @@ class Container(containers.DeclarativeContainer):
         inventory=consume_recipes_for_order,
         sales=project_order_sales,
         tax_outbox=tax_report_ledger,
+        send_order=send_order,
+        auto_assign=auto_assign_waiter,
+        event_bus=event_bus,
     )
     register_expense = providers.Factory(
         RegisterExpense,
@@ -1294,9 +1308,6 @@ class Container(containers.DeclarativeContainer):
     )
 
     # --- Fase 5: fichaje (shifts) ---
-    shift_repository = providers.Factory(
-        SqlAlchemyShiftRepository, session_factory=db.provided.session
-    )
     clock_in = providers.Factory(
         ClockIn, shifts=shift_repository, tenant_context=tenant_context
     )

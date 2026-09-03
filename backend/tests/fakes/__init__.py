@@ -97,6 +97,13 @@ class FakeUserRepository(UserRepository):
             if u.tenant_id == tenant_id and u.id in ids
         }
 
+    async def roles_by_ids(self, tenant_id: str, ids: set[str]) -> dict[str, Role]:
+        return {
+            u.id: u.role
+            for u in self.by_id.values()
+            if u.tenant_id == tenant_id and u.id in ids and u.active
+        }
+
     async def add(self, user: User) -> None:
         self.by_id[user.id] = user
 

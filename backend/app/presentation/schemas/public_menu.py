@@ -74,8 +74,11 @@ class CustomerOrderRequest(BaseModel):
 class CustomerOrderResponse(BaseModel):
     order_id: str
     status: str
-    # ``requires_confirmation`` refleja el gate: true → el mozo tiene que confirmar.
+    # ``requires_confirmation`` refleja el gate Salón: true → el mozo confirma.
     requires_confirmation: bool
+    # ``prepay_required`` (Fase 3, Autoservicio): true → la orden está retenida y el
+    # comensal debe pagar (con /public/table/pay) para que llegue a la cocina.
+    prepay_required: bool = False
 
 
 class TableBillOptionResponse(BaseModel):

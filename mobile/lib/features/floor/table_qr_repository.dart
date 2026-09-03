@@ -26,19 +26,35 @@ class TableItem {
 
 /// Config del autopedido (backend `SelfOrderSettingsResponse`).
 class SelfOrderSettings {
-  const SelfOrderSettings(
-      {required this.enabled, required this.requiresConfirmation});
+  const SelfOrderSettings({
+    required this.enabled,
+    required this.requiresConfirmation,
+    this.prepayRequired = false,
+    this.mode = 'READ_ONLY',
+  });
   final bool enabled;
   final bool requiresConfirmation;
+  final bool prepayRequired;
+  // Fase 3: READ_ONLY | SALON | SELF_SERVICE (deriva de los flags).
+  final String mode;
   factory SelfOrderSettings.fromJson(Map<String, dynamic> j) =>
       SelfOrderSettings(
         enabled: (j['enabled'] as bool?) ?? false,
         requiresConfirmation: (j['requires_confirmation'] as bool?) ?? true,
+        prepayRequired: (j['prepay_required'] as bool?) ?? false,
+        mode: (j['mode'] as String?) ?? 'READ_ONLY',
       );
-  SelfOrderSettings copyWith({bool? enabled, bool? requiresConfirmation}) =>
+  SelfOrderSettings copyWith({
+    bool? enabled,
+    bool? requiresConfirmation,
+    bool? prepayRequired,
+    String? mode,
+  }) =>
       SelfOrderSettings(
         enabled: enabled ?? this.enabled,
         requiresConfirmation: requiresConfirmation ?? this.requiresConfirmation,
+        prepayRequired: prepayRequired ?? this.prepayRequired,
+        mode: mode ?? this.mode,
       );
 }
 
@@ -98,6 +114,18 @@ class TableQrRepository {
         'enabled': v.enabled,
         'requires_confirmation': v.requiresConfirmation,
       });
+      return SelfOrderSettings.fromJson(Map<String, dynamic>.from(res.data as Map));
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
+  /// Fase 3: fija el modo de la Carta QR (READ_ONLY | SALON | SELF_SERVICE); el
+  /// backend deriva los flags. Autoservicio necesita además el pago en mesa.
+  Future<SelfOrderSettings> updateSelfOrderMode(String mode) async {
+    try {
+      final res =
+          await _dio.put<dynamic>('/self-order/settings', data: {'mode': mode});
       return SelfOrderSettings.fromJson(Map<String, dynamic>.from(res.data as Map));
     } catch (e) {
       throw toApiError(e);

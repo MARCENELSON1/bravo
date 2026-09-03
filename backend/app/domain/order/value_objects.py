@@ -54,10 +54,14 @@ class Station(StrEnum):
 
 class OrderSource(StrEnum):
     """Who originated the order. Defaults to WAITER (parity); CUSTOMER_QR marks an
-    order the diner placed from the QR menu (Carta QR F2) — for metrics + the gate."""
+    order the diner placed from the QR menu (Carta QR F2) — for metrics + the gate.
+    CUSTOMER_QR_PREPAID (Fase 3, Self-service) is a QR order held off the kitchen
+    until it's paid: it stays out of the "QR por confirmar" tray and the payment
+    webhook marches + auto-assigns it."""
 
     WAITER = "WAITER"
     CUSTOMER_QR = "CUSTOMER_QR"
+    CUSTOMER_QR_PREPAID = "CUSTOMER_QR_PREPAID"
 
 
 # Sentinel del mozo cuando una orden nace sin dueño humano (autopedido QR que abre

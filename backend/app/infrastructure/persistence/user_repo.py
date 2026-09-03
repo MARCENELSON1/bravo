@@ -4,6 +4,7 @@ from sqlalchemy import select
 
 from app.domain.user.entities import User
 from app.domain.user.repository import UserRepository
+from app.domain.user.value_objects import Role
 from app.infrastructure.persistence.database import SessionFactory
 from app.infrastructure.persistence.mappers import user_to_domain, user_to_orm
 from app.infrastructure.persistence.models import UserORM
@@ -41,6 +42,21 @@ class SqlAlchemyUserRepository(UserRepository):
                 )
             ).all()
             return {uid: (name or email) for uid, name, email in rows}
+
+    async def roles_by_ids(self, tenant_id: str, ids: set[str]) -> dict[str, Role]:
+        if not ids:
+            return {}
+        async with self._session_factory() as session:
+            rows = (
+                await session.execute(
+                    select(UserORM.id, UserORM.role).where(
+                        UserORM.tenant_id == tenant_id,
+                        UserORM.id.in_(ids),
+                        UserORM.active.is_(True),
+                    )
+                )
+            ).all()
+            return {uid: Role(role) for uid, role in rows}
 
     async def add(self, user: User) -> None:
         async with self._session_factory() as session:

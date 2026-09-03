@@ -13,6 +13,11 @@ class ShiftRepository(ABC):
     async def get_open_for_user(self, tenant_id: str, user_id: str) -> Shift | None: ...
 
     @abstractmethod
+    async def list_open(self, tenant_id: str) -> list[Shift]:
+        """Every currently-open (clocked-in) shift of the tenant — who's on shift
+        right now (Fase 3 auto-assign)."""
+
+    @abstractmethod
     async def get_by_id(self, tenant_id: str, shift_id: str) -> Shift | None: ...
 
     @abstractmethod

@@ -571,6 +571,24 @@ class Strings {
   String get selfOrderRequireConfirmHint => _en
       ? 'The order waits for the waiter before going to the kitchen.'
       : 'El pedido espera al mozo antes de ir a la cocina.';
+  // Modo de la Carta QR (Fase 3)
+  String get selfOrderModeLabel => _en ? 'QR mode' : 'Modo del QR';
+  String selfOrderMode(String mode) => switch (mode) {
+        'SALON' => _en ? 'Dining room' : 'Salón',
+        'SELF_SERVICE' => _en ? 'Self-service' : 'Autoservicio',
+        _ => _en ? 'View only' : 'Solo lectura',
+      };
+  String selfOrderModeHint(String mode) => switch (mode) {
+        'SALON' => _en
+            ? 'The diner orders; a waiter confirms it. Pay at the end.'
+            : 'El comensal pide; un mozo confirma. Se paga al final.',
+        'SELF_SERVICE' => _en
+            ? 'The diner pays first; it auto-marches and assigns a waiter. Turns on table pay.'
+            : 'El comensal paga primero; marcha sola y asigna un mozo. Prende el pago en mesa.',
+        _ => _en
+            ? 'The QR shows the menu only — no ordering.'
+            : 'El QR solo muestra la carta — sin pedidos.',
+      };
   // Pago en mesa
   String get selfPayTitle => _en ? 'Pay at the table' : 'Pago en mesa';
   String get selfPaySubtitle => _en

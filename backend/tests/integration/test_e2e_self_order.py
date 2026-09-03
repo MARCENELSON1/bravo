@@ -43,7 +43,12 @@ async def test_settings_default_off_and_toggle(client):
     got = await http.get("/api/v1/self-order/settings", headers=h)
     assert got.status_code == 200, got.text
     # Default: autopedido apagado, gate ON (paridad + rollout seguro).
-    assert got.json() == {"enabled": False, "requires_confirmation": True}
+    assert got.json() == {
+        "enabled": False,
+        "requires_confirmation": True,
+        "prepay_required": False,
+        "mode": "READ_ONLY",
+    }
 
 
 async def test_gate_on_leaves_order_pending(client):
