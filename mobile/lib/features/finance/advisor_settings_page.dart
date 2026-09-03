@@ -54,7 +54,7 @@ class _AdvisorSettingsPageState extends ConsumerState<AdvisorSettingsPage> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-          title: Text(s.financeConfigTitle),
+          title: Text(s.advisorConfigTitle),
           backgroundColor: Colors.transparent),
       body: Stack(
         children: [

@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../auth/session.dart';
 import '../features/cashier/payment_dtos.dart';
+import '../features/finance/finance_range.dart';
 import '../features/floor/floor_view.dart';
 import '../features/invoices/invoice_repository.dart';
 import '../features/order/order_dtos.dart';
@@ -253,6 +254,106 @@ class Strings {
   String get finanzasCommissions => _en ? 'Commissions' : 'Comisiones';
   String get finanzasNotConfigured =>
       _en ? 'Set up your costs on the web' : 'Configurá tus costos en el web';
+
+  // Finanzas — paridad con la pantalla del web
+  String financeRange(FinanceRange r) => switch (r) {
+        FinanceRange.today => _en ? 'Today' : 'Hoy',
+        FinanceRange.week => _en ? 'This week' : 'Esta semana',
+        FinanceRange.month => _en ? 'This month' : 'Este mes',
+        FinanceRange.quarter => _en ? 'Quarter' : 'Trimestre',
+      };
+  String get financeLoadError =>
+      _en ? "We couldn't load your finances." : 'No pudimos cargar las finanzas.';
+  String get financeHeroNet =>
+      _en ? 'Your net profit for the period' : 'Tu ganancia neta del período';
+  String get financeVsPrevious =>
+      _en ? 'vs previous period' : 'vs período anterior';
+  String get financeProjectionPrefix =>
+      _en ? "At this pace, you'll close at" : 'Si seguís así, cerrás en';
+  String financeProjectionDays(int elapsed, int total) => '($elapsed/$total ${_en ? "days" : "días"})';
+  String get financeConfigureCosts => _en
+      ? 'Set your fixed costs (labor and others) in the Advisor so net margin and prime cost are exact.'
+      : 'Cargá tus costos fijos (personal y otros) en el Asesor para que el margen neto y el prime cost sean exactos.';
+  String get financeCommissionsLabel => _en
+      ? 'Payment commissions (gateways)'
+      : 'Comisiones de cobro (pasarelas)';
+  String get financeNetCollected =>
+      _en ? 'Net of commissions:' : 'Cobrado neto de comisiones:';
+  String get financeDiagnosticsTitle =>
+      _en ? 'Diagnostics' : 'Diagnósticos';
+  String get financeExpenseChangesTitle => _en
+      ? 'The 3 expenses that changed most'
+      : 'Los 3 gastos que más cambiaron';
+  String get financeExpenseDistTitle =>
+      _en ? 'Expense distribution' : 'Distribución de gastos';
+  String get financeExpenseEmpty => _en
+      ? 'No expenses recorded in the period.'
+      : 'Sin gastos registrados en el período.';
+  String get financeProductMargins => _en
+      ? 'Contribution margin by product'
+      : 'Margen de contribución por producto';
+  String get financeMovementsTitle =>
+      _en ? 'Recent movements' : 'Últimos movimientos';
+  String get financeUnitsMargin => _en ? 'Units · Margin' : 'Unidades · Margen';
+  String get financeKpisTitle =>
+      _en ? 'Sector KPIs' : 'KPIs del rubro';
+  String financeHealthyRange(String low, String high) =>
+      _en ? 'healthy $low–$high' : 'sano $low–$high';
+  String financeHealthyMax(String high) =>
+      _en ? 'healthy < $high' : 'sano < $high';
+  String financeKpiLabel(String key) => switch (key) {
+        'prime_cost' => 'Prime Cost',
+        'food_cost' => 'Food Cost',
+        'labor_cost' => _en ? 'Labor cost' : 'Costo de personal',
+        'waste' => _en ? 'Waste' : 'Mermas',
+        'net_margin' => _en ? 'Net margin' : 'Margen neto',
+        'gross_margin' => _en ? 'Gross margin' : 'Margen bruto',
+        'break_even' => _en ? 'Break-even' : 'Punto de equilibrio',
+        'revpash' => 'RevPASH',
+        'inventory_turnover' =>
+          _en ? 'Inventory turnover' : 'Rotación de inventario',
+        _ => key,
+      };
+  String financeStatusAction(String status) => switch (status) {
+        'healthy' => _en ? 'Keep it up' : 'Mantener',
+        'warn' => _en ? 'Review' : 'Revisar',
+        'alert' => _en ? 'Act' : 'Actuar',
+        _ => '—',
+      };
+
+  // Asesor (Fase 9) — reporte de insights + KPIs
+  String get advisorTitle => _en ? 'Advisor' : 'Asesor';
+  String get advisorSubtitle => _en
+      ? 'Your numbers read as actions.'
+      : 'Tus números leídos como acciones.';
+  String get advisorLoadError =>
+      _en ? "We couldn't load the report." : 'No pudimos cargar el reporte.';
+  String get advisorConfigureCosts => _en
+      ? 'Set your costs to unlock net margin and break-even.'
+      : 'Cargá tus costos para desbloquear margen neto y punto de equilibrio.';
+  String advisorBucketLabel(String bucket) => switch (bucket) {
+        'pricing' => _en ? 'Pricing' : 'Precios',
+        'costs' => _en ? 'Costs' : 'Costos',
+        'menu' => _en ? 'Menu' : 'Carta',
+        'operations' => _en ? 'Operations' : 'Operación',
+        'cash' => _en ? 'Cash' : 'Caja',
+        'inventory' => _en ? 'Inventory' : 'Inventario',
+        _ => bucket,
+      };
+  String advisorKpiLabel(String key) => switch (key) {
+        'sales' => _en ? 'Sales' : 'Ventas',
+        'gross_margin' => _en ? 'Gross margin' : 'Margen bruto',
+        'net_margin' => _en ? 'Net margin' : 'Margen neto',
+        'food_cost' => 'Food Cost',
+        'prime_cost' => 'Prime Cost',
+        'break_even' => _en ? 'Break-even' : 'Punto de equilibrio',
+        'orders' => _en ? 'Orders' : 'Órdenes',
+        'avg_ticket' => _en ? 'Avg. ticket' : 'Ticket promedio',
+        'no_show' => 'No-show',
+        _ => key,
+      };
+  String get advisorConfigTitle =>
+      _en ? 'Cost settings' : 'Configuración de costos';
   String get comprobantesTitle => _en ? 'Invoices' : 'Comprobantes';
   String get comprobantesEmpty => _en ? 'No invoices' : 'Sin comprobantes';
   String get productosTitle => _en ? 'Products' : 'Productos';
