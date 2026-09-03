@@ -13,6 +13,8 @@ import '../finance/advisor_page.dart';
 import '../finance/finanzas_page.dart';
 import '../inventory/insumos_page.dart';
 import '../inventory/proveedores_page.dart';
+import '../platform/platform_page.dart';
+import '../platform/platform_repository.dart';
 import '../invoices/comprobantes_page.dart';
 import '../products/productos_page.dart';
 import '../reports/analytics_page.dart';
@@ -37,6 +39,9 @@ class MorePage extends ConsumerWidget {
         : null;
     final isAdmin = role == Role.owner || role == Role.manager || role == Role.cashier;
     final isOwner = role == Role.owner;
+    // El panel de plataforma se muestra solo a super-admins (flag del backend).
+    final isPlatformAdmin =
+        ref.watch(platformAccessProvider).valueOrNull ?? false;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -105,6 +110,11 @@ class MorePage extends ConsumerWidget {
                   const Divider(height: 1),
                   _tile(context, Icons.card_membership_outlined,
                       s.billingTitle, const SuscripcionPage()),
+                ],
+                if (isPlatformAdmin) ...[
+                  const Divider(height: 1),
+                  _tile(context, Icons.workspace_premium_outlined,
+                      s.platformTitle, const PlatformPage()),
                 ],
               ],
             ),

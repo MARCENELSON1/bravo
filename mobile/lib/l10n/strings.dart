@@ -620,6 +620,37 @@ class Strings {
         _ => status,
       };
 
+  // Panel de Plataforma (super-admin)
+  String get platformTitle => _en ? 'Platform' : 'Plataforma';
+  String get platformCatalog => _en ? 'Plan catalog' : 'Catálogo de planes';
+  String get platformEmpty => _en ? 'No plans yet.' : 'Sin planes todavía.';
+  String get platformNewPlan => _en ? 'New plan' : 'Nuevo plan';
+  String get platformEditPlan => _en ? 'Edit plan' : 'Editar plan';
+  String get platformTier => _en ? 'Tier' : 'Nivel';
+  String get platformRegion => _en ? 'Region' : 'Región';
+  String platformPrice(String currency) =>
+      _en ? 'Price ($currency)' : 'Precio ($currency)';
+  String get platformIntervalLabel => _en ? 'Interval' : 'Intervalo';
+  String get platformIncludes => _en ? 'Includes' : 'Incluye';
+  String get platformActive => _en ? 'Active' : 'Activo';
+  String get platformCreate => _en ? 'Create plan' : 'Crear plan';
+  String get platformSaveChanges => _en ? 'Save changes' : 'Guardar cambios';
+  String get platformInvalidPrice =>
+      _en ? 'Invalid price.' : 'Precio inválido.';
+  String get platformSaved => _en ? 'Plan saved.' : 'Plan guardado.';
+  String get platformSaveError =>
+      _en ? "We couldn't save the plan." : 'No pudimos guardar el plan.';
+  String get platformDeleteConfirm =>
+      _en ? 'Delete this plan?' : '¿Eliminar este plan?';
+  String get platformDeleted => _en ? 'Plan deleted.' : 'Plan eliminado.';
+  String get platformDeleteError =>
+      _en ? "We couldn't delete it." : 'No pudimos eliminarlo.';
+  String platformRegionLabel(String region) => switch (region) {
+        'AR' => 'Argentina',
+        'INTL' => _en ? 'International' : 'Internacional',
+        _ => region,
+      };
+
   String shiftSourceLabel(String source) => switch (source) {
         'QR' || 'qr' => 'QR',
         'MANUAL' || 'manual' => _en ? 'Manual' : 'Manual',
