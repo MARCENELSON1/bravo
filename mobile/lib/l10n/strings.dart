@@ -510,6 +510,54 @@ class Strings {
     return '${h}h ${min}m';
   }
 
+  // Reservas
+  String get reservasTitle => _en ? 'Reservations' : 'Reservas';
+  String get reservasSubtitle => _en
+      ? 'Bookings and no-shows.'
+      : 'Reservas y ausencias (no-show).';
+  String get reservasEmpty =>
+      _en ? 'No reservations for this day.' : 'Sin reservas para este día.';
+  String get reservaNew => _en ? 'New reservation' : 'Nueva reserva';
+  String get reservaCustomer => _en ? 'Customer name' : 'Nombre del cliente';
+  String get reservaPhone => _en ? 'Phone' : 'Teléfono';
+  String get reservaGuests => _en ? 'Guests' : 'Comensales';
+  String get reservaTable => _en ? 'Table' : 'Mesa';
+  String get reservaNoTable => _en ? 'No table' : 'Sin mesa';
+  String get reservaNote => _en ? 'Note' : 'Nota';
+  String get reservaCreated => _en ? 'Reservation created.' : 'Reserva creada.';
+  String get reservaError =>
+      _en ? "We couldn't create the reservation." : 'No pudimos crear la reserva.';
+  String get reservaCustomerRequired =>
+      _en ? 'Enter the customer name.' : 'Ingresá el nombre del cliente.';
+  String get reservaGuestsInvalid =>
+      _en ? 'Invalid number of guests.' : 'Cantidad de comensales inválida.';
+  String get reservaDay => _en ? 'Day' : 'Día';
+  String get reservaShift => _en ? 'Shift' : 'Turno';
+  String get reservaAll => _en ? 'All' : 'Todos';
+  String get reservaDate => _en ? 'Date' : 'Fecha';
+  String get reservaTime => _en ? 'Time' : 'Hora';
+  String get reservaTransitionError =>
+      _en ? "We couldn't update it." : 'No pudimos actualizarla.';
+  String reservaTableOption(int n) => _en ? 'Table $n' : 'Mesa $n';
+  String turnLabel(String turn) => switch (turn) {
+        'LUNCH' => _en ? 'Lunch' : 'Almuerzo',
+        'DINNER' => _en ? 'Dinner' : 'Cena',
+        _ => turn,
+      };
+  String reservaStatusLabel(String status) => switch (status) {
+        'PENDING' => _en ? 'Pending' : 'Pendiente',
+        'CONFIRMED' => _en ? 'Confirmed' : 'Confirmada',
+        'SEATED' => _en ? 'Seated' : 'Sentada',
+        'COMPLETED' => _en ? 'Completed' : 'Completada',
+        'CANCELLED' => _en ? 'Cancelled' : 'Cancelada',
+        'NO_SHOW' => 'No-show',
+        _ => status,
+      };
+  String get reservaConfirm => _en ? 'Confirm' : 'Confirmar';
+  String get reservaSeat => _en ? 'Seat' : 'Sentar';
+  String get reservaComplete => _en ? 'Complete' : 'Completar';
+  String get reservaNoShow => _en ? 'No-show' : 'No vino';
+
   String shiftSourceLabel(String source) => switch (source) {
         'QR' || 'qr' => 'QR',
         'MANUAL' || 'manual' => _en ? 'Manual' : 'Manual',
