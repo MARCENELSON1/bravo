@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_client.dart';
+import '../../data/realtime/realtime_service.dart';
 import '../floor/floor_providers.dart';
 import '../order/order_dtos.dart';
 import 'kds_repository.dart';
@@ -19,7 +20,7 @@ final tableNumbersProvider = FutureProvider<Map<String, int>>(
 /// `kds.changed` (espeja `use-kds-orders.ts`).
 class KdsNotifier extends FamilyAsyncNotifier<List<Order>, Station> {
   Timer? _poll;
-  StreamSubscription<String>? _sse;
+  StreamSubscription<RealtimeEvent>? _sse;
 
   @override
   Future<List<Order>> build(Station arg) async {
@@ -29,7 +30,7 @@ class KdsNotifier extends FamilyAsyncNotifier<List<Order>, Station> {
     });
     _poll = Timer.periodic(const Duration(seconds: 20), (_) => refresh());
     _sse = ref.read(realtimeServiceProvider).events('kds').listen((event) {
-      if (event == 'kds.changed') refresh();
+      if (event.name == 'kds.changed') refresh();
     });
     return ref.read(kdsRepositoryProvider).orders(arg);
   }

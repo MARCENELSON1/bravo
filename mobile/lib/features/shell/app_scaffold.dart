@@ -16,6 +16,7 @@ import '../order/order_dtos.dart';
 import '../reservations/reservas_page.dart';
 import '../tips/tips_page.dart';
 import 'more_page.dart';
+import 'ready_alert.dart';
 
 /// Shell con bottom nav por rol (espeja `role-landing.tsx` + la navegación del
 /// front). En F0, todas las tabs menos "Inicio" son placeholders (llegan en F1).
@@ -44,27 +45,31 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
     final tabs = _tabsForRole(session.session.role, s);
     final safeIndex = _index.clamp(0, tabs.length - 1);
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          const AppBackground(),
-          // IndexedStack mantiene vivas todas las tabs → conservan scroll,
-          // formularios y conexiones en vivo al cambiar de una a otra.
-          SafeArea(
-            child: IndexedStack(
-              index: safeIndex,
-              children: [for (final t in tabs) t.page],
+    // ReadyAlert: escucha global de `order.ready` → banner al mozo dueño en
+    // cualquier tab. Montado una sola vez (solo con sesión autenticada).
+    return ReadyAlert(
+      child: Scaffold(
+        body: Stack(
+          children: [
+            const AppBackground(),
+            // IndexedStack mantiene vivas todas las tabs → conservan scroll,
+            // formularios y conexiones en vivo al cambiar de una a otra.
+            SafeArea(
+              child: IndexedStack(
+                index: safeIndex,
+                children: [for (final t in tabs) t.page],
+              ),
             ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: safeIndex,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: [
-          for (final t in tabs)
-            NavigationDestination(icon: Icon(t.icon), label: t.label),
-        ],
+          ],
+        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: safeIndex,
+          onDestinationSelected: (i) => setState(() => _index = i),
+          destinations: [
+            for (final t in tabs)
+              NavigationDestination(icon: Icon(t.icon), label: t.label),
+          ],
+        ),
       ),
     );
   }

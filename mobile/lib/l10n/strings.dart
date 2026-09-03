@@ -326,6 +326,18 @@ class Strings {
       ? 'Clock in and get going. Everything you need is in the tabs below.'
       : 'Fichá tu turno y arrancá. Todo lo tuyo está en las pestañas de abajo.';
 
+  // Aviso "comanda lista" (Fase 1)
+  String readyBannerTitle(int mesa) =>
+      _en ? 'Table $mesa is ready' : 'Mesa $mesa lista';
+  String get readyBannerTitleNoTable =>
+      _en ? 'An order is ready' : 'Una comanda está lista';
+  String get readyBannerAction => _en ? 'View' : 'Ver';
+  String get readyBannerDismiss => _en ? 'Dismiss' : 'Descartar';
+  String readyModalTitle(int mesa) =>
+      _en ? 'Table $mesa · ready' : 'Mesa $mesa · lista';
+  String get readyModalTitleNoTable => _en ? 'Order ready' : 'Comanda lista';
+  String get comandaEmpty => _en ? 'No items.' : 'Sin ítems.';
+
   // Copiloto (Fase 5)
   String get copilotTitle => _en ? 'Copilot' : 'Copiloto';
   String get copilotHint =>

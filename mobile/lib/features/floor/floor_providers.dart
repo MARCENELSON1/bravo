@@ -28,7 +28,7 @@ final sectorsProvider = FutureProvider<List<Sector>>(
 /// por SSE `floor.changed` (espeja `use-floor.ts`).
 class FloorNotifier extends AsyncNotifier<List<FloorTable>> {
   Timer? _poll;
-  StreamSubscription<String>? _sse;
+  StreamSubscription<RealtimeEvent>? _sse;
 
   @override
   Future<List<FloorTable>> build() async {
@@ -38,7 +38,7 @@ class FloorNotifier extends AsyncNotifier<List<FloorTable>> {
     });
     _poll = Timer.periodic(const Duration(seconds: 10), (_) => refresh());
     _sse = ref.read(realtimeServiceProvider).events('floor').listen((event) {
-      if (event == 'floor.changed') refresh();
+      if (event.name == 'floor.changed') refresh();
     });
     return ref.read(floorRepositoryProvider).floor();
   }

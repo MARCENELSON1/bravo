@@ -297,6 +297,21 @@ def _floor_changed_table(tenant_id: str, table_id: str) -> DomainEvent:
     )
 
 
+def _order_ready(order: Order, table_number: str) -> DomainEvent:
+    """Signal the owning waiter that a whole order is ready to serve (every item
+    READY). ``waiter_id`` lets the client deliver it only to the order's owner."""
+    return DomainEvent(
+        type="order.ready",
+        tenant_id=order.tenant_id,
+        payload={
+            "order_id": order.id,
+            "table_id": order.table_id,
+            "table_number": table_number,
+            "waiter_id": order.waiter_id or "",
+        },
+    )
+
+
 class SendOrder:
     def __init__(
         self,
@@ -328,10 +343,12 @@ class AdvanceItem:
     def __init__(
         self,
         orders: OrderRepository,
+        tables: TableRepository,
         tenant_context: TenantContext,
         event_bus: EventBus,
     ) -> None:
         self._orders = orders
+        self._tables = tables
         self._tenant_context = tenant_context
         self._event_bus = event_bus
 
@@ -347,7 +364,15 @@ class AdvanceItem:
         for event in _kds_changed(order, {item.station}):
             await self._event_bus.publish(event)
         await self._event_bus.publish(_floor_changed(order))
+        await self._publish_ready_if_complete(tenant_id, order)
         return order
+
+    async def _publish_ready_if_complete(self, tenant_id: str, order: Order) -> None:
+        # The last item that completes the order flips it to READY; emit once then.
+        if order.status is OrderStatus.READY:
+            table = await self._tables.get_by_id(tenant_id, order.table_id)
+            number = str(table.number) if table is not None else ""
+            await self._event_bus.publish(_order_ready(order, number))
 
 
 class AdvanceOrder:
@@ -360,10 +385,12 @@ class AdvanceOrder:
     def __init__(
         self,
         orders: OrderRepository,
+        tables: TableRepository,
         tenant_context: TenantContext,
         event_bus: EventBus,
     ) -> None:
         self._orders = orders
+        self._tables = tables
         self._tenant_context = tenant_context
         self._event_bus = event_bus
 
@@ -386,6 +413,10 @@ class AdvanceOrder:
         for event in _kds_changed(order, {it.station for it in order.items}):
             await self._event_bus.publish(event)
         await self._event_bus.publish(_floor_changed(order))
+        if order.status is OrderStatus.READY:
+            table = await self._tables.get_by_id(tenant_id, order.table_id)
+            number = str(table.number) if table is not None else ""
+            await self._event_bus.publish(_order_ready(order, number))
         return order
 
 
