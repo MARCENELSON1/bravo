@@ -7,6 +7,7 @@ import '../../l10n/strings.dart';
 import '../../ui/glass_panel.dart';
 import '../crm/clientes_page.dart';
 import '../expenses/gastos_page.dart';
+import '../floor/mesas_qr_page.dart';
 import '../finance/advisor_page.dart';
 import '../finance/finanzas_page.dart';
 import '../inventory/insumos_page.dart';
@@ -79,6 +80,9 @@ class MorePage extends ConsumerWidget {
                   const Divider(height: 1),
                   _tile(context, Icons.people_alt_outlined, s.clientesTitle,
                       const ClientesPage()),
+                  const Divider(height: 1),
+                  _tile(context, Icons.qr_code_2_outlined, s.mesasQrTitle,
+                      const MesasQrPage()),
                   const Divider(height: 1),
                   _tile(context, Icons.settings_outlined, s.ajustesTitle,
                       const AjustesPage()),

@@ -434,6 +434,42 @@ class Strings {
   String get gastosError =>
       _en ? "We couldn't record the expense." : 'No pudimos registrar el gasto.';
 
+  // Mesas QR (lado admin de la Carta QR)
+  String get mesasQrTitle => _en ? 'Table QR codes' : 'QR de mesas';
+  String get mesasQrSubtitle => _en
+      ? 'One QR per table for the digital menu.'
+      : 'Un QR por mesa para la carta digital.';
+  String get mesasQrEmpty =>
+      _en ? 'No active tables.' : 'No hay mesas activas.';
+  String get mesasQrScanHint =>
+      _en ? 'Scan to see the menu' : 'Escaneá para ver la carta';
+  String mesasQrTableLabel(int n) => _en ? 'Table $n' : 'Mesa $n';
+  String get mesasQrLoadError =>
+      _en ? "Couldn't load the QR." : 'No pudimos cargar el QR.';
+  String get settingsSaveError =>
+      _en ? "We couldn't save." : 'No pudimos guardar.';
+  // Autopedido
+  String get selfOrderTitle => _en ? 'Self-ordering' : 'Autopedido';
+  String get selfOrderSubtitle => _en
+      ? 'Let diners order from their phone.'
+      : 'Que el comensal pida desde el celular.';
+  String get selfOrderEnable => _en ? 'Enable self-ordering' : 'Activar autopedido';
+  String get selfOrderRequireConfirm =>
+      _en ? "Waiter confirms the order" : 'El mozo confirma el pedido';
+  String get selfOrderRequireConfirmHint => _en
+      ? 'The order waits for the waiter before going to the kitchen.'
+      : 'El pedido espera al mozo antes de ir a la cocina.';
+  // Pago en mesa
+  String get selfPayTitle => _en ? 'Pay at the table' : 'Pago en mesa';
+  String get selfPaySubtitle => _en
+      ? 'Let diners pay online from their phone.'
+      : 'Que el comensal pague online desde el celular.';
+  String get selfPayEnable => _en ? 'Enable table payment' : 'Activar pago en mesa';
+  String get selfPayEnableHint => _en
+      ? 'Without this, the menu keeps "Ask for the bill".'
+      : 'Sin esto, la carta mantiene "Pedir la cuenta".';
+  String get selfPayOfferTip => _en ? 'Offer tip' : 'Ofrecer propina';
+
   // Proveedores (Fase 6)
   String get proveedoresTitle => _en ? 'Suppliers' : 'Proveedores';
   String get proveedoresEmpty => _en ? 'No suppliers' : 'Sin proveedores';
