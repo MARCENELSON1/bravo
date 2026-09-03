@@ -16,6 +16,7 @@ import '../order/order_dtos.dart';
 import '../reservations/reservas_page.dart';
 import '../tips/tips_page.dart';
 import 'more_page.dart';
+import 'push_handler.dart';
 import 'ready_alert.dart';
 
 /// Shell con bottom nav por rol (espeja `role-landing.tsx` + la navegación del
@@ -45,10 +46,12 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
     final tabs = _tabsForRole(session.session.role, s);
     final safeIndex = _index.clamp(0, tabs.length - 1);
 
-    // ReadyAlert: escucha global de `order.ready` → banner al mozo dueño en
-    // cualquier tab. Montado una sola vez (solo con sesión autenticada).
-    return ReadyAlert(
-      child: Scaffold(
+    // PushHandler: registra el token de push + abre el modal al tocar una
+    // notificación (app cerrada). ReadyAlert: aviso en vivo (SSE) con la app
+    // abierta. Ambos montados una sola vez, solo con sesión autenticada.
+    return PushHandler(
+      child: ReadyAlert(
+        child: Scaffold(
         body: Stack(
           children: [
             const AppBackground(),
@@ -69,6 +72,7 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
             for (final t in tabs)
               NavigationDestination(icon: Icon(t.icon), label: t.label),
           ],
+        ),
         ),
       ),
     );

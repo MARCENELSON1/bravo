@@ -1,3 +1,5 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,8 +10,20 @@ import 'router/router.dart';
 import 'theme/theme.dart';
 import 'theme/theme_controller.dart';
 
+/// Handler de push en background (Fase 4): el sistema muestra la notificación solo;
+/// no hay nada que hacer acá (el tap se maneja al abrir la app). Top-level + entry
+/// point, requisito de firebase_messaging.
+@pragma('vm:entry-point')
+Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
+  } catch (_) {
+    // Sin config de Firebase (dev / plataforma sin push) → la app arranca igual.
+  }
   final prefs = await SharedPreferences.getInstance();
   runApp(
     ProviderScope(
