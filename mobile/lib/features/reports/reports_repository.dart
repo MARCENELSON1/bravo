@@ -46,11 +46,45 @@ class RevenueDailyPoint {
       );
 }
 
+/// Resumen crudo de analytics (backend `RevenueSummaryResponse`,
+/// `/analytics/revenue`). Incluye food cost y margen bruto.
+class RevenueSummary {
+  const RevenueSummary({
+    required this.currency,
+    required this.salesAmount,
+    required this.collectedAmount,
+    required this.expenseAmount,
+    required this.foodCostAmount,
+    required this.grossMarginAmount,
+    required this.ordersCount,
+    required this.averageTicketAmount,
+  });
+  final String currency;
+  final int salesAmount;
+  final int collectedAmount;
+  final int expenseAmount;
+  final int foodCostAmount;
+  final int grossMarginAmount;
+  final int ordersCount;
+  final int averageTicketAmount;
+  factory RevenueSummary.fromJson(Map<String, dynamic> j) => RevenueSummary(
+        currency: (j['currency'] as String?) ?? 'ARS',
+        salesAmount: (j['sales_amount'] as int?) ?? 0,
+        collectedAmount: (j['collected_amount'] as int?) ?? 0,
+        expenseAmount: (j['expense_amount'] as int?) ?? 0,
+        foodCostAmount: (j['food_cost_amount'] as int?) ?? 0,
+        grossMarginAmount: (j['gross_margin_amount'] as int?) ?? 0,
+        ordersCount: (j['orders_count'] as int?) ?? 0,
+        averageTicketAmount: (j['average_ticket_amount'] as int?) ?? 0,
+      );
+}
+
 class ProductPerf {
   const ProductPerf({
     required this.productName,
     required this.unitsSold,
     required this.salesAmount,
+    required this.foodCostAmount,
     required this.marginAmount,
     required this.currency,
   });
@@ -58,6 +92,7 @@ class ProductPerf {
   final String productName;
   final int unitsSold;
   final int salesAmount;
+  final int foodCostAmount;
   final int marginAmount;
   final String currency;
 
@@ -65,6 +100,7 @@ class ProductPerf {
         productName: (j['product_name'] as String?) ?? '',
         unitsSold: (j['units_sold'] as int?) ?? 0,
         salesAmount: (j['sales_amount'] as int?) ?? 0,
+        foodCostAmount: (j['food_cost_amount'] as int?) ?? 0,
         marginAmount: (j['margin_amount'] as int?) ?? 0,
         currency: (j['currency'] as String?) ?? 'ARS',
       );
@@ -119,6 +155,16 @@ class ReportsRepository {
     }
   }
 
+  Future<RevenueSummary> revenue(RangeWindow w) async {
+    try {
+      final res =
+          await _dio.get<dynamic>('/analytics/revenue', queryParameters: _win(w));
+      return RevenueSummary.fromJson(Map<String, dynamic>.from(res.data as Map));
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
   Future<List<ProductPerf>> products(RangeWindow w) async {
     try {
       final res = await _dio.get<dynamic>('/analytics/products',
@@ -146,6 +192,11 @@ class ReportsRepository {
 
 final reportsRepositoryProvider = Provider<ReportsRepository>(
   (ref) => ReportsRepository(ref.read(apiDioProvider)),
+);
+
+final revenueProvider =
+    FutureProvider.autoDispose.family<RevenueSummary, FinanceRange>(
+  (ref, range) => ref.read(reportsRepositoryProvider).revenue(rangeWindow(range)),
 );
 
 final reportSummaryProvider =

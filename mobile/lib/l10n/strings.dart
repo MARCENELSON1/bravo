@@ -558,6 +558,28 @@ class Strings {
   String get reservaComplete => _en ? 'Complete' : 'Completar';
   String get reservaNoShow => _en ? 'No-show' : 'No vino';
 
+  // Analytics
+  String get analyticsTitle => _en ? 'Analytics' : 'Analítica';
+  String get analyticsSubtitle => _en
+      ? 'Revenue, payment mix and top products.'
+      : 'Facturación, mix de pagos y top productos.';
+  String get anCollected => _en ? 'Collected' : 'Cobrado';
+  String get anExpenses => _en ? 'Expenses' : 'Gastos';
+  String get anGrossMargin => _en ? 'Gross margin' : 'Margen bruto';
+  String get anGrossMarginHint =>
+      _en ? 'sales − food cost' : 'ventas − food cost';
+  String get anFoodCost => 'Food Cost';
+  String anOrdersCount(int n) => _en ? '$n orders' : '$n órdenes';
+  String get anPaymentMixTitle => _en ? 'Payment mix' : 'Mix de pagos';
+  String get anPaymentMixHint => _en
+      ? 'Inflows (charges) and outflows (expenses/refunds).'
+      : 'Ingresos (cobros) y egresos (gastos/reembolsos).';
+  String get anInflow => _en ? 'Inflow' : 'Ingreso';
+  String get anOutflow => _en ? 'Outflow' : 'Egreso';
+  String get anOperations => _en ? 'Ops' : 'Ops';
+  String get anTopProducts => _en ? 'Top products' : 'Top productos';
+  String get anMixEmpty => _en ? 'No movements.' : 'Sin movimientos.';
+
   String shiftSourceLabel(String source) => switch (source) {
         'QR' || 'qr' => 'QR',
         'MANUAL' || 'manual' => _en ? 'Manual' : 'Manual',
