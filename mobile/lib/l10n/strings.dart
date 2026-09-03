@@ -322,6 +322,9 @@ class Strings {
   String get dashGotIt => _en ? 'Got it' : 'Entendido';
   String get dashRegisterExpense =>
       _en ? 'Record expense' : 'Registrar egreso';
+  String get homeSimpleHint => _en
+      ? 'Clock in and get going. Everything you need is in the tabs below.'
+      : 'Fichá tu turno y arrancá. Todo lo tuyo está en las pestañas de abajo.';
 
   // Copiloto (Fase 5)
   String get copilotTitle => _en ? 'Copilot' : 'Copiloto';

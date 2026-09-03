@@ -7,8 +7,10 @@ import '../../theme/colors.dart';
 import '../../ui/glass_panel.dart';
 import '../../util/money.dart';
 import '../cashier/payment_dtos.dart';
+import '../../auth/session.dart';
 import '../copilot/copilot_page.dart';
 import '../expenses/gastos_page.dart';
+import '../timeclock/fichaje_page.dart';
 import '../finance/finance_range.dart';
 import '../finance/finance_repository.dart';
 import '../reports/reports_repository.dart';
@@ -38,6 +40,12 @@ class _HomePageState extends ConsumerState<HomePage> {
     final session = sessionState.session;
     final firstName =
         session.name?.trim().isNotEmpty == true ? session.name!.trim().split(' ').first : null;
+
+    // El dashboard financiero es solo para OWNER/MANAGER (como en el web). Los
+    // roles operativos ven un Inicio simple, sin tarjetas vacías.
+    if (!session.role.isAdmin) {
+      return _simpleHome(context, s, session, firstName);
+    }
 
     final summary = ref.watch(dashboardProvider);
     final daily = ref.watch(revenue7dProvider);
@@ -216,6 +224,67 @@ class _HomePageState extends ConsumerState<HomePage> {
               MaterialPageRoute<void>(builder: (_) => const GastosPage()),
             ),
             child: const Icon(Icons.add),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Inicio simple para roles operativos (mozo, cocina, barra, cajero): sin el
+  /// dashboard financiero. Saludo + fichaje + cerrar sesión.
+  Widget _simpleHome(
+      BuildContext context, Strings s, Session session, String? firstName) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(s.dashGreeting(firstName),
+                  style: theme.textTheme.headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w800)),
+            ),
+            Text(s.dashTodayLabel(DateTime.now()),
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text('${session.tenantName} · ${s.role(session.role)}',
+            style: TextStyle(color: scheme.onSurfaceVariant)),
+        const SizedBox(height: 16),
+        GlassPanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(s.homeSimpleHint,
+                  style: TextStyle(color: scheme.onSurfaceVariant)),
+              const SizedBox(height: 12),
+              Material(
+                type: MaterialType.transparency,
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.schedule_outlined),
+                  title: Text(s.fichajeTitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                        builder: (_) => const FichajePage()),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => ref.read(sessionProvider.notifier).logout(),
+            icon: const Icon(Icons.logout, size: 18),
+            label: Text(s.logout),
           ),
         ),
       ],
