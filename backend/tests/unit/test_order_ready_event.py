@@ -46,10 +46,10 @@ class _SpyBus:
 
 class _SpyPush:
     def __init__(self) -> None:
-        self.sent: list[tuple[str, str, str]] = []  # (user_id, title, order_id)
+        self.sent: list[tuple[str, str, str]] = []  # (user_id, title, body)
 
     async def notify_user(self, *, tenant_id, user_id, message) -> None:
-        self.sent.append((user_id, message.title, message.data.get("order_id", "")))
+        self.sent.append((user_id, message.title, message.body))
 
 
 def _item(name: str = "Milanesa") -> OrderItem:
@@ -169,4 +169,4 @@ async def test_push_notifies_waiter_on_ready() -> None:
 
     await uc.execute(tenant_id="t1", order_id=order.id, item_id=i2.id, action="preparing")
     await uc.execute(tenant_id="t1", order_id=order.id, item_id=i2.id, action="ready")
-    assert push.sent == [("w1", "Mesa 7 lista", order.id)]
+    assert push.sent == [("w1", "Mesa 7 · para servir", "1× Milanesa · 1× Ensalada")]

@@ -323,20 +323,32 @@ def _order_ready(order: Order, table_number: str) -> DomainEvent:
     )
 
 
+def _items_line(order: Order, limit: int = 4) -> str:
+    """Resumen legible de lo que hay que llevar: "2× Milanesa · 1× Ensalada"
+    (para el cuerpo del push, así el mozo sabe qué agarrar sin abrir la app)."""
+    live = [it for it in order.items if it.status is not ItemStatus.CANCELLED]
+    parts = [f"{it.quantity}× {it.name}" for it in live[:limit]]
+    line = " · ".join(parts)
+    if len(live) > limit:
+        line += f" +{len(live) - limit}"
+    return line
+
+
 async def _notify_order_ready(
     notifications: NotificationService, order: Order, table_number: str
 ) -> None:
-    """Push "Mesa N lista" al mozo dueño (Fase 4), en paralelo al SSE. Salta si la
-    orden no tiene dueño real (mesa QR huérfana / sentinel)."""
+    """Push "Mesa N · para servir" con los ítems al mozo dueño (Fase 4), en paralelo
+    al SSE. Salta si la orden no tiene dueño real (mesa QR huérfana / sentinel)."""
     if not order.waiter_id or order.waiter_id == CUSTOMER_WAITER_ID:
         return
-    title = f"Mesa {table_number} lista" if table_number else "Comanda lista"
+    title = f"Mesa {table_number} · para servir" if table_number else "Comanda para servir"
+    body = _items_line(order) or "Tu comanda está lista."
     await notifications.notify_user(
         tenant_id=order.tenant_id,
         user_id=order.waiter_id,
         message=PushMessage(
             title=title,
-            body="Tu comanda está lista para servir.",
+            body=body,
             data={
                 "kind": "order.ready",
                 "order_id": order.id,

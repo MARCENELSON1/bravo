@@ -339,6 +339,12 @@ class Strings {
       _en ? 'Table $mesa · ready' : 'Mesa $mesa · lista';
   String get readyModalTitleNoTable => _en ? 'Order ready' : 'Comanda lista';
   String get comandaEmpty => _en ? 'No items.' : 'Sin ítems.';
+  String get readyModalSubtitle => _en ? 'Ready to serve' : 'Lista para servir';
+  String readyModalCount(int n) => _en ? '$n items' : '$n ítems';
+  String get readyNoteLabel => _en ? 'Note' : 'Nota';
+  String get readyMarkServed => _en ? 'Mark served' : 'Marcar servido';
+  String get readyServedDone => _en ? 'Marked as served.' : 'Marcada como servida.';
+  String get readyClose => _en ? 'Close' : 'Cerrar';
 
   // Asignación por confirmación / bandeja QR (Fase 2)
   String pendingQrTitle(int count) =>

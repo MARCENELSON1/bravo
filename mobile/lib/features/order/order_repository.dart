@@ -78,6 +78,16 @@ class OrderRepository {
     }
   }
 
+  /// Marca la comanda como servida (READY → SERVED). Desde el modal "comanda lista".
+  Future<Order> markServed(String orderId) async {
+    try {
+      final res = await _dio.post<dynamic>('/orders/$orderId/served');
+      return await _order(res, orderId);
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
   /// Marcha a cocina (PENDING → SENT). Confirmar un pedido QR pasa por acá: el
   /// mozo que lo confirma queda dueño de la mesa (Fase 2, backend).
   Future<Order> send(String orderId) async {

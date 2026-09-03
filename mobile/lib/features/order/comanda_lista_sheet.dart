@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
 import '../../ui/glass_panel.dart';
 import '../../ui/state_views.dart';
+import '../floor/floor_providers.dart';
 import 'order_dtos.dart';
 import 'order_providers.dart';
 
-/// Modal "comanda lista" (Fase 1): al mozo dueño le aparece qué lleva y a qué
-/// mesa cuando la cocina termina. Informativo — el marcado de "servido" se hace
-/// desde el KDS/Piso. Trae la comanda fresca por `orderControllerProvider`.
-class ComandaListaSheet extends ConsumerWidget {
+/// Modal "comanda lista" (Fase 1 + mejora Fase 4): al mozo dueño le muestra, claro,
+/// qué lleva y a qué mesa cuando la cocina termina, y le deja **marcar servido** ahí
+/// mismo (cierra el ciclo). Trae la comanda fresca por `orderControllerProvider`.
+class ComandaListaSheet extends ConsumerStatefulWidget {
   const ComandaListaSheet({super.key, required this.orderId, this.tableNumber});
 
   final String orderId;
@@ -28,10 +30,37 @@ class ComandaListaSheet extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ComandaListaSheet> createState() => _ComandaListaSheetState();
+}
+
+class _ComandaListaSheetState extends ConsumerState<ComandaListaSheet> {
+  bool _serving = false;
+
+  Future<void> _markServed() async {
+    final s = context.s;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    setState(() => _serving = true);
+    try {
+      await ref.read(orderRepositoryProvider).markServed(widget.orderId);
+      ref.read(floorProvider.notifier).refresh();
+      navigator.pop();
+      messenger.showSnackBar(SnackBar(content: Text(s.readyServedDone)));
+    } on ApiError catch (e) {
+      if (mounted) {
+        setState(() => _serving = false);
+        messenger.showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final s = context.s;
     final scheme = Theme.of(context).colorScheme;
-    final async = ref.watch(orderControllerProvider(orderId));
+    final async = ref.watch(orderControllerProvider(widget.orderId));
+    final items = async.valueOrNull?.liveItems ?? const <OrderItem>[];
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
@@ -39,23 +68,7 @@ class ComandaListaSheet extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Icon(Icons.room_service_outlined, color: scheme.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    tableNumber != null
-                        ? s.readyModalTitle(tableNumber!)
-                        : s.readyModalTitleNoTable,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
+            _header(context, s, scheme, items.length),
             const SizedBox(height: 12),
             async.when(
               loading: () => const Padding(
@@ -65,17 +78,67 @@ class ComandaListaSheet extends ConsumerWidget {
               error: (e, _) => ErrorView(
                   error: e,
                   onRetry: () =>
-                      ref.invalidate(orderControllerProvider(orderId))),
+                      ref.invalidate(orderControllerProvider(widget.orderId))),
               data: (order) => _items(context, s, order),
             ),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(s.dashGotIt),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              onPressed: (_serving || items.isEmpty) ? null : _markServed,
+              icon: _serving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.check_rounded),
+              label: Text(s.readyMarkServed),
+              style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14)),
+            ),
+            TextButton(
+              onPressed: _serving ? null : () => Navigator.of(context).pop(),
+              child: Text(s.readyClose),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _header(BuildContext context, Strings s, ColorScheme scheme, int count) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: scheme.primary.withValues(alpha: 0.14),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(Icons.room_service_outlined, color: scheme.primary),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.tableNumber != null
+                    ? s.readyModalTitle(widget.tableNumber!)
+                    : s.readyModalTitleNoTable,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              Text(
+                count > 0
+                    ? '${s.readyModalSubtitle} · ${s.readyModalCount(count)}'
+                    : s.readyModalSubtitle,
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -90,30 +153,82 @@ class ComandaListaSheet extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final it in items)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${it.quantity}× ${it.name}',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyLarge
-                          ?.copyWith(fontWeight: FontWeight.w600)),
-                  if (it.selectedOptions.isNotEmpty)
-                    Text(it.selectedOptions.map((o) => o.name).join(', '),
-                        style: TextStyle(
-                            color: scheme.onSurfaceVariant, fontSize: 13)),
-                  if (it.note != null && it.note!.isNotEmpty)
-                    Text('› ${it.note}',
-                        style: TextStyle(
-                            color: scheme.onSurfaceVariant, fontSize: 13)),
-                ],
-              ),
-            ),
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0) const Divider(height: 16),
+            _itemRow(context, s, scheme, items[i]),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _itemRow(
+      BuildContext context, Strings s, ColorScheme scheme, OrderItem it) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Badge de cantidad, bien visible.
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+          decoration: BoxDecoration(
+            color: scheme.primary.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text('${it.quantity}×',
+              style: TextStyle(
+                  color: scheme.primary, fontWeight: FontWeight.w700)),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(it.name,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.copyWith(fontWeight: FontWeight.w600)),
+              if (it.selectedOptions.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final o in it.selectedOptions)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: scheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(o.name, style: const TextStyle(fontSize: 12)),
+                      ),
+                  ],
+                ),
+              ],
+              if (it.note != null && it.note!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.sticky_note_2_outlined,
+                        size: 15, color: scheme.tertiary),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text('${s.readyNoteLabel}: ${it.note}',
+                          style: TextStyle(
+                              color: scheme.tertiary,
+                              fontSize: 13,
+                              fontStyle: FontStyle.italic)),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
