@@ -10,6 +10,7 @@ from app.application.order.use_cases import (
     AddOrderItemsBatch,
     AdvanceItem,
     AdvanceOrder,
+    CloseSettledOrder,
     CreateOrder,
     GetOrder,
     ListOrders,
@@ -393,6 +394,19 @@ async def transfer_order(
     order = await use_case.execute(
         tenant_id=identity.tenant_id, order_id=order_id, table_id=body.table_id
     )
+    return order_to_response(order)
+
+
+@router.post("/{order_id}/free", response_model=OrderResponse)
+@inject
+async def free_order(
+    order_id: str,
+    identity: AccessClaims = Depends(require_roles(*_FLOOR_ROLES)),
+    use_case: CloseSettledOrder = Depends(Provide[Container.close_settled_order]),
+) -> OrderResponse:
+    """Liberar la mesa de una comanda ya paga (Autoservicio: el comensal pagó al
+    entrar). La marca PAGADA para que se libere del plano; 409 si todavía tiene saldo."""
+    order = await use_case.execute(tenant_id=identity.tenant_id, order_id=order_id)
     return order_to_response(order)
 
 

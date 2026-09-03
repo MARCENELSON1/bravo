@@ -64,6 +64,7 @@ from app.domain.order.exceptions import (
     ItemNotPending,
     OrderHasAuthorizedInvoice,
     OrderNotFound,
+    OrderNotFullyPaid,
     SelfOrderDisabled,
 )
 from app.domain.payment.exceptions import (
@@ -157,6 +158,7 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (InvalidModifierGroup, 422),
     (InvalidModifierSelection, 422),
     (InvalidOrderTransition, 409),
+    (OrderNotFullyPaid, 409),
     (EmptyOrder, 422),
     (ItemNotFound, 404),
     (ItemNotPending, 409),

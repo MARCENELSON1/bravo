@@ -233,7 +233,14 @@ class _FloorPageState extends ConsumerState<FloorPage> {
                   child: TableCard(
                     table: t,
                     onOpen: () => _open(t),
-                    onBill: _canBill(t) ? () => _bill(t) : null,
+                    onBill: (!(t.activeOrder?.isPrepaidServed ?? false) &&
+                            _canBill(t))
+                        ? () => _bill(t)
+                        : null,
+                    // Autoservicio ya pago y servido: "Liberar" en vez de "Cobrar".
+                    onFree: (t.activeOrder?.isPrepaidServed ?? false)
+                        ? () => _free(t)
+                        : null,
                   ),
                 ),
             ],
@@ -272,6 +279,17 @@ class _FloorPageState extends ConsumerState<FloorPage> {
     if (sessionId == null) return;
     try {
       await ref.read(floorRepositoryProvider).requestBill(sessionId);
+      ref.read(floorProvider.notifier).refresh();
+    } on ApiError catch (e) {
+      _toast(e.message);
+    }
+  }
+
+  Future<void> _free(FloorTable t) async {
+    final orderId = t.activeOrder?.id;
+    if (orderId == null) return;
+    try {
+      await ref.read(orderRepositoryProvider).free(orderId);
       ref.read(floorProvider.notifier).refresh();
     } on ApiError catch (e) {
       _toast(e.message);

@@ -115,6 +115,7 @@ class Order {
     required this.currency,
     required this.items,
     required this.totalAmount,
+    this.source = 'WAITER',
     this.createdAt,
   });
 
@@ -124,7 +125,13 @@ class Order {
   final String currency;
   final List<OrderItem> items;
   final int totalAmount;
+  // WAITER | CUSTOMER_QR | CUSTOMER_QR_PREPAID (Autoservicio, Fase 3).
+  final String source;
   final DateTime? createdAt;
+
+  /// Autoservicio ya pago y servido: la mesa se libera con "Liberar" (no "Cobrar").
+  bool get isPrepaidServed =>
+      source == 'CUSTOMER_QR_PREPAID' && status == 'SERVED';
 
   /// Ítems vivos (sin cancelados) — para contar líneas de la comanda.
   List<OrderItem> get liveItems =>
@@ -140,6 +147,7 @@ class Order {
         currency: currency,
         items: items ?? this.items,
         totalAmount: totalAmount ?? this.totalAmount,
+        source: source,
         createdAt: createdAt,
       );
 
@@ -152,6 +160,7 @@ class Order {
             .map((e) => OrderItem.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList(),
         totalAmount: j['total_amount'] as int,
+        source: (j['source'] as String?) ?? 'WAITER',
         createdAt: _parseDate(j['created_at']),
       );
 }

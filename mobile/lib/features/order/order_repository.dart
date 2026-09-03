@@ -112,6 +112,17 @@ class OrderRepository {
     }
   }
 
+  /// Liberar la mesa de una comanda ya paga (Autoservicio): la marca PAGADA para
+  /// que se libere del plano. 409 si todavía tiene saldo (usar el cobro normal).
+  Future<Order> free(String orderId) async {
+    try {
+      final res = await _dio.post<dynamic>('/orders/$orderId/free');
+      return await _order(res, orderId);
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
   /// Reasignar el mozo dueño de la mesa (encargado): pisa el dueño actual.
   Future<Order> assignWaiter(String orderId, String waiterId) async {
     try {

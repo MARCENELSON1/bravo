@@ -15,9 +15,12 @@ from app.domain.order.exceptions import (
     InvalidOrderTransition,
     OrderHasAuthorizedInvoice,
     OrderNotFound,
+    OrderNotFullyPaid,
 )
 from app.domain.order.repository import OrderRepository
 from app.domain.order.value_objects import ItemStatus, OrderSource, OrderStatus, Station
+from app.domain.payment.repository import PaymentRepository
+from app.domain.payment.value_objects import PaymentDirection, PaymentStatus
 from app.domain.product.exceptions import InactiveProduct, ProductNotFound
 from app.domain.product.repository import ProductRepository
 from app.domain.realtime.ports import DomainEvent, EventBus
@@ -313,20 +316,6 @@ def _order_ready(order: Order, table_number: str) -> DomainEvent:
     )
 
 
-def _autoclose_prepaid_if_served(order: Order) -> bool:
-    """A Self-service order (Fase 3) is paid in full before it ever marches, so once
-    it's SERVED the visit is done: flip it to PAID so it drops off the floor's active
-    list and the table frees on its own (the confirmed payment already covers it).
-    Returns whether the status changed. No-op for pay-at-the-end orders."""
-    if (
-        order.status is OrderStatus.SERVED
-        and order.source is OrderSource.CUSTOMER_QR_PREPAID
-    ):
-        order.mark_paid()
-        return True
-    return False
-
-
 class SendOrder:
     """March an order to the kitchen (PENDING→SENT). Confirming a QR order goes
     through here: the waiter who marches it becomes the table's owner (Fase 2),
@@ -399,9 +388,6 @@ class AdvanceItem:
             await self._event_bus.publish(event)
         await self._event_bus.publish(_floor_changed(order))
         await self._publish_ready_if_complete(tenant_id, order)
-        if _autoclose_prepaid_if_served(order):
-            await self._orders.save(order)
-            await self._event_bus.publish(_floor_changed(order))
         return order
 
     async def _publish_ready_if_complete(self, tenant_id: str, order: Order) -> None:
@@ -454,9 +440,6 @@ class AdvanceOrder:
             table = await self._tables.get_by_id(tenant_id, order.table_id)
             number = str(table.number) if table is not None else ""
             await self._event_bus.publish(_order_ready(order, number))
-        if _autoclose_prepaid_if_served(order):
-            await self._orders.save(order)
-            await self._event_bus.publish(_floor_changed(order))
         return order
 
 
@@ -610,3 +593,46 @@ class ListPendingQrOrders:
     async def execute(self, *, tenant_id: str) -> list[Order]:
         self._tenant_context.set(tenant_id)
         return await self._orders.list_pending_qr(tenant_id)
+
+
+class CloseSettledOrder:
+    """Free the table of an order that's ALREADY fully paid — "Liberar mesa".
+
+    Self-service (Fase 3): the diner paid up front, so the order isn't marked PAID
+    when served (that would free the table while they're still eating). When they
+    leave, staff frees it: this marks the order PAID (it drops off the floor's
+    active list). Refuses (``OrderNotFullyPaid``) if there's still a balance, so a
+    table with an unpaid order can never be freed by mistake — use the normal cobro."""
+
+    def __init__(
+        self,
+        orders: OrderRepository,
+        payments: PaymentRepository,
+        tenant_context: TenantContext,
+        event_bus: EventBus,
+    ) -> None:
+        self._orders = orders
+        self._payments = payments
+        self._tenant_context = tenant_context
+        self._event_bus = event_bus
+
+    async def execute(self, *, tenant_id: str, order_id: str) -> Order:
+        self._tenant_context.set(tenant_id)
+        order = await self._orders.get_by_id(tenant_id, order_id)
+        if order is None:
+            raise OrderNotFound()
+        if order.status in (OrderStatus.PAID, OrderStatus.CANCELLED):
+            raise InvalidOrderTransition()
+        confirmed = await self._payments.list_by_order(tenant_id, order_id)
+        paid = sum(
+            p.amount.amount
+            for p in confirmed
+            if p.direction is PaymentDirection.INFLOW
+            and p.status is PaymentStatus.CONFIRMED
+        )
+        if paid < order.total().amount:
+            raise OrderNotFullyPaid()
+        order.mark_paid()
+        await self._orders.save(order)
+        await self._event_bus.publish(_floor_changed(order))
+        return order

@@ -13,7 +13,7 @@ from tests.integration.test_e2e_auth import (
     _onboard_verify_login,
     _token_from_link,
 )
-from tests.integration.test_e2e_payments import _auth
+from tests.integration.test_e2e_payments import _auth, _make_order
 from tests.integration.test_e2e_self_order import _product, _qr_token
 from tests.integration.test_e2e_table_pay import _enable_self_pay
 from tests.integration.test_e2e_webhook import _HOOK, _SIG, mp_client  # noqa: F401
@@ -87,12 +87,17 @@ async def test_selfservice_holds_then_pay_marches_and_assigns(mp_client):  # noq
     assert got["status"] == "SENT"
     assert got["waiter_id"] == waiter_id
 
-    # 4) servir la comanda → auto-cierra (PAID) y libera la mesa (ya estaba paga)
+    # 4) servir la comanda → sigue OCUPANDO la mesa (SERVED), NO se libera sola
     for action in ("preparing", "ready", "served"):
         r = await http.post(f"/api/v1/orders/{order_id}/{action}", headers=h)
         assert r.status_code == 200, r.text
     served = (await http.get(f"/api/v1/orders/{order_id}", headers=h)).json()
-    assert served["status"] == "PAID"
+    assert served["status"] == "SERVED"  # comen tranquilos, la mesa sigue ocupada
+
+    # 5) "Liberar mesa" (ya está paga) → PAID → se libera del plano
+    freed = await http.post(f"/api/v1/orders/{order_id}/free", headers=h)
+    assert freed.status_code == 200, freed.text
+    assert freed.json()["status"] == "PAID"
 
 
 async def test_selfservice_without_clocked_in_waiter_marches_orphan(mp_client):  # noqa: F811
@@ -112,3 +117,12 @@ async def test_selfservice_without_clocked_in_waiter_marches_orphan(mp_client): 
     got = (await http.get(f"/api/v1/orders/{order_id}", headers=h)).json()
     assert got["status"] == "SENT"       # marchó igual (el comensal ya pagó)
     assert got["waiter_id"] == _NIL      # huérfana → un mozo la toma con /claim
+
+
+async def test_free_refuses_unpaid_order(mp_client):  # noqa: F811
+    http, fake_email, _ = mp_client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))
+    order_id = await _make_order(http, h)  # comanda normal, sin pagar
+    res = await http.post(f"/api/v1/orders/{order_id}/free", headers=h)
+    assert res.status_code == 409
+    assert res.json()["code"] == "order_not_fully_paid"

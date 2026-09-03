@@ -46,6 +46,11 @@ class OrderHasAuthorizedInvoice(DomainError):
     )
 
 
+class OrderNotFullyPaid(DomainError):
+    code = "order_not_fully_paid"
+    message = "No se puede liberar la mesa: la comanda todavía tiene saldo a cobrar."
+
+
 class SelfOrderDisabled(DomainError):
     code = "self_order_disabled"
     message = "El autopedido no está habilitado en este local."

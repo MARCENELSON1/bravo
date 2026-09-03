@@ -13,11 +13,14 @@ class TableCard extends StatelessWidget {
     required this.table,
     required this.onOpen,
     this.onBill,
+    this.onFree,
   });
 
   final FloorTable table;
   final VoidCallback onOpen;
   final VoidCallback? onBill;
+  // Autoservicio ya pago: "Liberar" en vez de "Cobrar" (no se cobra de nuevo).
+  final VoidCallback? onFree;
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +86,17 @@ class TableCard extends StatelessWidget {
               Text(v.waiterName!,
                   style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
             ],
-            if (onBill != null) ...[
+            if (onFree != null) ...[
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: onFree,
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                  child: Text(s.floorFree),
+                ),
+              ),
+            ] else if (onBill != null) ...[
               const SizedBox(height: 4),
               Align(
                 alignment: Alignment.centerRight,

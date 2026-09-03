@@ -80,6 +80,8 @@ class Strings {
   String floorAttention(int count) =>
       _en ? 'Need attention · $count' : 'Requieren atención · $count';
   String get floorRequestBill => _en ? 'Ask for bill' : 'Pedir cuenta';
+  // Autoservicio: liberar una mesa ya paga (no se cobra de nuevo).
+  String get floorFree => _en ? 'Free table' : 'Liberar';
   String get floorEmpty => _en ? 'No tables' : 'Sin mesas';
   String paxLabel(int pax) => '· ${pax}p';
   String minutesLabel(int m) => "$m′";

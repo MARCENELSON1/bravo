@@ -120,6 +120,7 @@ from app.application.order.use_cases import (
     AddOrderItemsBatch,
     AdvanceItem,
     AdvanceOrder,
+    CloseSettledOrder,
     CreateOrder,
     GetKdsOrders,
     GetOrder,
@@ -888,6 +889,14 @@ class Container(containers.DeclarativeContainer):
     # --- Fase 3: pagos (ingresos/egresos) ---
     payment_repository = providers.Factory(
         SqlAlchemyPaymentRepository, session_factory=db.provided.session
+    )
+    # "Liberar mesa" (Autoservicio): cierra una comanda ya paga → libera el plano.
+    close_settled_order = providers.Factory(
+        CloseSettledOrder,
+        orders=order_repository,
+        payments=payment_repository,
+        tenant_context=tenant_context,
+        event_bus=event_bus,
     )
     # Outbox de reportes de sales tax (TaxJar AutoFile). Se enqueue en la
     # transición a PAID solo si se cobró tax (>0) → vacío en AR (paridad).
