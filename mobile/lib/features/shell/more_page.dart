@@ -10,7 +10,6 @@ import '../crm/clientes_page.dart';
 import '../expenses/gastos_page.dart';
 import '../floor/mesas_qr_page.dart';
 import '../finance/advisor_page.dart';
-import '../finance/finanzas_page.dart';
 import '../inventory/insumos_page.dart';
 import '../inventory/proveedores_page.dart';
 import '../platform/platform_page.dart';
@@ -26,7 +25,9 @@ import '../settings/printer_page.dart';
 import '../timeclock/fichaje_page.dart';
 import '../tips/tips_page.dart';
 
-/// Hub de la tab "Más": accesos a Fichaje, Propinas (admin/cajero) e Impresora.
+/// Hub de la tab "Más": calca las capacidades del rol (guards `RequireRole` del
+/// web). Cada rol ve solo lo que puede tocar y que no está ya en su barra de
+/// abajo. Fichaje, Impresora y Ajustes son para todos.
 class MorePage extends ConsumerWidget {
   const MorePage({super.key});
 
@@ -37,11 +38,48 @@ class MorePage extends ConsumerWidget {
     final role = sessionState is SessionAuthenticated
         ? sessionState.session.role
         : null;
-    final isAdmin = role == Role.owner || role == Role.manager || role == Role.cashier;
+    final isAdmin = role == Role.owner || role == Role.manager;
     final isOwner = role == Role.owner;
-    // El panel de plataforma se muestra solo a super-admins (flag del backend).
+    final isCashier = role == Role.cashier;
     final isPlatformAdmin =
         ref.watch(platformAccessProvider).valueOrNull ?? false;
+
+    final items = <(IconData, String, Widget)>[
+      // Cajero: Reservas + Clientes (no están en su barra de abajo).
+      if (isCashier) ...[
+        (Icons.event_available_outlined, s.reservasTitle, const ReservasPage()),
+        (Icons.people_alt_outlined, s.clientesTitle, const ClientesPage()),
+      ],
+      // Todos:
+      (Icons.schedule_outlined, s.fichajeTitle, const FichajePage()),
+      (Icons.print_outlined, s.printerTitle, const PrinterPage()),
+      // Hub de gestión (OWNER/MANAGER):
+      if (isAdmin) ...[
+        (Icons.volunteer_activism_outlined, s.tipsTitle, const TipsPage()),
+        (Icons.badge_outlined, s.staffTitle, const StaffPage()),
+        (Icons.inventory_2_outlined, s.productosTitle, const ProductosPage()),
+        (Icons.egg_alt_outlined, s.insumosTitle, const InsumosPage()),
+        (Icons.local_shipping_outlined, s.proveedoresTitle,
+            const ProveedoresPage()),
+        (Icons.auto_awesome_outlined, s.advisorTitle, const AdvisorPage()),
+        (Icons.shopping_cart_outlined, s.gastosTitle, const GastosPage()),
+        (Icons.receipt_long_outlined, s.comprobantesTitle,
+            const ComprobantesPage()),
+        (Icons.bar_chart_outlined, s.reportesTitle, const ReportesPage()),
+        (Icons.query_stats_outlined, s.analyticsTitle, const AnalyticsPage()),
+        (Icons.people_alt_outlined, s.clientesTitle, const ClientesPage()),
+        (Icons.event_available_outlined, s.reservasTitle, const ReservasPage()),
+        (Icons.qr_code_2_outlined, s.mesasQrTitle, const MesasQrPage()),
+      ],
+      // Ajustes: para todos (Apariencia/perfil son universales).
+      (Icons.settings_outlined, s.ajustesTitle, const AjustesPage()),
+      if (isOwner)
+        (Icons.card_membership_outlined, s.billingTitle,
+            const SuscripcionPage()),
+      if (isPlatformAdmin)
+        (Icons.workspace_premium_outlined, s.platformTitle,
+            const PlatformPage()),
+    ];
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -52,69 +90,9 @@ class MorePage extends ConsumerWidget {
             type: MaterialType.transparency,
             child: Column(
               children: [
-                _tile(context, Icons.schedule_outlined, s.fichajeTitle,
-                    const FichajePage()),
-                if (isAdmin) ...[
-                  const Divider(height: 1),
-                  _tile(context, Icons.volunteer_activism_outlined, s.tipsTitle,
-                      const TipsPage()),
-                  const Divider(height: 1),
-                  _tile(context, Icons.badge_outlined, s.staffTitle,
-                      const StaffPage()),
-                ],
-                const Divider(height: 1),
-                _tile(context, Icons.print_outlined, s.printerTitle,
-                    const PrinterPage()),
-                if (isAdmin) ...[
-                  const Divider(height: 1),
-                  _tile(context, Icons.inventory_2_outlined, s.productosTitle,
-                      const ProductosPage()),
-                  const Divider(height: 1),
-                  _tile(context, Icons.egg_alt_outlined, s.insumosTitle,
-                      const InsumosPage()),
-                  const Divider(height: 1),
-                  _tile(context, Icons.local_shipping_outlined,
-                      s.proveedoresTitle, const ProveedoresPage()),
-                  const Divider(height: 1),
-                  _tile(context, Icons.account_balance_wallet_outlined,
-                      s.finanzasTitle, const FinanzasPage()),
-                  const Divider(height: 1),
-                  _tile(context, Icons.auto_awesome_outlined, s.advisorTitle,
-                      const AdvisorPage()),
-                  const Divider(height: 1),
-                  _tile(context, Icons.shopping_cart_outlined, s.gastosTitle,
-                      const GastosPage()),
-                  const Divider(height: 1),
-                  _tile(context, Icons.receipt_long_outlined,
-                      s.comprobantesTitle, const ComprobantesPage()),
-                  const Divider(height: 1),
-                  _tile(context, Icons.bar_chart_outlined, s.reportesTitle,
-                      const ReportesPage()),
-                  const Divider(height: 1),
-                  _tile(context, Icons.query_stats_outlined, s.analyticsTitle,
-                      const AnalyticsPage()),
-                  const Divider(height: 1),
-                  _tile(context, Icons.people_alt_outlined, s.clientesTitle,
-                      const ClientesPage()),
-                  const Divider(height: 1),
-                  _tile(context, Icons.event_available_outlined,
-                      s.reservasTitle, const ReservasPage()),
-                  const Divider(height: 1),
-                  _tile(context, Icons.qr_code_2_outlined, s.mesasQrTitle,
-                      const MesasQrPage()),
-                  const Divider(height: 1),
-                  _tile(context, Icons.settings_outlined, s.ajustesTitle,
-                      const AjustesPage()),
-                ],
-                if (isOwner) ...[
-                  const Divider(height: 1),
-                  _tile(context, Icons.card_membership_outlined,
-                      s.billingTitle, const SuscripcionPage()),
-                ],
-                if (isPlatformAdmin) ...[
-                  const Divider(height: 1),
-                  _tile(context, Icons.workspace_premium_outlined,
-                      s.platformTitle, const PlatformPage()),
+                for (var i = 0; i < items.length; i++) ...[
+                  if (i > 0) const Divider(height: 1),
+                  _tile(context, items[i].$1, items[i].$2, items[i].$3),
                 ],
               ],
             ),

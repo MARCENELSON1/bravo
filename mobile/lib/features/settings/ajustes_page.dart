@@ -74,8 +74,13 @@ class _TabView extends ConsumerWidget {
     final sessionState = ref.watch(sessionProvider);
     final session =
         sessionState is SessionAuthenticated ? sessionState.session : null;
+    // Las secciones funcionales (caja/salones/negocio/equipo/integraciones)
+    // son OWNER/MANAGER — a los operativos les daría 403. Solo se muestran a
+    // admins; para el resto esas tabs quedan como placeholders.
+    final isAdmin = session?.role.isAdmin ?? false;
 
-    final hidden = _functionalRows[tab.id] ?? const <String>{};
+    final hidden =
+        isAdmin ? (_functionalRows[tab.id] ?? const <String>{}) : const <String>{};
     final rows = [for (final r in tab.rows) if (!hidden.contains(r.es)) r];
 
     return ListView(
@@ -85,23 +90,23 @@ class _TabView extends ConsumerWidget {
           _appearance(context, ref, s),
           const SizedBox(height: 16),
         ],
-        if (tab.id == 'caja') ...[
+        if (tab.id == 'caja' && isAdmin) ...[
           const CajaSettingsSection(),
           const SizedBox(height: 16),
         ],
-        if (tab.id == 'salones') ...[
+        if (tab.id == 'salones' && isAdmin) ...[
           const SalonesSettingsSection(),
           const SizedBox(height: 16),
         ],
-        if (tab.id == 'negocio') ...[
+        if (tab.id == 'negocio' && isAdmin) ...[
           const NegocioSettingsSection(),
           const SizedBox(height: 16),
         ],
-        if (tab.id == 'equipo') ...[
+        if (tab.id == 'equipo' && isAdmin) ...[
           const EquipoSettingsSection(),
           const SizedBox(height: 16),
         ],
-        if (tab.id == 'integraciones') ...[
+        if (tab.id == 'integraciones' && isAdmin) ...[
           const IntegracionesSettingsSection(),
           const SizedBox(height: 16),
         ],

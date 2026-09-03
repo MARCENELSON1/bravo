@@ -12,6 +12,8 @@ import '../floor/floor_page.dart';
 import '../home/home_page.dart';
 import '../kds/kds_page.dart';
 import '../order/order_dtos.dart';
+import '../reservations/reservas_page.dart';
+import '../tips/tips_page.dart';
 import 'more_page.dart';
 
 /// Shell con bottom nav por rol (espeja `role-landing.tsx` + la navegación del
@@ -70,13 +72,15 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
     final home = _TabDef(Icons.home_outlined, s.navHome, const HomePage());
     final more = _TabDef(Icons.grid_view_outlined, s.navMore, const MorePage());
     final floor = _TabDef(Icons.tab_outlined, s.navFloor, const FloorPage());
+    // La barra calca las capacidades de cada rol (guards `RequireRole` del web).
+    // Los roles operativos NO tienen "Inicio" (el dashboard es de OWNER/MANAGER):
+    // arrancan directo en su pantalla de trabajo.
     switch (role) {
       case Role.waiter:
         return [
-          home,
           floor,
-          // El mozo no tiene Caja (es de CASHIER/MANAGER/OWNER); sí Clientes,
-          // igual que en el nav del web.
+          _TabDef(Icons.event_available_outlined, s.reservasTitle,
+              const ReservasPage()),
           _TabDef(Icons.people_alt_outlined, s.clientesTitle,
               const ClientesPage()),
           more,
@@ -85,7 +89,6 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
       case Role.bar:
         final station = role == Role.bar ? Station.bar : Station.kitchen;
         return [
-          home,
           _TabDef(
             role == Role.bar ? Icons.local_bar_outlined : Icons.restaurant_outlined,
             role == Role.bar ? s.kdsBar : s.kdsKitchen,
@@ -95,9 +98,11 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
         ];
       case Role.cashier:
         return [
-          home,
           floor,
-          _TabDef(Icons.point_of_sale_outlined, s.cashierTitle, const CashierPage()),
+          _TabDef(Icons.point_of_sale_outlined, s.cashierTitle,
+              const CashierPage()),
+          _TabDef(Icons.volunteer_activism_outlined, s.tipsTitle,
+              const TipsPage()),
           more,
         ];
       case Role.owner:
