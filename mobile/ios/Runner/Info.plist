@@ -4,10 +4,8 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
-	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Wellnod usa Bluetooth para imprimir la comanda en la impresora térmica del local.</string>
-	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>Wellnod usa Bluetooth para imprimir la comanda en la impresora térmica del local.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -30,6 +28,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Wellnod usa Bluetooth para imprimir la comanda en la impresora térmica del local.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Wellnod usa Bluetooth para imprimir la comanda en la impresora térmica del local.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
