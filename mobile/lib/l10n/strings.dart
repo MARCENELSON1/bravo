@@ -415,6 +415,25 @@ class Strings {
   String get repSalesCol => _en ? 'Sales' : 'Ventas';
   String get repMarginCol => _en ? 'Margin' : 'Margen';
 
+  // Gastos
+  String get gastosTitle => _en ? 'Expenses' : 'Gastos';
+  String get gastosSubtitle => _en
+      ? 'Record what the venue spends.'
+      : 'Registrá lo que gasta el local.';
+  String get gastosNew => _en ? 'New expense' : 'Nuevo gasto';
+  String get gastosEmpty =>
+      _en ? 'No expenses recorded yet.' : 'Sin gastos registrados todavía.';
+  String get gastosAmount => _en ? 'Amount' : 'Monto';
+  String get gastosCategory => _en ? 'Category' : 'Categoría';
+  String get gastosCounterparty => _en ? 'Supplier / who' : 'Proveedor / a quién';
+  String get gastosDescription => _en ? 'Description' : 'Descripción';
+  String get gastosMethod => _en ? 'Method' : 'Medio';
+  String get gastosInvalidAmount =>
+      _en ? 'Enter a valid amount.' : 'Ingresá un monto válido.';
+  String get gastosSaved => _en ? 'Expense recorded.' : 'Gasto registrado.';
+  String get gastosError =>
+      _en ? "We couldn't record the expense." : 'No pudimos registrar el gasto.';
+
   // Proveedores (Fase 6)
   String get proveedoresTitle => _en ? 'Suppliers' : 'Proveedores';
   String get proveedoresEmpty => _en ? 'No suppliers' : 'Sin proveedores';
