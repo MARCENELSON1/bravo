@@ -5,6 +5,7 @@ import '../../auth/session.dart';
 import '../../auth/session_notifier.dart';
 import '../../l10n/strings.dart';
 import '../../ui/glass_panel.dart';
+import '../billing/suscripcion_page.dart';
 import '../crm/clientes_page.dart';
 import '../expenses/gastos_page.dart';
 import '../floor/mesas_qr_page.dart';
@@ -35,6 +36,7 @@ class MorePage extends ConsumerWidget {
         ? sessionState.session.role
         : null;
     final isAdmin = role == Role.owner || role == Role.manager || role == Role.cashier;
+    final isOwner = role == Role.owner;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -98,6 +100,11 @@ class MorePage extends ConsumerWidget {
                   const Divider(height: 1),
                   _tile(context, Icons.settings_outlined, s.ajustesTitle,
                       const AjustesPage()),
+                ],
+                if (isOwner) ...[
+                  const Divider(height: 1),
+                  _tile(context, Icons.card_membership_outlined,
+                      s.billingTitle, const SuscripcionPage()),
                 ],
               ],
             ),

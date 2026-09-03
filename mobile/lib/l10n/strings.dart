@@ -580,6 +580,46 @@ class Strings {
   String get anTopProducts => _en ? 'Top products' : 'Top productos';
   String get anMixEmpty => _en ? 'No movements.' : 'Sin movimientos.';
 
+  // Suscripción / plan (billing)
+  String get billingTitle => _en ? 'Subscription' : 'Suscripción';
+  String get billingActivePlan => _en ? 'Active plan' : 'Plan activo';
+  String billingStatusLine(String value) =>
+      _en ? 'Status: $value' : 'Estado: $value';
+  String billingRenewsOn(String date) =>
+      _en ? ' · renews on $date' : ' · renueva el $date';
+  String get billingCancel =>
+      _en ? 'Cancel subscription' : 'Cancelar suscripción';
+  String get billingCancelConfirm => _en
+      ? 'Cancel your subscription?'
+      : '¿Cancelar tu suscripción?';
+  String get billingCancelSuccess =>
+      _en ? 'Subscription cancelled.' : 'Suscripción cancelada.';
+  String get billingCancelError =>
+      _en ? "We couldn't cancel." : 'No pudimos cancelar.';
+  String billingChooseIntro(String gateway) => _en
+      ? 'Choose a plan. Payment goes through $gateway.'
+      : 'Elegí un plan. El pago se hace por $gateway.';
+  String get billingNoPlans =>
+      _en ? 'No plans available.' : 'No hay planes disponibles.';
+  String get billingSubscribe => _en ? 'Subscribe' : 'Suscribirme';
+  String get billingCheckoutError =>
+      _en ? "We couldn't start checkout." : 'No pudimos iniciar el pago.';
+  String get billingOpenError => _en
+      ? "We couldn't open the payment page."
+      : 'No pudimos abrir la página de pago.';
+  String billingInterval(String interval) => switch (interval) {
+        'MONTH' => _en ? 'month' : 'mes',
+        'YEAR' => _en ? 'year' : 'año',
+        _ => interval.toLowerCase(),
+      };
+  String billingStatusLabel(String status) => switch (status) {
+        'ACTIVE' => _en ? 'Active' : 'Activa',
+        'TRIALING' => _en ? 'Trial' : 'Prueba',
+        'PAST_DUE' => _en ? 'Past due' : 'Vencida',
+        'CANCELLED' || 'CANCELED' => _en ? 'Cancelled' : 'Cancelada',
+        _ => status,
+      };
+
   String shiftSourceLabel(String source) => switch (source) {
         'QR' || 'qr' => 'QR',
         'MANUAL' || 'manual' => _en ? 'Manual' : 'Manual',
