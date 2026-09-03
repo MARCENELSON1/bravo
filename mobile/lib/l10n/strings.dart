@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import '../auth/session.dart';
 import '../features/cashier/payment_dtos.dart';
 import '../features/finance/finance_range.dart';
+import '../features/home/daily_verdict.dart';
 import '../features/floor/floor_view.dart';
 import '../features/invoices/invoice_repository.dart';
 import '../features/order/order_dtos.dart';
@@ -239,6 +240,88 @@ class Strings {
   String get homeActiveOrders => _en ? 'Active orders' : 'Órdenes activas';
   String get homeAvgTicket => _en ? 'Avg ticket' : 'Ticket promedio';
   String get askCopilot => _en ? 'Ask the copilot' : 'Preguntar al copiloto';
+
+  // Home v2 (paridad con el Inicio del web — 7 niveles)
+  String dashGreeting(String? name) => name == null
+      ? (_en ? 'Good day' : 'Buen día')
+      : (_en ? 'Good day, $name' : 'Buen día, $name');
+  String dashTodayLabel(DateTime now) {
+    const wEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const wEs = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const mEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const mEs = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    final wd = (_en ? wEn : wEs)[now.weekday % 7];
+    final mo = (_en ? mEn : mEs)[now.month - 1];
+    return '$wd, ${now.day} $mo ${now.year}';
+  }
+  String dashWeekdayShort(int weekday) {
+    // weekday: 1=lunes … 7=domingo (DateTime). Devuelve 3 letras.
+    const en = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const es = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    return (_en ? en : es)[(weekday - 1) % 7];
+  }
+  String get dashProfitToday => _en ? 'Your profit today' : 'Tu ganancia de hoy';
+  String get dashProfitTentative => _en
+      ? "Tentative — you haven't recorded expenses today."
+      : 'Provisorio — todavía no cargaste egresos hoy.';
+  String dashFeesDeducted(String amount) => _en
+      ? "We already deducted $amount in card / MercadoPago fees."
+      : 'Ya restamos $amount de comisiones de tarjeta / MercadoPago.';
+  String dashVerdict(VerdictTone tone, VerdictVs? vs, int? pct) {
+    final vsText = vs == null
+        ? ''
+        : (vs == VerdictVs.more
+            ? (_en ? ' — $pct% more than yesterday' : ' — $pct% más que ayer')
+            : (_en ? ' — $pct% less than yesterday' : ' — $pct% menos que ayer'));
+    final head = switch (tone) {
+      VerdictTone.good => _en ? 'Good day' : 'Buen día',
+      VerdictTone.ok => _en ? 'Normal day' : 'Día normal',
+      VerdictTone.bad => _en ? 'A day to review' : 'Día para revisar',
+    };
+    return '$head$vsText';
+  }
+  String get dashBilledToday => _en ? 'Billed today' : 'Facturaste hoy';
+  String dashPaymentsCount(int n) => _en ? '$n payments' : '$n cobros';
+  String get dashSpentToday => _en ? 'Spent today' : 'Gastaste hoy';
+  String get dashExpensesRegistered =>
+      _en ? 'Recorded expenses' : 'Egresos registrados';
+  String get dashMarginToday => _en ? 'Your margin today' : 'Tu margen hoy';
+  String get dashLoadExpensesForMargin => _en
+      ? 'Record your expenses to know the real margin'
+      : 'Cargá tus egresos para saber el margen real';
+  String dashMarginExplain(int margin) => _en
+      ? 'Of every \$100, \$$margin is profit'
+      : 'De cada \$100, \$$margin son ganancia';
+  String get dashNoSalesYet => _en ? 'No sales yet' : 'Sin ventas aún';
+  String get dashChannelsTitle =>
+      _en ? "Today's payments by channel" : 'Cobros de hoy por canal';
+  String get dashChannelsSubtitle => _en
+      ? "Gross amounts (fees not deducted yet)."
+      : 'Montos brutos (aún no descontamos comisiones de Mercado Pago / tarjeta).';
+  String get dashNoPaymentsToday =>
+      _en ? 'No payments yet today.' : 'Todavía no hubo cobros hoy.';
+  String get dashAttentionToday => _en ? 'Attention today' : 'Atención hoy';
+  String get dashRevenue7dTitle =>
+      _en ? 'Sales last 7 days' : 'Facturación últimos 7 días';
+  String dashTotalSuffix(String amount) =>
+      _en ? '$amount total' : '$amount total';
+  String get dashMonthClose => _en ? 'Month close' : 'Cierre del mes';
+  String get dashOnTrackToClose =>
+      _en ? "At this pace, you'll close at" : 'Si seguís así, cerrás en';
+  String dashDayOfMonth(int elapsed, int total) =>
+      _en ? 'Day $elapsed of $total' : 'Día $elapsed de $total';
+  String get dashCalculating => _en ? 'Calculating…' : 'Calculando…';
+  String get dashNotEnoughData => _en
+      ? 'Not enough data to project.'
+      : 'Sin datos suficientes para proyectar.';
+  String get dashViewFinance => _en ? 'View Finance' : 'Ver Finanzas';
+  String get dashNoSales7d =>
+      _en ? 'No sales in the last 7 days.' : 'Sin ventas en los últimos 7 días.';
+  String get dashTomorrowTaskTitle =>
+      _en ? 'Your task for tomorrow' : 'Tu tarea para mañana';
+  String get dashGotIt => _en ? 'Got it' : 'Entendido';
+  String get dashRegisterExpense =>
+      _en ? 'Record expense' : 'Registrar egreso';
 
   // Copiloto (Fase 5)
   String get copilotTitle => _en ? 'Copilot' : 'Copiloto';
