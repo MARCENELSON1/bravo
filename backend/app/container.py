@@ -450,6 +450,7 @@ class Container(containers.DeclarativeContainer):
             FcmPushService,
             device_tokens=device_token_repository,
             credentials_path=config.provided.fcm_credentials_path,
+            credentials_json=config.provided.fcm_credentials_json,
         ),
     )
     lead_gateway = providers.Selector(

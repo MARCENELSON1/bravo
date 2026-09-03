@@ -30,11 +30,14 @@ class FcmPushService(NotificationService):
     def __init__(
         self,
         device_tokens: DeviceTokenRepository,
-        credentials_path: str,
+        credentials_path: str = "",
+        credentials_json: str = "",
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self._device_tokens = device_tokens
+        # El JSON inline (env var, Railway) tiene prioridad sobre la ruta a archivo.
         self._credentials_path = credentials_path
+        self._credentials_json = credentials_json
         self._transport = transport
         self._sa: dict[str, str] | None = None
         self._access_token: str | None = None
@@ -42,8 +45,11 @@ class FcmPushService(NotificationService):
 
     def _service_account(self) -> dict[str, str]:
         if self._sa is None:
-            with open(self._credentials_path, encoding="utf-8") as fh:
-                self._sa = json.load(fh)
+            if self._credentials_json:
+                self._sa = json.loads(self._credentials_json)
+            else:
+                with open(self._credentials_path, encoding="utf-8") as fh:
+                    self._sa = json.load(fh)
         return self._sa
 
     async def notify_user(

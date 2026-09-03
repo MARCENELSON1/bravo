@@ -192,7 +192,9 @@ class Settings(BaseSettings):
     # Messaging (entrega a iOS por APNs + Android). Las credenciales del server son
     # el service-account JSON del proyecto Firebase (ruta o JSON inline).
     push_provider: Literal["none", "fcm"] = "none"
-    # Ruta al service-account JSON del proyecto Firebase (el project_id sale de ahí).
+    # Credencial del service-account de Firebase (el project_id sale de ahí). En
+    # Railway conviene el JSON inline (env var); local puede ser una ruta a archivo.
+    fcm_credentials_json: str = ""
     fcm_credentials_path: str = ""
 
     @model_validator(mode="after")
@@ -211,8 +213,12 @@ class Settings(BaseSettings):
             problems.append("EMAIL_TRANSPORT must be 'resend' or 'smtp' (console logs tokens)")
         if self.email_transport == "resend" and not self.resend_api_key:
             problems.append("RESEND_API_KEY must be set when EMAIL_TRANSPORT=resend")
-        if self.push_provider == "fcm" and not self.fcm_credentials_path:
-            problems.append("FCM_CREDENTIALS_PATH must be set when PUSH_PROVIDER=fcm")
+        if self.push_provider == "fcm" and not (
+            self.fcm_credentials_json or self.fcm_credentials_path
+        ):
+            problems.append(
+                "FCM_CREDENTIALS_JSON (or _PATH) must be set when PUSH_PROVIDER=fcm"
+            )
         if self.lead_gateway == "log" and self.env == "production":
             problems.append("LEAD_GATEWAY must be 'twenty' (log discards landing leads)")
         if self.lead_gateway == "twenty" and not (self.twenty_base_url and self.twenty_api_key):
