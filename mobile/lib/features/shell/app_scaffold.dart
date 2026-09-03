@@ -7,6 +7,7 @@ import '../../l10n/strings.dart';
 import '../../ui/app_background.dart';
 import '../cashier/cashier_page.dart';
 import '../crm/clientes_page.dart';
+import '../finance/advisor_page.dart';
 import '../finance/finanzas_page.dart';
 import '../floor/floor_page.dart';
 import '../home/home_page.dart';
@@ -111,6 +112,8 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
           home,
           floor,
           _TabDef(Icons.insights_outlined, s.navFinance, const FinanzasPage()),
+          _TabDef(Icons.auto_awesome_outlined, s.advisorTitle,
+              const AdvisorPage()),
           more,
         ];
     }

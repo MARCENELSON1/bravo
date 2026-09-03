@@ -9,7 +9,6 @@ import '../billing/suscripcion_page.dart';
 import '../crm/clientes_page.dart';
 import '../expenses/gastos_page.dart';
 import '../floor/mesas_qr_page.dart';
-import '../finance/advisor_page.dart';
 import '../inventory/insumos_page.dart';
 import '../inventory/proveedores_page.dart';
 import '../platform/platform_page.dart';
@@ -61,7 +60,6 @@ class MorePage extends ConsumerWidget {
         (Icons.egg_alt_outlined, s.insumosTitle, const InsumosPage()),
         (Icons.local_shipping_outlined, s.proveedoresTitle,
             const ProveedoresPage()),
-        (Icons.auto_awesome_outlined, s.advisorTitle, const AdvisorPage()),
         (Icons.shopping_cart_outlined, s.gastosTitle, const GastosPage()),
         (Icons.receipt_long_outlined, s.comprobantesTitle,
             const ComprobantesPage()),
