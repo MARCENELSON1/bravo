@@ -4,9 +4,17 @@ import 'package:dio/dio.dart';
 
 import '../../env/env.dart';
 
+/// Un evento SSE: nombre (`floor.changed`, `order.ready`, …) + payload. El
+/// backend manda `event: <tipo>\ndata: <json>\n\n`; para las señales de refetch
+/// el `data` viene vacío, y para las dirigidas (ej. `order.ready`) trae ids.
+class RealtimeEvent {
+  const RealtimeEvent(this.name, this.data);
+  final String name;
+  final Map<String, dynamic> data;
+}
+
 /// Cliente SSE en 2 pasos (espeja `frontend/src/hooks/use-realtime.ts`):
 /// `POST /realtime/token` (Bearer) → token corto, luego `GET /realtime/{kind}/stream?token=`.
-/// Los eventos son SEÑALES (`floor.changed`/`kds.changed`) → el consumidor refetchea.
 /// Reconecta a los 3s ante error/cierre. Ignora el heartbeat (`: ping`).
 class RealtimeService {
   RealtimeService(this._apiDio);
@@ -18,9 +26,9 @@ class RealtimeService {
     return (res.data as Map)['token'] as String;
   }
 
-  /// Emite el nombre de cada evento SSE (ej. `floor.changed`). Generador infinito:
-  /// se corta cuando el consumidor cancela la suscripción.
-  Stream<String> events(String kind) async* {
+  /// Emite cada evento SSE (nombre + payload). Generador infinito: se corta
+  /// cuando el consumidor cancela la suscripción.
+  Stream<RealtimeEvent> events(String kind) async* {
     while (true) {
       try {
         final token = await _token();
@@ -35,6 +43,7 @@ class RealtimeService {
         );
 
         String? eventName;
+        var dataBuf = '';
         var pending = '';
         await for (final chunk in res.data!.stream) {
           pending += utf8.decode(chunk, allowMalformed: true);
@@ -44,21 +53,33 @@ class RealtimeService {
             pending = pending.substring(nl + 1);
             if (line.isEmpty) {
               if (eventName != null) {
-                yield eventName;
+                yield RealtimeEvent(eventName, _parseData(dataBuf));
                 eventName = null;
+                dataBuf = '';
               }
             } else if (line.startsWith(':')) {
               // heartbeat / comentario → ignorar
             } else if (line.startsWith('event:')) {
               eventName = line.substring(6).trim();
+            } else if (line.startsWith('data:')) {
+              dataBuf += line.substring(5).trim();
             }
-            // `data:` no se usa: la señal alcanza para refetchear.
           }
         }
       } catch (_) {
         // conexión caída → reintentar
       }
       await Future<void>.delayed(const Duration(seconds: 3));
+    }
+  }
+
+  Map<String, dynamic> _parseData(String buf) {
+    if (buf.isEmpty) return const {};
+    try {
+      final decoded = jsonDecode(buf);
+      return decoded is Map ? Map<String, dynamic>.from(decoded) : const {};
+    } catch (_) {
+      return const {};
     }
   }
 }

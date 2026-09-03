@@ -138,10 +138,10 @@ Login (por rol) → **bottom nav por rol** (mozo: Piso · Comanda · Caja · Má
 | 0 | Fundaciones | Scaffold `mobile/`, auth móvil (riesgo #1), codegen OpenAPI→Dart, `ThemeData` (tokens), shell de navegación (bottom nav por rol), login→Home mínimo. iOS+Android. | in-progress | - | - | `plans/mobile-fase-0-fundaciones.plan.md` |
 | 1 | Piso + Comanda + Contingencia | Plano de salón en vivo, comanda (grilla+carrito), enviar/editar/anular, mover/unir mesas, **cola local + sync**, **impresión ESC/POS BT**. (Modificadores del mozo diferidos = paridad web; escaneo QR-cámara → fase posterior.) | complete | - | 0 | `plans/mobile-fase-1-piso-comanda.plan.md` |
 | 2 | KDS | Cola de platos en tiempo real (SSE + poll), avanzar estado por `OrderItem` (bump 1×1), demora. (Push plato-listo diferido.) | complete | with 3 | 1 | (directo, sin plan doc) |
-| 3 | Caja | Cobro (efectivo/MP/tarjeta), split, propina, apertura/cierre y arqueo Z, recibo, reembolso/anulación. | pending | with 2 | 1 | - |
-| 4 | Propinas + Fichaje | Propinas por mozo/liquidación, Fichaje (TimeClock). | pending | with 5 | 3 | - |
-| 5 | Home + Copiloto | Home operativo (ganancia del día, alerta), Copiloto/Asesor (LLM), push de alertas. | pending | with 4 | 1 | - |
-| 6 | Pesadas (paridad total) | Productos v2/v3, Finanzas, Reportes, Comprobantes/AFIP, Insumos, Integraciones, CRM, Ajustes (y Panel de Plataforma si aplica), con layouts adaptativos. | pending | - | 5 | - |
+| 3 | Caja | Cobro (efectivo/tarjeta/transferencia/QR) con monto+presets+propina, sesión de caja (abrir/cerrar + arqueo Z), reembolso, reabrir. (MP-online del cajero, split-por-ítem y AFIP diferidos.) | complete | with 2 | 1 | (directo, sin plan doc) |
+| 4 | Propinas + Fichaje | Propinas por mozo/liquidación (payout), Fichaje (TimeClock: clock-in/out + turnos), hub "Más". | complete | with 5 | 3 | (directo, sin plan doc) |
+| 5 | Home + Copiloto | Home con KPIs del día (GET /reports/dashboard) + Copiloto chat (POST /copilot/ask → respuesta+tabla). (Alerta/tarea/push diferidos.) | complete | with 4 | 1 | (directo) |
+| 6 | Pesadas (paridad total) | Hub "Más": Productos (86+precio+**receta**), Insumos (compra/merma), Proveedores (CRUD), Clientes/CRM (CRUD), Finanzas+Comprobantes+Reportes (consulta), Ajustes (config asesor), + **emisión AFIP** en el cobro. Diferido: Integraciones, food-cost multinivel/rendimiento, layouts de tablet. | complete | - | 5 | (9 slices directos) |
 
 ### Phase Details
 

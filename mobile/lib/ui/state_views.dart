@@ -1,0 +1,134 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../api/api_error.dart';
+import '../l10n/strings.dart';
+
+/// Grilla de 2 columnas con altura flexible (sin aspect-ratio fijo → no hay
+/// overflow por montos largos). Cada fila iguala alturas con IntrinsicHeight.
+Widget twoColGrid(List<Widget> cards) {
+  final rows = <Widget>[];
+  for (var i = 0; i < cards.length; i += 2) {
+    final right = i + 1 < cards.length ? cards[i + 1] : null;
+    rows.add(Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: cards[i]),
+            const SizedBox(width: 10),
+            Expanded(child: right ?? const SizedBox.shrink()),
+          ],
+        ),
+      ),
+    ));
+  }
+  return Column(children: rows);
+}
+
+/// Diálogo de confirmación reutilizable para acciones destructivas o fiscales
+/// (anular, reembolsar, reabrir, borrar). Devuelve `true` si el usuario confirma.
+Future<bool> confirmDialog(
+  BuildContext context, {
+  required String title,
+  String? message,
+  String? confirmLabel,
+  bool destructive = true,
+}) async {
+  final s = context.s;
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(title),
+      content: message == null ? null : Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text(s.cancel),
+        ),
+        FilledButton(
+          style: destructive
+              ? FilledButton.styleFrom(
+                  backgroundColor: Theme.of(ctx).colorScheme.error)
+              : null,
+          onPressed: () {
+            HapticFeedback.mediumImpact();
+            Navigator.pop(ctx, true);
+          },
+          child: Text(confirmLabel ?? s.confirm),
+        ),
+      ],
+    ),
+  );
+  return result ?? false;
+}
+
+/// Estado de error uniforme: ícono + mensaje (traducido si es `ApiError`) +
+/// botón de reintento opcional. Reemplaza los `Text('$e')` sueltos.
+class ErrorView extends StatelessWidget {
+  const ErrorView({super.key, required this.error, this.onRetry});
+
+  final Object error;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.s;
+    final scheme = Theme.of(context).colorScheme;
+    final message = error is ApiError ? (error as ApiError).message : '$error';
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.cloud_off_outlined, size: 40, color: scheme.error),
+            const SizedBox(height: 12),
+            Text(message, textAlign: TextAlign.center),
+            if (onRetry != null) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: Text(s.retry),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Estado vacío uniforme: ícono suave + mensaje.
+class EmptyView extends StatelessWidget {
+  const EmptyView({
+    super.key,
+    required this.message,
+    this.icon = Icons.inbox_outlined,
+  });
+
+  final String message;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 40, color: scheme.onSurfaceVariant),
+            const SizedBox(height: 12),
+            Text(message,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: scheme.onSurfaceVariant)),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
+import '../../ui/state_views.dart';
 import '../../util/money.dart';
 import 'order_providers.dart';
 import 'product_dtos.dart';
@@ -20,7 +21,17 @@ class ProductPicker extends ConsumerStatefulWidget {
 
 class _ProductPickerState extends ConsumerState<ProductPicker> {
   final _search = TextEditingController();
+  final _counts = <String, int>{};
   int _added = 0;
+
+  void _add(Product p) {
+    HapticFeedback.selectionClick();
+    widget.onAdd(p);
+    setState(() {
+      _counts.update(p.id, (v) => v + 1, ifAbsent: () => 1);
+      _added++;
+    });
+  }
 
   @override
   void dispose() {
@@ -68,9 +79,9 @@ class _ProductPickerState extends ConsumerState<ProductPicker> {
                 padding: EdgeInsets.all(32),
                 child: Center(child: CircularProgressIndicator()),
               ),
-              error: (e, _) => Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(e is ApiError ? e.message : '$e'),
+              error: (e, _) => ErrorView(
+                error: e,
+                onRetry: () => ref.invalidate(productsProvider),
               ),
               data: (all) {
                 final q = _search.text.trim().toLowerCase();
@@ -88,14 +99,42 @@ class _ProductPickerState extends ConsumerState<ProductPicker> {
                   separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, i) {
                     final p = list[i];
+                    final count = _counts[p.id] ?? 0;
+                    final scheme = Theme.of(context).colorScheme;
                     return ListTile(
                       title: Text(p.name),
                       subtitle: p.category == null ? null : Text(p.category!),
-                      trailing: Text(formatMoney(p.priceAmount, p.currency)),
-                      onTap: () {
-                        widget.onAdd(p);
-                        setState(() => _added++);
-                      },
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(formatMoney(p.priceAmount, p.currency),
+                              style:
+                                  TextStyle(color: scheme.onSurfaceVariant)),
+                          const SizedBox(width: 8),
+                          if (count > 0) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: scheme.primary.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text('×$count',
+                                  style: TextStyle(
+                                      color: scheme.primary,
+                                      fontWeight: FontWeight.w700)),
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                          IconButton.filledTonal(
+                            visualDensity: VisualDensity.compact,
+                            icon: const Icon(Icons.add),
+                            tooltip: s.add,
+                            onPressed: () => _add(p),
+                          ),
+                        ],
+                      ),
+                      onTap: () => _add(p),
                     );
                   },
                 );

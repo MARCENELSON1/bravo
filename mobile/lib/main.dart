@@ -39,6 +39,7 @@ class _WellnodAppState extends ConsumerState<WellnodApp> {
     final router = ref.watch(routerProvider);
     final mode = ref.watch(themeModeProvider);
     final locale = ref.watch(localeProvider);
+    final reduceMotion = ref.watch(reduceMotionProvider);
 
     return MaterialApp.router(
       title: 'Wellnod',
@@ -54,6 +55,16 @@ class _WellnodAppState extends ConsumerState<WellnodApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      // "Reducir movimiento": Flutter respeta `disableAnimations` en las
+      // transiciones de ruta y en las animaciones implícitas.
+      builder: (context, child) {
+        if (!reduceMotion || child == null) return child ?? const SizedBox();
+        final mq = MediaQuery.of(context);
+        return MediaQuery(
+          data: mq.copyWith(disableAnimations: true),
+          child: child,
+        );
+      },
       routerConfig: router,
     );
   }

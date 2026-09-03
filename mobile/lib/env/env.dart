@@ -10,6 +10,9 @@ class Env {
 
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8000/api/v1',
+    // Default = prod, para que los builds de release/Archive (que no pasan
+    // `--dart-define`) apunten al backend real. En dev se sobreescribe con
+    // `--dart-define=API_BASE_URL=http://localhost:8000/api/v1`.
+    defaultValue: 'https://api.wellnod.com/api/v1',
   );
 }

@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../api/api_error.dart';
 import '../../auth/session_notifier.dart';
 import '../../l10n/strings.dart';
+import '../../ui/state_views.dart';
 import '../order/order_page.dart';
 import 'floor_dtos.dart';
 import 'floor_filter.dart';
@@ -59,27 +60,13 @@ class _FloorPageState extends ConsumerState<FloorPage> {
 
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _errorView(s, e),
+      error: (e, _) => ErrorView(
+        error: e,
+        onRetry: () => ref.read(floorProvider.notifier).refresh(),
+      ),
       data: (tables) => _content(context, s, tables, sectors, userId),
     );
   }
-
-  Widget _errorView(Strings s, Object e) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(e is ApiError ? e.message : '$e'),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () => ref.read(floorProvider.notifier).refresh(),
-                child: const Text('↻'),
-              ),
-            ],
-          ),
-        ),
-      );
 
   Widget _content(
     BuildContext context,

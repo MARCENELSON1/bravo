@@ -786,12 +786,14 @@ class Container(containers.DeclarativeContainer):
     advance_order = providers.Factory(
         AdvanceOrder,
         orders=order_repository,
+        tables=table_repository,
         tenant_context=tenant_context,
         event_bus=event_bus,
     )
     advance_item = providers.Factory(
         AdvanceItem,
         orders=order_repository,
+        tables=table_repository,
         tenant_context=tenant_context,
         event_bus=event_bus,
     )

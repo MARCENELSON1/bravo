@@ -20,6 +20,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _password = TextEditingController();
 
   bool _loading = false;
+  bool _showPassword = false;
   String? _error;
 
   @override
@@ -109,10 +110,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         const SizedBox(height: 12),
                         TextField(
                           controller: _password,
-                          obscureText: true,
+                          obscureText: !_showPassword,
                           textInputAction: TextInputAction.done,
                           onSubmitted: (_) => _submit(),
-                          decoration: InputDecoration(labelText: s.loginPassword),
+                          decoration: InputDecoration(
+                            labelText: s.loginPassword,
+                            suffixIcon: IconButton(
+                              icon: Icon(_showPassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined),
+                              tooltip: _showPassword
+                                  ? s.passwordHide
+                                  : s.passwordShow,
+                              onPressed: () => setState(
+                                  () => _showPassword = !_showPassword),
+                            ),
+                          ),
                         ),
                         if (_error != null) ...[
                           const SizedBox(height: 12),

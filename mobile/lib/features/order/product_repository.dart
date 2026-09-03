@@ -18,4 +18,28 @@ class ProductRepository {
       throw toApiError(e);
     }
   }
+
+  /// Marca un producto disponible/no-disponible hoy ("86").
+  Future<void> setAvailability(String productId, bool availableToday) async {
+    try {
+      await _dio.put<dynamic>(
+        '/products/$productId/availability',
+        data: {'available_today': availableToday},
+      );
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
+  /// Cambia el precio del producto (`price_amount` en unidades menores).
+  Future<void> updatePrice(String productId, int priceAmount) async {
+    try {
+      await _dio.put<dynamic>(
+        '/products/$productId/price',
+        data: {'price_amount': priceAmount},
+      );
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
 }

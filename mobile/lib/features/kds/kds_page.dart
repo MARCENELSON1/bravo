@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
+import '../../theme/colors.dart';
 import '../../ui/glass_panel.dart';
 import '../order/order_dtos.dart';
 import 'kds_providers.dart';
@@ -97,9 +98,11 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     final number = tables[t.order.tableId];
     final accent = t.isLate
         ? scheme.error
-        : (t.isWarn ? const Color(0xFFE0A800) : scheme.primary);
+        : (t.isWarn ? WellnodPalette.warn : scheme.primary);
+    final overdue = t.isLate || t.isWarn;
 
     return GlassPanel(
+      blur: false, // una comanda por ticket: sin blur por-tarjeta (perf)
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,9 +116,16 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                     ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const Spacer(),
-              if (t.minutes != null)
+              if (t.minutes != null) ...[
+                // Además del color, un ícono de reloj cuando se está demorando
+                // (no depender solo del color por accesibilidad).
+                if (overdue) ...[
+                  Icon(Icons.schedule, size: 15, color: accent),
+                  const SizedBox(width: 3),
+                ],
                 Text('${t.minutes}′',
                     style: TextStyle(color: accent, fontWeight: FontWeight.w700)),
+              ],
             ],
           ),
           if (t.isLate)
