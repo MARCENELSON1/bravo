@@ -57,6 +57,9 @@ export interface CustomerOrderResultDTO {
   order_id: string
   status: string
   requires_confirmation: boolean
+  // Autoservicio (Fase 3): true → la orden está retenida y el comensal debe pagar
+  // para que llegue a la cocina (el pago confirmado la marcha + auto-asigna).
+  prepay_required?: boolean
 }
 
 // --- Pago desde la mesa (Carta QR F3) ---------------------------------------

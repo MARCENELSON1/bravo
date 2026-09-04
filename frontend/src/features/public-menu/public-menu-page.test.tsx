@@ -176,6 +176,29 @@ describe("PublicMenuPage", () => {
     expect(await screen.findByText("¡Pedido enviado!")).toBeInTheDocument()
   })
 
+  it("autoservicio: al enviar, manda al comensal a pagar (prepay)", async () => {
+    const api = makeApi(() =>
+      Promise.resolve({ ...MENU, self_order_enabled: true, self_order_requires_confirmation: false })
+    )
+    api.submitOrder = vi.fn().mockResolvedValue({
+      order_id: "o1",
+      status: "OPEN",
+      requires_confirmation: false,
+      prepay_required: true,
+    })
+    renderMenu(api)
+    await screen.findByText("Bar Paz")
+
+    await userEvent.click(screen.getAllByRole("button", { name: "Sumar uno" })[0])
+    await userEvent.click(screen.getByRole("button", { name: /Ver pedido/ }))
+    await userEvent.click(screen.getByRole("button", { name: "Enviar el pedido" }))
+
+    // Autoservicio: NO "pedido enviado" → pantalla de pagar-primero + botón Pagar.
+    expect(await screen.findByText("¡Casi listo!")).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Pagar" }))
+    expect(api.pay).toHaveBeenCalled()
+  })
+
   it("picks a modifier and sends the chosen option id (min/max gated)", async () => {
     const withMods: PublicMenuDTO = {
       ...MENU,

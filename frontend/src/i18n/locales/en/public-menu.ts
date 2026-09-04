@@ -46,6 +46,12 @@ export const publicMenu = {
     kitchen: "It's in the kitchen 🍳",
     again: "Order more",
   },
+  prepay: {
+    title: "Almost there!",
+    body: "Pay to send your order to the kitchen.",
+    pay: "Pay",
+    paying: "Opening payment…",
+  },
   toast: {
     waiterOnTheWay: "Your server is on the way 🙌",
     billOnTheWay: "Your check is on the way 🙌",

@@ -106,6 +106,28 @@ export function PublicMenuPage() {
   }
   const payStatus = paymentStatus.data?.status
 
+  // Autoservicio (Fase 3/E): pagar-primero. Cobra el saldo de la orden recién
+  // enviada (retenida) → al confirmar el pago el backend la marcha + auto-asigna.
+  const startPrepay = () =>
+    payBill.mutate(
+      { tip: 0, amount: null, idempotencyKey: idemKey },
+      {
+        onSuccess: (result) => {
+          try {
+            if (token) sessionStorage.setItem(payKey(token), result.payment_id)
+          } catch {
+            /* private mode → sin persistencia; el flujo sigue en memoria */
+          }
+          if (result.checkout_url) {
+            window.location.href = result.checkout_url
+          } else {
+            setPaymentId(result.payment_id)
+          }
+        },
+        onError: () => toast.error(t("publicMenu.toast.payFailed")),
+      }
+    )
+
   if (isLoading) {
     return <StateScreen>{t("publicMenu.loading")}</StateScreen>
   }
@@ -119,7 +141,23 @@ export function PublicMenuPage() {
     )
   }
 
-  if (submitOrder.isSuccess && submitOrder.data) {
+  if (submitOrder.isSuccess && submitOrder.data && !paymentId) {
+    // Autoservicio: el pedido quedó RETENIDO → mandamos al comensal a pagar para
+    // que llegue a la cocina (el pago dispara la marcha + auto-asignación).
+    if (submitOrder.data.prepay_required) {
+      return (
+        <StateScreen
+          title={t("publicMenu.prepay.title")}
+          action={
+            <Button disabled={payBill.isPending} onClick={startPrepay}>
+              {payBill.isPending ? t("publicMenu.prepay.paying") : t("publicMenu.prepay.pay")}
+            </Button>
+          }
+        >
+          {t("publicMenu.prepay.body")}
+        </StateScreen>
+      )
+    }
     const gated = submitOrder.data.requires_confirmation
     return (
       <StateScreen
