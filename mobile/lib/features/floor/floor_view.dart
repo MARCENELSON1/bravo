@@ -25,12 +25,46 @@ class FloorView {
   final String? currency;
 }
 
+/// Estado de piso derivado de una orden activa SIN sesión (mesa que pidió por
+/// QR y todavía no tiene mozo/sesión). Espeja `stateFromOrder` de la web.
+FloorStatus _statusFromOrder(String orderStatus) {
+  switch (orderStatus) {
+    case 'SENT':
+    case 'PREPARING':
+      return FloorStatus.inKitchen;
+    case 'READY':
+      return FloorStatus.toServe;
+    case 'SERVED':
+      return FloorStatus.served;
+    case 'OPEN':
+    default:
+      return FloorStatus.open;
+  }
+}
+
 FloorView floorView(FloorTable table, {DateTime? now}) {
   final current = now ?? DateTime.now();
   final session = table.session;
 
-  if (table.isFree || session == null) {
-    return const FloorView(status: FloorStatus.free, attention: false);
+  // Sin sesión: o la mesa está libre (sin orden), o pidió por QR y aún no tiene
+  // mozo (orden activa sin sesión) → derivamos el estado de la orden, no la
+  // damos por "libre" (paridad con la web `floorView`).
+  if (session == null) {
+    final order = table.activeOrder;
+    if (order == null) {
+      return const FloorView(status: FloorStatus.free, attention: false);
+    }
+    final status = _statusFromOrder(order.status);
+    final since = order.createdAt;
+    final minutes = since == null ? null : current.difference(since).inMinutes;
+    return FloorView(
+      status: status,
+      attention: status == FloorStatus.toServe,
+      minutes: minutes == null || minutes < 0 ? null : minutes,
+      pax: table.capacity,
+      totalAmount: order.totalAmount,
+      currency: order.currency,
+    );
   }
 
   final status = switch (session.state) {

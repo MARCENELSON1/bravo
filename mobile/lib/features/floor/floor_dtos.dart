@@ -84,7 +84,9 @@ class FloorTable {
   final String? sectorId;
   final int? capacity;
 
-  bool get isFree => status == 'FREE' || session == null;
+  // Libre = ni sesión ni orden activa. Una mesa que pidió por QR nace con
+  // orden activa SIN sesión (no la abrió un mozo): sigue OCUPADA, no libre.
+  bool get isFree => session == null && activeOrder == null;
 
   factory FloorTable.fromJson(Map<String, dynamic> j) => FloorTable(
         id: j['id'] as String,

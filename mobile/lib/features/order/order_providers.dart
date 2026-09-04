@@ -124,6 +124,12 @@ class OrderController extends AutoDisposeFamilyAsyncNotifier<Order, String> {
         }
       });
 
+  /// Marca la comanda como servida (READY → SERVED). Sin cola offline: servir es
+  /// un gesto en mano, con la mesa delante — si no hay red, se avisa y se reintenta.
+  Future<void> served() => _serialized(() async {
+        state = AsyncData(await _repo.markServed(arg));
+      });
+
   Future<void> transfer(String tableId) => _serialized(() async {
         try {
           state = AsyncData(await _repo.transfer(arg, tableId));

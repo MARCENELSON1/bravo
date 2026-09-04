@@ -142,6 +142,14 @@ class _OrderPageState extends ConsumerState<OrderPage> {
           icon: const Icon(Icons.send),
           label: Text(s.marchCount(order.pendingCount)),
         ),
+        if (order.readyCount > 0) ...[
+          const SizedBox(height: 8),
+          FilledButton.icon(
+            onPressed: _serve,
+            icon: const Icon(Icons.room_service_outlined),
+            label: Text(s.markServedCount(order.readyCount)),
+          ),
+        ],
         const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: _openCobro,
@@ -291,6 +299,19 @@ class _OrderPageState extends ConsumerState<OrderPage> {
   Future<void> _remove(OrderItem it) async {
     try {
       await _ctrl.removeItem(it.id);
+    } on ApiError catch (e) {
+      _toast(e.message);
+    }
+  }
+
+  Future<void> _serve() async {
+    final s = context.s;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _ctrl.served();
+      if (!mounted) return;
+      ref.read(floorProvider.notifier).refresh();
+      messenger.showSnackBar(SnackBar(content: Text(s.readyServedDone)));
     } on ApiError catch (e) {
       _toast(e.message);
     }

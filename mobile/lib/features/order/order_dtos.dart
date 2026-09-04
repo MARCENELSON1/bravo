@@ -140,6 +140,11 @@ class Order {
   int get pendingCount =>
       items.where((i) => i.status.isPending).fold(0, (a, i) => a + i.quantity);
 
+  /// Ítems ya listos en cocina (READY) esperando que el mozo los marque servidos.
+  int get readyCount => items
+      .where((i) => i.status == ItemStatus.ready)
+      .fold(0, (a, i) => a + i.quantity);
+
   Order copyWith({List<OrderItem>? items, int? totalAmount}) => Order(
         id: id,
         tableId: tableId,

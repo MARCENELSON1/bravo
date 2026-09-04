@@ -119,6 +119,8 @@ class Strings {
   String get searchProduct => _en ? 'Search product' : 'Buscar producto';
   String get done => _en ? 'Done' : 'Listo';
   String marchCount(int n) => _en ? 'Send to kitchen ($n)' : 'Marchar ($n)';
+  String markServedCount(int n) =>
+      _en ? 'Mark served ($n)' : 'Marcar servido ($n)';
   String get moveTable => _en ? 'Move to a free table' : 'Mover a mesa libre';
   String get mergeTable => _en ? 'Merge another table here' : 'Unir otra mesa acá';
   String get noFreeTables => _en ? 'No free tables' : 'No hay mesas libres';
