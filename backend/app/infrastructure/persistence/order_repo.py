@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -46,6 +48,34 @@ class SqlAlchemyOrderRepository(OrderRepository):
         ).scalars().all()
         return order_to_domain(row, list(items))
 
+    async def _load_many(
+        self, session: AsyncSession, rows: Sequence[OrderORM], tenant_id: str
+    ) -> list[Order]:
+        """Hydrate a list of orders with **two** queries instead of one per order.
+
+        There is no mapped ``relationship()`` between orders and their items
+        (the aggregate is assembled by hand in ``mappers.py``), so the items of
+        every order come back in a single ``IN`` query and are grouped in
+        memory. The hot lists (floor, KDS) used to issue one query per order,
+        which each connected device paid on every poll.
+        """
+        if not rows:
+            return []  # an empty IN () is invalid SQL
+        items_by_order: dict[str, list[OrderItemORM]] = {row.id: [] for row in rows}
+        item_rows = (
+            await session.execute(
+                select(OrderItemORM)
+                .where(
+                    OrderItemORM.order_id.in_(items_by_order.keys()),
+                    OrderItemORM.tenant_id == tenant_id,
+                )
+                .order_by(OrderItemORM.position)  # keeps each order's line order
+            )
+        ).scalars().all()
+        for item in item_rows:
+            items_by_order[item.order_id].append(item)
+        return [order_to_domain(row, items_by_order[row.id]) for row in rows]
+
     async def get_by_id(self, tenant_id: str, order_id: str) -> Order | None:
         async with self._session_factory() as session:
             row = (
@@ -66,7 +96,7 @@ class SqlAlchemyOrderRepository(OrderRepository):
                 stmt = stmt.where(OrderORM.status == status.value)
             stmt = stmt.order_by(OrderORM.created_at.desc())
             rows = (await session.execute(stmt)).scalars().all()
-            return [await self._load(session, row) for row in rows]
+            return await self._load_many(session, rows, tenant_id)
 
     async def list_kds(
         self, tenant_id: str, station: Station | None = None
@@ -86,7 +116,7 @@ class SqlAlchemyOrderRepository(OrderRepository):
                 .order_by(OrderORM.created_at.asc())
             )
             rows = (await session.execute(stmt)).scalars().all()
-            return [await self._load(session, row) for row in rows]
+            return await self._load_many(session, rows, tenant_id)
 
     async def list_active(self, tenant_id: str) -> list[Order]:
         async with self._session_factory() as session:
@@ -99,7 +129,7 @@ class SqlAlchemyOrderRepository(OrderRepository):
                 .order_by(OrderORM.created_at.asc())
             )
             rows = (await session.execute(stmt)).scalars().all()
-            return [await self._load(session, row) for row in rows]
+            return await self._load_many(session, rows, tenant_id)
 
     async def list_open_by_session(
         self, tenant_id: str, session_id: str
@@ -115,7 +145,7 @@ class SqlAlchemyOrderRepository(OrderRepository):
                 .order_by(OrderORM.created_at.asc())
             )
             rows = (await session.execute(stmt)).scalars().all()
-            return [await self._load(session, row) for row in rows]
+            return await self._load_many(session, rows, tenant_id)
 
     async def list_pending_qr(self, tenant_id: str) -> list[Order]:
         async with self._session_factory() as session:
@@ -129,7 +159,7 @@ class SqlAlchemyOrderRepository(OrderRepository):
                 .order_by(OrderORM.created_at.asc())
             )
             rows = (await session.execute(stmt)).scalars().all()
-            return [await self._load(session, row) for row in rows]
+            return await self._load_many(session, rows, tenant_id)
 
     async def add(self, order: Order) -> None:
         async with self._session_factory() as session:

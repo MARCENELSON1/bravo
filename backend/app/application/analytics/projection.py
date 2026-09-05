@@ -71,8 +71,12 @@ class ProjectOrderSales(SalesProjector):
 
         product_ids = [item.product_id for item in order.items]
         recipes = await self._recipes.list_for_products(tenant_id, product_ids)
+        # Solo los productos de ESTA orden: antes se traía el catálogo entero del
+        # tenant para un lookup de un puñado de ids, y el costo de cada cobro
+        # escalaba con el tamaño de la carta en vez del de la comanda.
         category_by_product = {
-            product.id: product.category for product in await self._products.list(tenant_id)
+            product.id: product.category
+            for product in await self._products.list_for_ids(tenant_id, product_ids)
         }
         # Solución 1: se congelan en la proyección los netos de IVA (ventas y food)
         # además de los brutos, para que el margen agregado sea siempre "ventas
@@ -82,6 +86,12 @@ class ProjectOrderSales(SalesProjector):
         settings = await self._advisor_settings.get(tenant_id)
         vat_bps = settings.default_vat_bps if settings else 0
 
+        # Insumos y preparaciones se traen completos a propósito: el costeo es
+        # multinivel (una preparación referencia otras preparaciones y otros
+        # insumos) y un componente faltante costea 0 sin fallar, así que filtrar
+        # por los ids de la receta daría food costs silenciosamente bajos. El
+        # repo cacheado los sirve de memoria, que es lo que saca la consulta
+        # repetida de la ruta caliente sin tocar la matemática del dinero.
         cost_by_ingredient: dict = {}
         cost_net_by_ingredient: dict = {}
         factor_by_ingredient: dict = {}  # Fase 2C: unidad de receta → base

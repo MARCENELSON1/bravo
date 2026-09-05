@@ -16,6 +16,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -279,6 +280,16 @@ class TableSessionORM(Base):
     Datos operativos/de plata → RLS."""
 
     __tablename__ = "table_sessions"
+    # Parcial sobre las sesiones abiertas: la tabla acumula una fila por visita,
+    # pero el plano solo necesita las que siguen abiertas.
+    __table_args__ = (
+        Index(
+            "ix_table_sessions_tenant_open",
+            "tenant_id",
+            "opened_at",
+            postgresql_where="closed_at IS NULL AND merged_into_id IS NULL",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(
@@ -355,6 +366,9 @@ class ProductPriceChangeORM(Base):
 
 class OrderORM(Base):
     __tablename__ = "orders"
+    # Comandas activas (plano/KDS): sin el compuesto, el filtro por estado
+    # recorre todo el historial del tenant.
+    __table_args__ = (Index("ix_orders_tenant_status", "tenant_id", "status"),)
 
     id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(
@@ -448,6 +462,16 @@ class ProductModifierOptionORM(Base):
 
 class PaymentORM(Base):
     __tablename__ = "payments"
+    # Finanzas/Home: filtran por estado confirmado y ordenan por fecha.
+    __table_args__ = (
+        Index(
+            "ix_payments_tenant_status_created",
+            "tenant_id",
+            "status",
+            "created_at",
+            postgresql_ops={"created_at": "DESC"},
+        ),
+    )
 
     id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(
@@ -906,6 +930,10 @@ class SaleFactORM(Base):
     projection on the PAID transition. Tenant-scoped + RLS (datos de plata)."""
 
     __tablename__ = "sale_facts"
+    # Motor de Finanzas en modo live: rango de fechas por tenant.
+    __table_args__ = (
+        Index("ix_sale_facts_tenant_occurred", "tenant_id", "occurred_at"),
+    )
 
     id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(

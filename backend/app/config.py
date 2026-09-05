@@ -191,6 +191,13 @@ class Settings(BaseSettings):
     # Push (Fase 4). "none" = no-op (default, seguro); "fcm" = Firebase Cloud
     # Messaging (entrega a iOS por APNs + Android). Las credenciales del server son
     # el service-account JSON del proyecto Firebase (ruta o JSON inline).
+    # Caché de catálogo (productos, insumos, mesas, modificadores…). "memory" es
+    # in-process: rapidísimo y sin infra, pero cada réplica tiene su copia y una
+    # invalidación no cruza procesos. "redis" lo comparte entre réplicas, que es
+    # lo que hace segura la invalidación al escalar horizontalmente.
+    cache_backend: Literal["memory", "redis"] = "memory"
+    redis_url: str = "redis://localhost:6379/0"
+
     push_provider: Literal["none", "fcm"] = "none"
     # Credencial del service-account de Firebase (el project_id sale de ahí). En
     # Railway conviene el JSON inline (env var); local puede ser una ruta a archivo.
@@ -213,6 +220,8 @@ class Settings(BaseSettings):
             problems.append("EMAIL_TRANSPORT must be 'resend' or 'smtp' (console logs tokens)")
         if self.email_transport == "resend" and not self.resend_api_key:
             problems.append("RESEND_API_KEY must be set when EMAIL_TRANSPORT=resend")
+        if self.cache_backend == "redis" and not self.redis_url:
+            raise ValueError("CACHE_BACKEND=redis requiere REDIS_URL")
         if self.push_provider == "fcm" and not (
             self.fcm_credentials_json or self.fcm_credentials_path
         ):

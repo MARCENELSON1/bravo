@@ -241,6 +241,16 @@ from app.infrastructure.advisor.template_narrator import TemplateNarrator
 from app.infrastructure.billing.mercadopago_gateway import MercadoPagoPreapprovalGateway
 from app.infrastructure.billing.resolver import RailBillingGatewayResolver
 from app.infrastructure.billing.stripe_gateway import StripeBillingGateway
+from app.infrastructure.cache.cached_repositories import (
+    CachedIngredientRepository,
+    CachedModifierRepository,
+    CachedPreparationRepository,
+    CachedProductRepository,
+    CachedSectorRepository,
+    CachedTableRepository,
+)
+from app.infrastructure.cache.memory_cache import InMemoryCache
+from app.infrastructure.cache.redis_cache import RedisCache
 from app.infrastructure.copilot.anthropic_copilot import AnthropicCopilotLLM
 from app.infrastructure.copilot.no_copilot import NoCopilot
 from app.infrastructure.copilot.sql_runner import SqlAlchemyCopilotQueryRunner
@@ -479,8 +489,22 @@ class Container(containers.DeclarativeContainer):
     user_repository = providers.Factory(
         SqlAlchemyUserRepository, session_factory=db.provided.session
     )
+    # Caché de catálogo. Se elige por env var igual que el resto de los adapters
+    # intercambiables; "memory" es el default (paridad, sin infra nueva).
+    cache = providers.Selector(
+        config.provided.cache_backend,
+        memory=providers.Singleton(InMemoryCache),
+        redis=providers.Singleton(RedisCache, url=config.provided.redis_url),
+    )
+
+    # Repos de catálogo: el decorador cachea lecturas e invalida al escribir.
+    # El dominio y los casos de uso ven el mismo port de siempre.
     table_repository = providers.Factory(
-        SqlAlchemyTableRepository, session_factory=db.provided.session
+        CachedTableRepository,
+        inner=providers.Factory(
+            SqlAlchemyTableRepository, session_factory=db.provided.session
+        ),
+        cache=cache,
     )
     table_session_repository = providers.Factory(
         SqlAlchemyTableSessionRepository, session_factory=db.provided.session
@@ -489,16 +513,28 @@ class Container(containers.DeclarativeContainer):
         SqlAlchemyShiftRepository, session_factory=db.provided.session
     )
     sector_repository = providers.Factory(
-        SqlAlchemySectorRepository, session_factory=db.provided.session
+        CachedSectorRepository,
+        inner=providers.Factory(
+            SqlAlchemySectorRepository, session_factory=db.provided.session
+        ),
+        cache=cache,
     )
     customer_repository = providers.Factory(
         SqlAlchemyCustomerRepository, session_factory=db.provided.session
     )
     product_repository = providers.Factory(
-        SqlAlchemyProductRepository, session_factory=db.provided.session
+        CachedProductRepository,
+        inner=providers.Factory(
+            SqlAlchemyProductRepository, session_factory=db.provided.session
+        ),
+        cache=cache,
     )
     modifier_repository = providers.Factory(
-        SqlAlchemyModifierRepository, session_factory=db.provided.session
+        CachedModifierRepository,
+        inner=providers.Factory(
+            SqlAlchemyModifierRepository, session_factory=db.provided.session
+        ),
+        cache=cache,
     )
     price_change_repository = providers.Factory(
         SqlAlchemyPriceChangeRepository, session_factory=db.provided.session
@@ -917,7 +953,11 @@ class Container(containers.DeclarativeContainer):
     # Definidos antes de pagos porque el settle inyecta el InventoryConsumer.
     # El resto de los casos de uso de inventario está más abajo.
     ingredient_repository = providers.Factory(
-        SqlAlchemyIngredientRepository, session_factory=db.provided.session
+        CachedIngredientRepository,
+        inner=providers.Factory(
+            SqlAlchemyIngredientRepository, session_factory=db.provided.session
+        ),
+        cache=cache,
     )
     supplier_repository = providers.Factory(
         SqlAlchemySupplierRepository, session_factory=db.provided.session
@@ -926,7 +966,11 @@ class Container(containers.DeclarativeContainer):
         SqlAlchemyRecipeRepository, session_factory=db.provided.session
     )
     preparation_repository = providers.Factory(
-        SqlAlchemyPreparationRepository, session_factory=db.provided.session
+        CachedPreparationRepository,
+        inner=providers.Factory(
+            SqlAlchemyPreparationRepository, session_factory=db.provided.session
+        ),
+        cache=cache,
     )
     stock_movement_repository = providers.Factory(
         SqlAlchemyStockMovementRepository, session_factory=db.provided.session
