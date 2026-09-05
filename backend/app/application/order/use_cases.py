@@ -24,11 +24,14 @@ from app.domain.order.value_objects import (
     ItemStatus,
     OrderSource,
     OrderStatus,
+    SelectedOption,
     Station,
 )
 from app.domain.payment.repository import PaymentRepository
 from app.domain.payment.value_objects import PaymentDirection, PaymentStatus
 from app.domain.product.exceptions import InactiveProduct, ProductNotFound
+from app.domain.product.modifier_repository import ModifierRepository
+from app.domain.product.modifiers import select_options
 from app.domain.product.repository import ProductRepository
 from app.domain.realtime.ports import DomainEvent, EventBus
 from app.domain.shared.money import Money
@@ -126,16 +129,24 @@ class GetOrder:
 
 
 class AddOrderItem:
-    """Add a line item to an OPEN order, snapshotting the product name + price."""
+    """Add a line item to an OPEN order, snapshotting the product name + price.
+
+    ``option_ids`` are the modifier choices ("punto del bife"). ``None`` means
+    the client does not do modifiers (legacy waiter flow): a plain line, no
+    validation. A list (even empty) means the client knows the groups, so the
+    selection is validated against them (required groups enforced) and the
+    price deltas are folded into the unit price — same rules as the QR menu."""
 
     def __init__(
         self,
         orders: OrderRepository,
         products: ProductRepository,
+        modifiers: ModifierRepository,
         tenant_context: TenantContext,
     ) -> None:
         self._orders = orders
         self._products = products
+        self._modifiers = modifiers
         self._tenant_context = tenant_context
 
     async def execute(
@@ -147,6 +158,7 @@ class AddOrderItem:
         quantity: int,
         note: str | None,
         item_id: str | None = None,
+        option_ids: list[str] | None = None,
     ) -> Order:
         self._tenant_context.set(tenant_id)
         order = await self._orders.get_by_id(tenant_id, order_id)
@@ -159,15 +171,26 @@ class AddOrderItem:
             raise ProductNotFound()
         if not product.active:
             raise InactiveProduct()
+        selected: list[SelectedOption] = []
+        unit_price = product.price
+        if option_ids is not None:
+            groups = await self._modifiers.list_for_product(tenant_id, product_id)
+            chosen = select_options(groups, option_ids)  # InvalidModifierSelection
+            selected = [SelectedOption(o.id, o.name, o.price_delta) for o in chosen]
+            # Delta folded into unit_price (money math reads one number);
+            # the list is the kitchen-ticket snapshot. Mirrors AddOrderItemsBatch.
+            delta = sum(o.price_delta for o in chosen)
+            unit_price = Money(product.price.amount + delta, product.price.currency)
         order.add_item(
             OrderItem(
                 id=item_id or str(uuid4()),
                 product_id=product.id,
                 name=product.name,
-                unit_price=product.price,
+                unit_price=unit_price,
                 quantity=quantity,
                 note=note,
                 station=product.station,
+                selected_options=selected,
             )
         )
         await self._orders.save(order)

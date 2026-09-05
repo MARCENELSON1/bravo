@@ -10,6 +10,7 @@ class OrderOp {
     this.productId,
     this.quantity,
     this.note,
+    this.optionIds,
     this.tableId,
     this.sourceOrderId,
   });
@@ -20,6 +21,7 @@ class OrderOp {
   final String? productId;
   final int? quantity;
   final String? note;
+  final List<String>? optionIds;
   final String? tableId;
   final String? sourceOrderId;
 
@@ -29,6 +31,7 @@ class OrderOp {
     required String productId,
     required int quantity,
     String? note,
+    List<String>? optionIds,
   }) =>
       OrderOp(
         type: OrderOpType.addItem,
@@ -37,6 +40,7 @@ class OrderOp {
         productId: productId,
         quantity: quantity,
         note: note,
+        optionIds: optionIds,
       );
 
   factory OrderOp.setNote({
@@ -81,6 +85,7 @@ class OrderOp {
         if (productId != null) 'productId': productId,
         if (quantity != null) 'quantity': quantity,
         if (note != null) 'note': note,
+        if (optionIds != null) 'optionIds': optionIds,
         if (tableId != null) 'tableId': tableId,
         if (sourceOrderId != null) 'sourceOrderId': sourceOrderId,
       };
@@ -92,6 +97,7 @@ class OrderOp {
         productId: j['productId'] as String?,
         quantity: j['quantity'] as int?,
         note: j['note'] as String?,
+        optionIds: (j['optionIds'] as List?)?.cast<String>(),
         tableId: j['tableId'] as String?,
         sourceOrderId: j['sourceOrderId'] as String?,
       );

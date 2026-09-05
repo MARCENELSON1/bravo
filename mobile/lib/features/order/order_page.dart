@@ -19,7 +19,7 @@ import 'capture_grid.dart';
 import 'order_dtos.dart';
 import 'order_providers.dart';
 import 'product_dtos.dart';
-import 'qty_note_sheet.dart';
+import 'item_options_sheet.dart';
 
 /// Comanda del mozo como pantalla de captura tipo POS (una sola pantalla):
 /// ticket colapsable arriba (por estación) → grilla de productos con badges
@@ -54,9 +54,8 @@ class _OrderPageState extends ConsumerState<OrderPage> {
           const SyncIndicator(),
           IconButton(
             icon: const Icon(Icons.print_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const PrinterPage()),
-            ),
+            onPressed: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const PrinterPage())),
           ),
           PopupMenuButton<String>(
             onSelected: (v) {
@@ -146,18 +145,24 @@ class _OrderPageState extends ConsumerState<OrderPage> {
                 padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
                 child: Row(
                   children: [
-                    Icon(Icons.receipt_long_outlined,
-                        size: 18, color: theme.colorScheme.onSurfaceVariant),
+                    Icon(
+                      Icons.receipt_long_outlined,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                     const SizedBox(width: 8),
                     Text(
-                      items.isEmpty ? s.orderEmpty : s.ticketItems(items.length),
+                      items.isEmpty
+                          ? s.orderEmpty
+                          : s.ticketItems(items.length),
                       style: theme.textTheme.bodyMedium,
                     ),
                     const Spacer(),
                     Text(
                       formatMoney(order.totalAmount, order.currency),
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     Icon(
                       _ticketOpen ? Icons.expand_less : Icons.expand_more,
@@ -172,8 +177,9 @@ class _OrderPageState extends ConsumerState<OrderPage> {
                 padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
                 child: Text(
                   s.captureHint,
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             if (_ticketOpen && items.isNotEmpty)
@@ -214,7 +220,11 @@ class _OrderPageState extends ConsumerState<OrderPage> {
   }
 
   Widget _ticketRow(
-      BuildContext context, Strings s, Order order, OrderItem it) {
+    BuildContext context,
+    Strings s,
+    Order order,
+    OrderItem it,
+  ) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
     final pending = it.status.isPending;
@@ -230,28 +240,35 @@ class _OrderPageState extends ConsumerState<OrderPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${it.quantity}× ${it.name}',
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w500)),
+                  Text(
+                    '${it.quantity}× ${it.name}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   if (detail != null)
-                    Text(detail,
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: muted)),
+                    Text(
+                      detail,
+                      style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                    ),
                   if (!pending)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
                         s.itemStatusLabel(it.status),
-                        style: theme.textTheme.labelSmall
-                            ?.copyWith(color: theme.colorScheme.primary),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
                     ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            Text(formatMoney(it.lineTotal, order.currency),
-                style: theme.textTheme.bodyMedium),
+            Text(
+              formatMoney(it.lineTotal, order.currency),
+              style: theme.textTheme.bodyMedium,
+            ),
             if (pending) Icon(Icons.chevron_right, size: 18, color: muted),
           ],
         ),
@@ -282,14 +299,21 @@ class _OrderPageState extends ConsumerState<OrderPage> {
           final theme = Theme.of(ctx);
           return Padding(
             padding: EdgeInsets.fromLTRB(
-                20, 0, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+              20,
+              0,
+              20,
+              MediaQuery.of(ctx).viewInsets.bottom + 20,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(it.name,
-                    style: theme.textTheme.titleLarge
-                        ?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  it.name,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -301,10 +325,13 @@ class _OrderPageState extends ConsumerState<OrderPage> {
                     ),
                     SizedBox(
                       width: 80,
-                      child: Text('$qty',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.displaySmall
-                              ?.copyWith(fontWeight: FontWeight.w700)),
+                      child: Text(
+                        '$qty',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.displaySmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                     IconButton.filled(
                       iconSize: 28,
@@ -448,8 +475,15 @@ class _OrderPageState extends ConsumerState<OrderPage> {
     );
   }
 
-  /// Tap en la grilla: +1 (el haptic lo dispara la grilla).
+  /// Tap en la grilla: +1 directo (el haptic lo dispara la grilla). Si el
+  /// producto tiene un grupo obligatorio (punto del bife), primero hay que
+  /// elegir: sheet rápido — con un único grupo de elegir-uno, el chip agrega.
   Future<void> _add(Product p) async {
+    if (p.needsChoice) {
+      final r = await showItemOptionsSheet(context, p, quick: true);
+      if (r == null || !mounted) return;
+      return _addResolved(p, r);
+    }
     try {
       await _ctrl.addProduct(p, 1);
     } on ApiError catch (e) {
@@ -457,12 +491,16 @@ class _OrderPageState extends ConsumerState<OrderPage> {
     }
   }
 
-  /// Mantener presionado: cantidad + nota para cocina.
+  /// Mantener presionado: todos los modificadores + cantidad + nota.
   Future<void> _addWithOptions(Product p) async {
-    final r = await showQtyNoteSheet(context, p);
+    final r = await showItemOptionsSheet(context, p, quick: false);
     if (r == null || !mounted) return;
+    return _addResolved(p, r);
+  }
+
+  Future<void> _addResolved(Product p, ItemOptions r) async {
     try {
-      await _ctrl.addProduct(p, r.qty, note: r.note);
+      await _ctrl.addProduct(p, r.qty, note: r.note, optionIds: r.optionIds);
     } on ApiError catch (e) {
       _toast(e.message);
     }
@@ -560,7 +598,10 @@ class _OrderPageState extends ConsumerState<OrderPage> {
   }
 
   Future<FloorTable?> _pickTable(
-      List<FloorTable> tables, String title, String emptyMsg) {
+    List<FloorTable> tables,
+    String title,
+    String emptyMsg,
+  ) {
     final s = context.s;
     return showModalBottomSheet<FloorTable>(
       context: context,
@@ -570,8 +611,10 @@ class _OrderPageState extends ConsumerState<OrderPage> {
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text(title,
-                  style: Theme.of(context).textTheme.titleMedium),
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
             ),
             if (tables.isEmpty)
               Padding(padding: const EdgeInsets.all(16), child: Text(emptyMsg))
@@ -597,6 +640,7 @@ class _OrderPageState extends ConsumerState<OrderPage> {
 
   void _toast(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }

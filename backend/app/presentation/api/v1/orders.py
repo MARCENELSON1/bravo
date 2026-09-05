@@ -191,6 +191,7 @@ async def add_item(
         quantity=body.quantity,
         note=body.note,
         item_id=body.id,
+        option_ids=body.option_ids,
     )
     return order_to_response(order)
 

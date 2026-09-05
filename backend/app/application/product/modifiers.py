@@ -38,6 +38,33 @@ class GetProductModifiers:
         return await self._modifiers.list_for_product(tenant_id, product_id)
 
 
+class ListMenuModifiers:
+    """Every active product's modifier groups in one batch — what the waiter's
+    capture grid preloads with the catalog, so the "punto del bife" chips show
+    up instantly on tap (no per-product round-trip while the customer talks)."""
+
+    def __init__(
+        self,
+        products: ProductRepository,
+        modifiers: ModifierRepository,
+        tenant_context: TenantContext,
+    ) -> None:
+        self._products = products
+        self._modifiers = modifiers
+        self._tenant_context = tenant_context
+
+    async def execute(self, *, tenant_id: str) -> dict[str, list[ModifierGroup]]:
+        self._tenant_context.set(tenant_id)
+        products = await self._products.list(tenant_id, only_active=True)
+        if not products:
+            return {}
+        groups = await self._modifiers.list_for_products(
+            tenant_id, [p.id for p in products]
+        )
+        # Only products that actually have groups; the client treats absence as "plain".
+        return {pid: gs for pid, gs in groups.items() if gs}
+
+
 class SetProductModifiers:
     """Owner/manager action: replace a product's modifier groups. Ids are minted
     server-side on every save (replace-all, mirrors ``SetRecipe``) — a live order

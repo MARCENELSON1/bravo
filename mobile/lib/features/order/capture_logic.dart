@@ -4,9 +4,19 @@ import 'product_dtos.dart';
 /// Lógica pura de la grilla de captura (sin widgets, testeable).
 
 const _diacritics = {
-  'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u', 'ü': 'u',
-  'à': 'a', 'è': 'e', 'ì': 'i', 'ò': 'o', 'ù': 'u',
-  'ñ': 'n', 'ç': 'c',
+  'á': 'a',
+  'é': 'e',
+  'í': 'i',
+  'ó': 'o',
+  'ú': 'u',
+  'ü': 'u',
+  'à': 'a',
+  'è': 'e',
+  'ì': 'i',
+  'ò': 'o',
+  'ù': 'u',
+  'ñ': 'n',
+  'ç': 'c',
 };
 
 /// Minúsculas y sin tildes: "mila" encuentra "Milanesa" y "napo" a
@@ -42,9 +52,11 @@ List<Product> filterProducts(
   final q = normalizeText(query);
   if (q.isNotEmpty) {
     return products
-        .where((p) =>
-            normalizeText(p.name).contains(q) ||
-            (p.category != null && normalizeText(p.category!).contains(q)))
+        .where(
+          (p) =>
+              normalizeText(p.name).contains(q) ||
+              (p.category != null && normalizeText(p.category!).contains(q)),
+        )
         .toList();
   }
   if (category == null) return products;
@@ -56,3 +68,43 @@ List<Product> filterProducts(
 int pendingQtyOf(Order order, String productId) => order.items
     .where((i) => i.status.isPending && i.productId == productId)
     .fold(0, (a, i) => a + i.quantity);
+
+/// Suma de `priceDelta` de las opciones elegidas (para el precio optimista;
+/// el server pliega el mismo delta en `unit_price`).
+int optionsDelta(Product p, List<String> optionIds) {
+  final chosen = optionIds.toSet();
+  var delta = 0;
+  for (final g in p.modifierGroups) {
+    for (final o in g.options) {
+      if (chosen.contains(o.id)) delta += o.priceDelta;
+    }
+  }
+  return delta;
+}
+
+/// Regla min/max de cada grupo (espeja `select_options` del backend): un grupo
+/// obligatorio sin elegir, o más opciones que `maxSelect`, invalidan.
+bool selectionValid(Product p, List<String> optionIds) {
+  final chosen = optionIds.toSet();
+  for (final g in p.modifierGroups) {
+    final n = g.options.where((o) => chosen.contains(o.id)).length;
+    if (n < g.minSelect || n > g.maxSelect) return false;
+  }
+  return true;
+}
+
+/// Snapshot (nombre + delta) de las opciones elegidas, para pintar la línea
+/// optimista igual que la va a devolver el server.
+List<SelectedOption> snapshotOptions(Product p, List<String> optionIds) {
+  final chosen = optionIds.toSet();
+  return [
+    for (final g in p.modifierGroups)
+      for (final o in g.options)
+        if (chosen.contains(o.id))
+          SelectedOption(
+            optionId: o.id,
+            name: o.name,
+            priceDelta: o.priceDelta,
+          ),
+  ];
+}

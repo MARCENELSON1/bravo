@@ -158,6 +158,7 @@ from app.application.payment.use_cases import (
 )
 from app.application.product.modifiers import (
     GetProductModifiers,
+    ListMenuModifiers,
     SetProductModifiers,
 )
 from app.application.product.use_cases import (
@@ -651,6 +652,12 @@ class Container(containers.DeclarativeContainer):
     get_product_modifiers = providers.Factory(
         GetProductModifiers, modifiers=modifier_repository, tenant_context=tenant_context
     )
+    list_menu_modifiers = providers.Factory(
+        ListMenuModifiers,
+        products=product_repository,
+        modifiers=modifier_repository,
+        tenant_context=tenant_context,
+    )
     set_product_modifiers = providers.Factory(
         SetProductModifiers,
         modifiers=modifier_repository,
@@ -801,6 +808,7 @@ class Container(containers.DeclarativeContainer):
         AddOrderItem,
         orders=order_repository,
         products=product_repository,
+        modifiers=modifier_repository,
         tenant_context=tenant_context,
     )
     add_order_items_batch = providers.Factory(

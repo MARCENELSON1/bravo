@@ -15,6 +15,10 @@ class AddOrderItemRequest(BaseModel):
     note: str | None = Field(default=None, max_length=255)
     # Optional client-generated id → idempotent add (a retry/replay is a no-op).
     id: str | None = None
+    # Modifier choices. Omitted/None = legacy client (plain line, no validation);
+    # a list (even empty) = validated against the product's groups (422 if a
+    # required group is unmet), deltas folded into the unit price.
+    option_ids: list[str] | None = None
 
 
 class BatchOrderItem(BaseModel):

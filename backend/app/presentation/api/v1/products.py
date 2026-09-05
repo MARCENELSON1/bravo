@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Query, status
 from app.application.inventory.use_cases import GetRecipe, SetRecipe
 from app.application.product.modifiers import (
     GetProductModifiers,
+    ListMenuModifiers,
     ModifierGroupSpec,
     ModifierOptionSpec,
     SetProductModifiers,
@@ -187,6 +188,18 @@ async def update_product_price(
         new_price_amount=body.price_amount,
     )
     return _product_response(product)
+
+
+@router.get("/modifiers", response_model=list[ProductModifiersResponse])
+@inject
+async def list_menu_modifiers(
+    identity: AccessClaims = Depends(current_identity),
+    use_case: ListMenuModifiers = Depends(Provide[Container.list_menu_modifiers]),
+) -> list[ProductModifiersResponse]:
+    """Modifier groups of every active product, in one batch — the waiter's
+    capture grid preloads this with the catalog so the chips show up on tap."""
+    by_product = await use_case.execute(tenant_id=identity.tenant_id)
+    return [_modifiers_response(pid, groups) for pid, groups in by_product.items()]
 
 
 @router.get("/{product_id}/price-history", response_model=ProductPriceHistoryResponse)

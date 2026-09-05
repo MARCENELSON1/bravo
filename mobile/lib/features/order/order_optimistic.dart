@@ -4,20 +4,30 @@ import 'product_dtos.dart';
 /// Transformaciones optimistas puras sobre una `Order` (para feedback instantáneo
 /// antes de que responda el server). Solo tocan ítems PENDING; el server manda.
 
-Order applyAdd(Order o, Product p, int qty, String itemId, {String? note}) {
+Order applyAdd(
+  Order o,
+  Product p,
+  int qty,
+  String itemId, {
+  String? note,
+  List<SelectedOption> options = const [],
+}) {
+  // El delta de los modificadores se pliega en el unitario (como el server).
+  final unit = p.priceAmount + options.fold<int>(0, (a, s) => a + s.priceDelta);
   final item = OrderItem(
     id: itemId,
     productId: p.id,
     name: p.name,
-    unitPriceAmount: p.priceAmount,
+    unitPriceAmount: unit,
     quantity: qty,
     status: ItemStatus.pending,
     station: Station.fromApi(p.station),
     note: note,
+    selectedOptions: options,
   );
   return o.copyWith(
     items: [...o.items, item],
-    totalAmount: o.totalAmount + p.priceAmount * qty,
+    totalAmount: o.totalAmount + unit * qty,
   );
 }
 
@@ -35,7 +45,10 @@ Order applyQty(Order o, String itemId, int qty) {
 
 Order applyNote(Order o, String itemId, String? note) {
   final items = o.items
-      .map((i) => i.id == itemId && i.status.isPending ? i.copyWith(note: note) : i)
+      .map(
+        (i) =>
+            i.id == itemId && i.status.isPending ? i.copyWith(note: note) : i,
+      )
       .toList();
   return o.copyWith(items: items);
 }

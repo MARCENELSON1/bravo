@@ -81,4 +81,17 @@ void main() {
     final r = applyNote(o, 'i1', 'jugoso');
     expect(r.items.single.note, isNull);
   });
+
+  test('applyAdd con modificadores pliega el delta en el unitario y el total', () {
+    final o = _order();
+    const opts = [
+      SelectedOption(optionId: 'panceta', name: '+Panceta', priceDelta: 1200),
+      SelectedOption(optionId: 'jugoso', name: 'Jugoso', priceDelta: 0),
+    ];
+    final r = applyAdd(o, _prod(price: 100000), 2, 'i1', options: opts);
+    expect(r.items.single.unitPriceAmount, 101200);
+    expect(r.items.single.selectedOptions.map((s) => s.name),
+        ['+Panceta', 'Jugoso']);
+    expect(r.totalAmount, 202400);
+  });
 }

@@ -131,6 +131,10 @@ class Strings {
   String get captureHint => _en
       ? 'Tap a product to add it · hold for quantity and note'
       : 'Tocá un producto para sumarlo · mantené para cantidad y nota';
+  // Modificadores estructurados ("cómo se quiere el plato").
+  String get modPickOne => _en ? 'Pick one' : 'Elegí una';
+  String modAtLeast(int n) => _en ? 'Pick at least $n' : 'Elegí al menos $n';
+  String modUpTo(int n) => _en ? 'Up to $n' : 'Hasta $n';
   String get captureRemove => _en ? 'Remove' : 'Quitar';
   String get captureSave => _en ? 'Save' : 'Guardar';
   String get stationBar => _en ? 'Bar' : 'Barra';

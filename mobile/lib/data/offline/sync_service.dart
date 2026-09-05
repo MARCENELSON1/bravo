@@ -74,11 +74,14 @@ class SyncService {
   Future<void> _execute(OrderOp op) async {
     switch (op.type) {
       case OrderOpType.addItem:
-        await repo.addItem(op.orderId,
-            id: op.itemId!,
-            productId: op.productId!,
-            quantity: op.quantity!,
-            note: op.note);
+        await repo.addItem(
+          op.orderId,
+          id: op.itemId!,
+          productId: op.productId!,
+          quantity: op.quantity!,
+          note: op.note,
+          optionIds: op.optionIds,
+        );
       case OrderOpType.setQty:
         await repo.setQuantity(op.orderId, op.itemId!, op.quantity!);
       case OrderOpType.setNote:

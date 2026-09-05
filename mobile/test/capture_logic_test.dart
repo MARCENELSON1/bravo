@@ -3,7 +3,10 @@ import 'package:wellnod_mobile/features/order/capture_logic.dart';
 import 'package:wellnod_mobile/features/order/order_dtos.dart';
 import 'package:wellnod_mobile/features/order/product_dtos.dart';
 
-Product _p(String id, String name, {String? category, String station = 'KITCHEN'}) =>
+Product _p(String id, String name,
+        {String? category,
+        String station = 'KITCHEN',
+        List<ModifierGroup> groups = const []}) =>
     Product(
       id: id,
       name: name,
@@ -12,7 +15,30 @@ Product _p(String id, String name, {String? category, String station = 'KITCHEN'
       station: station,
       active: true,
       category: category,
+      modifierGroups: groups,
     );
+
+const _punto = ModifierGroup(
+  id: 'g-punto',
+  name: 'Punto',
+  minSelect: 1,
+  maxSelect: 1,
+  options: [
+    ModifierOption(id: 'jugoso', name: 'Jugoso'),
+    ModifierOption(id: 'apunto', name: 'A punto'),
+  ],
+);
+const _extras = ModifierGroup(
+  id: 'g-extras',
+  name: 'Agregados',
+  minSelect: 0,
+  maxSelect: 2,
+  options: [
+    ModifierOption(id: 'panceta', name: '+Panceta', priceDelta: 1200),
+    ModifierOption(id: 'queso', name: '+Queso', priceDelta: 800),
+    ModifierOption(id: 'huevo', name: '+Huevo', priceDelta: 500),
+  ],
+);
 
 OrderItem _it(String productId, int qty, ItemStatus status) => OrderItem(
       id: 'i-$productId-$qty-${status.name}',
@@ -98,6 +124,36 @@ void main() {
       expect(pendingQtyOf(o, 'mila'), 3);
       expect(pendingQtyOf(o, 'bife'), 1);
       expect(pendingQtyOf(o, 'flan'), 0);
+    });
+  });
+
+  group('modificadores', () {
+    final bife = _p('bife', 'Bife', groups: const [_punto, _extras]);
+    final agua = _p('agua', 'Agua');
+
+    test('needsChoice solo si hay grupo obligatorio', () {
+      expect(bife.needsChoice, isTrue);
+      expect(agua.needsChoice, isFalse);
+    });
+
+    test('selectionValid exige el obligatorio y respeta el máximo', () {
+      expect(selectionValid(bife, []), isFalse); // falta el punto
+      expect(selectionValid(bife, ['jugoso']), isTrue);
+      expect(selectionValid(bife, ['jugoso', 'panceta', 'queso']), isTrue);
+      expect(selectionValid(bife, ['jugoso', 'panceta', 'queso', 'huevo']),
+          isFalse); // 3 > maxSelect 2
+      expect(selectionValid(agua, []), isTrue); // sin grupos, siempre válido
+    });
+
+    test('optionsDelta suma solo lo elegido', () {
+      expect(optionsDelta(bife, ['jugoso']), 0);
+      expect(optionsDelta(bife, ['jugoso', 'panceta', 'huevo']), 1700);
+    });
+
+    test('snapshotOptions arma nombre + delta en orden de la carta', () {
+      final snap = snapshotOptions(bife, ['queso', 'jugoso']);
+      expect(snap.map((o) => o.name), ['Jugoso', '+Queso']);
+      expect(snap.map((o) => o.priceDelta), [0, 800]);
     });
   });
 }

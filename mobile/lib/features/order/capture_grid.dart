@@ -60,10 +60,8 @@ class _CaptureGridState extends ConsumerState<CaptureGrid> {
 
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => ErrorView(
-        error: e,
-        onRetry: () => ref.invalidate(productsProvider),
-      ),
+      error: (e, _) =>
+          ErrorView(error: e, onRetry: () => ref.invalidate(productsProvider)),
       data: (all) {
         final orderable = all.where((p) => p.orderable).toList();
         final categories = categoriesOf(orderable);
@@ -232,10 +230,20 @@ class _ProductTile extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Text(
-                    formatMoney(product.priceAmount, product.currency),
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: scheme.onSurfaceVariant),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          formatMoney(product.priceAmount, product.currency),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      // Tiene grupo obligatorio: al tocar, primero se elige.
+                      if (product.needsChoice)
+                        Icon(Icons.tune, size: 13, color: scheme.primary),
+                    ],
                   ),
                 ],
               ),

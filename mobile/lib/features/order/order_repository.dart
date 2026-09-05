@@ -40,6 +40,7 @@ class OrderRepository {
     required String productId,
     required int quantity,
     String? note,
+    List<String>? optionIds,
   }) async {
     try {
       final res = await _dio.post<dynamic>(
@@ -49,6 +50,8 @@ class OrderRepository {
           'quantity': quantity,
           'id': id,
           'note': ?note,
+          // Lista (aunque vacía) = el server valida los grupos obligatorios.
+          'option_ids': ?optionIds,
         },
       );
       return await _order(res, orderId);

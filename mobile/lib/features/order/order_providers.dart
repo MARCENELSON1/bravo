@@ -10,6 +10,7 @@ import '../../data/offline/sync_providers.dart';
 import '../../data/offline/sync_queue.dart';
 import '../../theme/theme_controller.dart';
 import '../floor/floor_providers.dart';
+import 'capture_logic.dart';
 import 'order_dtos.dart';
 import 'order_optimistic.dart';
 import 'order_repository.dart';
@@ -55,24 +56,50 @@ class OrderController extends AutoDisposeFamilyAsyncNotifier<Order, String> {
     return completer.future;
   }
 
-  Future<void> addProduct(Product p, int qty, {String? note}) async {
+  /// `optionIds` = modificadores elegidos. Se manda SIEMPRE la lista (aunque
+  /// vacía): así el server valida los grupos obligatorios contra la carta.
+  Future<void> addProduct(
+    Product p,
+    int qty, {
+    String? note,
+    List<String> optionIds = const [],
+  }) async {
     final itemId = const Uuid().v4();
-    state = AsyncData(applyAdd(_current, p, qty, itemId, note: note));
+    state = AsyncData(
+      applyAdd(
+        _current,
+        p,
+        qty,
+        itemId,
+        note: note,
+        options: snapshotOptions(p, optionIds),
+      ),
+    );
     await ref.read(productUsageProvider).bump(p.id);
     await _serialized(() async {
       try {
         state = AsyncData(
-          await _repo.addItem(arg,
-              id: itemId, productId: p.id, quantity: qty, note: note),
+          await _repo.addItem(
+            arg,
+            id: itemId,
+            productId: p.id,
+            quantity: qty,
+            note: note,
+            optionIds: optionIds,
+          ),
         );
       } on ApiError catch (e) {
         if (e.code == 'network_error') {
-          await _queue.enqueue(OrderOp.addItem(
+          await _queue.enqueue(
+            OrderOp.addItem(
               orderId: arg,
               itemId: itemId,
               productId: p.id,
               quantity: qty,
-              note: note));
+              note: note,
+              optionIds: optionIds,
+            ),
+          );
           // se mantiene el estado optimista; se drena al reconectar
         } else {
           state = AsyncData(await _repo.get(arg));
@@ -91,7 +118,8 @@ class OrderController extends AutoDisposeFamilyAsyncNotifier<Order, String> {
       } on ApiError catch (e) {
         if (e.code == 'network_error') {
           await _queue.enqueue(
-              OrderOp.setQty(orderId: arg, itemId: itemId, quantity: qty));
+            OrderOp.setQty(orderId: arg, itemId: itemId, quantity: qty),
+          );
         } else {
           state = AsyncData(await _repo.get(arg));
           rethrow;
@@ -108,7 +136,8 @@ class OrderController extends AutoDisposeFamilyAsyncNotifier<Order, String> {
       } on ApiError catch (e) {
         if (e.code == 'network_error') {
           await _queue.enqueue(
-              OrderOp.setNote(orderId: arg, itemId: itemId, note: note));
+            OrderOp.setNote(orderId: arg, itemId: itemId, note: note),
+          );
         } else {
           state = AsyncData(await _repo.get(arg));
           rethrow;
@@ -124,8 +153,9 @@ class OrderController extends AutoDisposeFamilyAsyncNotifier<Order, String> {
         state = AsyncData(await _repo.removeItem(arg, itemId));
       } on ApiError catch (e) {
         if (e.code == 'network_error') {
-          await _queue
-              .enqueue(OrderOp.removeItem(orderId: arg, itemId: itemId));
+          await _queue.enqueue(
+            OrderOp.removeItem(orderId: arg, itemId: itemId),
+          );
         } else {
           state = AsyncData(await _repo.get(arg));
           rethrow;
@@ -135,51 +165,49 @@ class OrderController extends AutoDisposeFamilyAsyncNotifier<Order, String> {
   }
 
   Future<void> send() => _serialized(() async {
-        try {
-          state = AsyncData(await _repo.send(arg));
-        } on ApiError catch (e) {
-          if (e.code == 'network_error') {
-            await _queue.enqueue(OrderOp.send(orderId: arg));
-          } else {
-            rethrow;
-          }
-        }
-      });
+    try {
+      state = AsyncData(await _repo.send(arg));
+    } on ApiError catch (e) {
+      if (e.code == 'network_error') {
+        await _queue.enqueue(OrderOp.send(orderId: arg));
+      } else {
+        rethrow;
+      }
+    }
+  });
 
   /// Marca la comanda como servida (READY → SERVED). Sin cola offline: servir es
   /// un gesto en mano, con la mesa delante — si no hay red, se avisa y se reintenta.
   Future<void> served() => _serialized(() async {
-        state = AsyncData(await _repo.markServed(arg));
-      });
+    state = AsyncData(await _repo.markServed(arg));
+  });
 
   Future<void> transfer(String tableId) => _serialized(() async {
-        try {
-          state = AsyncData(await _repo.transfer(arg, tableId));
-        } on ApiError catch (e) {
-          if (e.code == 'network_error') {
-            await _queue
-                .enqueue(OrderOp.transfer(orderId: arg, tableId: tableId));
-          } else {
-            rethrow;
-          }
-        }
-      });
+    try {
+      state = AsyncData(await _repo.transfer(arg, tableId));
+    } on ApiError catch (e) {
+      if (e.code == 'network_error') {
+        await _queue.enqueue(OrderOp.transfer(orderId: arg, tableId: tableId));
+      } else {
+        rethrow;
+      }
+    }
+  });
 
   Future<void> merge(String sourceOrderId) => _serialized(() async {
-        try {
-          state = AsyncData(await _repo.merge(arg, sourceOrderId));
-        } on ApiError catch (e) {
-          if (e.code == 'network_error') {
-            await _queue.enqueue(
-                OrderOp.merge(orderId: arg, sourceOrderId: sourceOrderId));
-          } else {
-            rethrow;
-          }
-        }
-      });
+    try {
+      state = AsyncData(await _repo.merge(arg, sourceOrderId));
+    } on ApiError catch (e) {
+      if (e.code == 'network_error') {
+        await _queue.enqueue(
+          OrderOp.merge(orderId: arg, sourceOrderId: sourceOrderId),
+        );
+      } else {
+        rethrow;
+      }
+    }
+  });
 }
 
-final orderControllerProvider =
-    AsyncNotifierProvider.autoDispose.family<OrderController, Order, String>(
-  OrderController.new,
-);
+final orderControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<OrderController, Order, String>(OrderController.new);
