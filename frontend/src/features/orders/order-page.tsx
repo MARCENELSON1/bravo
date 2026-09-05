@@ -7,7 +7,13 @@ import { isApiError } from "@/api/api-error"
 import { apiErrorText } from "@/api/translate-error"
 import { dateLocale } from "@/lib/format"
 import type { DocType } from "@/api/types-invoicing"
-import type { Course, OrderDTO, PaymentMethod, ProductDTO } from "@/api/types-operations"
+import type {
+  Course,
+  ModifierGroupDTO,
+  OrderDTO,
+  PaymentMethod,
+  ProductDTO,
+} from "@/api/types-operations"
 import { useAuth } from "@/auth/auth-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,6 +28,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
+import { ItemOptionsDialog } from "@/features/orders/item-options-dialog"
+import type { ItemOptionsResult } from "@/features/orders/item-options-dialog"
 import { ProductGrid } from "@/features/orders/product-grid"
 import { useCustomers } from "@/hooks/use-customers"
 import { useFloor } from "@/hooks/use-floor"
@@ -42,7 +50,7 @@ import {
 } from "@/hooks/use-orders"
 import { useOrderPayments, useRefundPayment, useRegisterPayment } from "@/hooks/use-payments"
 import { useOrderTaxQuote } from "@/hooks/use-tenant"
-import { useProducts } from "@/hooks/use-products"
+import { useMenuModifiers, useProducts } from "@/hooks/use-products"
 import { useTables } from "@/hooks/use-tables"
 import {
   DOC_TYPE_LABELS,
@@ -54,6 +62,7 @@ import { presetAmounts, sumLineItems } from "@/lib/cobro"
 import { newId } from "@/lib/ids"
 import { formatMoney } from "@/lib/money"
 import { courseState, coursesOf, heldCount, itemsOfCourse, nextHeldCourse, readyCourse } from "@/lib/courses"
+import { needsChoice } from "@/lib/modifiers"
 import { bumpUsage } from "@/lib/product-usage"
 import { printTicket, receiptHtml, ticketHtml } from "@/lib/ticket"
 
@@ -90,6 +99,9 @@ export function OrderPage() {
   const setItemQty = useSetItemQuantity(orderId)
   const sendOrder = useSendOrder()
   const fireNext = useFireNextCourse()
+  // Modificadores de toda la carta, precargados: los chips salen al instante.
+  const menuModifiers = useMenuModifiers()
+  const [customizing, setCustomizing] = useState<ProductDTO | null>(null)
   const fireAll = useFireAllCourses()
   const advanceCourse = useAdvanceCourse()
   const navigate = useNavigate()
@@ -136,7 +148,18 @@ export function OrderPage() {
   const tableLabel =
     tableNumber != null ? t("orders.table", { number: tableNumber }) : t("orders.orderFallback")
 
-  const handleAdd = (product: ProductDTO, quantity: number) => {
+  const groupsOf = (productId: string): ModifierGroupDTO[] =>
+    menuModifiers.data?.find((entry) => entry.product_id === productId)?.groups ?? []
+
+  // Tiene un grupo obligatorio (punto del bife) → primero se elige.
+  const productNeedsChoice = (product: ProductDTO): boolean =>
+    needsChoice(groupsOf(product.id))
+
+  const handleAdd = (
+    product: ProductDTO,
+    quantity: number,
+    options?: Pick<ItemOptionsResult, "note" | "optionIds" | "selectedOptions">
+  ) => {
     bumpUsage(product.id) // learn favorites for the grid ranking
     addItem.mutate(
       {
@@ -145,8 +168,12 @@ export function OrderPage() {
         name: product.name,
         unitPriceAmount: product.price_amount,
         quantity,
-        note: null,
+        note: options?.note ?? null,
         station: product.station,
+        // Solo mandamos la lista si el producto tiene grupos: así el server
+        // valida los obligatorios sin romper a los productos sin opciones.
+        optionIds: groupsOf(product.id).length > 0 ? (options?.optionIds ?? []) : undefined,
+        selectedOptions: options?.selectedOptions,
       },
       {
         onError: (error) =>
@@ -233,7 +260,26 @@ export function OrderPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ProductGrid products={products.data ?? []} onAdd={handleAdd} />
+            <ProductGrid
+              products={products.data ?? []}
+              onAdd={handleAdd}
+              onCustomize={setCustomizing}
+              needsChoice={productNeedsChoice}
+            />
+            {customizing ? (
+              <ItemOptionsDialog
+                product={customizing}
+                groups={groupsOf(customizing.id)}
+                open
+                onOpenChange={(next) => {
+                  if (!next) setCustomizing(null)
+                }}
+                onConfirm={(result) => {
+                  handleAdd(customizing, result.quantity, result)
+                  setCustomizing(null)
+                }}
+              />
+            ) : null}
           </CardContent>
         </Card>
       ) : null}

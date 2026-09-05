@@ -30,6 +30,19 @@ export function useProductPriceHistory(productId: string | null) {
 
 // --- Carta QR F2 D/E: modificadores ------------------------------------------
 
+/**
+ * Grupos de modificadores de TODOS los productos activos, en un batch.
+ * La comanda los precarga con el catálogo para que los chips salgan al toque.
+ */
+export function useMenuModifiers() {
+  const { productsApi } = useServices()
+  return useQuery({
+    queryKey: ["menu-modifiers"],
+    queryFn: () => productsApi.menuModifiers(),
+    staleTime: 5 * 60_000, // la carta no cambia durante un servicio
+  })
+}
+
 export function useProductModifiers(productId: string | null) {
   const { productsApi } = useServices()
   return useQuery({

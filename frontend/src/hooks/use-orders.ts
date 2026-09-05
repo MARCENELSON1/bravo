@@ -2,7 +2,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { Query } from "@tanstack/react-query"
 
 import type { CourseAction, ItemAction, OrderAction } from "@/api/orders-api"
-import type { Course, OrderDTO, OrderItemDTO, Station } from "@/api/types-operations"
+import type {
+  Course,
+  OrderDTO,
+  OrderItemDTO,
+  SelectedOptionDTO,
+  Station,
+} from "@/api/types-operations"
 import { newId } from "@/lib/ids"
 import { useServices } from "@/services/services-context"
 
@@ -45,6 +51,11 @@ interface AddItemVars {
   quantity: number
   note: string | null
   station: Station
+  // Modificadores elegidos: los ids que valida el server y el snapshot
+  // (nombre + delta) para pintar la línea optimista igual que va a volver.
+  optionIds?: string[]
+  selectedOptions?: SelectedOptionDTO[]
+  course?: Course
 }
 
 interface AddItemContext {
@@ -57,28 +68,41 @@ export function useAddItem(orderId: string) {
   const key = ["order", orderId]
   return useMutation<OrderDTO, Error, AddItemVars, AddItemContext>({
     mutationFn: (vars) =>
-      ordersApi.addItem(orderId, vars.id, vars.productId, vars.quantity, vars.note),
+      ordersApi.addItem(
+        orderId,
+        vars.id,
+        vars.productId,
+        vars.quantity,
+        vars.note,
+        vars.optionIds
+      ),
     // Optimistic: the item appears instantly. The id is the same one the server
     // will persist, so the refetch on settle reconciles with no flicker/dup.
     onMutate: async (vars) => {
       await queryClient.cancelQueries({ queryKey: key })
       const previous = queryClient.getQueryData<OrderDTO>(key)
       if (previous) {
+        // El delta de los modificadores se pliega en el unitario (igual que el
+        // server), así el total optimista coincide con el que vuelve.
+        const delta = (vars.selectedOptions ?? []).reduce((a, o) => a + o.price_delta, 0)
+        const unitPrice = vars.unitPriceAmount + delta
         const optimistic: OrderItemDTO = {
           id: vars.id,
           product_id: vars.productId,
           name: vars.name,
-          unit_price_amount: vars.unitPriceAmount,
+          unit_price_amount: unitPrice,
           quantity: vars.quantity,
           note: vars.note,
           status: "PENDING",
           station: vars.station,
+          course: vars.course,
           sent_at: null,
+          selected_options: vars.selectedOptions ?? [],
         }
         queryClient.setQueryData<OrderDTO>(key, {
           ...previous,
           items: [...previous.items, optimistic],
-          total_amount: previous.total_amount + vars.unitPriceAmount * vars.quantity,
+          total_amount: previous.total_amount + unitPrice * vars.quantity,
         })
       }
       return { previous }

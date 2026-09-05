@@ -13,9 +13,16 @@ import { getUsage, rankProducts } from "@/lib/product-usage"
 export function ProductGrid({
   products,
   onAdd,
+  onCustomize,
+  needsChoice,
 }: {
   products: ProductDTO[]
   onAdd: (product: ProductDTO, quantity: number) => void
+  // Abre el panel de opciones/nota (el ✎ de la tarjeta).
+  onCustomize?: (product: ProductDTO) => void
+  // El producto tiene un grupo OBLIGATORIO (punto del bife): al tocarlo hay
+  // que elegir antes de agregar.
+  needsChoice?: (product: ProductDTO) => boolean
 }) {
   const { t } = useTranslation()
   const [search, setSearch] = useState("")
@@ -23,6 +30,10 @@ export function ProductGrid({
   const ranked = useMemo(() => rankProducts(products, search, getUsage()), [products, search])
 
   const add = (product: ProductDTO) => {
+    if (needsChoice?.(product) && onCustomize) {
+      onCustomize(product) // primero se elige (obligatorio), después se agrega
+      return
+    }
     onAdd(product, qty)
     setQty(1) // reset to the common case after each add
   }
@@ -60,17 +71,29 @@ export function ProductGrid({
       {ranked.length > 0 ? (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {ranked.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => add(p)}
-              className="flex min-h-16 flex-col items-start justify-between gap-1 rounded-lg border bg-card p-3 text-left transition hover:border-primary hover:bg-accent active:scale-[0.98]"
-            >
-              <span className="text-sm font-medium leading-tight">{p.name}</span>
-              <span className="text-xs text-muted-foreground">
-                {formatMoney(p.price_amount, p.currency)}
-              </span>
-            </button>
+            <div key={p.id} className="relative">
+              <button
+                type="button"
+                onClick={() => add(p)}
+                className="flex min-h-16 w-full flex-col items-start justify-between gap-1 rounded-lg border bg-card p-3 text-left transition hover:border-primary hover:bg-accent active:scale-[0.98]"
+              >
+                <span className="pr-6 text-sm font-medium leading-tight">{p.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {formatMoney(p.price_amount, p.currency)}
+                </span>
+              </button>
+              {onCustomize ? (
+                <button
+                  type="button"
+                  onClick={() => onCustomize(p)}
+                  aria-label={t("orders.options.customize")}
+                  title={t("orders.options.customize")}
+                  className="absolute right-1 top-1 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
+                >
+                  ✎
+                </button>
+              ) : null}
+            </div>
           ))}
         </div>
       ) : (

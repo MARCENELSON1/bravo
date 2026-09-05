@@ -49,15 +49,25 @@ export class OrdersApi {
     })
   }
 
+  // `optionIds` = modificadores elegidos. Se manda SIEMPRE la lista cuando el
+  // cliente conoce los grupos (aunque vacía): así el server valida los
+  // obligatorios (422 si falta uno) y pliega los deltas en el precio unitario.
   addItem(
     orderId: string,
     itemId: string,
     productId: string,
     quantity: number,
-    note: string | null
+    note: string | null,
+    optionIds?: string[]
   ): Promise<OrderDTO> {
     return this.http.request<OrderDTO>("POST", `/orders/${orderId}/items`, {
-      body: { id: itemId, product_id: productId, quantity, note },
+      body: {
+        id: itemId,
+        product_id: productId,
+        quantity,
+        note,
+        ...(optionIds ? { option_ids: optionIds } : {}),
+      },
       auth: true,
     })
   }

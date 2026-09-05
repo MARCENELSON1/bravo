@@ -27,6 +27,17 @@ export const orders = {
   serveCourse: "Servir {{course}}",
   fireAll: "Marchar todo",
   courseHint: "Cocina prepara un tiempo por vez; vos marchás el siguiente.",
+  // "Cómo se quiere el plato": modificadores estructurados + nota libre.
+  options: {
+    pickOne: "Elegí una",
+    atLeast: "Elegí al menos {{count}}",
+    upTo: "Hasta {{count}}",
+    quantity: "Cantidad",
+    noteLabel: "Nota para cocina",
+    notePlaceholder: "Sin sal, bien cocido…",
+    add: "Agregar ×{{count}}",
+    customize: "Personalizar (nota y opciones)",
+  },
 
   customer: "Cliente",
   customerAssigned: "Cliente asignado",
