@@ -40,7 +40,7 @@ const PRESENTATION: Readonly<Record<Region, Readonly<Record<string, PlanPresenta
       features: [
         { label: "1 local", included: true },
         { label: "Todo lo de Emprendé", included: true },
-        { label: "Copiloto IA en español", included: true },
+        { label: "Copiloto IA", included: true },
         { label: "KDS de cocina y barra", included: true },
         { label: "Fichaje de empleados", included: true },
         { label: "Reportes en tiempo real", included: true },
@@ -86,7 +86,7 @@ const PRESENTATION: Readonly<Record<Region, Readonly<Record<string, PlanPresenta
       features: [
         { label: "1 location", included: true },
         { label: "Everything in Starter", included: true },
-        { label: "AI copilot in English", included: true },
+        { label: "AI copilot", included: true },
         { label: "Kitchen & bar KDS", included: true },
         { label: "Employee time tracking", included: true },
         { label: "Real-time reporting", included: true },

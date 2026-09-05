@@ -1,6 +1,4 @@
-import type { Faq } from "@/domain/entities/faq"
 import type { Feature } from "@/domain/entities/feature"
-import type { Integration } from "@/domain/entities/integration"
 import type { Step } from "@/domain/entities/step"
 import type { ContentRepository } from "@/domain/ports/content-repository"
 
@@ -8,117 +6,130 @@ const FEATURES: readonly Feature[] = [
   {
     id: "orders",
     icon: "orders",
+    group: "operation",
     title: "Comandas digitales",
     description:
       "El mozo toma el pedido desde el celular y llega solo a cocina y barra. Sin papeles ni idas y vueltas.",
   },
   {
-    id: "payments",
-    icon: "payments",
-    title: "Cobros y facturación ARCA",
-    description:
-      "Cobrá con MercadoPago y emití la factura electrónica en el mismo paso. ARCA nativo, sin planillas.",
-  },
-  {
-    id: "copilot",
-    icon: "copilot",
-    title: "Copiloto IA en español",
-    description:
-      "Preguntale a tu negocio en lenguaje natural: “¿cuánto vendí hoy?”, “¿qué plato deja más margen?”.",
-  },
-  {
     id: "kds",
     icon: "kds",
-    title: "Pantalla de cocina (KDS)",
+    group: "operation",
+    title: "Cocina y barra",
     description:
-      "La cocina ve los pedidos ordenados por tiempo y estado. Menos errores, salida más rápida.",
+      "Cada estación ve lo suyo, ordenado por tiempo y estado. Menos errores y salida más rápida.",
+  },
+  {
+    id: "payments",
+    icon: "payments",
+    group: "operation",
+    title: "Caja, cobros y propinas",
+    description:
+      "Abrís y cerrás la caja con su arqueo, cobrás por cualquier medio y repartís las propinas del turno.",
+  },
+  {
+    id: "invoices",
+    icon: "invoices",
+    group: "management",
+    title: "Facturación ARCA",
+    description:
+      "Emití la factura electrónica en el mismo paso del cobro. Comprobantes al día, sin cargar datos dos veces.",
+  },
+  {
+    id: "menu",
+    icon: "menu",
+    group: "management",
+    title: "Carta y recetas",
+    description:
+      "Cargá productos, precios y recetas. Wellnod calcula el costo de cada plato y cuánto margen te deja.",
+  },
+  {
+    id: "inventory",
+    icon: "inventory",
+    group: "management",
+    title: "Stock y proveedores",
+    description:
+      "Insumos con mínimo por producto, aviso cuando algo se está por acabar y tus proveedores a mano.",
+  },
+  {
+    id: "reservations",
+    icon: "reservations",
+    group: "management",
+    title: "Reservas y clientes",
+    description:
+      "La agenda del turno con confirmaciones y no-shows, y tu cartera de clientes para volver a contactarlos.",
   },
   {
     id: "timeclock",
     icon: "timeclock",
-    title: "Fichaje de empleados",
+    group: "management",
+    title: "Fichaje y personal",
     description:
-      "Entradas y salidas del personal desde el local, con reportes de horas listos para liquidar.",
+      "Entradas y salidas del equipo desde el local, con las horas de cada uno listas para liquidar.",
+  },
+  {
+    id: "finance",
+    icon: "finance",
+    group: "management",
+    title: "Finanzas y egresos",
+    description:
+      "Cargá los gastos del local y mirá lo cobrado neto de comisiones. Lo que entra y lo que sale, junto.",
   },
   {
     id: "reports",
     icon: "reports",
-    title: "Reportes en tiempo real",
+    group: "intelligence",
+    title: "Reportes y analítica",
     description:
-      "Ventas, caja y márgenes al instante, en pesos. Tomá decisiones con datos, no con la intuición.",
+      "Ventas por día, mix de medios de pago y productos más vendidos. En vivo, sin armar planillas.",
+  },
+  {
+    id: "copilot",
+    icon: "copilot",
+    group: "intelligence",
+    title: "Copiloto IA",
+    description:
+      "Preguntale a tu negocio en lenguaje natural: “¿cuánto vendí hoy?”, “¿qué plato deja más margen?”.",
+  },
+  {
+    id: "advisor",
+    icon: "advisor",
+    group: "intelligence",
+    title: "Asesor",
+    description:
+      "Margen neto, prime cost y punto de equilibrio, con diagnósticos de qué hacer hoy y qué esta semana.",
   },
 ]
 
 const STEPS: readonly Step[] = [
   {
     id: "setup",
-    title: "Cargá tu menú y tus mesas",
-    description:
-      "Configurás productos, precios y el salón una sola vez. En minutos, sin ayuda técnica.",
+    title: "Cargás tu local una vez",
+    description: "Menú, precios, mesas y equipo. En minutos, sin ayuda técnica.",
   },
   {
     id: "order",
     title: "El mozo toma la comanda",
-    description: "Desde el celular, en la mesa. Sin papelitos ni gritos a la cocina.",
-  },
-  {
-    id: "kitchen",
-    title: "Cocina y barra la reciben al instante",
-    description: "El pedido aparece en el KDS ordenado por tiempo. Se prepara y sale más rápido.",
+    description:
+      "Desde el celular, en la mesa. Llega sola a cocina y barra, ordenada por tiempo.",
   },
   {
     id: "charge",
-    title: "Cobrás, facturás y medís",
+    title: "Cobrás y facturás",
     description:
-      "Cobro con MercadoPago, factura ARCA en el mismo paso y el reporte del día actualizado.",
-  },
-]
-
-const INTEGRATIONS: readonly Integration[] = [
-  { id: "mercadopago", name: "MercadoPago", description: "Cobros y QR" },
-  { id: "arca", name: "ARCA", description: "Factura electrónica" },
-  { id: "printers", name: "Impresoras", description: "Comandas y tickets" },
-  { id: "whatsapp", name: "WhatsApp", description: "Avisos y pedidos" },
-  { id: "point", name: "Point", description: "Terminal de pago" },
-  { id: "sheets", name: "Exportá a Excel", description: "Reportes y datos" },
-]
-
-const FAQS: readonly Faq[] = [
-  {
-    id: "hardware",
-    question: "¿Necesito comprar hardware especial?",
-    answer:
-      "No. Wellnod funciona en los celulares, tablets o computadoras que ya tenés. Si querés, se integra con impresoras de comandas.",
-  },
-  {
-    id: "arca",
-    question: "¿Emite factura electrónica de ARCA?",
-    answer:
-      "Sí. La facturación ARCA es nativa: cobrás y facturás en el mismo flujo, sin cargar datos dos veces.",
-  },
-  {
-    id: "trial",
-    question: "¿Hay prueba gratis?",
-    answer:
-      "Sí, todos los planes arrancan con 30 días de prueba. Te pedimos la tarjeta al inicio y se cobra recién al terminar la prueba. Cancelás antes y no se te cobra nada.",
-  },
-  {
-    id: "multi",
-    question: "¿Sirve si tengo más de un local?",
-    answer:
-      "Sí. El plan Multi-local te da un panel consolidado de todos tus puntos de venta con roles y permisos por local.",
+      "Cobro, factura ARCA y el cierre de caja con su arqueo. Todo en el mismo flujo.",
   },
   {
     id: "copilot",
-    question: "¿Qué es el copiloto de IA?",
-    answer:
-      "Es un asistente que responde en español sobre tu negocio: ventas, márgenes, stock y más, sin que tengas que armar reportes.",
+    title: "Le preguntás al Copiloto",
+    description:
+      "“¿Cuánto vendí hoy?”, “¿qué plato deja más margen?”. Responde con tus datos reales.",
   },
   {
-    id: "data",
-    question: "¿Mis datos están seguros?",
-    answer:
-      "Cada local trabaja con sus datos aislados. La información se resguarda con cifrado y buenas prácticas de seguridad.",
+    id: "advisor",
+    title: "El Asesor te dice qué hacer",
+    description:
+      "Margen neto, prime cost y punto de equilibrio, con diagnósticos para hoy y para esta semana.",
   },
 ]
 
@@ -132,11 +143,4 @@ export class StaticContentRepository implements ContentRepository {
     return STEPS
   }
 
-  async getIntegrations(): Promise<readonly Integration[]> {
-    return INTEGRATIONS
-  }
-
-  async getFaqs(): Promise<readonly Faq[]> {
-    return FAQS
-  }
 }

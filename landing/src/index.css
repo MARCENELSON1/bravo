@@ -32,7 +32,14 @@
 }
 
 /* Paleta Wellnod (verdes) — modo claro */
+/* Manchas del fondo animado. Un matiz distinto cada una para que el movimiento
+   se lea; en claro van más oscuras que el suelo y en oscuro, más claras. */
 :root {
+  --aurora-a: oklch(0.38 0 0 / 0.16);
+  --aurora-b: oklch(0.32 0 0 / 0.12);
+  --aurora-c: oklch(0.45 0 0 / 0.09);
+  --vignette: oklch(0.20 0 0 / 0.10);
+  --watermark: oklch(0 0 0 / 0.025);
   --background: oklch(1 0 0);
   --foreground: oklch(0.16 0.01 165);
   --muted: oklch(0.96 0.01 165);
@@ -49,6 +56,11 @@
 
 /* Modo oscuro */
 .dark {
+  --aurora-a: oklch(0.82 0 0 / 0.15);
+  --aurora-b: oklch(0.76 0 0 / 0.11);
+  --aurora-c: oklch(0.88 0 0 / 0.08);
+  --vignette: oklch(0 0 0 / 0.40);
+  --watermark: oklch(0 0 0 / 0.22);
   --background: oklch(0.16 0.008 165);
   --foreground: oklch(0.97 0.005 165);
   --muted: oklch(0.24 0.009 165);
@@ -94,29 +106,255 @@
   }
 }
 
-/* Reveal on scroll — respeta "reducir movimiento" */
+/* Reveal on scroll. Tres variantes que comparten el mismo easing "expo" del hero:
+   rise (por defecto), fade y scale. El retardo se pasa por --reveal-delay, así que
+   un contenedor puede escalonar a sus hijos sin JS. Respeta "reducir movimiento". */
 @layer utilities {
   .reveal {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(22px);
+    filter: blur(6px);
     transition:
-      opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+      opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms),
+      transform 0.85s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms),
+      filter 0.85s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms);
+  }
+  .reveal[data-anim="fade"] {
+    transform: none;
+  }
+  .reveal[data-anim="scale"] {
+    transform: scale(0.965);
+  }
+  /* Para un titular de cierre: sube más, escala apenas y tarda más. Se nota.
+     Comparte el mismo easing que el resto, así no parece de otra página. */
+  .reveal[data-anim="lift"] {
+    transform: translateY(48px) scale(0.97);
+    transition-duration: 1.15s;
+  }
+  /* Entra desde la izquierda. Quien la use tiene que recortar el desborde en su
+     sección, o durante la animación aparece scroll horizontal. */
+  .reveal[data-anim="left"] {
+    transform: translateX(-64px);
+    transition-duration: 1s;
   }
   .reveal.is-visible {
     opacity: 1;
     transform: none;
+    filter: none;
   }
+
+  /* Escalona a los hijos directos: cada uno espera 70 ms más que el anterior.
+     Sirve para grillas y listas sin tener que calcular delays en el JSX. */
+  .stagger > * {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+      opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .stagger.is-visible > * {
+    opacity: 1;
+    transform: none;
+  }
+  .stagger > *:nth-child(1) { transition-delay: 0ms; }
+  .stagger > *:nth-child(2) { transition-delay: 70ms; }
+  .stagger > *:nth-child(3) { transition-delay: 140ms; }
+  .stagger > *:nth-child(4) { transition-delay: 210ms; }
+  .stagger > *:nth-child(5) { transition-delay: 280ms; }
+  .stagger > *:nth-child(6) { transition-delay: 350ms; }
+  .stagger > *:nth-child(7) { transition-delay: 420ms; }
+  .stagger > *:nth-child(8) { transition-delay: 490ms; }
+  .stagger > *:nth-child(9) { transition-delay: 560ms; }
+  .stagger > *:nth-child(10) { transition-delay: 630ms; }
+  .stagger > *:nth-child(11) { transition-delay: 700ms; }
+  .stagger > *:nth-child(12) { transition-delay: 770ms; }
+
+  /* Cinta infinita de la sección de rubros. El track se duplica en el DOM, así
+     que desplazarlo un 50 % vuelve al punto de partida sin salto. */
+  .marquee-track {
+    animation: marquee 38s linear infinite;
+  }
+  .marquee:hover .marquee-track,
+  .marquee:focus-within .marquee-track {
+    animation-play-state: paused;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .reveal {
+    .reveal,
+    .stagger > * {
       opacity: 1;
       transform: none;
+      filter: none;
       transition: none;
+    }
+    .marquee-track {
+      animation: none;
     }
     html {
       scroll-behavior: auto;
     }
   }
+}
+
+/* Fondo animado: manchas de color muy difusas que derivan solas y, además, se
+   desplazan con el scroll a distinta velocidad (parallax por capas). El desenfoque
+   se aplica UNA vez y nunca se anima —animar `filter` es carísimo—: lo que se mueve
+   es siempre `transform`, que va por GPU.
+
+   Dos niveles de div a propósito: el de afuera lo traslada el scroll (variable
+   --scroll, que escribe el componente), el de adentro corre su propio keyframe.
+   Un solo elemento no puede tener dos transforms compitiendo. */
+.aurora-layer {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(0, calc(var(--scroll, 0) * var(--depth, 0) * 1vh), 0);
+  will-change: transform;
+}
+.aurora {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.aurora-a {
+  top: -10%;
+  left: -5%;
+  width: 55vw;
+  height: 55vw;
+  background: radial-gradient(circle, var(--aurora-a) 0%, transparent 70%);
+  filter: blur(90px);
+  animation: auroraA 90s ease-in-out infinite alternate;
+}
+.aurora-b {
+  top: 25%;
+  right: -15%;
+  width: 45vw;
+  height: 45vw;
+  background: radial-gradient(circle, var(--aurora-b) 0%, transparent 70%);
+  filter: blur(110px);
+  animation: auroraB 115s ease-in-out infinite alternate;
+}
+.aurora-c {
+  bottom: -20%;
+  left: 20%;
+  width: 60vw;
+  height: 50vw;
+  background: radial-gradient(circle, var(--aurora-c) 0%, transparent 70%);
+  filter: blur(130px);
+  animation: auroraC 140s ease-in-out infinite alternate;
+}
+
+/* Viñeta: oscurece los bordes y deja el centro limpio. Reemplaza a la textura
+   fotográfica, que tenía demasiado contraste y pesaba más de un mega. Da
+   profundidad sin dibujar nada. */
+/* Marca de agua: el wordmark enorme y muy transparente, detrás de todo. En negro
+   en los dos temas — sobre fondo claro apenas ensucia, sobre fondo oscuro se lee
+   como una silueta más oscura cuando una mancha de luz le pasa por encima.
+
+   El tamaño va en vw: escala con la pantalla y siempre ocupa la misma
+   proporción. Se desborda a propósito; lo recorta el contenedor del fondo. */
+.watermark {
+  font-family: var(--font-brand);
+  font-size: 20vw;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+  user-select: none;
+  color: var(--watermark);
+  transition: opacity 800ms ease;
+}
+
+/* Se retira en las secciones que lo piden (ver data-watermark). El fundido dura
+   lo mismo que la entrada de la sección, así que se cruzan: una aparece mientras
+   la otra se va. */
+[data-watermark="hide"] .watermark {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watermark {
+    transition: none;
+  }
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 95% 75% at 50% 38%, transparent 0%, var(--vignette) 100%);
+}
+
+/* Estado del fondo por sección. Un tercer nivel de div entre la capa que mueve
+   el scroll y la que corre el keyframe: acá vive el desplazamiento y la opacidad
+   que cambian al entrar en cada sección. Tres transforms distintos necesitan tres
+   elementos; no hay forma de componerlos en uno solo.
+
+   Los estados NO cambian de color: solo mueven las manchas y suben o bajan su
+   presencia. Se rotan cada cuatro secciones, así dos seguidas nunca son iguales. */
+.aurora-mood {
+  position: absolute;
+  inset: 0;
+  opacity: var(--mo, 1);
+  transform: translate3d(var(--mx, 0), var(--my, 0), 0);
+  transition:
+    transform 1600ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 1600ms ease;
+  will-change: transform, opacity;
+}
+
+[data-mood="0"] .mood-a { --mx: 0; --my: 0; --mo: 1; }
+[data-mood="0"] .mood-b { --mx: 6vw; --my: -4vh; --mo: 0.45; }
+[data-mood="0"] .mood-c { --mx: -4vw; --my: 0; --mo: 0.35; }
+
+[data-mood="1"] .mood-a { --mx: -8vw; --my: 6vh; --mo: 0.4; }
+[data-mood="1"] .mood-b { --mx: -6vw; --my: 0; --mo: 1; }
+[data-mood="1"] .mood-c { --mx: 4vw; --my: -5vh; --mo: 0.5; }
+
+[data-mood="2"] .mood-a { --mx: 5vw; --my: -7vh; --mo: 0.5; }
+[data-mood="2"] .mood-b { --mx: 8vw; --my: 5vh; --mo: 0.35; }
+[data-mood="2"] .mood-c { --mx: 0; --my: -4vh; --mo: 1; }
+
+[data-mood="3"] .mood-a { --mx: -5vw; --my: -3vh; --mo: 0.6; }
+[data-mood="3"] .mood-b { --mx: 3vw; --my: 6vh; --mo: 0.6; }
+[data-mood="3"] .mood-c { --mx: -6vw; --my: 3vh; --mo: 0.6; }
+
+/* Y el ritmo de la deriva también cambia: cada estado respira distinto. */
+[data-mood="1"] .aurora-a { animation-duration: 130s; }
+[data-mood="2"] .aurora-b { animation-duration: 80s; animation-direction: alternate-reverse; }
+[data-mood="3"] .aurora-c { animation-duration: 105s; animation-direction: alternate-reverse; }
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-mood {
+    transition: none;
+    transform: none;
+  }
+}
+
+@keyframes auroraA {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(6vw, 4vh, 0); }
+}
+@keyframes auroraB {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-7vw, -5vh, 0); }
+}
+@keyframes auroraC {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(5vw, -3vh, 0); }
+}
+
+/* Sin movimiento: las manchas quedan quietas, pero el color se conserva. */
+@media (prefers-reduced-motion: reduce) {
+  .aurora,
+  .aurora-layer {
+    animation: none;
+    transform: none;
+  }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 
 /* Entrada del hero (premium): título con blur-clear, texto con rise, la pantalla
@@ -208,4 +446,14 @@
     opacity: 1;
     transform: none;
   }
+}
+
+/* Difuminado del borde inferior del mockup del hero. Va como MÁSCARA sobre el
+   propio mockup, no como degradado de color encima: el fondo de la página es una
+   capa animada, así que cualquier degradado hacia un color plano se ve como una
+   banda con borde propio (que es lo que pasaba antes). Con máscara, el mockup se
+   vuelve transparente y deja ver lo que haya detrás, sea lo que sea. */
+.mockup-fade {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 90%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 90%, transparent 100%);
 }

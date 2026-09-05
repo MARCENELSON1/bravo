@@ -1,127 +1,138 @@
-import type { Faq } from "@/domain/entities/faq"
 import type { Feature } from "@/domain/entities/feature"
-import type { Integration } from "@/domain/entities/integration"
 import type { Step } from "@/domain/entities/step"
 import type { ContentRepository } from "@/domain/ports/content-repository"
 
 // Contenido de la landing para la región INTL (inglés, mercado US). NO es traducción
-// literal del repo AR: es transcreación — AFIP → sales tax, MercadoPago → Stripe,
-// copiloto en español → copilot in English. Misma forma que StaticContentRepository.
+// literal del repo AR: es transcreación — ARCA → sales tax, MercadoPago → Stripe,
+// MercadoPago → Stripe. Misma forma que StaticContentRepository.
 const FEATURES: readonly Feature[] = [
   {
     id: "orders",
     icon: "orders",
+    group: "operation",
     title: "Digital order taking",
     description:
-      "Your server takes the order from their phone and it lands straight in the kitchen and bar. No paper tickets, no back-and-forth.",
-  },
-  {
-    id: "payments",
-    icon: "payments",
-    title: "Payments & automated sales tax",
-    description:
-      "Take card payments and let sales tax calculate itself on every check. No spreadsheets, no month-end scramble.",
-  },
-  {
-    id: "copilot",
-    icon: "copilot",
-    title: "AI copilot in English",
-    description:
-      "Ask your business in plain English: “How much did I sell today?”, “Which dish has the best margin?”",
+      "Your server takes the order on a phone and it lands in the kitchen and bar on its own. No paper, no running back.",
   },
   {
     id: "kds",
     icon: "kds",
-    title: "Kitchen display (KDS)",
+    group: "operation",
+    title: "Kitchen & bar",
     description:
-      "The kitchen sees orders sorted by time and status. Fewer mistakes, faster tickets.",
+      "Each station sees its own tickets, sorted by time and status. Fewer mistakes, faster service.",
+  },
+  {
+    id: "payments",
+    icon: "payments",
+    group: "operation",
+    title: "Register, payments & tips",
+    description:
+      "Open and close the register with its count, take any payment method, and split the shift's tips.",
+  },
+  {
+    id: "invoices",
+    icon: "invoices",
+    group: "management",
+    title: "Sales tax & receipts",
+    description:
+      "Tax is calculated at checkout and the receipt goes out in the same step. No double data entry.",
+  },
+  {
+    id: "menu",
+    icon: "menu",
+    group: "management",
+    title: "Menu & recipes",
+    description:
+      "Add products, prices, and recipes. Wellnod works out what each dish costs and the margin it leaves.",
+  },
+  {
+    id: "inventory",
+    icon: "inventory",
+    group: "management",
+    title: "Inventory & suppliers",
+    description:
+      "Set a minimum per item, get told when something is running low, and keep your suppliers on hand.",
+  },
+  {
+    id: "reservations",
+    icon: "reservations",
+    group: "management",
+    title: "Reservations & guests",
+    description:
+      "The shift's book with confirmations and no-shows, plus your guest list to bring people back.",
   },
   {
     id: "timeclock",
     icon: "timeclock",
-    title: "Employee time tracking",
+    group: "management",
+    title: "Time tracking & staff",
     description:
-      "Clock staff in and out from the floor, with hours reports ready for payroll.",
+      "Clock-ins and clock-outs from the restaurant, with everyone's hours ready for payroll.",
+  },
+  {
+    id: "finance",
+    icon: "finance",
+    group: "management",
+    title: "Finance & expenses",
+    description:
+      "Log what the restaurant spends and see what you collected net of fees. Money in and money out, together.",
   },
   {
     id: "reports",
     icon: "reports",
-    title: "Real-time reporting",
+    group: "intelligence",
+    title: "Reports & analytics",
     description:
-      "Sales, cash, and margins at a glance. Decide with data, not gut feel.",
+      "Sales by day, payment method mix, and top sellers. Live, with no spreadsheets to build.",
+  },
+  {
+    id: "copilot",
+    icon: "copilot",
+    group: "intelligence",
+    title: "AI copilot",
+    description:
+      "Ask your business: “How much did I sell today?”, “Which dish has the best margin?”",
+  },
+  {
+    id: "advisor",
+    icon: "advisor",
+    group: "intelligence",
+    title: "Advisor",
+    description:
+      "Net margin, prime cost, and break-even, with a read on what to do today and what to do this week.",
   },
 ]
 
 const STEPS: readonly Step[] = [
   {
     id: "setup",
-    title: "Add your menu and tables",
-    description:
-      "Set up items, prices, and your floor once. In minutes, no tech help needed.",
+    title: "Set up your restaurant once",
+    description: "Menu, prices, tables, and team. In minutes, with no technical help.",
   },
   {
     id: "order",
     title: "Your server takes the order",
-    description: "From their phone, right at the table. No paper tickets, no shouting to the kitchen.",
-  },
-  {
-    id: "kitchen",
-    title: "Kitchen and bar get it instantly",
-    description: "The order shows up on the KDS sorted by time. It's prepped and out faster.",
+    description:
+      "From a phone, at the table. It reaches the kitchen and bar on its own, sorted by time.",
   },
   {
     id: "charge",
-    title: "Charge, tax, and measure",
+    title: "You charge and file tax",
     description:
-      "Card payment, sales tax on the same check, and today's report already updated.",
-  },
-]
-
-const INTEGRATIONS: readonly Integration[] = [
-  { id: "stripe", name: "Stripe", description: "Payments & cards" },
-  { id: "salestax", name: "Sales tax", description: "Automatic filing" },
-  { id: "printers", name: "Printers", description: "Tickets & receipts" },
-  { id: "whatsapp", name: "WhatsApp", description: "Alerts & orders" },
-  { id: "readers", name: "Card readers", description: "In-person payments" },
-  { id: "sheets", name: "Export to Excel", description: "Reports & data" },
-]
-
-const FAQS: readonly Faq[] = [
-  {
-    id: "hardware",
-    question: "Do I need to buy special hardware?",
-    answer:
-      "No. Wellnod runs on the phones, tablets, and computers you already have. If you want, it connects to kitchen ticket printers.",
-  },
-  {
-    id: "tax",
-    question: "Does it handle sales tax?",
-    answer:
-      "Yes. Sales tax is built in: you charge and the tax is calculated and filed for you, with no double entry.",
-  },
-  {
-    id: "trial",
-    question: "Is there a free trial?",
-    answer:
-      "Yes — every plan starts with a 30-day free trial. We ask for a card upfront and only charge when the trial ends. Cancel anytime before then and you won't be charged.",
-  },
-  {
-    id: "multi",
-    question: "Does it work if I have more than one location?",
-    answer:
-      "Yes. The Multi-location plan gives you one consolidated dashboard across all your locations, with roles and permissions per location.",
+      "Payment, sales tax, and the register close with its count. All in one flow.",
   },
   {
     id: "copilot",
-    question: "What is the AI copilot?",
-    answer:
-      "It's an assistant that answers questions about your business in plain English — sales, margins, stock, and more — without you building reports.",
+    title: "You ask the Copilot",
+    description:
+      "“How much did I sell today?”, “Which dish has the best margin?”. It answers with your real data.",
   },
   {
-    id: "data",
-    question: "Is my data safe?",
-    answer:
-      "Every location works with its own isolated data. Information is protected with encryption and security best practices.",
+    id: "advisor",
+    title: "The Advisor tells you what to do",
+    description:
+      "Net margin, prime cost, and break-even, with what to fix today and what to fix this week.",
   },
 ]
 
@@ -134,11 +145,4 @@ export class EnStaticContentRepository implements ContentRepository {
     return STEPS
   }
 
-  async getIntegrations(): Promise<readonly Integration[]> {
-    return INTEGRATIONS
-  }
-
-  async getFaqs(): Promise<readonly Faq[]> {
-    return FAQS
-  }
 }

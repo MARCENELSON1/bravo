@@ -10,6 +10,7 @@ import { usePricingPlans } from "@/presentation/hooks/use-pricing-plans"
 import { useContainer } from "@/presentation/providers/container-provider"
 import { buttonVariants } from "@/presentation/components/ui/button"
 import { Reveal } from "@/presentation/components/ui/reveal"
+import { SectionHeading } from "@/presentation/components/ui/section-heading"
 import { cn } from "@/presentation/lib/cn"
 
 const COPY = {
@@ -53,21 +54,15 @@ export function Pricing() {
   const [period, setPeriod] = useState<BillingPeriod>("monthly")
 
   return (
-    <section id="planes" className="border-t border-border bg-muted/30">
-      <div className="mx-auto max-w-6xl px-5 py-20 md:py-24">
-        <Reveal className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary">{t.eyebrow}</p>
-          <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-            {t.heading}
-          </h2>
-          <p className="mt-4 text-lg text-muted-foreground">{t.sub}</p>
-        </Reveal>
+    <section id="planes" className="border-t border-border/60">
+      <div className="mx-auto max-w-6xl px-5 py-28 md:py-36">
+        <SectionHeading eyebrow={t.eyebrow} heading={t.heading} sub={t.sub} />
 
-        <div className="mt-8 flex justify-center">
+        <div className="mt-10 flex justify-center">
           <PeriodToggle period={period} onChange={setPeriod} locale={locale} />
         </div>
 
-        <div className="mt-12 grid items-stretch gap-6 lg:grid-cols-3">
+        <div className="mt-14 grid items-stretch gap-6 lg:grid-cols-3">
           {loading
             ? Array.from({ length: 3 }).map((_, i) => <PlanSkeleton key={i} />)
             : plans.map((plan, i) => (
@@ -128,10 +123,8 @@ function PlanCard({ plan, period, locale }: { plan: Plan; period: BillingPeriod;
   return (
     <div
       className={cn(
-        "flex h-full flex-col rounded-2xl border bg-card p-6",
-        plan.featured
-          ? "border-primary shadow-xl shadow-primary/10 ring-1 ring-primary/30"
-          : "border-border",
+        "flex h-full flex-col rounded-2xl border p-7",
+        plan.featured ? "border-primary/50" : "border-border/70",
       )}
     >
       <div className="flex items-center justify-between gap-3">

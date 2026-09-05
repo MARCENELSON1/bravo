@@ -1,55 +1,84 @@
+import type { Feature, FeatureGroup } from "@/domain/entities/feature"
 import { useLandingContent } from "@/presentation/hooks/use-landing-content"
 import { FEATURE_ICONS } from "@/presentation/lib/feature-icons"
-import { Reveal } from "@/presentation/components/ui/reveal"
+import { SectionHeading } from "@/presentation/components/ui/section-heading"
+import { Reveal, Stagger } from "@/presentation/components/ui/reveal"
 import { useContainer } from "@/presentation/providers/container-provider"
 
 const COPY = {
   "es-AR": {
-    eyebrow: "Producto",
+    eyebrow: "Wellnod",
     heading: "Una sola herramienta para operar todo el local",
-    sub: "Desde que el mozo toma el pedido hasta que cobrás y facturás. Todo conectado, en tiempo real.",
+    sub: "Nada de apps sueltas ni de exportar planillas de un lado a otro. Comandas, cocina, caja, facturación, carta, stock, reservas, clientes, fichaje, finanzas, reportes y tu copiloto trabajan con los mismos datos.",
+    groups: {
+      operation: "El turno",
+      management: "El negocio",
+      intelligence: "Las decisiones",
+    },
   },
   "en-US": {
-    eyebrow: "Product",
+    eyebrow: "Wellnod",
     heading: "One tool to run the whole restaurant",
-    sub: "From the moment your server takes the order to the moment you charge and file tax. All connected, in real time.",
+    sub: "No more scattered apps or exporting spreadsheets back and forth. Orders, kitchen, register, tax, menu, inventory, reservations, guests, time tracking, finance, reports, and your copilot all run on the same data.",
+    groups: {
+      operation: "The shift",
+      management: "The business",
+      intelligence: "The decisions",
+    },
   },
 } as const
 
+// De lo inmediato a lo estratégico: así es como se usa el software durante el día.
+const ORDER: readonly FeatureGroup[] = ["operation", "management", "intelligence"]
+
+// Las doce áreas, en tres bloques. Doce ítems en una grilla plana son un muro sin
+// jerarquía; agrupados se recorren de lo que pasa ahora a lo que se decide después.
+// Los bloques son 3 / 6 / 3, así ninguna fila queda coja.
 export function Features() {
   const { features } = useLandingContent()
   const t = COPY[useContainer().locale]
 
   return (
-    <section id="producto" className="mx-auto max-w-6xl px-5 py-20 md:py-24">
-      <Reveal className="mx-auto max-w-2xl text-center">
-        <p className="text-sm font-semibold uppercase tracking-wider text-primary">{t.eyebrow}</p>
-        <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-          {t.heading}
-        </h2>
-        <p className="mt-4 text-lg text-muted-foreground">{t.sub}</p>
-      </Reveal>
+    <section id="producto" className="mx-auto max-w-5xl px-5 py-28 md:py-36">
+      <SectionHeading eyebrow={t.eyebrow} heading={t.heading} sub={t.sub} />
 
-      <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {features.map((feature, i) => {
-          const Icon = FEATURE_ICONS[feature.icon]
+      <div className="mt-20 flex flex-col gap-16">
+        {ORDER.map((group) => {
+          const items = features.filter((feature) => feature.group === group)
+          if (items.length === 0) return null
           return (
-            <Reveal
-              key={feature.id}
-              style={{ transitionDelay: `${(i % 3) * 80}ms` }}
-              className="group h-full rounded-2xl border border-border bg-card p-6 transition hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
-            >
-              <span className="flex size-11 items-center justify-center rounded-xl bg-primary/12 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
-                <Icon className="size-5" />
-              </span>
-              <h3 className="mt-4 text-lg font-semibold">{feature.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {feature.description}
-              </p>
-            </Reveal>
+            <div key={group}>
+              <Reveal anim="fade">
+                <h3 className="border-b border-border/70 pb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  {t.groups[group]}
+                </h3>
+              </Reveal>
+              <Stagger className="mt-8 grid gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+                {items.map((feature) => (
+                  <FeatureItem key={feature.id} feature={feature} />
+                ))}
+              </Stagger>
+            </div>
           )
         })}
       </div>
     </section>
+  )
+}
+
+// El ícono va en la misma línea que el título. Arriba quedaba flotando solo y
+// abría un hueco que hacía ver la grilla despareja.
+function FeatureItem({ feature }: { feature: Feature }) {
+  const Icon = FEATURE_ICONS[feature.icon]
+  return (
+    <article>
+      <div className="flex items-center gap-2.5">
+        <Icon className="size-[18px] shrink-0 text-primary" />
+        <h4 className="font-semibold tracking-tight">{feature.title}</h4>
+      </div>
+      <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
+        {feature.description}
+      </p>
+    </article>
   )
 }

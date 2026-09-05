@@ -11,24 +11,42 @@ const COPY = {
   },
 } as const
 
+// Cinta continua de rubros. Antes eran seis píldoras estáticas centradas; como
+// cinta ocupan menos y el movimiento sugiere "hay más" sin listar de más. El
+// track está duplicado: desplazarlo un 50 % vuelve al inicio sin salto. Se frena
+// al pasar el mouse o al tabular, y con "reducir movimiento" queda quieta.
 export function Audience() {
   const t = COPY[useContainer().locale]
+  const loop = [...t.types, ...t.types]
 
   return (
-    <section className="border-b border-border">
-      <div className="mx-auto max-w-6xl px-5 py-10">
-        <p className="text-center text-sm text-muted-foreground">{t.label}</p>
-        <ul className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
-          {t.types.map((type) => (
+    <section className="border-y border-border/60 py-12">
+      <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        {t.label}
+      </p>
+
+      <div
+        className="marquee relative mt-7 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8rem,black_calc(100%-8rem),transparent)]"
+        aria-hidden
+      >
+        <ul className="marquee-track flex w-max items-center gap-14 pr-14">
+          {loop.map((type, i) => (
             <li
-              key={type}
-              className="rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-muted-foreground"
+              key={`${type}-${i}`}
+              className="font-display text-2xl font-semibold tracking-tight whitespace-nowrap text-muted-foreground/60 sm:text-3xl"
             >
               {type}
             </li>
           ))}
         </ul>
       </div>
+
+      {/* La cinta es decorativa; la lista real queda accesible para lectores. */}
+      <ul className="sr-only">
+        {t.types.map((type) => (
+          <li key={type}>{type}</li>
+        ))}
+      </ul>
     </section>
   )
 }

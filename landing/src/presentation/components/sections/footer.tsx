@@ -6,13 +6,12 @@ const YEAR = 2026
 
 const COPY = {
   "es-AR": {
-    tagline: "El cerebro de tu local: comandas, cobros y tu copiloto en español.",
+    tagline: "El cerebro de tu local: comandas, cobros y tu copiloto.",
     product: "Producto",
     company: "Empresa",
     legal: "Legal",
     functions: "Funciones",
     plans: "Planes",
-    faq: "Preguntas",
     contact: "Contacto",
     login: "Iniciar sesión",
     register: "Empezá gratis",
@@ -22,13 +21,12 @@ const COPY = {
     madeIn: "Hecho en Argentina",
   },
   "en-US": {
-    tagline: "Your restaurant's brain: orders, payments, and your copilot in English.",
+    tagline: "Your restaurant's brain: orders, payments, and your copilot.",
     product: "Product",
     company: "Company",
     legal: "Legal",
     functions: "Features",
     plans: "Plans",
-    faq: "FAQ",
     contact: "Contact",
     login: "Log in",
     register: "Start free trial",
@@ -59,7 +57,6 @@ export function Footer() {
       links: [
         { label: t.functions, href: "#producto" },
         { label: t.plans, href: "#planes" },
-        { label: t.faq, href: "#preguntas" },
       ],
     },
     {
@@ -80,8 +77,8 @@ export function Footer() {
   ]
 
   return (
-    <footer className="border-t border-border bg-muted/30">
-      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:grid-cols-2 lg:grid-cols-4">
+    <footer className="border-t border-border/60">
+      <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 sm:grid-cols-2 lg:grid-cols-4">
         <div className="lg:col-span-1">
           <WellnodLogo />
           <p className="mt-4 max-w-xs text-sm text-muted-foreground">{t.tagline}</p>
@@ -90,7 +87,7 @@ export function Footer() {
         {columns.map((column) => (
           <div key={column.title}>
             <p className="text-sm font-semibold">{column.title}</p>
-            <ul className="mt-4 flex flex-col gap-2.5">
+            <ul className="mt-5 flex flex-col gap-3">
               {column.links.map((link) => (
                 <li key={link.label}>
                   <a
@@ -106,7 +103,7 @@ export function Footer() {
         ))}
       </div>
 
-      <div className="border-t border-border">
+      <div className="border-t border-border/60">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-5 py-6 text-sm text-muted-foreground sm:flex-row">
           <p>{t.rights}</p>
           <div className="flex items-center gap-4">

@@ -1,44 +1,37 @@
 import { useLandingContent } from "@/presentation/hooks/use-landing-content"
-import { Reveal } from "@/presentation/components/ui/reveal"
+import { SectionHeading } from "@/presentation/components/ui/section-heading"
+import { Stagger } from "@/presentation/components/ui/reveal"
 import { useContainer } from "@/presentation/providers/container-provider"
 
 const COPY = {
-  "es-AR": { eyebrow: "Cómo funciona", heading: "De la mesa al reporte, en cuatro pasos" },
-  "en-US": { eyebrow: "How it works", heading: "From table to report, in four steps" },
+  "es-AR": { eyebrow: "Cómo funciona", heading: "De la mesa a la decisión, en cinco pasos" },
+  "en-US": { eyebrow: "How it works", heading: "From table to decision, in five steps" },
 } as const
 
+// Cinco pasos numerados, sin línea conectora ni nodos. El número ya dice que es
+// una secuencia; dibujarle un riel encima era decir lo mismo dos veces. Entran
+// en orden, que es la única animación con significado acá.
 export function HowItWorks() {
   const { steps } = useLandingContent()
   const t = COPY[useContainer().locale]
 
   return (
-    <section id="como-funciona" className="border-t border-border bg-muted/30">
-      <div className="mx-auto max-w-6xl px-5 py-20 md:py-24">
-        <Reveal className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary">
-            {t.eyebrow}
-          </p>
-          <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-            {t.heading}
-          </h2>
-        </Reveal>
+    <section id="como-funciona" className="mx-auto max-w-6xl px-5 py-28 md:py-36">
+      <SectionHeading eyebrow={t.eyebrow} heading={t.heading} />
 
-        <ol className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {steps.map((step, i) => (
-            <Reveal key={step.id} style={{ transitionDelay: `${i * 80}ms` }}>
-              <li className="flex h-full flex-col rounded-2xl border border-border bg-card p-6">
-                <span className="font-display text-3xl font-bold tabular-nums text-primary/25">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <h3 className="mt-3 font-semibold">{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {step.description}
-                </p>
-              </li>
-            </Reveal>
-          ))}
-        </ol>
-      </div>
+      <Stagger as="ol" className="mt-20 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-5">
+        {steps.map((step, i) => (
+          <li key={step.id}>
+            <span className="font-display text-sm font-bold tabular-nums text-primary">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <h3 className="mt-4 font-semibold tracking-tight">{step.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              {step.description}
+            </p>
+          </li>
+        ))}
+      </Stagger>
     </section>
   )
 }

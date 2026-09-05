@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { Check } from "lucide-react"
 
-import { Reveal } from "@/presentation/components/ui/reveal"
+import { Reveal, Stagger } from "@/presentation/components/ui/reveal"
 import { useContainer } from "@/presentation/providers/container-provider"
 import type { Locale } from "@/domain/value-objects/region"
 import { cn } from "@/presentation/lib/cn"
@@ -17,7 +17,7 @@ const COPY = {
     },
     row2: {
       eyebrow: "Decisiones",
-      title: "Preguntale a tu negocio, en español",
+      title: "Preguntale a tu negocio",
       description:
         "El copiloto responde con datos reales de tu local: ventas, márgenes, stock y horarios. Sin armar reportes ni pelearte con planillas.",
       bullets: ["Respuestas en lenguaje natural", "Reportes en pesos y en vivo", "Sugerencias accionables"],
@@ -51,7 +51,7 @@ const COPY = {
     },
     row2: {
       eyebrow: "Decisions",
-      title: "Ask your business, in plain English",
+      title: "Ask your business",
       description:
         "The copilot answers with your real data: sales, margins, stock, and hours. No reports to build, no spreadsheets to fight.",
       bullets: ["Answers in plain language", "Live reports in dollars", "Actionable suggestions"],
@@ -82,7 +82,7 @@ export function Showcase() {
   const t = COPY[locale]
 
   return (
-    <section className="mx-auto flex max-w-6xl flex-col gap-20 px-5 py-20 md:gap-28 md:py-24">
+    <section className="mx-auto flex max-w-6xl flex-col gap-28 px-5 py-28 md:gap-40 md:py-36">
       <ShowcaseRow
         eyebrow={t.row1.eyebrow}
         title={t.row1.title}
@@ -120,26 +120,28 @@ function ShowcaseRow({
   return (
     <div
       className={cn(
-        "flex flex-col gap-10 lg:flex-row lg:items-center lg:gap-16",
+        "flex flex-col gap-12 lg:flex-row lg:items-start lg:gap-20",
         reverse && "lg:flex-row-reverse",
       )}
     >
-      <Reveal className="flex-1">
-        <p className="text-sm font-semibold uppercase tracking-wider text-primary">{eyebrow}</p>
-        <h3 className="mt-3 font-display text-2xl font-bold tracking-tight text-balance sm:text-3xl">
+      <Reveal className="flex-1 lg:py-16">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{eyebrow}</p>
+        <h3 className="mt-4 font-display text-3xl font-bold leading-[1.08] tracking-tight text-balance sm:text-4xl">
           {title}
         </h3>
-        <p className="mt-4 text-muted-foreground">{description}</p>
-        <ul className="mt-6 flex flex-col gap-2.5">
+        <p className="mt-5 text-lg leading-relaxed text-muted-foreground">{description}</p>
+        <Stagger as="ul" className="mt-8 flex flex-col gap-3.5">
           {bullets.map((bullet) => (
-            <li key={bullet} className="flex items-center gap-2.5 text-sm">
+            <li key={bullet} className="flex items-center gap-3 text-[0.95rem]">
               <Check className="size-4 shrink-0 text-primary" />
               {bullet}
             </li>
           ))}
-        </ul>
+        </Stagger>
       </Reveal>
-      <Reveal className="flex-1" style={{ transitionDelay: "100ms" }}>
+      {/* El visual queda fijo mientras el texto pasa al lado. Solo en escritorio:
+          en móvil las columnas se apilan y no hay recorrido que acompañar. */}
+      <Reveal anim="scale" delay={120} className="flex-1 lg:sticky lg:top-28">
         {visual}
       </Reveal>
     </div>
@@ -149,7 +151,7 @@ function ShowcaseRow({
 function OrderVisual({ locale }: { locale: Locale }) {
   const { order } = COPY[locale]
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-xl shadow-primary/5">
+    <div className="rounded-2xl border border-border/70 bg-card p-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs text-muted-foreground">{order.table}</p>
@@ -159,7 +161,7 @@ function OrderVisual({ locale }: { locale: Locale }) {
           04:12
         </span>
       </div>
-      <ul className="mt-4 flex flex-col gap-2">
+      <Stagger as="ul" className="mt-5 flex flex-col gap-2">
         {order.items.map((item) => (
           <li
             key={item.name}
@@ -174,7 +176,7 @@ function OrderVisual({ locale }: { locale: Locale }) {
             <span className="text-xs text-muted-foreground">{item.station}</span>
           </li>
         ))}
-      </ul>
+      </Stagger>
     </div>
   )
 }
@@ -182,7 +184,7 @@ function OrderVisual({ locale }: { locale: Locale }) {
 function CopilotVisual({ locale }: { locale: Locale }) {
   const { copilot } = COPY[locale]
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-xl shadow-primary/5">
+    <div className="rounded-2xl border border-border/70 bg-card p-6">
       <div className="grid grid-cols-3 gap-3">
         {copilot.kpis.map((kpi) => (
           <div key={kpi.l} className="rounded-xl bg-muted px-3 py-3">

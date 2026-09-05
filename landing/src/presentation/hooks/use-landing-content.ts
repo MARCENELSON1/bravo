@@ -3,7 +3,7 @@ import { useEffect, useState } from "react"
 import type { LandingContent } from "@/application/use-cases/get-landing-content"
 import { useContainer } from "@/presentation/providers/container-provider"
 
-const EMPTY: LandingContent = { features: [], steps: [], integrations: [], faqs: [] }
+const EMPTY: LandingContent = { features: [], steps: [] }
 
 // Puente entre el caso de uso GetLandingContent y React.
 export function useLandingContent() {

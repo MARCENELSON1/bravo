@@ -2,9 +2,7 @@ import { useState } from "react"
 import { Menu, X } from "lucide-react"
 
 import { useAuthLinks } from "@/presentation/hooks/use-auth-links"
-import { WellnodMark } from "@/presentation/components/brand/wellnod-mark"
 import { buttonVariants } from "@/presentation/components/ui/button"
-import { ThemeToggle } from "@/presentation/components/ui/theme-toggle"
 import { useContainer } from "@/presentation/providers/container-provider"
 import type { Locale } from "@/domain/value-objects/region"
 import { cn } from "@/presentation/lib/cn"
@@ -23,7 +21,6 @@ const COPY: Record<Locale, {
       { href: "#producto", label: "Producto" },
       { href: "#como-funciona", label: "Cómo funciona" },
       { href: "#planes", label: "Planes" },
-      { href: "#preguntas", label: "Preguntas" },
     ],
     login: "Iniciar sesión",
     register: "Empezá gratis",
@@ -36,7 +33,6 @@ const COPY: Record<Locale, {
       { href: "#producto", label: "Product" },
       { href: "#como-funciona", label: "How it works" },
       { href: "#planes", label: "Plans" },
-      { href: "#preguntas", label: "FAQ" },
     ],
     login: "Log in",
     register: "Start free trial",
@@ -46,25 +42,27 @@ const COPY: Record<Locale, {
   },
 }
 
-// Navbar integrada: barra a lo ancho pegada al borde superior, con borde inferior.
-// Logo a la izquierda, la navegación centrada y las acciones a la derecha.
+// Navbar integrada: logo a la izquierda, navegación centrada y acciones a la
+// derecha, con el mismo vidrio que los paneles del software. NO reacciona al
+// scroll: mismo alto y mismo fondo, siempre.
+//
+// Hubo tres intentos de que reaccionara —achicarse, cambiar de fondo, aparecer y
+// desaparecer— y los tres se veían como un salto. Es sticky y está en el flujo:
+// cualquier cambio suyo corre el contenido de abajo, o fuerza una capa de
+// composición nueva a mitad de scroll. La estabilidad vale más que el efecto.
 export function Navbar() {
   const { login, register } = useAuthLinks()
   const t = COPY[useContainer().locale]
   const [open, setOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
-        {/* Logo con la misma proporción/posición que el software (hélix h-9 +
-            título text-2xl, kerning pegado). */}
+    <header className="sticky top-0 z-50 border-b border-black/10 bg-white/60 backdrop-blur-2xl dark:border-white/10 dark:bg-black/30">
+      <div className="relative mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+        {/* Solo el wordmark, igual que el software y que el mockup del hero. */}
         <a href="#top" className="shrink-0" aria-label={t.home}>
-          <span className="inline-flex items-center gap-2.5 text-foreground">
-            <WellnodMark className="h-9 w-auto" />
-            <span className="font-brand translate-y-0.5 text-2xl leading-none tracking-tight">
-              <span className="font-bold">Well</span>
-              <span className="-ml-[2px] font-light text-foreground/55">nod</span>
-            </span>
+          <span className="font-brand block translate-y-0.5 text-xl leading-none tracking-tight text-foreground">
+            <span className="font-bold">Well</span>
+            <span className="-ml-[2px] font-light text-foreground/55">nod</span>
           </span>
         </a>
 
@@ -74,7 +72,7 @@ export function Navbar() {
             <a
               key={link.href}
               href={link.href}
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
             >
               {link.label}
             </a>
@@ -83,7 +81,6 @@ export function Navbar() {
 
         {/* Acciones (desktop) */}
         <div className="hidden items-center gap-1.5 md:flex">
-          <ThemeToggle />
           <a href={login} className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
             {t.login}
           </a>
@@ -94,7 +91,6 @@ export function Navbar() {
 
         {/* Acciones (móvil) */}
         <div className="flex items-center gap-2 md:hidden">
-          <ThemeToggle />
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -109,7 +105,7 @@ export function Navbar() {
 
       {/* Menú móvil (integrado, a lo ancho) */}
       {open ? (
-        <div className="border-t border-border bg-background/95 backdrop-blur-xl md:hidden">
+        <div className="border-t border-black/10 bg-white/60 backdrop-blur-2xl md:hidden dark:border-white/10 dark:bg-black/30">
           <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
             <nav className="flex flex-col gap-1">
               {t.links.map((link) => (

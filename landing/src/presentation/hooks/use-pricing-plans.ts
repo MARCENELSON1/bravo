@@ -19,8 +19,9 @@ export function usePricingPlans() {
           setLoading(false)
         }
       })
-      // Si la API de planes (INTL) no responde, corta el skeleton en vez de dejarlo
-      // girando para siempre. AR usa datos estáticos y nunca falla.
+      // Si el catálogo no responde, corta el skeleton en vez de dejarlo girando
+      // para siempre. Las DOS regiones leen del backend, así que las dos pueden
+      // fallar; en desarrollo el repositorio devuelve planes de respaldo.
       .catch(() => {
         if (alive) setLoading(false)
       })

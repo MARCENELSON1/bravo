@@ -15,15 +15,14 @@ import {
   Users,
 } from "lucide-react"
 
-import { WellnodMark } from "@/presentation/components/brand/wellnod-mark"
 import { useContainer } from "@/presentation/providers/container-provider"
 import type { Locale } from "@/domain/value-objects/region"
 import { cn } from "@/presentation/lib/cn"
 
 // ── Localización ──────────────────────────────────────────────────────────────
 // Todo el texto visible del hero interactivo vive acá, por locale. ES = paridad
-// (idéntico a lo shippeado en AR). EN = transcreación US: ARCA/AFIP → sales tax,
-// MercadoPago → Stripe/cards, Copiloto en español → Copilot in English, pesos → USD.
+// (idéntico a lo shippeado en AR). EN = transcreación US: ARCA → sales tax,
+// MercadoPago → Stripe/cards, pesos → USD.
 type Tone = "green" | "amber" | "red" | "muted"
 type Col = { h: string; right?: boolean }
 type Kpi = { l: string; v: string }
@@ -606,10 +605,6 @@ export function Hero() {
       {/* Pantalla interactiva de Wellnod */}
       <div className="hero-screen relative mx-auto mt-8 max-w-7xl px-4" style={{ animationDelay: "300ms" }}>
         <AppMockup locale={locale} />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 -bottom-px h-28 bg-gradient-to-b from-transparent to-background"
-        />
       </div>
     </section>
   )
@@ -716,7 +711,7 @@ function AppMockup({ locale }: { locale: Locale }) {
     // colores que la app real), sin importar el tema de la landing.
     <div
       ref={rootRef}
-      className="dark relative overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10"
+      className="mockup-fade dark relative overflow-hidden rounded-2xl bg-card shadow-2xl shadow-primary/10"
     >
       {/* Barra del navegador */}
       <div className="flex items-center gap-2 border-b border-border bg-card px-4 py-3">
@@ -755,20 +750,17 @@ function AppMockup({ locale }: { locale: Locale }) {
             (mismo patrón que el shell real de la app). */}
         <aside
           className={cn(
-            "z-50 w-52 flex-col overflow-hidden rounded-2xl border border-black/10 bg-white/60 backdrop-blur-2xl transition-transform duration-200 dark:border-white/10 dark:bg-black/30",
+            "z-50 w-52 flex-col overflow-hidden rounded-2xl bg-white/60 backdrop-blur-2xl transition-transform duration-200 dark:bg-black/30",
             "absolute inset-y-0 left-0 flex sm:static",
             drawerOpen ? "translate-x-0 shadow-2xl" : "-translate-x-[120%] sm:translate-x-0"
           )}
         >
-          {/* Logo con la misma proporción que la sidebar real del software
-              (hélix h-9 + título text-2xl, kerning pegado). */}
+          {/* Solo el wordmark, igual que la sidebar real del software. La escala
+              es la del mockup (text-2xl contra el text-3xl de la app). */}
           <div className="flex h-14 shrink-0 items-center px-4">
-            <span className="inline-flex items-center gap-2.5 text-foreground">
-              <WellnodMark className="h-9 w-auto" />
-              <span className="font-brand translate-y-0.5 text-2xl leading-none tracking-tight">
-                <span className="font-bold">Well</span>
-                <span className="-ml-[2px] font-light text-foreground/55">nod</span>
-              </span>
+            <span className="font-brand translate-y-0.5 text-2xl leading-none tracking-tight text-foreground">
+              <span className="font-bold">Well</span>
+              <span className="-ml-[2px] font-light text-foreground/55">nod</span>
             </span>
           </div>
           {/* La lista se corta abajo con un fundido: sugiere que hay más, pero no scrollea */}
@@ -821,7 +813,7 @@ function AppMockup({ locale }: { locale: Locale }) {
         </aside>
 
         {/* Contenido */}
-        <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-black/10 bg-white/60 backdrop-blur-2xl dark:border-white/10 dark:bg-black/30">
+        <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-white/60 backdrop-blur-2xl dark:bg-black/30">
           {/* Topbar */}
           <header className="flex h-14 shrink-0 items-center gap-3 border-b border-black/10 px-5 dark:border-white/10">
             <button
