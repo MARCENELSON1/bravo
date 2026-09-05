@@ -33,6 +33,13 @@ Order applyQty(Order o, String itemId, int qty) {
   return o.copyWith(items: items, totalAmount: o.totalAmount + delta);
 }
 
+Order applyNote(Order o, String itemId, String? note) {
+  final items = o.items
+      .map((i) => i.id == itemId && i.status.isPending ? i.copyWith(note: note) : i)
+      .toList();
+  return o.copyWith(items: items);
+}
+
 Order applyRemove(Order o, String itemId) {
   final delta = o.items
       .where((i) => i.id == itemId && i.status.isPending)

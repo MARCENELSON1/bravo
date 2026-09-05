@@ -100,6 +100,23 @@ class OrderController extends AutoDisposeFamilyAsyncNotifier<Order, String> {
     });
   }
 
+  Future<void> setNote(String itemId, String? note) async {
+    state = AsyncData(applyNote(_current, itemId, note));
+    await _serialized(() async {
+      try {
+        state = AsyncData(await _repo.setNote(arg, itemId, note));
+      } on ApiError catch (e) {
+        if (e.code == 'network_error') {
+          await _queue.enqueue(
+              OrderOp.setNote(orderId: arg, itemId: itemId, note: note));
+        } else {
+          state = AsyncData(await _repo.get(arg));
+          rethrow;
+        }
+      }
+    });
+  }
+
   Future<void> removeItem(String itemId) async {
     state = AsyncData(applyRemove(_current, itemId));
     await _serialized(() async {

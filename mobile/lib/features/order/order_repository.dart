@@ -57,6 +57,20 @@ class OrderRepository {
     }
   }
 
+  /// Nota de cocina de una línea PENDING ("cómo se quiere el plato").
+  /// null / vacío la borra. Una vez marchada, el backend la congela (409).
+  Future<Order> setNote(String orderId, String itemId, String? note) async {
+    try {
+      final res = await _dio.patch<dynamic>(
+        '/orders/$orderId/items/$itemId/note',
+        data: {'note': note},
+      );
+      return await _order(res, orderId);
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
   Future<Order> setQuantity(String orderId, String itemId, int quantity) async {
     try {
       final res = await _dio.patch<dynamic>(

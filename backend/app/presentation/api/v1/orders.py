@@ -19,6 +19,7 @@ from app.application.order.use_cases import (
     RemoveOrderItem,
     ReopenOrder,
     SendOrder,
+    SetItemNote,
     SetItemQuantity,
     TransferOrder,
 )
@@ -41,6 +42,7 @@ from app.presentation.schemas.orders import (
     OrderItemResponse,
     OrderResponse,
     SelectedOptionResponse,
+    SetItemNoteRequest,
     SetItemQuantityRequest,
     TaxQuoteResponse,
     TransferOrderRequest,
@@ -246,6 +248,23 @@ async def set_item_quantity(
         order_id=order_id,
         item_id=item_id,
         quantity=body.quantity,
+    )
+    return order_to_response(order)
+
+
+@router.patch("/{order_id}/items/{item_id}/note", response_model=OrderResponse)
+@inject
+async def set_item_note(
+    order_id: str,
+    item_id: str,
+    body: SetItemNoteRequest,
+    identity: AccessClaims = Depends(require_roles(*_FLOOR_ROLES)),
+    use_case: SetItemNote = Depends(Provide[Container.set_item_note]),
+) -> OrderResponse:
+    """How the dish is wanted (kitchen note) — only while the line is PENDING."""
+    note = (body.note or "").strip() or None
+    order = await use_case.execute(
+        tenant_id=identity.tenant_id, order_id=order_id, item_id=item_id, note=note
     )
     return order_to_response(order)
 

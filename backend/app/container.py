@@ -131,6 +131,7 @@ from app.application.order.use_cases import (
     RemoveOrderItem,
     ReopenOrder,
     SendOrder,
+    SetItemNote,
     SetItemQuantity,
     TransferOrder,
 )
@@ -814,6 +815,9 @@ class Container(containers.DeclarativeContainer):
     )
     set_item_quantity = providers.Factory(
         SetItemQuantity, orders=order_repository, tenant_context=tenant_context
+    )
+    set_item_note = providers.Factory(
+        SetItemNote, orders=order_repository, tenant_context=tenant_context
     )
     send_order = providers.Factory(
         SendOrder,

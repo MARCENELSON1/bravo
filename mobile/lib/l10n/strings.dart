@@ -128,6 +128,9 @@ class Strings {
   String addQty(int n) => _en ? 'Add ×$n' : 'Agregar ×$n';
   String ticketItems(int n) =>
       _en ? (n == 1 ? '1 item' : '$n items') : (n == 1 ? '1 ítem' : '$n ítems');
+  String get captureHint => _en
+      ? 'Tap a product to add it · hold for quantity and note'
+      : 'Tocá un producto para sumarlo · mantené para cantidad y nota';
   String get captureRemove => _en ? 'Remove' : 'Quitar';
   String get captureSave => _en ? 'Save' : 'Guardar';
   String get stationBar => _en ? 'Bar' : 'Barra';

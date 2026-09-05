@@ -1,6 +1,6 @@
 /// Una operación de comanda pendiente de sincronizar (modo contingencia).
 /// Todas llevan los UUIDs de cliente → su replay contra el backend es idempotente.
-enum OrderOpType { addItem, setQty, removeItem, send, transfer, merge }
+enum OrderOpType { addItem, setQty, setNote, removeItem, send, transfer, merge }
 
 class OrderOp {
   const OrderOp({
@@ -38,6 +38,14 @@ class OrderOp {
         quantity: quantity,
         note: note,
       );
+
+  factory OrderOp.setNote({
+    required String orderId,
+    required String itemId,
+    String? note,
+  }) =>
+      OrderOp(
+          type: OrderOpType.setNote, orderId: orderId, itemId: itemId, note: note);
 
   factory OrderOp.setQty({
     required String orderId,

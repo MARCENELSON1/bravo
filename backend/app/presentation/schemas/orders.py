@@ -35,6 +35,11 @@ class SetItemQuantityRequest(BaseModel):
     quantity: int = Field(ge=1)
 
 
+class SetItemNoteRequest(BaseModel):
+    # None / empty clears the note.
+    note: str | None = Field(default=None, max_length=280)
+
+
 class TransferOrderRequest(BaseModel):
     table_id: str
 

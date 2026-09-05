@@ -210,6 +210,27 @@ class SetItemQuantity:
         return order
 
 
+class SetItemNote:
+    """Set (or clear) the kitchen note of a line item while it is still
+    PENDING — "how the dish is wanted" (no salt, well done). Once marched the
+    note is frozen: the kitchen already read it."""
+
+    def __init__(self, orders: OrderRepository, tenant_context: TenantContext) -> None:
+        self._orders = orders
+        self._tenant_context = tenant_context
+
+    async def execute(
+        self, *, tenant_id: str, order_id: str, item_id: str, note: str | None
+    ) -> Order:
+        self._tenant_context.set(tenant_id)
+        order = await self._orders.get_by_id(tenant_id, order_id)
+        if order is None:
+            raise OrderNotFound()
+        order.set_item_note(item_id, note)
+        await self._orders.save(order)
+        return order
+
+
 class AddOrderItemsBatch:
     """Add several line items (and optionally send) in a single transaction.
 

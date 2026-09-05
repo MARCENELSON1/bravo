@@ -167,6 +167,15 @@ class _OrderPageState extends ConsumerState<OrderPage> {
                 ),
               ),
             ),
+            if (items.isEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+                child: Text(
+                  s.captureHint,
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ),
             if (_ticketOpen && items.isNotEmpty)
               ConstrainedBox(
                 constraints: BoxConstraints(
@@ -258,18 +267,22 @@ class _OrderPageState extends ConsumerState<OrderPage> {
     return null;
   }
 
-  /// Tap en una línea pendiente: cantidad / quitar (solo antes de marchar).
+  /// Tap en una línea pendiente: cantidad + nota ("cómo se quiere el plato")
+  /// + quitar. Solo antes de marchar: después la cocina ya la leyó.
   Future<void> _editLine(OrderItem it) async {
     final s = context.s;
     var qty = it.quantity;
+    final noteCtrl = TextEditingController(text: it.note ?? '');
     final result = await showModalBottomSheet<String>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheet) {
           final theme = Theme.of(ctx);
           return Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            padding: EdgeInsets.fromLTRB(
+                20, 0, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -277,10 +290,6 @@ class _OrderPageState extends ConsumerState<OrderPage> {
                 Text(it.name,
                     style: theme.textTheme.titleLarge
                         ?.copyWith(fontWeight: FontWeight.w700)),
-                if (it.note != null && it.note!.isNotEmpty)
-                  Text(it.note!,
-                      style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant)),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -303,6 +312,15 @@ class _OrderPageState extends ConsumerState<OrderPage> {
                       onPressed: () => setSheet(() => qty++),
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: noteCtrl,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(
+                    hintText: s.captureNoteHint,
+                    prefixIcon: const Icon(Icons.edit_note_outlined),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -329,9 +347,21 @@ class _OrderPageState extends ConsumerState<OrderPage> {
         },
       ),
     );
+    final noteText = noteCtrl.text.trim();
+    noteCtrl.dispose();
     if (!mounted || result == null) return;
     if (result == 'remove') return _remove(it);
     if (qty != it.quantity) await _setQty(it, qty);
+    final newNote = noteText.isEmpty ? null : noteText;
+    if (newNote != it.note) await _setNote(it, newNote);
+  }
+
+  Future<void> _setNote(OrderItem it, String? note) async {
+    try {
+      await _ctrl.setNote(it.id, note);
+    } on ApiError catch (e) {
+      _toast(e.message);
+    }
   }
 
   // --- Barra de acción fija (zona del pulgar) ---

@@ -81,6 +81,8 @@ class SyncService {
             note: op.note);
       case OrderOpType.setQty:
         await repo.setQuantity(op.orderId, op.itemId!, op.quantity!);
+      case OrderOpType.setNote:
+        await repo.setNote(op.orderId, op.itemId!, op.note);
       case OrderOpType.removeItem:
         await repo.removeItem(op.orderId, op.itemId!);
       case OrderOpType.send:

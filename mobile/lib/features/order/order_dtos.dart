@@ -51,6 +51,8 @@ class SelectedOption {
       );
 }
 
+const _unset = Object();
+
 class OrderItem {
   const OrderItem({
     required this.id,
@@ -78,7 +80,9 @@ class OrderItem {
 
   int get lineTotal => unitPriceAmount * quantity;
 
-  OrderItem copyWith({int? quantity}) => OrderItem(
+  /// `note` acepta null para BORRAR la nota (sentinela para distinguir
+  /// "no tocar" de "limpiar").
+  OrderItem copyWith({int? quantity, Object? note = _unset}) => OrderItem(
         id: id,
         productId: productId,
         name: name,
@@ -86,7 +90,7 @@ class OrderItem {
         quantity: quantity ?? this.quantity,
         status: status,
         station: station,
-        note: note,
+        note: identical(note, _unset) ? this.note : note as String?,
         sentAt: sentAt,
         selectedOptions: selectedOptions,
       );

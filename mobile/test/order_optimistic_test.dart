@@ -65,4 +65,20 @@ void main() {
     expect(r.items, isEmpty);
     expect(r.totalAmount, 0);
   });
+
+  test('applyNote pone la nota en un ítem PENDING y la puede borrar', () {
+    final o = _order(items: [_item()], total: 100000);
+    final withNote = applyNote(o, 'i1', 'sin sal');
+    expect(withNote.items.single.note, 'sin sal');
+    expect(withNote.totalAmount, 100000); // la nota no toca el total
+    // null BORRA la nota (sentinela en copyWith: distinto de "no tocar").
+    final cleared = applyNote(withNote, 'i1', null);
+    expect(cleared.items.single.note, isNull);
+  });
+
+  test('applyNote no toca ítems ya marchados', () {
+    final o = _order(items: [_item(status: ItemStatus.sent)]);
+    final r = applyNote(o, 'i1', 'jugoso');
+    expect(r.items.single.note, isNull);
+  });
 }

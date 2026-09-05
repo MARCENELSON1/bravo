@@ -185,6 +185,26 @@ def test_set_quantity_only_pending_item() -> None:
         order.set_item_quantity(item.id, 3)
 
 
+def test_set_note_on_pending_item_and_clear() -> None:
+    order = _order()
+    item = _item()
+    order.add_item(item)
+    order.set_item_note(item.id, "sin sal, bien cocido")
+    assert order.items[0].note == "sin sal, bien cocido"
+    order.set_item_note(item.id, None)
+    assert order.items[0].note is None
+
+
+def test_set_note_only_pending_item() -> None:
+    # Once marched the kitchen already read it: the note is frozen.
+    order = _order()
+    item = _item()
+    order.add_item(item)
+    order.march(_NOW)
+    with pytest.raises(ItemNotPending):
+        order.set_item_note(item.id, "jugoso")
+
+
 def test_total_excludes_cancelled_items() -> None:
     order = _order()
     keep = _item(1000, 1)
