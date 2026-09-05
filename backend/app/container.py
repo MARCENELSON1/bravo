@@ -257,6 +257,7 @@ from app.infrastructure.copilot.sql_runner import SqlAlchemyCopilotQueryRunner
 from app.infrastructure.email.console_sender import ConsoleEmailSender
 from app.infrastructure.email.resend_sender import ResendEmailSender
 from app.infrastructure.email.smtp_sender import SmtpEmailSender
+from app.infrastructure.http.client import HttpClientProvider
 from app.infrastructure.invoicing.afip_invoicing import AfipInvoicing
 from app.infrastructure.invoicing.credentials_resolver import DbTaxCredentialsResolver
 from app.infrastructure.invoicing.fake_invoicing import FakeInvoicing
@@ -425,7 +426,21 @@ class Container(containers.DeclarativeContainer):
     wiring_config = containers.WiringConfiguration(packages=["app.presentation"])
 
     config = providers.Singleton(Settings)
-    db = providers.Singleton(Database, url=config.provided.database_url)
+    db = providers.Singleton(
+        Database,
+        url=config.provided.database_url,
+        pool_size=config.provided.db_pool_size,
+        max_overflow=config.provided.db_max_overflow,
+        pool_timeout=config.provided.db_pool_timeout,
+        pool_recycle=config.provided.db_pool_recycle,
+    )
+
+    # Pool de conexiones salientes compartido por todos los adapters HTTP: se
+    # comparte el TRANSPORT (que es el dueño del pool TCP/TLS), no el cliente,
+    # así cada adapter conserva su base_url y sus credenciales — MercadoPago
+    # autentica por tenant y un cliente compartido podría filtrar el header de
+    # un tenant al request de otro.
+    http_pool = providers.Singleton(HttpClientProvider)
 
     # --- external services (singletons) ---
     password_hasher = providers.Singleton(Argon2Hasher)
@@ -455,6 +470,7 @@ class Container(containers.DeclarativeContainer):
             ResendEmailSender,
             api_key=config.provided.resend_api_key,
             from_email=config.provided.from_email,
+            transport=http_pool.provided.transport.call(),
         ),
     )
     # Push (Fase 4): none = no-op (default, seguro); fcm = envío real por FCM.
@@ -469,6 +485,7 @@ class Container(containers.DeclarativeContainer):
             device_tokens=device_token_repository,
             credentials_path=config.provided.fcm_credentials_path,
             credentials_json=config.provided.fcm_credentials_json,
+            transport=http_pool.provided.transport.call(),
         ),
     )
     lead_gateway = providers.Selector(
@@ -478,6 +495,7 @@ class Container(containers.DeclarativeContainer):
             TwentyLeadGateway,
             base_url=config.provided.twenty_base_url,
             api_key=config.provided.twenty_api_key,
+            transport=http_pool.provided.transport.call(),
         ),
     )
     submit_lead = providers.Factory(SubmitLead, gateway=lead_gateway)
@@ -1040,11 +1058,13 @@ class Container(containers.DeclarativeContainer):
         StripeBillingGateway,
         api_key=config.provided.stripe_api_key,
         webhook_secret=config.provided.stripe_webhook_secret,
+        transport=http_pool.provided.transport.call(),
     )
     mercadopago_billing_gateway = providers.Singleton(
         MercadoPagoPreapprovalGateway,
         access_token=config.provided.mp_billing_access_token,
         webhook_secret=config.provided.mp_billing_webhook_secret,
+        transport=http_pool.provided.transport.call(),
     )
     billing_gateway_resolver = providers.Singleton(
         RailBillingGatewayResolver,
@@ -1154,6 +1174,7 @@ class Container(containers.DeclarativeContainer):
         MercadoPagoOAuthClient,
         client_id=config.provided.mp_client_id,
         client_secret=config.provided.mp_client_secret,
+        transport=http_pool.provided.transport.call(),
     )
     payment_credentials_resolver = providers.Singleton(
         DbPaymentCredentialsResolver,
@@ -1172,6 +1193,7 @@ class Container(containers.DeclarativeContainer):
         notification_url=config.provided.mp_notification_url,
         access_token=config.provided.mp_access_token,
         marketplace_fee=config.provided.mp_marketplace_fee,
+        transport=http_pool.provided.transport.call(),
     )
     start_mp_connection = providers.Factory(
         StartMercadoPagoConnection,
@@ -1350,6 +1372,7 @@ class Container(containers.DeclarativeContainer):
         TaxJarCalculator,
         api_token=config.provided.taxjar_api_token,
         sandbox=config.provided.taxjar_sandbox,
+        transport=http_pool.provided.transport.call(),
     )
     tax_calculator_resolver = providers.Singleton(
         EngineTaxCalculatorResolver,
@@ -1374,9 +1397,12 @@ class Container(containers.DeclarativeContainer):
         DbTaxJarReporterResolver,
         credentials=taxjar_credential_repository,
         cipher=token_cipher,
+        transport=http_pool.provided.transport.call(),
     )
     # Verifica el token contra TaxJar antes de guardarlo (que "conectado" no mienta).
-    taxjar_credential_validator = providers.Singleton(TaxJarCredentialValidator)
+    taxjar_credential_validator = providers.Singleton(
+        TaxJarCredentialValidator, transport=http_pool.provided.transport.call()
+    )
     report_pending_tax_sales = providers.Factory(
         ReportPendingTaxSales,
         ledger=tax_report_ledger,

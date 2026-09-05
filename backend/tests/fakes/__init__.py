@@ -204,11 +204,22 @@ class FakeTenantContext(TenantContext):
 
 
 class FakePasswordHasher(PasswordHasher):
-    def hash(self, password: str) -> str:
+    """Deterministic stand-in for Argon2.
+
+    The port is async (the real adapter offloads to a thread), but the mapping
+    itself is pure, so it is also exposed synchronously as ``hash_value`` for
+    seeding fixtures and writing assertions without an await.
+    """
+
+    @staticmethod
+    def hash_value(password: str) -> str:
         return f"hashed:{password}"
 
-    def verify(self, password: str, password_hash: str) -> bool:
-        return password_hash == f"hashed:{password}"
+    async def hash(self, password: str) -> str:
+        return self.hash_value(password)
+
+    async def verify(self, password: str, password_hash: str) -> bool:
+        return password_hash == self.hash_value(password)
 
 
 class FakeTokenService(TokenService):
@@ -411,7 +422,7 @@ class Harness:
             tenant_id=tenant.id,
             email=Email(email),
             role=role,
-            password_hash=self.hasher.hash(password),
+            password_hash=self.hasher.hash_value(password),
             email_verified=email_verified,
             active=active,
         )

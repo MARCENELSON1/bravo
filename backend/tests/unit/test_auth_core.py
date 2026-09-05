@@ -163,7 +163,7 @@ async def test_change_password_happy_revokes_sessions():
     await h.change_password().execute(
         tenant_id=tenant.id, user_id=user.id, current_password="old", new_password="new"
     )
-    assert h.users.by_id[user.id].password_hash == h.hasher.hash("new")
+    assert h.users.by_id[user.id].password_hash == h.hasher.hash_value("new")
     rec = await h.refresh_tokens.get_by_hash(h.tokens.hash_token(tokens.refresh_token))
     assert rec is not None and rec.revoked
     assert "password_changed" in h.audit.events()

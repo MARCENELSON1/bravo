@@ -28,6 +28,17 @@ class Settings(BaseSettings):
     # Postgres Row Level Security (RLS) is actually enforced (FORCE RLS).
     database_url: str = _DEFAULT_DATABASE_URL
 
+    # Connection pool, sized on purpose rather than left to the driver default
+    # (5 + 10). A process can hold at most POOL_SIZE + MAX_OVERFLOW connections,
+    # so `(pool_size + max_overflow) × workers × replicas` must stay under the
+    # server's max_connections — revisit both together when scaling out.
+    # POOL_TIMEOUT is deliberately short: under a stampede it is better to fail
+    # a request quickly and visibly than to hang it for half a minute.
+    db_pool_size: int = 10
+    db_max_overflow: int = 20
+    db_pool_timeout: int = 10
+    db_pool_recycle: int = 1800  # reconnect before an idle proxy drops the socket
+
     # JWT
     jwt_secret: str = _DEFAULT_JWT_SECRET
     jwt_alg: Literal["HS256", "HS384", "HS512"] = "HS256"

@@ -7,6 +7,8 @@ rows failed (visible, retryable) instead of filing under the wrong account."""
 
 from __future__ import annotations
 
+import httpx
+
 from app.domain.shared.ports import TokenCipher
 from app.domain.tax.credentials_repository import TaxJarCredentialRepository
 from app.domain.tax.ports import TaxReporter, TaxReporterResolver
@@ -15,14 +17,23 @@ from app.infrastructure.tax.taxjar_reporter import TaxJarReporter
 
 class DbTaxJarReporterResolver(TaxReporterResolver):
     def __init__(
-        self, credentials: TaxJarCredentialRepository, cipher: TokenCipher
+        self,
+        credentials: TaxJarCredentialRepository,
+        cipher: TokenCipher,
+        *,
+        transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self._credentials = credentials
         self._cipher = cipher
+        # Reporters are built per tenant; handing them the shared transport
+        # keeps them on the process-wide connection pool.
+        self._transport = transport
 
     async def reporter_for(self, tenant_id: str) -> TaxReporter | None:
         credential = await self._credentials.get_by_tenant(tenant_id)
         if credential is None:
             return None
         token = self._cipher.decrypt(credential.api_token)
-        return TaxJarReporter(token, sandbox=credential.sandbox)
+        return TaxJarReporter(
+            token, sandbox=credential.sandbox, transport=self._transport
+        )

@@ -38,11 +38,13 @@ class ChangePassword:
         user = await self._users.get_by_id(tenant_id, user_id)
         if user is None:
             raise UserNotFound()
-        if not user.password_hash or not self._hasher.verify(current_password, user.password_hash):
+        if not user.password_hash or not await self._hasher.verify(
+            current_password, user.password_hash
+        ):
             raise InvalidCredentials()
         # Defence in depth: a live access token should belong to an eligible user.
         user.can_login(utcnow())
-        user.set_password(self._hasher.hash(new_password))
+        user.set_password(await self._hasher.hash(new_password))
         await self._users.save(user)
         await self._refresh_tokens.revoke_all_for_user(tenant_id, user_id)
         await self._audit.record(

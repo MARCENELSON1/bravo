@@ -62,7 +62,9 @@ class Authenticate:
         if user.is_locked(now):
             await self._record(tenant.id, user.id, AuthEvent.LOGIN_LOCKED, None)
             raise UserLocked()
-        if not user.password_hash or not self._hasher.verify(password, user.password_hash):
+        if not user.password_hash or not await self._hasher.verify(
+            password, user.password_hash
+        ):
             user.register_failed_attempt(now, self._max_login_attempts, self._lockout_minutes)
             await self._users.save(user)
             await self._record(tenant.id, user.id, AuthEvent.LOGIN_FAILED, "bad_password")

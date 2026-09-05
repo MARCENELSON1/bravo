@@ -46,7 +46,7 @@ class AcceptInvitation:
         user = await self._users.get_by_id(tenant_id, record.user_id)
         if user is None:
             raise InvalidInvitation()
-        user.set_password(self._hasher.hash(password))
+        user.set_password(await self._hasher.hash(password))
         user.activate()
         user.mark_email_verified()
         await self._users.save(user)

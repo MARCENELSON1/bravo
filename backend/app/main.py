@@ -61,6 +61,9 @@ def create_app() -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
         await container.db().dispose()
+        # Releases the shared outbound connection pool; adapters never close it
+        # themselves, since they share it for the life of the process.
+        await container.http_pool().aclose()
 
     app = FastAPI(title="BRAVO API", version="0.1.0", lifespan=lifespan)
     app.state.container = container

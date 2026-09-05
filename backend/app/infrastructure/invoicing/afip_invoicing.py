@@ -15,8 +15,6 @@ import asyncio
 from datetime import date, datetime
 from typing import Any
 
-from zeep import Client
-
 from app.domain.invoice.entities import Invoice
 from app.domain.invoice.ports import CaeResult, ElectronicInvoicing, TaxCredentialsResolver
 from app.infrastructure.invoicing.afip_wsaa import (
@@ -25,6 +23,7 @@ from app.infrastructure.invoicing.afip_wsaa import (
     AfipWsaa,
 )
 from app.infrastructure.invoicing.wsfe_mapping import build_cae_request, cbte_tipo
+from app.infrastructure.invoicing.zeep_clients import soap_client
 
 # WSFEv1 endpoints (homologación vs producción).
 _WSFE_WSDL = {
@@ -63,7 +62,7 @@ class AfipInvoicing(ElectronicInvoicing):
     def _request_cae(
         self, invoice: Invoice, cuit: str, pto_vta: int, ticket: AccessTicket, production: bool
     ) -> CaeResult:
-        client = Client(_WSFE_WSDL[production])
+        client = soap_client(_WSFE_WSDL[production])
         auth = {"Token": ticket.token, "Sign": ticket.sign, "Cuit": int(cuit)}
         tipo = cbte_tipo(invoice.type)
 

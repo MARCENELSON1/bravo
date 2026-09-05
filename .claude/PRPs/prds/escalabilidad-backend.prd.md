@@ -147,8 +147,8 @@ El comensal de la Carta QR (su ruta ya es liviana y cacheable aparte). Los repor
 
 | # | Phase | Description | Status | Parallel | Depends | PRP Plan |
 |---|-------|-------------|--------|----------|---------|----------|
-| 1 | Ruta caliente + caché | `CachePort` + adapters (memoria/Redis), repos de catálogo cacheados con invalidación por escritura, `projection.py` por ids, batch loading de ítems (N+1), 4 índices | in-progress | - | - | - |
-| 2 | Event loop + pool | Argon2 a `to_thread`, pool dimensionado por env, `httpx.AsyncClient` reutilizado por adapter, client zeep de AFIP cacheado | pending | with 1 | - | - |
+| 1 | Ruta caliente + caché | `CachePort` + adapters (memoria/Redis), repos de catálogo cacheados con invalidación por escritura, `projection.py` por ids, batch loading de ítems (N+1), 4 índices | complete | - | - | (commit `e50a87c`) |
+| 2 | Event loop + pool | Argon2 a `to_thread`, pool dimensionado por env, `httpx.AsyncClient` reutilizado por adapter, client zeep de AFIP cacheado | in-progress | - | - | `.claude/PRPs/plans/escalabilidad-fase-2-runtime.plan.md` |
 | 3 | Escalado horizontal | Bus compartido (Redis pub/sub o Postgres LISTEN/NOTIFY) + rate limiter compartido + colas SSE con `maxsize`; recién ahí, `--workers`/réplicas | pending | - | 1, 2 | - |
 | 4 | Outbox del camino crítico | Push y efectos de venta (stock, proyección) fuera del request, siguiendo el patrón de `tax_outbox` | pending | with 3 | 1 | - |
 | 5 | Higiene de lectura | Paginar o eliminar `GET /orders`, `FinanceProductDetail` agregando en SQL, revisar `refetchInterval` del frontend | pending | with 3 | - | - |
