@@ -15,7 +15,12 @@ from app.infrastructure.persistence.mappers import (
 from app.infrastructure.persistence.models import OrderItemORM, OrderORM
 
 # The KDS shows orders that have at least one item still being made.
-_KDS_ITEM_STATUSES = (ItemStatus.SENT.value, ItemStatus.PREPARING.value)
+# HELD también: la cocina ve el curso que viene (mise en place) aunque no lo cocine.
+_KDS_ITEM_STATUSES = (
+    ItemStatus.HELD.value,
+    ItemStatus.SENT.value,
+    ItemStatus.PREPARING.value,
+)
 _ACTIVE_STATUSES = (
     OrderStatus.OPEN.value,
     OrderStatus.SENT.value,

@@ -182,6 +182,24 @@ class OrderController extends AutoDisposeFamilyAsyncNotifier<Order, String> {
     state = AsyncData(await _repo.markServed(arg));
   });
 
+  // Cursos: gestos en mano con la mesa delante → sin cola offline (como
+  // `served`): si no hay red se avisa y se reintenta.
+  Future<void> fireNext() => _serialized(() async {
+    state = AsyncData(await _repo.fireNext(arg));
+  });
+
+  Future<void> fireAll() => _serialized(() async {
+    state = AsyncData(await _repo.fireAll(arg));
+  });
+
+  Future<void> serveCourse(Course course) => _serialized(() async {
+    state = AsyncData(await _repo.advanceCourse(arg, course, 'served'));
+  });
+
+  Future<void> setCourse(String itemId, Course course) => _serialized(() async {
+    state = AsyncData(await _repo.setCourse(arg, itemId, course));
+  });
+
   Future<void> transfer(String tableId) => _serialized(() async {
     try {
       state = AsyncData(await _repo.transfer(arg, tableId));

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
@@ -101,76 +102,125 @@ class _KdsPageState extends ConsumerState<KdsPage> {
         : (t.isWarn ? WellnodPalette.warn : scheme.primary);
     final overdue = t.isLate || t.isWarn;
 
-    return GlassPanel(
-      blur: false, // una comanda por ticket: sin blur por-tarjeta (perf)
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Text(
-                number != null ? s.tableLabel(number) : s.kdsUnknownTable,
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const Spacer(),
-              if (t.minutes != null) ...[
-                // Además del color, un ícono de reloj cuando se está demorando
-                // (no depender solo del color por accesibilidad).
-                if (overdue) ...[
-                  Icon(Icons.schedule, size: 15, color: accent),
-                  const SizedBox(width: 3),
+    return Opacity(
+      opacity: t.held ? 0.6 : 1, // en espera: se ve, no apura
+      child: GlassPanel(
+        blur: false, // un curso por ticket: sin blur por-tarjeta (perf)
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${number != null ? s.tableLabel(number) : s.kdsUnknownTable}'
+                    ' · ${s.courseLabel(t.course)}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (t.held)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      s.kdsOnHold,
+                      style: TextStyle(
+                        color: scheme.onSurfaceVariant,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                else if (t.minutes != null) ...[
+                  // Además del color, un ícono de reloj cuando se está demorando
+                  // (no depender solo del color por accesibilidad).
+                  if (overdue) ...[
+                    Icon(Icons.schedule, size: 15, color: accent),
+                    const SizedBox(width: 3),
+                  ],
+                  Text(
+                    '${t.minutes}′',
+                    style: TextStyle(
+                      color: accent,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ],
-                Text('${t.minutes}′',
-                    style: TextStyle(color: accent, fontWeight: FontWeight.w700)),
               ],
+            ),
+            if (t.isLate)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  s.kdsDelayed,
+                  style: TextStyle(
+                    color: scheme.error,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 8),
+            for (final it in t.items) ...[
+              Text(
+                '${it.quantity}× ${it.name}',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (it.selectedOptions.isNotEmpty)
+                Text(
+                  it.selectedOptions.map((o) => o.name).join(', '),
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+              if (it.note != null && it.note!.isNotEmpty)
+                Text(
+                  '› ${it.note}',
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+              const SizedBox(height: 4),
             ],
-          ),
-          if (t.isLate)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                s.kdsDelayed,
-                style: TextStyle(
-                    color: scheme.error, fontSize: 12, fontWeight: FontWeight.w600),
+            if (!t.held) ...[
+              const SizedBox(height: 6),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  // El curso entero: "Empezar" pone todo al fuego; "Listo" cuando
+                  // la cocina terminó TODOS los platos del tiempo.
+                  onPressed: () =>
+                      _advanceCourse(t, t.canStart ? 'preparing' : 'ready'),
+                  child: Text(t.canStart ? s.kdsStart : s.kdsReady),
+                ),
               ),
-            ),
-          const SizedBox(height: 8),
-          Text(
-            '${t.item.quantity}× ${t.item.name}',
-            style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          if (t.item.selectedOptions.isNotEmpty)
-            Text(
-              t.item.selectedOptions.map((o) => o.name).join(', '),
-              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
-            ),
-          if (t.item.note != null && t.item.note!.isNotEmpty)
-            Text('› ${t.item.note}',
-                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => _advance(
-                t,
-                t.item.status == ItemStatus.sent ? 'preparing' : 'ready',
-              ),
-              child: Text(t.item.status == ItemStatus.sent ? s.kdsStart : s.kdsReady),
-            ),
-          ),
-        ],
+            ],
+          ],
+        ),
       ),
     );
   }
 
-  Future<void> _advance(KdsTicket t, String action) async {
+  Future<void> _advanceCourse(KdsTicket t, String action) async {
     try {
+      HapticFeedback.mediumImpact();
       await ref
           .read(kdsOrdersProvider(widget.station).notifier)
-          .advance(t.order.id, t.item.id, action);
+          .advanceCourse(t.order.id, t.course, action);
     } on ApiError catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)

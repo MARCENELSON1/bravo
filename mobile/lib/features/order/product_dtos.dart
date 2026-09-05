@@ -67,6 +67,7 @@ class Product {
     this.description,
     this.availableToday = true,
     this.modifierGroups = const [],
+    this.course = 'MAIN',
   });
 
   final String id;
@@ -80,6 +81,8 @@ class Product {
   final String? description;
   final bool availableToday;
   final List<ModifierGroup> modifierGroups;
+  // Tiempo de servicio de la carta (IMMEDIATE | STARTER | MAIN | DESSERT).
+  final String course;
 
   /// Se puede pedir hoy (activo y no "86'd").
   bool get orderable => active && availableToday;
@@ -100,6 +103,7 @@ class Product {
     description: description,
     availableToday: availableToday,
     modifierGroups: groups,
+    course: course,
   );
 
   factory Product.fromJson(Map<String, dynamic> j) => Product(
@@ -113,5 +117,6 @@ class Product {
     imageUrl: j['image_url'] as String?,
     description: j['description'] as String?,
     availableToday: j['available_today'] as bool? ?? true,
+    course: (j['course'] as String?) ?? 'MAIN',
   );
 }

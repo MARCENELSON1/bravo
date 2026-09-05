@@ -20,11 +20,13 @@ from app.application.product.use_cases import (
     GetProductRotation,
     ListProducts,
     SetProductAvailability,
+    SetProductCourse,
     UpdateProductPrice,
 )
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
 from app.domain.inventory.recipe import RecipeItem
+from app.domain.order.value_objects import Course
 from app.domain.product.entities import Product
 from app.domain.product.modifiers import ModifierGroup
 from app.domain.user.value_objects import Role
@@ -51,6 +53,7 @@ from app.presentation.schemas.products import (
     ProductResponse,
     ProductRotationResponse,
     SetAvailabilityRequest,
+    SetCourseRequest,
     UpdateProductPriceRequest,
     WeekdayRotationResponse,
 )
@@ -70,6 +73,7 @@ def _product_response(p: Product) -> ProductResponse:
         image_url=p.image_url,
         description=p.description,
         available_today=p.available_today,
+        course=p.effective_course.value,
     )
 
 
@@ -115,6 +119,21 @@ async def set_product_availability(
         tenant_id=identity.tenant_id,
         product_id=product_id,
         available_today=body.available_today,
+    )
+    return _product_response(product)
+
+
+@router.put("/{product_id}/course", response_model=ProductResponse)
+@inject
+async def set_product_course(
+    product_id: str,
+    body: SetCourseRequest,
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: SetProductCourse = Depends(Provide[Container.set_product_course]),
+) -> ProductResponse:
+    """Tiempo de servicio del plato (entrada / principal / postre / inmediato)."""
+    product = await use_case.execute(
+        tenant_id=identity.tenant_id, product_id=product_id, course=Course(body.course)
     )
     return _product_response(product)
 

@@ -60,6 +60,8 @@ class _OrderPageState extends ConsumerState<OrderPage> {
           PopupMenuButton<String>(
             onSelected: (v) {
               switch (v) {
+                case 'fire_all':
+                  _fireAll();
                 case 'claim':
                   _claim(s);
                 case 'move':
@@ -69,6 +71,9 @@ class _OrderPageState extends ConsumerState<OrderPage> {
               }
             },
             itemBuilder: (_) => [
+              // "Traé todo junto": solo cuando hay cursos en espera.
+              if ((async.valueOrNull?.heldCount ?? 0) > 0)
+                PopupMenuItem(value: 'fire_all', child: Text(s.fireAll)),
               PopupMenuItem(value: 'claim', child: Text(s.claimTable)),
               PopupMenuItem(value: 'move', child: Text(s.moveTable)),
               PopupMenuItem(value: 'merge', child: Text(s.mergeTable)),
@@ -121,14 +126,15 @@ class _OrderPageState extends ConsumerState<OrderPage> {
     );
   }
 
-  // --- Ticket (la comanda que se está armando) ---
+  // --- Ticket (la comanda que se está armando), agrupado por curso ---
 
   Widget _ticket(BuildContext context, Strings s, Order order) {
     final theme = Theme.of(context);
     final items = order.liveItems;
-    final kitchen = items.where((i) => i.station == Station.kitchen).toList();
-    final bar = items.where((i) => i.station == Station.bar).toList();
-    final both = kitchen.isNotEmpty && bar.isNotEmpty;
+    // Cursos presentes, en orden de servicio (bebidas → entrada → principal → postre).
+    final courses = Course.values
+        .where((c) => items.any((i) => i.course == c))
+        .toList();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -185,17 +191,28 @@ class _OrderPageState extends ConsumerState<OrderPage> {
             if (_ticketOpen && items.isNotEmpty)
               ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.34,
+                  maxHeight: MediaQuery.of(context).size.height * 0.38,
                 ),
                 child: ListView(
                   shrinkWrap: true,
                   padding: const EdgeInsets.only(bottom: 6),
                   children: [
                     const Divider(height: 1),
-                    if (both) _stationHeader(context, s.kdsKitchen),
-                    for (final it in kitchen) _ticketRow(context, s, order, it),
-                    if (both) _stationHeader(context, s.stationBar),
-                    for (final it in bar) _ticketRow(context, s, order, it),
+                    for (final c in courses) ...[
+                      _courseHeader(context, s, order, c),
+                      for (final it in items.where((i) => i.course == c))
+                        _ticketRow(context, s, order, it),
+                    ],
+                    if (order.heldCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 6, 14, 4),
+                        child: Text(
+                          s.courseHint,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -205,17 +222,86 @@ class _OrderPageState extends ConsumerState<OrderPage> {
     );
   }
 
-  Widget _stationHeader(BuildContext context, String label) {
+  /// Cabecera de un curso: nombre + estado, y la acción que le toca
+  /// ("Marchar principales" si es el próximo en espera; "Servir" si está listo).
+  Widget _courseHeader(BuildContext context, Strings s, Order order, Course c) {
     final theme = Theme.of(context);
+    final st = order.courseState(c);
+    final isNext = order.nextCourse == c;
+    final ready = st == CourseState.ready;
+    final Color accent = switch (st) {
+      CourseState.ready => WellnodPalette.warn,
+      CourseState.inKitchen => theme.colorScheme.primary,
+      CourseState.served => const Color(0xFF10B981),
+      _ => theme.colorScheme.onSurfaceVariant,
+    };
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 2),
-      child: Text(
-        label.toUpperCase(),
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-          letterSpacing: 0.8,
+      padding: const EdgeInsets.fromLTRB(14, 10, 10, 2),
+      child: Row(
+        children: [
+          Text(
+            s.courseLabel(c).toUpperCase(),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              letterSpacing: 0.8,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (st != null) ...[
+            const SizedBox(width: 8),
+            Text(
+              s.courseStateLabel(st),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: accent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          const Spacer(),
+          if (ready)
+            _courseAction(
+              context,
+              s.serveCourse(c),
+              Icons.room_service_outlined,
+              WellnodPalette.warn,
+              () => _serveCourse(c),
+            )
+          else if (isNext)
+            _courseAction(
+              context,
+              s.fireCourse(c),
+              Icons.send,
+              theme.colorScheme.primary,
+              _fireNext,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _courseAction(
+    BuildContext context,
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return ActionChip(
+      visualDensity: VisualDensity.compact,
+      avatar: Icon(icon, size: 15, color: color),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
         ),
       ),
+      side: BorderSide(color: color.withValues(alpha: 0.5)),
+      onPressed: () {
+        HapticFeedback.mediumImpact();
+        onTap();
+      },
     );
   }
 
@@ -289,6 +375,7 @@ class _OrderPageState extends ConsumerState<OrderPage> {
   Future<void> _editLine(OrderItem it) async {
     final s = context.s;
     var qty = it.quantity;
+    var course = it.course;
     final noteCtrl = TextEditingController(text: it.note ?? '');
     final result = await showModalBottomSheet<String>(
       context: context,
@@ -341,6 +428,19 @@ class _OrderPageState extends ConsumerState<OrderPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
+                // Override del curso ("la provoleta como principal").
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final c in Course.values)
+                      ChoiceChip(
+                        label: Text(s.courseLabel(c)),
+                        selected: course == c,
+                        onSelected: (_) => setSheet(() => course = c),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 TextField(
                   controller: noteCtrl,
                   textCapitalization: TextCapitalization.sentences,
@@ -381,6 +481,15 @@ class _OrderPageState extends ConsumerState<OrderPage> {
     if (qty != it.quantity) await _setQty(it, qty);
     final newNote = noteText.isEmpty ? null : noteText;
     if (newNote != it.note) await _setNote(it, newNote);
+    if (course != it.course) await _setCourse(it, course);
+  }
+
+  Future<void> _setCourse(OrderItem it, Course course) async {
+    try {
+      await _ctrl.setCourse(it.id, course);
+    } on ApiError catch (e) {
+      _toast(e.message);
+    }
   }
 
   Future<void> _setNote(OrderItem it, String? note) async {
@@ -423,14 +532,35 @@ class _OrderPageState extends ConsumerState<OrderPage> {
             ),
             const SizedBox(width: 8),
           ],
-          // Se está cargando (o no hay nada listo): marchar.
-          if (ready == 0 || pending > 0) ...[
+          // Se está cargando: marchar. Sin pendientes pero con un curso en
+          // espera: "Marchar principales". Sin nada: marchar deshabilitado.
+          if (pending > 0) ...[
             Expanded(
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
-                onPressed: pending == 0 ? null : _march,
+                onPressed: _march,
                 icon: const Icon(Icons.send),
                 label: Text(s.marchCount(pending)),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ] else if (order.nextCourse != null) ...[
+            Expanded(
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+                onPressed: _fireNext,
+                icon: const Icon(Icons.send),
+                label: Text(s.fireCourse(order.nextCourse!)),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ] else if (ready == 0) ...[
+            Expanded(
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+                onPressed: null,
+                icon: const Icon(Icons.send),
+                label: Text(s.marchCount(0)),
               ),
             ),
             const SizedBox(width: 8),
@@ -532,6 +662,38 @@ class _OrderPageState extends ConsumerState<OrderPage> {
       if (!mounted) return;
       ref.read(floorProvider.notifier).refresh();
       messenger.showSnackBar(SnackBar(content: Text(s.readyServedDone)));
+    } on ApiError catch (e) {
+      _toast(e.message);
+    }
+  }
+
+  Future<void> _fireNext() async {
+    try {
+      HapticFeedback.mediumImpact();
+      await _ctrl.fireNext();
+      if (mounted) ref.read(floorProvider.notifier).refresh();
+    } on ApiError catch (e) {
+      _toast(e.message);
+    }
+  }
+
+  Future<void> _fireAll() async {
+    try {
+      HapticFeedback.mediumImpact();
+      await _ctrl.fireAll();
+      if (mounted) ref.read(floorProvider.notifier).refresh();
+    } on ApiError catch (e) {
+      _toast(e.message);
+    }
+  }
+
+  Future<void> _serveCourse(Course c) async {
+    final done = context.s.readyServedDone;
+    try {
+      await _ctrl.serveCourse(c);
+      if (!mounted) return;
+      ref.read(floorProvider.notifier).refresh();
+      _toast(done);
     } on ApiError catch (e) {
       _toast(e.message);
     }

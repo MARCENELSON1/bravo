@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 from app.domain.order.value_objects import Station
@@ -40,10 +42,16 @@ class ProductResponse(BaseModel):
     image_url: str | None = None
     description: str | None = None
     available_today: bool = True
+    # Tiempo de servicio: IMMEDIATE | STARTER | MAIN | DESSERT.
+    course: str = "MAIN"
 
 
 class SetAvailabilityRequest(BaseModel):
     available_today: bool
+
+
+class SetCourseRequest(BaseModel):
+    course: Literal["IMMEDIATE", "STARTER", "MAIN", "DESSERT"]
 
 
 # --- Productos v2 Tanda B: precios vs inflación + histórico + rotación --------

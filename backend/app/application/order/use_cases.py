@@ -21,6 +21,8 @@ from app.domain.order.exceptions import (
 from app.domain.order.repository import OrderRepository
 from app.domain.order.value_objects import (
     CUSTOMER_WAITER_ID,
+    Course,
+    CourseState,
     ItemStatus,
     OrderSource,
     OrderStatus,
@@ -159,6 +161,7 @@ class AddOrderItem:
         note: str | None,
         item_id: str | None = None,
         option_ids: list[str] | None = None,
+        course: Course | None = None,
     ) -> Order:
         self._tenant_context.set(tenant_id)
         order = await self._orders.get_by_id(tenant_id, order_id)
@@ -190,6 +193,8 @@ class AddOrderItem:
                 quantity=quantity,
                 note=note,
                 station=product.station,
+                # Curso del plato (de la carta) salvo override por línea.
+                course=course or product.effective_course,
                 selected_options=selected,
             )
         )
@@ -310,6 +315,7 @@ class AddOrderItemsBatch:
                     quantity=line.quantity,
                     note=line.note,
                     station=product.station,
+                    course=product.effective_course,
                     selected_options=list(line.selected_options),
                 )
             )
@@ -318,7 +324,8 @@ class AddOrderItemsBatch:
         # Guard keeps the batch idempotent: a replay (no new PENDING items) must
         # not raise EmptyOrder on the already-marched order.
         if send and any(it.status is ItemStatus.PENDING for it in order.items):
-            marched = order.march(utcnow())
+            # Carta QR / batch: nadie marca el ritmo de la mesa → todo al fuego.
+            marched = order.march(utcnow(), coursing=False)
         await self._orders.save(order)
         await self._event_bus.publish(_floor_changed(order))
         for event in _kds_changed(order, {it.station for it in marched}):
@@ -352,9 +359,21 @@ def _floor_changed_table(tenant_id: str, table_id: str) -> DomainEvent:
     )
 
 
-def _order_ready(order: Order, table_number: str) -> DomainEvent:
-    """Signal the owning waiter that a whole order is ready to serve (every item
-    READY). ``waiter_id`` lets the client deliver it only to the order's owner."""
+# Concordancia del "listo/a(s)" con la etiqueta del curso.
+_READY_WORD: dict[Course, str] = {Course.MAIN: "listos", Course.IMMEDIATE: "listas"}
+
+_COURSE_LABEL_ES: dict[Course, str] = {
+    Course.IMMEDIATE: "bebidas",
+    Course.STARTER: "entrada",
+    Course.MAIN: "principales",
+    Course.DESSERT: "postre",
+}
+
+
+def _order_ready(order: Order, table_number: str, course: Course) -> DomainEvent:
+    """Signal the owning waiter that a COURSE is ready to serve (every fired plate
+    of that course READY). ``waiter_id`` lets the client deliver it only to the
+    order's owner. Additive payload: clients that ignore ``course`` keep working."""
     return DomainEvent(
         type="order.ready",
         tenant_id=order.tenant_id,
@@ -363,8 +382,24 @@ def _order_ready(order: Order, table_number: str) -> DomainEvent:
             "table_id": order.table_id,
             "table_number": table_number,
             "waiter_id": order.waiter_id or "",
+            "course": course.value,
+            "course_label": _COURSE_LABEL_ES[course],
         },
     )
+
+
+def _course_items_line(order: Order, course: Course, limit: int = 4) -> str:
+    """"1× Provoleta · 1× Rabas": lo que hay que llevar de ESE curso."""
+    live = [
+        it
+        for it in order.items
+        if it.course is course and it.status is ItemStatus.READY
+    ]
+    parts = [f"{it.quantity}× {it.name}" for it in live[:limit]]
+    line = " · ".join(parts)
+    if len(live) > limit:
+        line += f" +{len(live) - limit}"
+    return line
 
 
 def _items_line(order: Order, limit: int = 4) -> str:
@@ -379,14 +414,19 @@ def _items_line(order: Order, limit: int = 4) -> str:
 
 
 async def _notify_order_ready(
-    notifications: NotificationService, order: Order, table_number: str
+    notifications: NotificationService,
+    order: Order,
+    table_number: str,
+    course: Course,
 ) -> None:
-    """Push "Mesa N · para servir" con los ítems al mozo dueño (Fase 4), en paralelo
-    al SSE. Salta si la orden no tiene dueño real (mesa QR huérfana / sentinel)."""
+    """Push "Mesa N · entrada lista" con los platos de ese curso al mozo dueño
+    (Fase 4), en paralelo al SSE. Salta si la orden no tiene dueño real."""
     if not order.waiter_id or order.waiter_id == CUSTOMER_WAITER_ID:
         return
-    title = f"Mesa {table_number} · para servir" if table_number else "Comanda para servir"
-    body = _items_line(order) or "Tu comanda está lista."
+    what = _COURSE_LABEL_ES[course]
+    ready = _READY_WORD.get(course, "lista")
+    title = f"Mesa {table_number} · {what} {ready}" if table_number else f"Comanda · {what} {ready}"
+    body = _course_items_line(order, course) or "Tu comanda está lista."
     await notifications.notify_user(
         tenant_id=order.tenant_id,
         user_id=order.waiter_id,
@@ -397,6 +437,7 @@ async def _notify_order_ready(
                 "kind": "order.ready",
                 "order_id": order.id,
                 "table_number": table_number,
+                "course": course.value,
             },
         ),
     )
@@ -420,13 +461,21 @@ class SendOrder:
         self._event_bus = event_bus
 
     async def execute(
-        self, *, tenant_id: str, order_id: str, waiter_id: str | None = None
+        self,
+        *,
+        tenant_id: str,
+        order_id: str,
+        waiter_id: str | None = None,
+        coursing: bool = True,
     ) -> Order:
         self._tenant_context.set(tenant_id)
         order = await self._orders.get_by_id(tenant_id, order_id)
         if order is None:
             raise OrderNotFound()
-        marched = order.march(utcnow())
+        # Estaciones de TODO lo marchado (al fuego o en espera): la cocina tiene
+        # que ver el curso que viene aunque todavía no lo cocine.
+        touched = {it.station for it in order.items if it.status is ItemStatus.PENDING}
+        marched = order.march(utcnow(), coursing=coursing)
         await self._orders.save(order)
         # Confirmar = quedar dueño de la mesa huérfana (Caso B). No roba una mesa
         # que ya tiene dueño; y estampa las órdenes vivas (para el aviso "listo").
@@ -439,10 +488,139 @@ class SendOrder:
                 conflict_raises=False,
             )
             order = await self._orders.get_by_id(tenant_id, order_id) or order
-        for event in _kds_changed(order, {it.station for it in marched}):
+        del marched  # lo que se notifica es `touched` (fuego + espera)
+        for event in _kds_changed(order, touched):
             await self._event_bus.publish(event)
         await self._event_bus.publish(_floor_changed(order))
         return order
+
+
+class FireNextCourse:
+    """"Marchar principales": the waiter saw the table finish the previous
+    course → the lowest held course hits the fire."""
+
+    def __init__(
+        self, orders: OrderRepository, tenant_context: TenantContext, event_bus: EventBus
+    ) -> None:
+        self._orders = orders
+        self._tenant_context = tenant_context
+        self._event_bus = event_bus
+
+    async def execute(self, *, tenant_id: str, order_id: str) -> Order:
+        self._tenant_context.set(tenant_id)
+        order = await self._orders.get_by_id(tenant_id, order_id)
+        if order is None:
+            raise OrderNotFound()
+        fired = order.fire_next_course(utcnow())
+        await self._orders.save(order)
+        for event in _kds_changed(order, {it.station for it in fired}):
+            await self._event_bus.publish(event)
+        await self._event_bus.publish(_floor_changed(order))
+        return order
+
+
+class FireAllCourses:
+    """"Marchar todo": every pending / held plate hits the fire now."""
+
+    def __init__(
+        self, orders: OrderRepository, tenant_context: TenantContext, event_bus: EventBus
+    ) -> None:
+        self._orders = orders
+        self._tenant_context = tenant_context
+        self._event_bus = event_bus
+
+    async def execute(self, *, tenant_id: str, order_id: str) -> Order:
+        self._tenant_context.set(tenant_id)
+        order = await self._orders.get_by_id(tenant_id, order_id)
+        if order is None:
+            raise OrderNotFound()
+        fired = order.fire_all(utcnow())
+        await self._orders.save(order)
+        for event in _kds_changed(order, {it.station for it in fired}):
+            await self._event_bus.publish(event)
+        await self._event_bus.publish(_floor_changed(order))
+        return order
+
+
+class SetItemCourse:
+    """Override a plate's course ("la provoleta como principal") before it
+    hits the fire."""
+
+    def __init__(self, orders: OrderRepository, tenant_context: TenantContext) -> None:
+        self._orders = orders
+        self._tenant_context = tenant_context
+
+    async def execute(
+        self, *, tenant_id: str, order_id: str, item_id: str, course: Course
+    ) -> Order:
+        self._tenant_context.set(tenant_id)
+        order = await self._orders.get_by_id(tenant_id, order_id)
+        if order is None:
+            raise OrderNotFound()
+        order.set_item_course(item_id, course)
+        await self._orders.save(order)
+        return order
+
+
+class AdvanceCourse:
+    """Bump a whole course at once — the KDS "Listo" per course (also
+    "preparing" / "served"). Publishes the course-ready signal + push when the
+    course completes: "Mesa 4 · entrada lista"."""
+
+    def __init__(
+        self,
+        orders: OrderRepository,
+        tables: TableRepository,
+        tenant_context: TenantContext,
+        event_bus: EventBus,
+        notifications: NotificationService,
+    ) -> None:
+        self._orders = orders
+        self._tables = tables
+        self._tenant_context = tenant_context
+        self._event_bus = event_bus
+        self._notifications = notifications
+
+    async def execute(
+        self,
+        *,
+        tenant_id: str,
+        order_id: str,
+        course: Course,
+        action: str,
+        station: Station | None = None,
+    ) -> Order:
+        self._tenant_context.set(tenant_id)
+        order = await self._orders.get_by_id(tenant_id, order_id)
+        if order is None:
+            raise OrderNotFound()
+        moved = order.advance_course(course, action, utcnow(), station=station)
+        await self._orders.save(order)
+        for event in _kds_changed(order, {it.station for it in moved}):
+            await self._event_bus.publish(event)
+        await self._event_bus.publish(_floor_changed(order))
+        if action == "ready":
+            await _publish_course_ready(
+                self._tables, self._event_bus, self._notifications, tenant_id, order, course
+            )
+        return order
+
+
+async def _publish_course_ready(
+    tables: TableRepository,
+    event_bus: EventBus,
+    notifications: NotificationService,
+    tenant_id: str,
+    order: Order,
+    course: Course,
+) -> None:
+    """Emit once, when the LAST plate of the course flips it to READY."""
+    if order.course_state(course) is not CourseState.READY:
+        return
+    table = await tables.get_by_id(tenant_id, order.table_id)
+    number = str(table.number) if table is not None else ""
+    await event_bus.publish(_order_ready(order, number, course))
+    await _notify_order_ready(notifications, order, number, course)
 
 
 class AdvanceItem:
@@ -475,16 +653,17 @@ class AdvanceItem:
         for event in _kds_changed(order, {item.station}):
             await self._event_bus.publish(event)
         await self._event_bus.publish(_floor_changed(order))
-        await self._publish_ready_if_complete(tenant_id, order)
+        if action == "ready":
+            # El último plato del curso lo deja READY → aviso una sola vez.
+            await _publish_course_ready(
+                self._tables,
+                self._event_bus,
+                self._notifications,
+                tenant_id,
+                order,
+                item.course,
+            )
         return order
-
-    async def _publish_ready_if_complete(self, tenant_id: str, order: Order) -> None:
-        # The last item that completes the order flips it to READY; emit once then.
-        if order.status is OrderStatus.READY:
-            table = await self._tables.get_by_id(tenant_id, order.table_id)
-            number = str(table.number) if table is not None else ""
-            await self._event_bus.publish(_order_ready(order, number))
-            await _notify_order_ready(self._notifications, order, number)
 
 
 class AdvanceOrder:
@@ -527,11 +706,17 @@ class AdvanceOrder:
         for event in _kds_changed(order, {it.station for it in order.items}):
             await self._event_bus.publish(event)
         await self._event_bus.publish(_floor_changed(order))
-        if order.status is OrderStatus.READY:
-            table = await self._tables.get_by_id(tenant_id, order.table_id)
-            number = str(table.number) if table is not None else ""
-            await self._event_bus.publish(_order_ready(order, number))
-            await _notify_order_ready(self._notifications, order, number)
+        if action == "ready":
+            # "Listo" de toda la orden: avisar por cada curso que quedó listo.
+            for course in {it.course for it in order.items}:
+                await _publish_course_ready(
+                    self._tables,
+                    self._event_bus,
+                    self._notifications,
+                    tenant_id,
+                    order,
+                    course,
+                )
         return order
 
 

@@ -54,3 +54,10 @@ class OrderNotFullyPaid(DomainError):
 class SelfOrderDisabled(DomainError):
     code = "self_order_disabled"
     message = "El autopedido no está habilitado en este local."
+
+
+class NoCourseToFire(DomainError):
+    """"Marchar siguiente" with nothing held: every course is already fired."""
+
+    code = "no_course_to_fire"
+    message = "No hay un tiempo en espera para marchar."

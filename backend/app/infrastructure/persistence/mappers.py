@@ -44,6 +44,7 @@ from app.domain.invoice.value_objects import (
 )
 from app.domain.order.entities import Order, OrderItem
 from app.domain.order.value_objects import (
+    Course,
     ItemStatus,
     OrderSource,
     OrderStatus,
@@ -427,6 +428,7 @@ def product_to_domain(row: ProductORM) -> Product:
         price=Money(row.price_amount, row.price_currency),
         category=row.category,
         station=Station(row.station),
+        course=Course(row.course) if row.course else None,
         active=row.active,
         image_url=row.image_url,
         description=row.description,
@@ -444,6 +446,7 @@ def product_to_orm(product: Product) -> ProductORM:
         price_currency=product.price.currency,
         category=product.category,
         station=product.station.value,
+        course=product.effective_course.value,
         active=product.active,
         image_url=product.image_url,
         description=product.description,
@@ -475,6 +478,7 @@ def order_to_domain(row: OrderORM, item_rows: list[OrderItemORM]) -> Order:
                 note=item.note,
                 station=Station(item.station),
                 status=ItemStatus(item.status),
+                course=Course(item.course) if item.course else Course.MAIN,
                 sent_at=item.sent_at,
                 ready_at=item.ready_at,
                 selected_options=[
@@ -518,6 +522,7 @@ def order_item_to_orm(item: OrderItem, order: Order, position: int) -> OrderItem
         note=item.note,
         status=item.status.value,
         station=item.station.value,
+        course=item.course.value,
         sent_at=item.sent_at,
         ready_at=item.ready_at,
         position=position,

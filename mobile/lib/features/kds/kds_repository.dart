@@ -13,7 +13,9 @@ class KdsRepository {
     try {
       final res = await _dio.get<dynamic>(
         '/kds/orders',
-        queryParameters: {'station': station == Station.bar ? 'BAR' : 'KITCHEN'},
+        queryParameters: {
+          'station': station == Station.bar ? 'BAR' : 'KITCHEN',
+        },
       );
       return (res.data as List)
           .map((e) => Order.fromJson(Map<String, dynamic>.from(e as Map)))
@@ -24,9 +26,15 @@ class KdsRepository {
   }
 
   /// Avanza un ítem: action ∈ preparing | ready | served | recall.
-  Future<Order> advanceItem(String orderId, String itemId, String action) async {
+  Future<Order> advanceItem(
+    String orderId,
+    String itemId,
+    String action,
+  ) async {
     try {
-      final res = await _dio.post<dynamic>('/orders/$orderId/items/$itemId/$action');
+      final res = await _dio.post<dynamic>(
+        '/orders/$orderId/items/$itemId/$action',
+      );
       return Order.fromJson(Map<String, dynamic>.from(res.data as Map));
     } catch (e) {
       throw toApiError(e);
@@ -35,6 +43,24 @@ class KdsRepository {
 
   /// Mapa id→número de mesa para etiquetar los tickets. Best-effort: si el rol
   /// KITCHEN no puede leer `/tables`, devuelve un mapa vacío.
+  /// "Listo" (o "Empezar") de un curso entero en esta estación.
+  Future<Order> advanceCourse(
+    String orderId,
+    Course course,
+    String action,
+    Station station,
+  ) async {
+    try {
+      final res = await _dio.post<dynamic>(
+        '/orders/$orderId/courses/${course.apiValue}/$action',
+        queryParameters: {'station': station.apiValue},
+      );
+      return Order.fromJson(Map<String, dynamic>.from(res.data as Map));
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
   Future<Map<String, int>> tableNumbers() async {
     try {
       final res = await _dio.get<dynamic>('/tables');

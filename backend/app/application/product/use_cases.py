@@ -15,7 +15,7 @@ from app.application.product.dtos import (
 )
 from app.domain.advisor.repository import AdvisorSettingsRepository
 from app.domain.identity.ports import TenantContext
-from app.domain.order.value_objects import Station
+from app.domain.order.value_objects import Course, Station
 from app.domain.product.entities import Product
 from app.domain.product.exceptions import ProductNotFound
 from app.domain.product.repository import ProductRepository
@@ -150,6 +150,28 @@ class ListProducts:
     async def execute(self, *, tenant_id: str, only_active: bool = False) -> list[Product]:
         self._tenant_context.set(tenant_id)
         return await self._products.list(tenant_id, only_active=only_active)
+
+
+class SetProductCourse:
+    """Catalog: which service course a plate belongs to (starter / main /
+    dessert / immediate). Set once here; every comanda line copies it."""
+
+    def __init__(
+        self,
+        products: ProductRepository,
+        tenant_context: TenantContext,
+    ) -> None:
+        self._products = products
+        self._tenant_context = tenant_context
+
+    async def execute(self, *, tenant_id: str, product_id: str, course: Course) -> Product:
+        self._tenant_context.set(tenant_id)
+        product = await self._products.get_by_id(tenant_id, product_id)
+        if product is None:
+            raise ProductNotFound()
+        product.course = course
+        await self._products.save(product)
+        return product
 
 
 class SetProductAvailability:

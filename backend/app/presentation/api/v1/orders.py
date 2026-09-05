@@ -8,10 +8,13 @@ from app.application.order.dtos import BatchOrderItemInput
 from app.application.order.use_cases import (
     AddOrderItem,
     AddOrderItemsBatch,
+    AdvanceCourse,
     AdvanceItem,
     AdvanceOrder,
     CloseSettledOrder,
     CreateOrder,
+    FireAllCourses,
+    FireNextCourse,
     GetOrder,
     ListOrders,
     ListPendingQrOrders,
@@ -19,6 +22,7 @@ from app.application.order.use_cases import (
     RemoveOrderItem,
     ReopenOrder,
     SendOrder,
+    SetItemCourse,
     SetItemNote,
     SetItemQuantity,
     TransferOrder,
@@ -28,6 +32,7 @@ from app.application.tax.quote_order_tax import QuoteOrderTax
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
 from app.domain.order.entities import Order
+from app.domain.order.value_objects import Course, Station
 from app.domain.user.value_objects import Role
 from app.presentation.deps import current_identity
 from app.presentation.rbac import require_roles
@@ -42,6 +47,7 @@ from app.presentation.schemas.orders import (
     OrderItemResponse,
     OrderResponse,
     SelectedOptionResponse,
+    SetItemCourseRequest,
     SetItemNoteRequest,
     SetItemQuantityRequest,
     TaxQuoteResponse,
@@ -54,6 +60,8 @@ _FLOOR_ROLES = (Role.WAITER, Role.MANAGER, Role.OWNER)
 _KITCHEN_ROLES = (Role.KITCHEN, Role.BAR, Role.MANAGER, Role.OWNER)
 _MANAGER_ROLES = (Role.MANAGER, Role.OWNER)
 _CASHIER_ROLES = (Role.CASHIER, Role.MANAGER, Role.OWNER)
+# Cursos: los bumpea la cocina/barra (KDS) y también el mozo ("servido").
+_KDS_OR_FLOOR_ROLES = (Role.KITCHEN, Role.BAR, Role.WAITER, Role.MANAGER, Role.OWNER)
 _ITEM_ACTIONS = ("preparing", "ready", "served", "recall")
 
 
@@ -74,6 +82,7 @@ def order_to_response(order: Order) -> OrderResponse:
                 note=item.note,
                 status=item.status.value,
                 station=item.station.value,
+                course=item.course.value,
                 sent_at=item.sent_at.isoformat() if item.sent_at else None,
                 selected_options=[
                     SelectedOptionResponse(
@@ -85,6 +94,8 @@ def order_to_response(order: Order) -> OrderResponse:
             for item in order.items
         ],
         total_amount=order.total().amount,
+        active_course=(ac.value if (ac := order.active_course()) else None),
+        next_course=(nc.value if (nc := order.next_held_course()) else None),
         source=order.source.value,
         created_at=order.created_at.isoformat() if order.created_at else None,
         customer_id=order.customer_id,
@@ -192,6 +203,7 @@ async def add_item(
         note=body.note,
         item_id=body.id,
         option_ids=body.option_ids,
+        course=Course(body.course) if body.course else None,
     )
     return order_to_response(order)
 
@@ -373,6 +385,71 @@ async def mark_ready(
 ) -> OrderResponse:
     order = await use_case.execute(
         tenant_id=identity.tenant_id, order_id=order_id, action="ready"
+    )
+    return order_to_response(order)
+
+
+@router.post("/{order_id}/fire-next", response_model=OrderResponse)
+@inject
+async def fire_next_course(
+    order_id: str,
+    identity: AccessClaims = Depends(require_roles(*_FLOOR_ROLES)),
+    use_case: FireNextCourse = Depends(Provide[Container.fire_next_course]),
+) -> OrderResponse:
+    """"Marchar principales": el curso en espera más bajo pasa al fuego."""
+    order = await use_case.execute(tenant_id=identity.tenant_id, order_id=order_id)
+    return order_to_response(order)
+
+
+@router.post("/{order_id}/fire-all", response_model=OrderResponse)
+@inject
+async def fire_all_courses(
+    order_id: str,
+    identity: AccessClaims = Depends(require_roles(*_FLOOR_ROLES)),
+    use_case: FireAllCourses = Depends(Provide[Container.fire_all_courses]),
+) -> OrderResponse:
+    """"Marchar todo": pendientes y en espera al fuego (la mesa quiere todo junto)."""
+    order = await use_case.execute(tenant_id=identity.tenant_id, order_id=order_id)
+    return order_to_response(order)
+
+
+@router.post("/{order_id}/courses/{course}/{action}", response_model=OrderResponse)
+@inject
+async def advance_course(
+    order_id: str,
+    course: str,
+    action: str,
+    station: str | None = None,
+    identity: AccessClaims = Depends(require_roles(*_KDS_OR_FLOOR_ROLES)),
+    use_case: AdvanceCourse = Depends(Provide[Container.advance_course]),
+) -> OrderResponse:
+    """Un curso entero de una: el "Listo" del KDS por curso (también
+    `preparing` / `served`). `station` acota a una estación."""
+    order = await use_case.execute(
+        tenant_id=identity.tenant_id,
+        order_id=order_id,
+        course=Course(course),
+        action=action,
+        station=Station(station) if station else None,
+    )
+    return order_to_response(order)
+
+
+@router.patch("/{order_id}/items/{item_id}/course", response_model=OrderResponse)
+@inject
+async def set_item_course(
+    order_id: str,
+    item_id: str,
+    body: SetItemCourseRequest,
+    identity: AccessClaims = Depends(require_roles(*_FLOOR_ROLES)),
+    use_case: SetItemCourse = Depends(Provide[Container.set_item_course]),
+) -> OrderResponse:
+    """Override del curso de una línea ("la provoleta como principal")."""
+    order = await use_case.execute(
+        tenant_id=identity.tenant_id,
+        order_id=order_id,
+        item_id=item_id,
+        course=Course(body.course),
     )
     return order_to_response(order)
 

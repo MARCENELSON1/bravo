@@ -36,8 +36,9 @@ class KdsNotifier extends FamilyAsyncNotifier<List<Order>, Station> {
   }
 
   Future<void> refresh() async {
-    final data =
-        await AsyncValue.guard(() => ref.read(kdsRepositoryProvider).orders(arg));
+    final data = await AsyncValue.guard(
+      () => ref.read(kdsRepositoryProvider).orders(arg),
+    );
     if (data is AsyncData) state = data;
   }
 
@@ -45,9 +46,22 @@ class KdsNotifier extends FamilyAsyncNotifier<List<Order>, Station> {
     await ref.read(kdsRepositoryProvider).advanceItem(orderId, itemId, action);
     await refresh();
   }
+
+  /// Un curso entero de una (lo que pidió el user: "listo" cuando terminó
+  /// todas las comidas del tiempo, no plato por plato).
+  Future<void> advanceCourse(
+    String orderId,
+    Course course,
+    String action,
+  ) async {
+    await ref
+        .read(kdsRepositoryProvider)
+        .advanceCourse(orderId, course, action, arg);
+    await refresh();
+  }
 }
 
 final kdsOrdersProvider =
     AsyncNotifierProvider.family<KdsNotifier, List<Order>, Station>(
-  KdsNotifier.new,
-);
+      KdsNotifier.new,
+    );

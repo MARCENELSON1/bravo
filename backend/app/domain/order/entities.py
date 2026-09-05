@@ -10,8 +10,11 @@ from app.domain.order.exceptions import (
     InvalidOrderTransition,
     ItemNotFound,
     ItemNotPending,
+    NoCourseToFire,
 )
 from app.domain.order.value_objects import (
+    Course,
+    CourseState,
     ItemStatus,
     OrderSource,
     OrderStatus,
@@ -46,6 +49,9 @@ class OrderItem:
     note: str | None = None
     station: Station = Station.KITCHEN
     status: ItemStatus = ItemStatus.PENDING
+    # Tiempo de servicio (copiado del producto al cargar; el mozo lo puede
+    # cambiar por línea mientras no esté al fuego).
+    course: Course = Course.MAIN
     sent_at: datetime | None = None
     ready_at: datetime | None = None
     # Modificadores elegidos (Carta QR F2 D). Display-only: el price_delta ya está
@@ -123,19 +129,158 @@ class Order:
 
     # --- kitchen lifecycle ---------------------------------------------------
 
-    def march(self, now: datetime | None = None) -> list[OrderItem]:
-        """Send the PENDING items to the kitchen/bar (PENDING→SENT). Returns the
-        items that were marched (so the caller can notify the right stations)."""
+    def march(
+        self, now: datetime | None = None, *, coursing: bool = True
+    ) -> list[OrderItem]:
+        """Send the PENDING plates to the kitchen/bar. Returns the plates that
+        actually hit the fire (SENT) so the caller can notify their stations.
+
+        With ``coursing`` (the waiter's flow): IMMEDIATE plates (bar) and the
+        course due now go SENT; later courses go HELD — the kitchen sees them
+        (mise en place) and cooks them when the waiter fires that course. The
+        course due now is the lowest pending course, unless a lower course is
+        still in flight (then it waits its turn: no cold mains while the table
+        eats the starter). Empty courses are simply skipped. Without coursing
+        (QR / batch: nobody paces the table) everything fires, as before."""
         if self.status in (OrderStatus.PAID, OrderStatus.CANCELLED):
             raise InvalidOrderTransition()
         pending = [it for it in self.items if it.status is ItemStatus.PENDING]
         if not pending:
             raise EmptyOrder()
+        if not coursing:
+            return self._fire(pending, now)
+        active = self.active_course()
+        pending_courses = sorted(
+            {it.course for it in pending if it.course.coursed},
+            key=lambda c: c.sequence,
+        )
+        due: Course | None = None
+        if pending_courses:
+            lowest = pending_courses[0]
+            if active is None or lowest.sequence <= active.sequence:
+                due = lowest
+        fired: list[OrderItem] = []
         for it in pending:
+            if not it.course.coursed or it.course is due:
+                fired.append(it)
+            else:
+                it.status = ItemStatus.HELD
+        # A course that becomes due fires along its plates held from an earlier round.
+        if due is not None:
+            fired += [
+                it
+                for it in self.items
+                if it.status is ItemStatus.HELD and it.course is due
+            ]
+        if not fired:
+            self._recompute_status()  # everything went on hold: still "marchado"
+            return []
+        return self._fire(fired, now)
+
+    def fire_next_course(self, now: datetime | None = None) -> list[OrderItem]:
+        """"Marchar principales": fire the lowest held course — the waiter saw
+        the table finish the previous one. Pending plates of that same course
+        ride along (no orphan line the waiter forgot to march)."""
+        if self.status in (OrderStatus.PAID, OrderStatus.CANCELLED):
+            raise InvalidOrderTransition()
+        course = self.next_held_course()
+        if course is None:
+            raise NoCourseToFire()
+        targets = [
+            it
+            for it in self.items
+            if it.course is course
+            and it.status in (ItemStatus.HELD, ItemStatus.PENDING)
+        ]
+        return self._fire(targets, now)
+
+    def fire_all(self, now: datetime | None = None) -> list[OrderItem]:
+        """"Marchar todo": every pending/held plate hits the fire now (the table
+        wants everything together)."""
+        if self.status in (OrderStatus.PAID, OrderStatus.CANCELLED):
+            raise InvalidOrderTransition()
+        targets = [
+            it for it in self.items if it.status in (ItemStatus.PENDING, ItemStatus.HELD)
+        ]
+        if not targets:
+            raise EmptyOrder()
+        return self._fire(targets, now)
+
+    def _fire(self, items: list[OrderItem], now: datetime | None) -> list[OrderItem]:
+        for it in items:
             it.status = ItemStatus.SENT
             it.sent_at = now
         self._recompute_status()
-        return pending
+        return items
+
+    def advance_course(
+        self,
+        course: Course,
+        action: str,
+        now: datetime | None = None,
+        station: Station | None = None,
+    ) -> list[OrderItem]:
+        """Bump every plate of a course at once — the KDS "Listo" per course
+        (also "preparing" / "served"). ``station`` narrows to one board."""
+        if action not in _ITEM_TRANSITIONS or action == "recall":
+            raise InvalidItemTransition()
+        expected, target = _ITEM_TRANSITIONS[action]
+        matching = [
+            it
+            for it in self.items
+            if it.course is course
+            and it.status is expected
+            and (station is None or it.station is station)
+        ]
+        if not matching:
+            raise InvalidItemTransition()
+        for it in matching:
+            it.status = target
+            if target is ItemStatus.READY:
+                it.ready_at = now
+        self._recompute_status()
+        return matching
+
+    def set_item_course(self, item_id: str, course: Course) -> None:
+        """Override a plate's course ("la provoleta como principal") while it
+        is not on the fire yet."""
+        item = self._find_item(item_id)
+        if item.status not in (ItemStatus.PENDING, ItemStatus.HELD):
+            raise ItemNotPending()
+        item.course = course
+
+    # --- courses: derived, never stored ---------------------------------------
+
+    def _live(self) -> list[OrderItem]:
+        return [it for it in self.items if it.status is not ItemStatus.CANCELLED]
+
+    def active_course(self) -> Course | None:
+        """Lowest coursed course with plates fired and not yet served: the one
+        the kitchen is working on / the table is eating."""
+        fired = (ItemStatus.SENT, ItemStatus.PREPARING, ItemStatus.READY)
+        courses = {
+            it.course for it in self._live() if it.status in fired and it.course.coursed
+        }
+        return min(courses, key=lambda c: c.sequence) if courses else None
+
+    def next_held_course(self) -> Course | None:
+        held = {it.course for it in self._live() if it.status is ItemStatus.HELD}
+        return min(held, key=lambda c: c.sequence) if held else None
+
+    def course_state(self, course: Course) -> CourseState | None:
+        """Cooking > ready plates > held > pending > served. None = no plates."""
+        st = {it.status for it in self._live() if it.course is course}
+        if not st:
+            return None
+        if st & {ItemStatus.SENT, ItemStatus.PREPARING}:
+            return CourseState.IN_KITCHEN
+        if ItemStatus.READY in st:
+            return CourseState.READY
+        if ItemStatus.HELD in st:
+            return CourseState.HELD
+        if ItemStatus.PENDING in st:
+            return CourseState.PENDING
+        return CourseState.SERVED
 
     def advance_item(
         self, item_id: str, action: str, now: datetime | None = None
@@ -241,6 +386,8 @@ class Order:
         active = [it for it in self.items if it.status is not ItemStatus.CANCELLED]
         if not active or all(it.status is ItemStatus.PENDING for it in active):
             self.status = OrderStatus.OPEN
+        # HELD plates are marched (the kitchen has them) but not cooking: they
+        # keep the order "in kitchen" and block READY/SERVED until fired.
         elif all(it.status is ItemStatus.SERVED for it in active):
             self.status = OrderStatus.SERVED
         elif all(it.status in (ItemStatus.READY, ItemStatus.SERVED) for it in active):

@@ -119,10 +119,13 @@ from app.application.order.table_bill import GetTableBill
 from app.application.order.use_cases import (
     AddOrderItem,
     AddOrderItemsBatch,
+    AdvanceCourse,
     AdvanceItem,
     AdvanceOrder,
     CloseSettledOrder,
     CreateOrder,
+    FireAllCourses,
+    FireNextCourse,
     GetKdsOrders,
     GetOrder,
     ListOrders,
@@ -131,6 +134,7 @@ from app.application.order.use_cases import (
     RemoveOrderItem,
     ReopenOrder,
     SendOrder,
+    SetItemCourse,
     SetItemNote,
     SetItemQuantity,
     TransferOrder,
@@ -168,6 +172,7 @@ from app.application.product.use_cases import (
     GetProductRotation,
     ListProducts,
     SetProductAvailability,
+    SetProductCourse,
     UpdateProductPrice,
 )
 from app.application.public_menu.use_cases import (
@@ -646,6 +651,9 @@ class Container(containers.DeclarativeContainer):
     list_products = providers.Factory(
         ListProducts, products=product_repository, tenant_context=tenant_context
     )
+    set_product_course = providers.Factory(
+        SetProductCourse, products=product_repository, tenant_context=tenant_context
+    )
     set_product_availability = providers.Factory(
         SetProductAvailability, products=product_repository, tenant_context=tenant_context
     )
@@ -826,6 +834,29 @@ class Container(containers.DeclarativeContainer):
     )
     set_item_note = providers.Factory(
         SetItemNote, orders=order_repository, tenant_context=tenant_context
+    )
+    set_item_course = providers.Factory(
+        SetItemCourse, orders=order_repository, tenant_context=tenant_context
+    )
+    fire_next_course = providers.Factory(
+        FireNextCourse,
+        orders=order_repository,
+        tenant_context=tenant_context,
+        event_bus=event_bus,
+    )
+    fire_all_courses = providers.Factory(
+        FireAllCourses,
+        orders=order_repository,
+        tenant_context=tenant_context,
+        event_bus=event_bus,
+    )
+    advance_course = providers.Factory(
+        AdvanceCourse,
+        orders=order_repository,
+        tables=table_repository,
+        tenant_context=tenant_context,
+        event_bus=event_bus,
+        notifications=push_service,
     )
     send_order = providers.Factory(
         SendOrder,

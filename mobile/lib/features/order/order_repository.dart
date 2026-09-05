@@ -41,6 +41,7 @@ class OrderRepository {
     required int quantity,
     String? note,
     List<String>? optionIds,
+    Course? course,
   }) async {
     try {
       final res = await _dio.post<dynamic>(
@@ -52,6 +53,8 @@ class OrderRepository {
           'note': ?note,
           // Lista (aunque vacía) = el server valida los grupos obligatorios.
           'option_ids': ?optionIds,
+          // Override del curso; null = el de la carta.
+          'course': ?course?.apiValue,
         },
       );
       return await _order(res, orderId);
@@ -99,6 +102,58 @@ class OrderRepository {
   Future<Order> markServed(String orderId) async {
     try {
       final res = await _dio.post<dynamic>('/orders/$orderId/served');
+      return await _order(res, orderId);
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
+  /// "Marchar principales": el curso en espera más bajo pasa al fuego.
+  Future<Order> fireNext(String orderId) async {
+    try {
+      final res = await _dio.post<dynamic>('/orders/$orderId/fire-next');
+      return await _order(res, orderId);
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
+  /// "Marchar todo": pendientes y en espera al fuego (la mesa quiere todo junto).
+  Future<Order> fireAll(String orderId) async {
+    try {
+      final res = await _dio.post<dynamic>('/orders/$orderId/fire-all');
+      return await _order(res, orderId);
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
+  /// Un curso entero de una (`preparing` / `ready` / `served`).
+  Future<Order> advanceCourse(
+    String orderId,
+    Course course,
+    String action, {
+    Station? station,
+  }) async {
+    try {
+      final res = await _dio.post<dynamic>(
+        '/orders/$orderId/courses/${course.apiValue}/$action',
+        queryParameters: {if (station != null) 'station': station.apiValue},
+      );
+      return await _order(res, orderId);
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
+  /// Override del curso de una línea ("la provoleta como principal"), antes
+  /// de que esté al fuego.
+  Future<Order> setCourse(String orderId, String itemId, Course course) async {
+    try {
+      final res = await _dio.patch<dynamic>(
+        '/orders/$orderId/items/$itemId/course',
+        data: {'course': course.apiValue},
+      );
       return await _order(res, orderId);
     } catch (e) {
       throw toApiError(e);

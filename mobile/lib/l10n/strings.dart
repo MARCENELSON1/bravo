@@ -127,6 +127,31 @@ class Strings {
   String get addProducts => _en ? 'Add products' : 'Agregar productos';
   String get searchProduct => _en ? 'Search product' : 'Buscar producto';
   String get done => _en ? 'Done' : 'Listo';
+  // Tiempos de servicio (cursos).
+  String courseLabel(Course c) => switch (c) {
+    Course.immediate => _en ? 'Drinks' : 'Bebidas',
+    Course.starter => _en ? 'Starter' : 'Entrada',
+    Course.main => _en ? 'Main' : 'Principal',
+    Course.dessert => _en ? 'Dessert' : 'Postre',
+  };
+  String courseStateLabel(CourseState st) => switch (st) {
+    CourseState.pending => _en ? 'Not sent' : 'Sin marchar',
+    CourseState.held => _en ? 'On hold' : 'En espera',
+    CourseState.inKitchen => _en ? 'In kitchen' : 'En cocina',
+    CourseState.ready => _en ? 'Ready' : 'Listo',
+    CourseState.served => _en ? 'Served' : 'Servido',
+  };
+  String fireCourse(Course c) => _en
+      ? 'Send ${courseLabel(c).toLowerCase()}'
+      : 'Marchar ${courseLabel(c).toLowerCase()}';
+  String serveCourse(Course c) => _en
+      ? 'Serve ${courseLabel(c).toLowerCase()}'
+      : 'Servir ${courseLabel(c).toLowerCase()}';
+  String get fireAll => _en ? 'Send everything' : 'Marchar todo';
+  String get courseHint => _en
+      ? 'Kitchen cooks one course at a time; you fire the next one.'
+      : 'Cocina prepara un tiempo por vez; vos marchás el siguiente.';
+  String get kdsOnHold => _en ? 'On hold' : 'En espera';
   // Grilla de captura (comanda tipo POS).
   String get chipFavorites => _en ? '★ Frequent' : '★ Frecuentes';
   String get chipAllProducts => _en ? 'All' : 'Todos';
@@ -151,20 +176,21 @@ class Strings {
   String markServedCount(int n) =>
       _en ? 'Mark served ($n)' : 'Marcar servido ($n)';
   String get moveTable => _en ? 'Move to a free table' : 'Mover a mesa libre';
-  String get mergeTable => _en ? 'Merge another table here' : 'Unir otra mesa acá';
+  String get mergeTable =>
+      _en ? 'Merge another table here' : 'Unir otra mesa acá';
   String get noFreeTables => _en ? 'No free tables' : 'No hay mesas libres';
   String get noOtherTables => _en ? 'No other tables' : 'No hay otras mesas';
   String tableLabel(int number) => _en ? 'Table $number' : 'Mesa $number';
 
   // Modo contingencia (sync)
-  String pendingSync(int n) =>
-      _en ? '$n to sync' : '$n por sincronizar';
+  String pendingSync(int n) => _en ? '$n to sync' : '$n por sincronizar';
 
   // Impresora ESC/POS
   String get printerTitle => _en ? 'Printer' : 'Impresora';
   String get printerCurrent => _en ? 'Current printer' : 'Impresora actual';
   String get printerNone => _en ? 'None' : 'Ninguna';
-  String get printerPaired => _en ? 'Paired devices' : 'Dispositivos vinculados';
+  String get printerPaired =>
+      _en ? 'Paired devices' : 'Dispositivos vinculados';
   String get printerRescan => _en ? 'Rescan' : 'Reescanear';
   String get printerTest => _en ? 'Test print' : 'Imprimir prueba';
   String get printerSaved => _en ? 'Printer saved' : 'Impresora guardada';
@@ -189,6 +215,8 @@ class Strings {
     switch (st) {
       case ItemStatus.pending:
         return _en ? 'Pending' : 'Pendiente';
+      case ItemStatus.held:
+        return _en ? 'On hold' : 'En espera';
       case ItemStatus.sent:
         return _en ? 'In kitchen' : 'En cocina';
       case ItemStatus.preparing:
@@ -232,12 +260,12 @@ class Strings {
   String get presetTotal => _en ? 'Total' : 'Total';
 
   String methodLabel(PaymentMethod m) => switch (m) {
-        PaymentMethod.cash => _en ? 'Cash' : 'Efectivo',
-        PaymentMethod.card => _en ? 'Card' : 'Tarjeta',
-        PaymentMethod.transfer => _en ? 'Transfer' : 'Transferencia',
-        PaymentMethod.mercadopago => 'MercadoPago',
-        PaymentMethod.qr => 'QR',
-      };
+    PaymentMethod.cash => _en ? 'Cash' : 'Efectivo',
+    PaymentMethod.card => _en ? 'Card' : 'Tarjeta',
+    PaymentMethod.transfer => _en ? 'Transfer' : 'Transferencia',
+    PaymentMethod.mercadopago => 'MercadoPago',
+    PaymentMethod.qr => 'QR',
+  };
 
   // Fichaje (Fase 4)
   String get fichajeTitle => _en ? 'Time clock' : 'Fichaje';
@@ -279,21 +307,66 @@ class Strings {
       ? (_en ? 'Good day' : 'Buen día')
       : (_en ? 'Good day, $name' : 'Buen día, $name');
   String dashTodayLabel(DateTime now) {
-    const wEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const wEs = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-    const mEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const mEs = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const wEn = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
+    const wEs = [
+      'Domingo',
+      'Lunes',
+      'Martes',
+      'Miércoles',
+      'Jueves',
+      'Viernes',
+      'Sábado',
+    ];
+    const mEn = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const mEs = [
+      'ene',
+      'feb',
+      'mar',
+      'abr',
+      'may',
+      'jun',
+      'jul',
+      'ago',
+      'sep',
+      'oct',
+      'nov',
+      'dic',
+    ];
     final wd = (_en ? wEn : wEs)[now.weekday % 7];
     final mo = (_en ? mEn : mEs)[now.month - 1];
     return '$wd, ${now.day} $mo ${now.year}';
   }
+
   String dashWeekdayShort(int weekday) {
     // weekday: 1=lunes … 7=domingo (DateTime). Devuelve 3 letras.
     const en = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const es = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     return (_en ? en : es)[(weekday - 1) % 7];
   }
-  String get dashProfitToday => _en ? 'Your profit today' : 'Tu ganancia de hoy';
+
+  String get dashProfitToday =>
+      _en ? 'Your profit today' : 'Tu ganancia de hoy';
   String get dashProfitTentative => _en
       ? "Tentative — you haven't recorded expenses today."
       : 'Provisorio — todavía no cargaste egresos hoy.';
@@ -304,8 +377,10 @@ class Strings {
     final vsText = vs == null
         ? ''
         : (vs == VerdictVs.more
-            ? (_en ? ' — $pct% more than yesterday' : ' — $pct% más que ayer')
-            : (_en ? ' — $pct% less than yesterday' : ' — $pct% menos que ayer'));
+              ? (_en ? ' — $pct% more than yesterday' : ' — $pct% más que ayer')
+              : (_en
+                    ? ' — $pct% less than yesterday'
+                    : ' — $pct% menos que ayer'));
     final head = switch (tone) {
       VerdictTone.good => _en ? 'Good day' : 'Buen día',
       VerdictTone.ok => _en ? 'Normal day' : 'Día normal',
@@ -313,6 +388,7 @@ class Strings {
     };
     return '$head$vsText';
   }
+
   String get dashBilledToday => _en ? 'Billed today' : 'Facturaste hoy';
   String dashPaymentsCount(int n) => _en ? '$n payments' : '$n cobros';
   String get dashSpentToday => _en ? 'Spent today' : 'Gastaste hoy';
@@ -348,13 +424,13 @@ class Strings {
       ? 'Not enough data to project.'
       : 'Sin datos suficientes para proyectar.';
   String get dashViewFinance => _en ? 'View Finance' : 'Ver Finanzas';
-  String get dashNoSales7d =>
-      _en ? 'No sales in the last 7 days.' : 'Sin ventas en los últimos 7 días.';
+  String get dashNoSales7d => _en
+      ? 'No sales in the last 7 days.'
+      : 'Sin ventas en los últimos 7 días.';
   String get dashTomorrowTaskTitle =>
       _en ? 'Your task for tomorrow' : 'Tu tarea para mañana';
   String get dashGotIt => _en ? 'Got it' : 'Entendido';
-  String get dashRegisterExpense =>
-      _en ? 'Record expense' : 'Registrar egreso';
+  String get dashRegisterExpense => _en ? 'Record expense' : 'Registrar egreso';
   String get homeSimpleHint => _en
       ? 'Clock in and get going. Everything you need is in the tabs below.'
       : 'Fichá tu turno y arrancá. Todo lo tuyo está en las pestañas de abajo.';
@@ -374,20 +450,22 @@ class Strings {
   String readyModalCount(int n) => _en ? '$n items' : '$n ítems';
   String get readyNoteLabel => _en ? 'Note' : 'Nota';
   String get readyMarkServed => _en ? 'Mark served' : 'Marcar servido';
-  String get readyServedDone => _en ? 'Marked as served.' : 'Marcada como servida.';
+  String get readyServedDone =>
+      _en ? 'Marked as served.' : 'Marcada como servida.';
   String get readyClose => _en ? 'Close' : 'Cerrar';
 
   // Asignación por confirmación / bandeja QR (Fase 2)
   String pendingQrTitle(int count) =>
       _en ? 'QR to confirm ($count)' : 'QR por confirmar ($count)';
-  String pendingQrItems(int count) =>
-      _en ? '$count items' : '$count ítems';
+  String pendingQrItems(int count) => _en ? '$count items' : '$count ítems';
   String get pendingQrConfirm => _en ? 'Confirm' : 'Confirmar';
   String get pendingQrTable => _en ? 'Table' : 'Mesa';
-  String get pendingQrConfirmed =>
-      _en ? 'Order confirmed — the table is yours.' : 'Comanda confirmada — la mesa es tuya.';
+  String get pendingQrConfirmed => _en
+      ? 'Order confirmed — the table is yours.'
+      : 'Comanda confirmada — la mesa es tuya.';
   String get claimTable => _en ? 'Take table' : 'Tomar mesa';
-  String get claimDone => _en ? 'Table is yours now.' : 'La mesa quedó a tu nombre.';
+  String get claimDone =>
+      _en ? 'Table is yours now.' : 'La mesa quedó a tu nombre.';
   String get reassignWaiter => _en ? 'Change waiter' : 'Cambiar mozo';
   String get reassignDone => _en ? 'Waiter reassigned.' : 'Mozo reasignado.';
 
@@ -408,20 +486,22 @@ class Strings {
 
   // Finanzas — paridad con la pantalla del web
   String financeRange(FinanceRange r) => switch (r) {
-        FinanceRange.today => _en ? 'Today' : 'Hoy',
-        FinanceRange.week => _en ? 'This week' : 'Esta semana',
-        FinanceRange.month => _en ? 'This month' : 'Este mes',
-        FinanceRange.quarter => _en ? 'Quarter' : 'Trimestre',
-      };
-  String get financeLoadError =>
-      _en ? "We couldn't load your finances." : 'No pudimos cargar las finanzas.';
+    FinanceRange.today => _en ? 'Today' : 'Hoy',
+    FinanceRange.week => _en ? 'This week' : 'Esta semana',
+    FinanceRange.month => _en ? 'This month' : 'Este mes',
+    FinanceRange.quarter => _en ? 'Quarter' : 'Trimestre',
+  };
+  String get financeLoadError => _en
+      ? "We couldn't load your finances."
+      : 'No pudimos cargar las finanzas.';
   String get financeHeroNet =>
       _en ? 'Your net profit for the period' : 'Tu ganancia neta del período';
   String get financeVsPrevious =>
       _en ? 'vs previous period' : 'vs período anterior';
   String get financeProjectionPrefix =>
       _en ? "At this pace, you'll close at" : 'Si seguís así, cerrás en';
-  String financeProjectionDays(int elapsed, int total) => '($elapsed/$total ${_en ? "days" : "días"})';
+  String financeProjectionDays(int elapsed, int total) =>
+      '($elapsed/$total ${_en ? "days" : "días"})';
   String get financeConfigureCosts => _en
       ? 'Set your fixed costs (labor and others) in the Advisor so net margin and prime cost are exact.'
       : 'Cargá tus costos fijos (personal y otros) en el Asesor para que el margen neto y el prime cost sean exactos.';
@@ -430,8 +510,7 @@ class Strings {
       : 'Comisiones de cobro (pasarelas)';
   String get financeNetCollected =>
       _en ? 'Net of commissions:' : 'Cobrado neto de comisiones:';
-  String get financeDiagnosticsTitle =>
-      _en ? 'Diagnostics' : 'Diagnósticos';
+  String get financeDiagnosticsTitle => _en ? 'Diagnostics' : 'Diagnósticos';
   String get financeExpenseChangesTitle => _en
       ? 'The 3 expenses that changed most'
       : 'Los 3 gastos que más cambiaron';
@@ -446,31 +525,30 @@ class Strings {
   String get financeMovementsTitle =>
       _en ? 'Recent movements' : 'Últimos movimientos';
   String get financeUnitsMargin => _en ? 'Units · Margin' : 'Unidades · Margen';
-  String get financeKpisTitle =>
-      _en ? 'Sector KPIs' : 'KPIs del rubro';
+  String get financeKpisTitle => _en ? 'Sector KPIs' : 'KPIs del rubro';
   String financeHealthyRange(String low, String high) =>
       _en ? 'healthy $low–$high' : 'sano $low–$high';
   String financeHealthyMax(String high) =>
       _en ? 'healthy < $high' : 'sano < $high';
   String financeKpiLabel(String key) => switch (key) {
-        'prime_cost' => 'Prime Cost',
-        'food_cost' => 'Food Cost',
-        'labor_cost' => _en ? 'Labor cost' : 'Costo de personal',
-        'waste' => _en ? 'Waste' : 'Mermas',
-        'net_margin' => _en ? 'Net margin' : 'Margen neto',
-        'gross_margin' => _en ? 'Gross margin' : 'Margen bruto',
-        'break_even' => _en ? 'Break-even' : 'Punto de equilibrio',
-        'revpash' => 'RevPASH',
-        'inventory_turnover' =>
-          _en ? 'Inventory turnover' : 'Rotación de inventario',
-        _ => key,
-      };
+    'prime_cost' => 'Prime Cost',
+    'food_cost' => 'Food Cost',
+    'labor_cost' => _en ? 'Labor cost' : 'Costo de personal',
+    'waste' => _en ? 'Waste' : 'Mermas',
+    'net_margin' => _en ? 'Net margin' : 'Margen neto',
+    'gross_margin' => _en ? 'Gross margin' : 'Margen bruto',
+    'break_even' => _en ? 'Break-even' : 'Punto de equilibrio',
+    'revpash' => 'RevPASH',
+    'inventory_turnover' =>
+      _en ? 'Inventory turnover' : 'Rotación de inventario',
+    _ => key,
+  };
   String financeStatusAction(String status) => switch (status) {
-        'healthy' => _en ? 'Keep it up' : 'Mantener',
-        'warn' => _en ? 'Review' : 'Revisar',
-        'alert' => _en ? 'Act' : 'Actuar',
-        _ => '—',
-      };
+    'healthy' => _en ? 'Keep it up' : 'Mantener',
+    'warn' => _en ? 'Review' : 'Revisar',
+    'alert' => _en ? 'Act' : 'Actuar',
+    _ => '—',
+  };
 
   // Asesor (Fase 9) — reporte de insights + KPIs
   String get advisorTitle => _en ? 'Advisor' : 'Asesor';
@@ -483,34 +561,36 @@ class Strings {
       ? 'Set your costs to unlock net margin and break-even.'
       : 'Cargá tus costos para desbloquear margen neto y punto de equilibrio.';
   String advisorBucketLabel(String bucket) => switch (bucket) {
-        'pricing' => _en ? 'Pricing' : 'Precios',
-        'costs' => _en ? 'Costs' : 'Costos',
-        'menu' => _en ? 'Menu' : 'Carta',
-        'operations' => _en ? 'Operations' : 'Operación',
-        'cash' => _en ? 'Cash' : 'Caja',
-        'inventory' => _en ? 'Inventory' : 'Inventario',
-        _ => bucket,
-      };
+    'pricing' => _en ? 'Pricing' : 'Precios',
+    'costs' => _en ? 'Costs' : 'Costos',
+    'menu' => _en ? 'Menu' : 'Carta',
+    'operations' => _en ? 'Operations' : 'Operación',
+    'cash' => _en ? 'Cash' : 'Caja',
+    'inventory' => _en ? 'Inventory' : 'Inventario',
+    _ => bucket,
+  };
   String advisorKpiLabel(String key) => switch (key) {
-        'sales' => _en ? 'Sales' : 'Ventas',
-        'gross_margin' => _en ? 'Gross margin' : 'Margen bruto',
-        'net_margin' => _en ? 'Net margin' : 'Margen neto',
-        'food_cost' => 'Food Cost',
-        'prime_cost' => 'Prime Cost',
-        'break_even' => _en ? 'Break-even' : 'Punto de equilibrio',
-        'orders' => _en ? 'Orders' : 'Órdenes',
-        'avg_ticket' => _en ? 'Avg. ticket' : 'Ticket promedio',
-        'no_show' => 'No-show',
-        _ => key,
-      };
+    'sales' => _en ? 'Sales' : 'Ventas',
+    'gross_margin' => _en ? 'Gross margin' : 'Margen bruto',
+    'net_margin' => _en ? 'Net margin' : 'Margen neto',
+    'food_cost' => 'Food Cost',
+    'prime_cost' => 'Prime Cost',
+    'break_even' => _en ? 'Break-even' : 'Punto de equilibrio',
+    'orders' => _en ? 'Orders' : 'Órdenes',
+    'avg_ticket' => _en ? 'Avg. ticket' : 'Ticket promedio',
+    'no_show' => 'No-show',
+    _ => key,
+  };
   String get advisorConfigTitle =>
       _en ? 'Cost settings' : 'Configuración de costos';
   String get comprobantesTitle => _en ? 'Invoices' : 'Comprobantes';
   String get comprobantesEmpty => _en ? 'No invoices' : 'Sin comprobantes';
   String get productosTitle => _en ? 'Products' : 'Productos';
   String get productosEmpty => _en ? 'No products' : 'Sin productos';
-  String get productoUnavailable => _en ? 'Unavailable today' : 'No disponible hoy';
-  String get consultaOnly => _en ? 'View only · edit on the web' : 'Solo consulta · editá en el web';
+  String get productoUnavailable =>
+      _en ? 'Unavailable today' : 'No disponible hoy';
+  String get consultaOnly =>
+      _en ? 'View only · edit on the web' : 'Solo consulta · editá en el web';
   String get insumosTitle => _en ? 'Ingredients' : 'Insumos';
   String get insumosEmpty => _en ? 'No ingredients' : 'Sin insumos';
   String get insumosBelowMin => _en ? 'Below minimum' : 'Bajo mínimo';
@@ -528,19 +608,19 @@ class Strings {
   String get docTypeLabel => _en ? 'Document type' : 'Tipo de documento';
   String get invoiceIssued => _en ? 'Invoice issued' : 'Comprobante emitido';
   String invoiceStatusLabel(String status) => switch (status) {
-        'AUTHORIZED' => _en ? 'Authorized' : 'Autorizado',
-        'DRAFT' => _en ? 'Draft' : 'Borrador',
-        'REJECTED' => _en ? 'Rejected' : 'Rechazado',
-        _ => status,
-      };
+    'AUTHORIZED' => _en ? 'Authorized' : 'Autorizado',
+    'DRAFT' => _en ? 'Draft' : 'Borrador',
+    'REJECTED' => _en ? 'Rejected' : 'Rechazado',
+    _ => status,
+  };
   String invoiceCaeExpiration(String date) =>
       _en ? 'CAE exp. $date' : 'Vto. CAE $date';
   String docTypeName(DocType t) => switch (t) {
-        DocType.cuit => 'CUIT',
-        DocType.cuil => 'CUIL',
-        DocType.dni => 'DNI',
-        DocType.consumidorFinal => _en ? 'Final consumer' : 'Consumidor final',
-      };
+    DocType.cuit => 'CUIT',
+    DocType.cuil => 'CUIL',
+    DocType.dni => 'DNI',
+    DocType.consumidorFinal => _en ? 'Final consumer' : 'Consumidor final',
+  };
 
   // Reportes (Fase 6, consulta)
   String get reportesTitle => _en ? 'Reports' : 'Reportes';
@@ -568,22 +648,23 @@ class Strings {
 
   // Gastos
   String get gastosTitle => _en ? 'Expenses' : 'Gastos';
-  String get gastosSubtitle => _en
-      ? 'Record what the venue spends.'
-      : 'Registrá lo que gasta el local.';
+  String get gastosSubtitle =>
+      _en ? 'Record what the venue spends.' : 'Registrá lo que gasta el local.';
   String get gastosNew => _en ? 'New expense' : 'Nuevo gasto';
   String get gastosEmpty =>
       _en ? 'No expenses recorded yet.' : 'Sin gastos registrados todavía.';
   String get gastosAmount => _en ? 'Amount' : 'Monto';
   String get gastosCategory => _en ? 'Category' : 'Categoría';
-  String get gastosCounterparty => _en ? 'Supplier / who' : 'Proveedor / a quién';
+  String get gastosCounterparty =>
+      _en ? 'Supplier / who' : 'Proveedor / a quién';
   String get gastosDescription => _en ? 'Description' : 'Descripción';
   String get gastosMethod => _en ? 'Method' : 'Medio';
   String get gastosInvalidAmount =>
       _en ? 'Enter a valid amount.' : 'Ingresá un monto válido.';
   String get gastosSaved => _en ? 'Expense recorded.' : 'Gasto registrado.';
-  String get gastosError =>
-      _en ? "We couldn't record the expense." : 'No pudimos registrar el gasto.';
+  String get gastosError => _en
+      ? "We couldn't record the expense."
+      : 'No pudimos registrar el gasto.';
 
   // Mesas QR (lado admin de la Carta QR)
   String get mesasQrTitle => _en ? 'Table QR codes' : 'QR de mesas';
@@ -604,7 +685,8 @@ class Strings {
   String get selfOrderSubtitle => _en
       ? 'Let diners order from their phone.'
       : 'Que el comensal pida desde el celular.';
-  String get selfOrderEnable => _en ? 'Enable self-ordering' : 'Activar autopedido';
+  String get selfOrderEnable =>
+      _en ? 'Enable self-ordering' : 'Activar autopedido';
   String get selfOrderRequireConfirm =>
       _en ? "Waiter confirms the order" : 'El mozo confirma el pedido';
   String get selfOrderRequireConfirmHint => _en
@@ -613,27 +695,31 @@ class Strings {
   // Modo de la Carta QR (Fase 3)
   String get selfOrderModeLabel => _en ? 'QR mode' : 'Modo del QR';
   String selfOrderMode(String mode) => switch (mode) {
-        'SALON' => _en ? 'Dining room' : 'Salón',
-        'SELF_SERVICE' => _en ? 'Self-service' : 'Autoservicio',
-        _ => _en ? 'View only' : 'Solo lectura',
-      };
+    'SALON' => _en ? 'Dining room' : 'Salón',
+    'SELF_SERVICE' => _en ? 'Self-service' : 'Autoservicio',
+    _ => _en ? 'View only' : 'Solo lectura',
+  };
   String selfOrderModeHint(String mode) => switch (mode) {
-        'SALON' => _en
-            ? 'The diner orders; a waiter confirms it. Pay at the end.'
-            : 'El comensal pide; un mozo confirma. Se paga al final.',
-        'SELF_SERVICE' => _en
-            ? 'The diner pays first; it auto-marches and assigns a waiter. Turns on table pay.'
-            : 'El comensal paga primero; marcha sola y asigna un mozo. Prende el pago en mesa.',
-        _ => _en
-            ? 'The QR shows the menu only — no ordering.'
-            : 'El QR solo muestra la carta — sin pedidos.',
-      };
+    'SALON' =>
+      _en
+          ? 'The diner orders; a waiter confirms it. Pay at the end.'
+          : 'El comensal pide; un mozo confirma. Se paga al final.',
+    'SELF_SERVICE' =>
+      _en
+          ? 'The diner pays first; it auto-marches and assigns a waiter. Turns on table pay.'
+          : 'El comensal paga primero; marcha sola y asigna un mozo. Prende el pago en mesa.',
+    _ =>
+      _en
+          ? 'The QR shows the menu only — no ordering.'
+          : 'El QR solo muestra la carta — sin pedidos.',
+  };
   // Pago en mesa
   String get selfPayTitle => _en ? 'Pay at the table' : 'Pago en mesa';
   String get selfPaySubtitle => _en
       ? 'Let diners pay online from their phone.'
       : 'Que el comensal pague online desde el celular.';
-  String get selfPayEnable => _en ? 'Enable table payment' : 'Activar pago en mesa';
+  String get selfPayEnable =>
+      _en ? 'Enable table payment' : 'Activar pago en mesa';
   String get selfPayEnableHint => _en
       ? 'Without this, the menu keeps "Ask for the bill".'
       : 'Sin esto, la carta mantiene "Pedir la cuenta".';
@@ -681,9 +767,8 @@ class Strings {
 
   // Reservas
   String get reservasTitle => _en ? 'Reservations' : 'Reservas';
-  String get reservasSubtitle => _en
-      ? 'Bookings and no-shows.'
-      : 'Reservas y ausencias (no-show).';
+  String get reservasSubtitle =>
+      _en ? 'Bookings and no-shows.' : 'Reservas y ausencias (no-show).';
   String get reservasEmpty =>
       _en ? 'No reservations for this day.' : 'Sin reservas para este día.';
   String get reservaNew => _en ? 'New reservation' : 'Nueva reserva';
@@ -694,8 +779,9 @@ class Strings {
   String get reservaNoTable => _en ? 'No table' : 'Sin mesa';
   String get reservaNote => _en ? 'Note' : 'Nota';
   String get reservaCreated => _en ? 'Reservation created.' : 'Reserva creada.';
-  String get reservaError =>
-      _en ? "We couldn't create the reservation." : 'No pudimos crear la reserva.';
+  String get reservaError => _en
+      ? "We couldn't create the reservation."
+      : 'No pudimos crear la reserva.';
   String get reservaCustomerRequired =>
       _en ? 'Enter the customer name.' : 'Ingresá el nombre del cliente.';
   String get reservaGuestsInvalid =>
@@ -709,19 +795,19 @@ class Strings {
       _en ? "We couldn't update it." : 'No pudimos actualizarla.';
   String reservaTableOption(int n) => _en ? 'Table $n' : 'Mesa $n';
   String turnLabel(String turn) => switch (turn) {
-        'LUNCH' => _en ? 'Lunch' : 'Almuerzo',
-        'DINNER' => _en ? 'Dinner' : 'Cena',
-        _ => turn,
-      };
+    'LUNCH' => _en ? 'Lunch' : 'Almuerzo',
+    'DINNER' => _en ? 'Dinner' : 'Cena',
+    _ => turn,
+  };
   String reservaStatusLabel(String status) => switch (status) {
-        'PENDING' => _en ? 'Pending' : 'Pendiente',
-        'CONFIRMED' => _en ? 'Confirmed' : 'Confirmada',
-        'SEATED' => _en ? 'Seated' : 'Sentada',
-        'COMPLETED' => _en ? 'Completed' : 'Completada',
-        'CANCELLED' => _en ? 'Cancelled' : 'Cancelada',
-        'NO_SHOW' => 'No-show',
-        _ => status,
-      };
+    'PENDING' => _en ? 'Pending' : 'Pendiente',
+    'CONFIRMED' => _en ? 'Confirmed' : 'Confirmada',
+    'SEATED' => _en ? 'Seated' : 'Sentada',
+    'COMPLETED' => _en ? 'Completed' : 'Completada',
+    'CANCELLED' => _en ? 'Cancelled' : 'Cancelada',
+    'NO_SHOW' => 'No-show',
+    _ => status,
+  };
   String get reservaConfirm => _en ? 'Confirm' : 'Confirmar';
   String get reservaSeat => _en ? 'Seat' : 'Sentar';
   String get reservaComplete => _en ? 'Complete' : 'Completar';
@@ -758,9 +844,8 @@ class Strings {
       _en ? ' · renews on $date' : ' · renueva el $date';
   String get billingCancel =>
       _en ? 'Cancel subscription' : 'Cancelar suscripción';
-  String get billingCancelConfirm => _en
-      ? 'Cancel your subscription?'
-      : '¿Cancelar tu suscripción?';
+  String get billingCancelConfirm =>
+      _en ? 'Cancel your subscription?' : '¿Cancelar tu suscripción?';
   String get billingCancelSuccess =>
       _en ? 'Subscription cancelled.' : 'Suscripción cancelada.';
   String get billingCancelError =>
@@ -777,17 +862,17 @@ class Strings {
       ? "We couldn't open the payment page."
       : 'No pudimos abrir la página de pago.';
   String billingInterval(String interval) => switch (interval) {
-        'MONTH' => _en ? 'month' : 'mes',
-        'YEAR' => _en ? 'year' : 'año',
-        _ => interval.toLowerCase(),
-      };
+    'MONTH' => _en ? 'month' : 'mes',
+    'YEAR' => _en ? 'year' : 'año',
+    _ => interval.toLowerCase(),
+  };
   String billingStatusLabel(String status) => switch (status) {
-        'ACTIVE' => _en ? 'Active' : 'Activa',
-        'TRIALING' => _en ? 'Trial' : 'Prueba',
-        'PAST_DUE' => _en ? 'Past due' : 'Vencida',
-        'CANCELLED' || 'CANCELED' => _en ? 'Cancelled' : 'Cancelada',
-        _ => status,
-      };
+    'ACTIVE' => _en ? 'Active' : 'Activa',
+    'TRIALING' => _en ? 'Trial' : 'Prueba',
+    'PAST_DUE' => _en ? 'Past due' : 'Vencida',
+    'CANCELLED' || 'CANCELED' => _en ? 'Cancelled' : 'Cancelada',
+    _ => status,
+  };
 
   // Panel de Plataforma (super-admin)
   String get platformTitle => _en ? 'Platform' : 'Plataforma';
@@ -815,18 +900,18 @@ class Strings {
   String get platformDeleteError =>
       _en ? "We couldn't delete it." : 'No pudimos eliminarlo.';
   String platformRegionLabel(String region) => switch (region) {
-        'AR' => 'Argentina',
-        'INTL' => _en ? 'International' : 'Internacional',
-        _ => region,
-      };
+    'AR' => 'Argentina',
+    'INTL' => _en ? 'International' : 'Internacional',
+    _ => region,
+  };
 
   String shiftSourceLabel(String source) => switch (source) {
-        'QR' || 'qr' => 'QR',
-        'MANUAL' || 'manual' => _en ? 'Manual' : 'Manual',
-        'ADJUSTED' || 'adjusted' => _en ? 'Adjusted' : 'Ajustado',
-        'KIOSK' || 'kiosk' => _en ? 'Kiosk' : 'Kiosco',
-        _ => source,
-      };
+    'QR' || 'qr' => 'QR',
+    'MANUAL' || 'manual' => _en ? 'Manual' : 'Manual',
+    'ADJUSTED' || 'adjusted' => _en ? 'Adjusted' : 'Ajustado',
+    'KIOSK' || 'kiosk' => _en ? 'Kiosk' : 'Kiosco',
+    _ => source,
+  };
 
   // Proveedores (Fase 6)
   String get proveedoresTitle => _en ? 'Suppliers' : 'Proveedores';
@@ -848,13 +933,18 @@ class Strings {
 
   // Ajustes (Fase 6)
   String get ajustesTitle => _en ? 'Settings' : 'Ajustes';
-  String get setLaborCost => _en ? 'Monthly labor cost' : 'Costo laboral mensual';
-  String get setOtherFixed => _en ? 'Other monthly fixed' : 'Otros fijos mensuales';
-  String get setTargetFoodCost => _en ? 'Target food cost %' : 'Food cost objetivo %';
+  String get setLaborCost =>
+      _en ? 'Monthly labor cost' : 'Costo laboral mensual';
+  String get setOtherFixed =>
+      _en ? 'Other monthly fixed' : 'Otros fijos mensuales';
+  String get setTargetFoodCost =>
+      _en ? 'Target food cost %' : 'Food cost objetivo %';
   String get setVat => _en ? 'VAT %' : 'IVA %';
-  String get setInflation => _en ? 'Monthly inflation %' : 'Inflación mensual %';
+  String get setInflation =>
+      _en ? 'Monthly inflation %' : 'Inflación mensual %';
   String get setSeats => _en ? 'Seats' : 'Cubiertos';
-  String get setOpenMinutes => _en ? 'Open minutes/day' : 'Minutos abiertos/día';
+  String get setOpenMinutes =>
+      _en ? 'Open minutes/day' : 'Minutos abiertos/día';
   String get setSave => _en ? 'Save' : 'Guardar';
   String get setSaved => _en ? 'Settings saved' : 'Ajustes guardados';
   String get cancel => _en ? 'Cancel' : 'Cancelar';
@@ -875,8 +965,9 @@ class Strings {
       : 'Se revierten los cobros para poder volver a cobrar.';
   String get setDelete => _en ? 'Delete' : 'Eliminar';
   String get setEdit => _en ? 'Edit' : 'Editar';
-  String get ajustesSubtitle =>
-      _en ? 'Manage your data and preferences.' : 'Gestioná tus datos y preferencias.';
+  String get ajustesSubtitle => _en
+      ? 'Manage your data and preferences.'
+      : 'Gestioná tus datos y preferencias.';
   String get financeConfigTitle =>
       _en ? 'Finance settings' : 'Configuración de finanzas';
   String get financeConfigOpen =>
@@ -897,9 +988,8 @@ class Strings {
   String get cashBlindDesc => _en
       ? 'On close, the cashier counts without seeing the expected total (the difference comes out honest).'
       : 'Al cerrar caja, el cajero cuenta sin ver el esperado (la diferencia sale honesta).';
-  String get cashSaveError => _en
-      ? "We couldn't save the setting."
-      : 'No pudimos guardar el ajuste.';
+  String get cashSaveError =>
+      _en ? "We couldn't save the setting." : 'No pudimos guardar el ajuste.';
   String get commissionsTitle =>
       _en ? 'Commissions by payment method' : 'Comisiones por medio de pago';
   String get commissionsDesc => _en
@@ -913,16 +1003,15 @@ class Strings {
   String get commissionsSaveError => _en
       ? "We couldn't save the commissions."
       : 'No pudimos guardar las comisiones.';
-  String get commissionsSave =>
-      _en ? 'Save commissions' : 'Guardar comisiones';
+  String get commissionsSave => _en ? 'Save commissions' : 'Guardar comisiones';
   String payMethodLabel(String method) => switch (method) {
-        'CARD' => _en ? 'Card' : 'Tarjeta',
-        'MERCADOPAGO' => 'MercadoPago',
-        'QR' => 'QR',
-        'CASH' => _en ? 'Cash' : 'Efectivo',
-        'TRANSFER' => _en ? 'Transfer' : 'Transferencia',
-        _ => method,
-      };
+    'CARD' => _en ? 'Card' : 'Tarjeta',
+    'MERCADOPAGO' => 'MercadoPago',
+    'QR' => 'QR',
+    'CASH' => _en ? 'Cash' : 'Efectivo',
+    'TRANSFER' => _en ? 'Transfer' : 'Transferencia',
+    _ => method,
+  };
 
   // Ajustes › Salones y mesas
   String get sectorsTitle => _en ? 'Sectors' : 'Sectores';
@@ -950,8 +1039,9 @@ class Strings {
   String get inviteSent => _en ? 'Invitation sent.' : 'Invitación enviada.';
   String get inviteEmailInvalid =>
       _en ? 'Enter a valid email.' : 'Ingresá un email válido.';
-  String get inviteError =>
-      _en ? "We couldn't send the invitation." : 'No pudimos enviar la invitación.';
+  String get inviteError => _en
+      ? "We couldn't send the invitation."
+      : 'No pudimos enviar la invitación.';
 
   // Ajustes › Datos del local (fiscal)
   String get fiscalTitle => _en ? 'Fiscal data' : 'Datos fiscales';
@@ -965,8 +1055,9 @@ class Strings {
   String get fiscalSave => _en ? 'Save address' : 'Guardar dirección';
   String get fiscalSaved =>
       _en ? 'Fiscal address saved.' : 'Dirección fiscal guardada.';
-  String get fiscalError =>
-      _en ? "We couldn't save the address." : 'No pudimos guardar la dirección.';
+  String get fiscalError => _en
+      ? "We couldn't save the address."
+      : 'No pudimos guardar la dirección.';
 
   // Ajustes › Integraciones (Mercado Pago)
   String get mpTitle => 'Mercado Pago';

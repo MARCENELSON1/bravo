@@ -317,6 +317,8 @@ class ProductORM(Base):
     price_currency: Mapped[str] = mapped_column(String(3))
     category: Mapped[str | None] = mapped_column(String(60), nullable=True)
     station: Mapped[str] = mapped_column(String(10), server_default="KITCHEN")
+    # Tiempo de servicio: IMMEDIATE | STARTER | MAIN | DESSERT (0054).
+    course: Mapped[str] = mapped_column(String(10), server_default="MAIN")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     # QR menu enrichment (Carta QR F2). Nullable/defaulted → parity for existing rows.
     image_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
@@ -391,6 +393,8 @@ class OrderItemORM(Base):
     # Per-item kitchen lifecycle + routing (Fase 14): see ItemStatus / Station.
     status: Mapped[str] = mapped_column(String(20), server_default="PENDING", index=True)
     station: Mapped[str] = mapped_column(String(10), server_default="KITCHEN", index=True)
+    # Tiempo de servicio copiado del producto al cargar (0054).
+    course: Mapped[str] = mapped_column(String(10), server_default="MAIN")
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     ready_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     position: Mapped[int] = mapped_column(Integer, default=0)

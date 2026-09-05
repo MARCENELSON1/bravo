@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -19,6 +21,9 @@ class AddOrderItemRequest(BaseModel):
     # a list (even empty) = validated against the product's groups (422 if a
     # required group is unmet), deltas folded into the unit price.
     option_ids: list[str] | None = None
+    # Override del curso por línea ("la provoleta como principal"); None = el
+    # curso del producto en la carta.
+    course: Literal["IMMEDIATE", "STARTER", "MAIN", "DESSERT"] | None = None
 
 
 class BatchOrderItem(BaseModel):
@@ -37,6 +42,10 @@ class AddOrderItemsBatchRequest(BaseModel):
 
 class SetItemQuantityRequest(BaseModel):
     quantity: int = Field(ge=1)
+
+
+class SetItemCourseRequest(BaseModel):
+    course: Literal["IMMEDIATE", "STARTER", "MAIN", "DESSERT"]
 
 
 class SetItemNoteRequest(BaseModel):
@@ -78,6 +87,8 @@ class OrderItemResponse(BaseModel):
     # Per-item kitchen lifecycle (Fase 14) — drives the per-station KDS board.
     status: str
     station: str
+    # Tiempo de servicio de la línea: IMMEDIATE | STARTER | MAIN | DESSERT.
+    course: str = "MAIN"
     # ISO-8601; lets the KDS order items by how long they've been waiting.
     sent_at: str | None = None
     # Modificadores elegidos (Carta QR F2 D) — para el ticket de cocina / floor.
@@ -92,6 +103,10 @@ class OrderResponse(BaseModel):
     currency: str
     items: list[OrderItemResponse]
     total_amount: int
+    # Cursos (derivados): el que está al fuego y el próximo en espera
+    # ("Marchar principales"). None cuando no aplica.
+    active_course: str | None = None
+    next_course: str | None = None
     # Origen de la comanda (Carta QR F2): WAITER | CUSTOMER_QR. Default WAITER = paridad.
     source: str = "WAITER"
     # ISO-8601; lets the KDS show how long an order has been waiting.

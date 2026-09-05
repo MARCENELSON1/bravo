@@ -439,8 +439,10 @@ class ConfirmGatewayPayment:
             if self._auto_assign is not None
             else None
         )
+        # Autoservicio: el comensal ya pagó y no hay mozo marcando el ritmo → todo
+        # al fuego (sin cursos en espera).
         await self._send_order.execute(
-            tenant_id=tenant_id, order_id=order.id, waiter_id=waiter_id
+            tenant_id=tenant_id, order_id=order.id, waiter_id=waiter_id, coursing=False
         )
         await _fire_sale_effects(
             tenant_id,
