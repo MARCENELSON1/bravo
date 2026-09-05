@@ -6,6 +6,8 @@ import '../../l10n/strings.dart';
 import '../../ui/state_views.dart';
 import '../../util/money.dart';
 import '../invoices/invoice_repository.dart';
+import '../floor/floor_providers.dart';
+import '../order/order_dtos.dart';
 import '../order/order_providers.dart';
 import 'cash_providers.dart';
 import 'payment_dtos.dart';
@@ -31,6 +33,9 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
   ];
 
   PaymentMethod _method = PaymentMethod.cash;
+  bool _detailOpen =
+      true; // el detalle arranca visible: es lo que se lee al cobrar
+  bool _closing = false;
   final _amount = TextEditingController();
   final _tip = TextEditingController();
 
@@ -51,9 +56,14 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
         ref.watch(orderPaymentsProvider(orderId)).valueOrNull ?? const [];
     final currency = order?.currency ?? 'ARS';
     final total = order?.totalAmount ?? 0;
-    final paid =
-        payments.where((p) => p.isConfirmedInflow).fold(0, (a, p) => a + p.amount);
+    final paid = payments
+        .where((p) => p.isConfirmedInflow)
+        .fold(0, (a, p) => a + p.amount);
     final remaining = (total - paid).clamp(0, total);
+    final isPaid = order?.status == 'PAID';
+    final tips = payments
+        .where((p) => p.isConfirmedInflow)
+        .fold(0, (a, p) => a + p.tipAmount);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -67,16 +77,19 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Qué se está cobrando: el mozo puede leerle la cuenta al cliente
+            // sin salir del cobro (cantidades, modificadores y precio por línea).
+            if (order != null) _detail(context, s, order, paid, tips),
             Row(
               children: [
-                Text(s.cobroRemaining,
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  s.cobroRemaining,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const Spacer(),
                 Text(
                   formatMoney(remaining, currency),
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
+                  style: Theme.of(context).textTheme.titleMedium
                       ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
@@ -97,7 +110,9 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
               const SizedBox(height: 12),
               TextField(
                 controller: _amount,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(labelText: s.cobroAmount),
               ),
               const SizedBox(height: 8),
@@ -112,7 +127,9 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
               const SizedBox(height: 8),
               TextField(
                 controller: _tip,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(labelText: s.cobroTip),
               ),
               const SizedBox(height: 12),
@@ -122,17 +139,38 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
                 label: Text(s.cobroRegister),
               ),
             ] else if (payments.isNotEmpty) ...[
-              OutlinedButton.icon(
-                onPressed: _reopen,
-                icon: const Icon(Icons.lock_open_outlined),
-                label: Text(s.cobroReopen),
-              ),
-              const SizedBox(height: 8),
-              _invoiceSection(s),
+              // Saldo 0 pero la comanda no está cerrada (la reabrieron y no le
+              // agregaron nada): la plata ya está, solo falta volver a cerrarla.
+              // Sin esto, facturar falla con "tiene que estar pagada".
+              if (!isPaid) ...[
+                Text(
+                  s.cobroCloseHint,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed: _closing ? null : _close,
+                  icon: const Icon(Icons.lock_outline),
+                  label: Text(s.cobroClose),
+                ),
+              ] else ...[
+                OutlinedButton.icon(
+                  onPressed: _reopen,
+                  icon: const Icon(Icons.lock_open_outlined),
+                  label: Text(s.cobroReopen),
+                ),
+                const SizedBox(height: 8),
+                _invoiceSection(s),
+              ],
             ],
             if (payments.isNotEmpty) ...[
               const Divider(height: 24),
-              Text(s.cobroPayments, style: Theme.of(context).textTheme.titleSmall),
+              Text(
+                s.cobroPayments,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
               for (final p in payments)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -158,10 +196,150 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
     );
   }
 
+  /// Detalle de la cuenta: cada línea con cantidad, personalización y precio,
+  /// más el subtotal y lo ya pagado. Colapsable para no empujar los controles
+  /// de cobro cuando la comanda es larga.
+  Widget _detail(
+    BuildContext context,
+    Strings s,
+    Order order,
+    int paid,
+    int tips,
+  ) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final items = order.liveItems;
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: () => setState(() => _detailOpen = !_detailOpen),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Text(s.cobroDetail, style: theme.textTheme.titleSmall),
+                const SizedBox(width: 6),
+                Text(
+                  s.ticketItems(items.length),
+                  style: theme.textTheme.labelSmall?.copyWith(color: muted),
+                ),
+                const Spacer(),
+                Icon(
+                  _detailOpen ? Icons.expand_less : Icons.expand_more,
+                  color: muted,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_detailOpen) ...[
+          for (final it in items)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 34,
+                    child: Text(
+                      '${it.quantity}×',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(it.name, style: theme.textTheme.bodyMedium),
+                        if (it.selectedOptions.isNotEmpty)
+                          Text(
+                            it.selectedOptions.map((o) => o.name).join(' · '),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: muted,
+                            ),
+                          ),
+                        if (it.note != null && it.note!.isNotEmpty)
+                          Text(
+                            '› ${it.note}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: muted,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    formatMoney(it.lineTotal, order.currency),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const Divider(height: 18),
+          _totalRow(
+            context,
+            s.cobroSubtotal,
+            order.totalAmount,
+            order.currency,
+            bold: true,
+          ),
+          if (paid > 0)
+            _totalRow(context, s.cobroPaid, -paid, order.currency, muted: true),
+          if (tips > 0)
+            _totalRow(
+              context,
+              s.cobroTipsIncluded,
+              tips,
+              order.currency,
+              muted: true,
+            ),
+          const SizedBox(height: 6),
+        ],
+        const Divider(height: 18),
+      ],
+    );
+  }
+
+  Widget _totalRow(
+    BuildContext context,
+    String label,
+    int amount,
+    String currency, {
+    bool bold = false,
+    bool muted = false,
+  }) {
+    final theme = Theme.of(context);
+    final color = muted ? theme.colorScheme.onSurfaceVariant : null;
+    final style = theme.textTheme.bodyMedium?.copyWith(
+      fontWeight: bold ? FontWeight.w700 : null,
+      color: color,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Text(label, style: style),
+          const Spacer(),
+          Text(formatMoney(amount, currency), style: style),
+        ],
+      ),
+    );
+  }
+
   Widget _preset(String label, int minor) => ActionChip(
-        label: Text(label),
-        onPressed: () => _amount.text = (minor / 100).toStringAsFixed(2),
-      );
+    label: Text(label),
+    onPressed: () => _amount.text = (minor / 100).toStringAsFixed(2),
+  );
 
   Future<void> _register() async {
     final s = context.s;
@@ -169,12 +347,9 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
     if (amount <= 0) return;
     final tip = pesosToMinor(_tip.text) ?? 0;
     try {
-      final payment = await ref.read(paymentRepositoryProvider).register(
-            orderId,
-            method: _method,
-            amount: amount,
-            tip: tip,
-          );
+      final payment = await ref
+          .read(paymentRepositoryProvider)
+          .register(orderId, method: _method, amount: amount, tip: tip);
       ref.invalidate(orderPaymentsProvider(orderId));
       ref.invalidate(orderControllerProvider(orderId));
       _amount.clear();
@@ -206,6 +381,25 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
       ref.invalidate(orderControllerProvider(orderId));
     } on ApiError catch (e) {
       _toast(e.message);
+    }
+  }
+
+  /// Volver a cerrar una comanda reabierta cuyo saldo ya está cubierto. Usa el
+  /// mismo caso de uso que "Liberar mesa": el server la cierra SOLO si los pagos
+  /// confirmados alcanzan el total (si falta plata, la rechaza).
+  Future<void> _close() async {
+    final s = context.s;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _closing = true);
+    try {
+      await ref.read(orderRepositoryProvider).free(orderId);
+      ref.invalidate(orderControllerProvider(orderId));
+      ref.invalidate(orderPaymentsProvider(orderId));
+      messenger.showSnackBar(SnackBar(content: Text(s.cobroClosed)));
+    } on ApiError catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _closing = false);
     }
   }
 
@@ -290,11 +484,14 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
     );
     if (ok != true) return;
     try {
-      await ref.read(invoiceRepositoryProvider).issueForOrder(
+      await ref
+          .read(invoiceRepositoryProvider)
+          .issueForOrder(
             orderId,
             docType: docType,
-            docNumber:
-                docType == DocType.consumidorFinal ? null : numCtrl.text.trim(),
+            docNumber: docType == DocType.consumidorFinal
+                ? null
+                : numCtrl.text.trim(),
           );
       ref.invalidate(orderInvoiceProvider(orderId));
     } on ApiError catch (e) {
@@ -304,7 +501,8 @@ class _CobroSheetState extends ConsumerState<CobroSheet> {
 
   void _toast(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     }
   }
 }

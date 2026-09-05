@@ -252,7 +252,7 @@ class _FloorPageState extends ConsumerState<FloorPage> {
     final v = floorView(t);
     final name = t.name ?? t.number.toString();
     final canServe =
-        v.status == FloorStatus.toServe && (t.activeOrder?.readyCount ?? 0) > 0;
+        v.status == FloorStatus.toServe && t.activeOrder?.readyCourse != null;
     final label = canServe
         ? '$name · ${s.quickServeShort}'
         : v.status == FloorStatus.toCharge && t.activeOrder != null
@@ -388,6 +388,9 @@ class _FloorPageState extends ConsumerState<FloorPage> {
 
   bool _canBill(FloorTable t) {
     if (t.isFree || t.session == null) return false;
+    // Sin nada pedido no hay cuenta que pedir: si no, la mesa queda en
+    // "a cobrar" mostrando $0 y no se puede salir de ahí.
+    if (t.activeOrder?.liveItems.isEmpty ?? true) return false;
     final st = floorView(t).status;
     return st != FloorStatus.toCharge &&
         st != FloorStatus.closed &&
@@ -403,7 +406,7 @@ class _FloorPageState extends ConsumerState<FloorPage> {
     final v = floorView(t);
     final actions = <QuickAction>[];
     QuickAction? primary;
-    if (order != null && order.readyCount > 0) {
+    if (order?.readyCourse != null) {
       actions.add(QuickAction.serve);
       primary = QuickAction.serve;
     }
@@ -465,17 +468,23 @@ class _FloorPageState extends ConsumerState<FloorPage> {
     }
   }
 
+  /// Sirve el CURSO listo de esa mesa (con tiempos, el principal puede seguir
+  /// en cocina mientras la entrada ya está lista).
   Future<void> _serve(FloorTable t) async {
-    final orderId = t.activeOrder?.id;
-    if (orderId == null) return;
+    final order = t.activeOrder;
+    final course = order?.readyCourse;
+    if (order == null || course == null) return;
     final done = context.s.readyServedDone;
     try {
       HapticFeedback.mediumImpact();
-      await ref.read(orderRepositoryProvider).markServed(orderId);
+      await ref
+          .read(orderRepositoryProvider)
+          .advanceCourse(order.id, course, 'served');
       ref.read(floorProvider.notifier).refresh();
       _toast(done);
     } on ApiError catch (e) {
       _toast(e.message);
+      ref.read(floorProvider.notifier).refresh(); // el plano puede estar viejo
     }
   }
 

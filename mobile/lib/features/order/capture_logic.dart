@@ -113,3 +113,34 @@ List<SelectedOption> snapshotOptions(Product p, List<String> optionIds) {
           ),
   ];
 }
+
+/// Línea PENDING de la comanda a la que hay que SUMARLE en vez de crear otra:
+/// mismo producto, misma nota y los mismos modificadores. Tocar dos veces un
+/// producto tiene que dar "2× Milanesa", no dos renglones de 1.
+OrderItem? mergeableLine(
+  Order order,
+  Product product, {
+  String? note,
+  List<String> optionIds = const [],
+}) {
+  final wanted = optionIds.toSet();
+  for (final it in order.items) {
+    if (!it.status.isPending) continue;
+    if (it.productId != product.id) continue;
+    if ((it.note ?? '') != (note ?? '')) continue;
+    final has = it.selectedOptions.map((o) => o.optionId).toSet();
+    if (has.length != wanted.length || !has.containsAll(wanted)) continue;
+    return it;
+  }
+  return null;
+}
+
+/// Última línea PENDING de ese producto (la que se descuenta al tocar "−" en
+/// la grilla). null = no hay nada que quitar.
+OrderItem? lastPendingLine(Order order, String productId) {
+  OrderItem? found;
+  for (final it in order.items) {
+    if (it.status.isPending && it.productId == productId) found = it;
+  }
+  return found;
+}

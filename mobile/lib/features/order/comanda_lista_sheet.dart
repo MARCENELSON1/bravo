@@ -18,8 +18,11 @@ class ComandaListaSheet extends ConsumerStatefulWidget {
   final String orderId;
   final int? tableNumber;
 
-  static Future<void> show(BuildContext context,
-      {required String orderId, int? tableNumber}) {
+  static Future<void> show(
+    BuildContext context, {
+    required String orderId,
+    int? tableNumber,
+  }) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -42,7 +45,18 @@ class _ComandaListaSheetState extends ConsumerState<ComandaListaSheet> {
     final navigator = Navigator.of(context);
     setState(() => _serving = true);
     try {
-      await ref.read(orderRepositoryProvider).markServed(widget.orderId);
+      // Servir el curso listo (no toda la orden: el principal puede estar
+      // todavía en cocina).
+      final order = ref
+          .read(orderControllerProvider(widget.orderId))
+          .valueOrNull;
+      final course = order?.readyCourse;
+      final repo = ref.read(orderRepositoryProvider);
+      if (course != null) {
+        await repo.advanceCourse(widget.orderId, course, 'served');
+      } else {
+        await repo.markServed(widget.orderId);
+      }
       ref.read(floorProvider.notifier).refresh();
       navigator.pop();
       messenger.showSnackBar(SnackBar(content: Text(s.readyServedDone)));
@@ -60,6 +74,9 @@ class _ComandaListaSheetState extends ConsumerState<ComandaListaSheet> {
     final scheme = Theme.of(context).colorScheme;
     final async = ref.watch(orderControllerProvider(widget.orderId));
     final items = async.valueOrNull?.liveItems ?? const <OrderItem>[];
+    // La comanda es en vivo: si el curso ya se sirvió (desde la comanda o el
+    // plano), acá no queda nada para servir.
+    final nothingReady = async.valueOrNull?.readyCourse == null;
 
     return SafeArea(
       child: Padding(
@@ -76,23 +93,29 @@ class _ComandaListaSheetState extends ConsumerState<ComandaListaSheet> {
                 child: Center(child: CircularProgressIndicator()),
               ),
               error: (e, _) => ErrorView(
-                  error: e,
-                  onRetry: () =>
-                      ref.invalidate(orderControllerProvider(widget.orderId))),
+                error: e,
+                onRetry: () =>
+                    ref.invalidate(orderControllerProvider(widget.orderId)),
+              ),
               data: (order) => _items(context, s, order),
             ),
             const SizedBox(height: 14),
             FilledButton.icon(
-              onPressed: (_serving || items.isEmpty) ? null : _markServed,
+              // Nada listo (ya lo sirvieron): el botón no aplica.
+              onPressed: (_serving || items.isEmpty || nothingReady)
+                  ? null
+                  : _markServed,
               icon: _serving
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2))
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Icon(Icons.check_rounded),
               label: Text(s.readyMarkServed),
               style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
             ),
             TextButton(
               onPressed: _serving ? null : () => Navigator.of(context).pop(),
@@ -104,7 +127,12 @@ class _ComandaListaSheetState extends ConsumerState<ComandaListaSheet> {
     );
   }
 
-  Widget _header(BuildContext context, Strings s, ColorScheme scheme, int count) {
+  Widget _header(
+    BuildContext context,
+    Strings s,
+    ColorScheme scheme,
+    int count,
+  ) {
     return Row(
       children: [
         Container(
@@ -124,9 +152,7 @@ class _ComandaListaSheetState extends ConsumerState<ComandaListaSheet> {
                 widget.tableNumber != null
                     ? s.readyModalTitle(widget.tableNumber!)
                     : s.readyModalTitleNoTable,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
+                style: Theme.of(context).textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.w700),
               ),
               Text(
@@ -146,8 +172,10 @@ class _ComandaListaSheetState extends ConsumerState<ComandaListaSheet> {
     final scheme = Theme.of(context).colorScheme;
     final items = order.liveItems;
     if (items.isEmpty) {
-      return Text(s.comandaEmpty,
-          style: TextStyle(color: scheme.onSurfaceVariant));
+      return Text(
+        s.comandaEmpty,
+        style: TextStyle(color: scheme.onSurfaceVariant),
+      );
     }
     return GlassPanel(
       child: Column(
@@ -163,7 +191,11 @@ class _ComandaListaSheetState extends ConsumerState<ComandaListaSheet> {
   }
 
   Widget _itemRow(
-      BuildContext context, Strings s, ColorScheme scheme, OrderItem it) {
+    BuildContext context,
+    Strings s,
+    ColorScheme scheme,
+    OrderItem it,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -174,20 +206,24 @@ class _ComandaListaSheetState extends ConsumerState<ComandaListaSheet> {
             color: scheme.primary.withValues(alpha: 0.16),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text('${it.quantity}×',
-              style: TextStyle(
-                  color: scheme.primary, fontWeight: FontWeight.w700)),
+          child: Text(
+            '${it.quantity}×',
+            style: TextStyle(
+              color: scheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(it.name,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.copyWith(fontWeight: FontWeight.w600)),
+              Text(
+                it.name,
+                style: Theme.of(context).textTheme.bodyLarge
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
               if (it.selectedOptions.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Wrap(
@@ -197,12 +233,17 @@ class _ComandaListaSheetState extends ConsumerState<ComandaListaSheet> {
                     for (final o in it.selectedOptions)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: scheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(999),
                         ),
-                        child: Text(o.name, style: const TextStyle(fontSize: 12)),
+                        child: Text(
+                          o.name,
+                          style: const TextStyle(fontSize: 12),
+                        ),
                       ),
                   ],
                 ),
@@ -212,15 +253,21 @@ class _ComandaListaSheetState extends ConsumerState<ComandaListaSheet> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.sticky_note_2_outlined,
-                        size: 15, color: scheme.tertiary),
+                    Icon(
+                      Icons.sticky_note_2_outlined,
+                      size: 15,
+                      color: scheme.tertiary,
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
-                      child: Text('${s.readyNoteLabel}: ${it.note}',
-                          style: TextStyle(
-                              color: scheme.tertiary,
-                              fontSize: 13,
-                              fontStyle: FontStyle.italic)),
+                      child: Text(
+                        '${s.readyNoteLabel}: ${it.note}',
+                        style: TextStyle(
+                          color: scheme.tertiary,
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                     ),
                   ],
                 ),

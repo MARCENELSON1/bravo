@@ -247,6 +247,14 @@ class Strings {
 
   // Cobro
   String get cobro => _en ? 'Charge' : 'Cobrar';
+  String get cobroClose => _en ? 'Close bill' : 'Cerrar cuenta';
+  String get cobroCloseHint => _en
+      ? 'The bill is fully paid. Close it to invoice or free the table.'
+      : 'La cuenta está paga. Cerrala para poder facturar o liberar la mesa.';
+  String get cobroClosed => _en ? 'Bill closed.' : 'Cuenta cerrada.';
+  String get cobroDetail => _en ? 'Bill detail' : 'Detalle de la cuenta';
+  String get cobroSubtotal => _en ? 'Subtotal' : 'Subtotal';
+  String get cobroTipsIncluded => _en ? 'Tips' : 'Propinas';
   String get cobroRemaining => _en ? 'Remaining' : 'Restante';
   String get cobroAmount => _en ? 'Amount' : 'Monto';
   String get cobroTip => _en ? 'Tip' : 'Propina';

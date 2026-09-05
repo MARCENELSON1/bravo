@@ -202,6 +202,16 @@ class Order {
   int get heldCount =>
       items.where((i) => i.status.isHeld).fold(0, (a, i) => a + i.quantity);
 
+  /// Curso más bajo que está LISTO para servir. Es lo que hay que servir ahora;
+  /// null = no hay nada listo. Servir "toda la orden" mezclaría tiempos (la
+  /// entrada lista con el principal que recién sale), así que siempre va por curso.
+  Course? get readyCourse {
+    for (final c in Course.values) {
+      if (courseState(c) == CourseState.ready) return c;
+    }
+    return null;
+  }
+
   /// Estado del curso (espeja `Order.course_state` del backend). null = sin platos.
   CourseState? courseState(Course c) {
     final st = liveItems

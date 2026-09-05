@@ -21,11 +21,13 @@ class CaptureGrid extends ConsumerStatefulWidget {
     required this.order,
     required this.onAdd,
     required this.onAddWithOptions,
+    required this.onRemove,
   });
 
   final Order order;
   final void Function(Product product) onAdd;
   final void Function(Product product) onAddWithOptions;
+  final void Function(Product product) onRemove;
 
   @override
   ConsumerState<CaptureGrid> createState() => _CaptureGridState();
@@ -38,6 +40,12 @@ const _favoritesLimit = 15;
 class _CaptureGridState extends ConsumerState<CaptureGrid> {
   String? _tab; // null → Frecuentes
   final _search = TextEditingController();
+
+  /// Frecuentes CONGELADOS mientras la comanda está abierta. Si se re-rankeara
+  /// en vivo, cada toque movería los productos de lugar bajo el dedo y mataría
+  /// la memoria muscular (que es lo que hace rápida a la grilla). Se recalcula
+  /// la próxima vez que se abre una comanda.
+  List<String>? _favIds;
 
   @override
   void initState() {
@@ -72,7 +80,16 @@ class _CaptureGridState extends ConsumerState<CaptureGrid> {
         if (searching) {
           shown = filterProducts(orderable, query: query);
         } else if (_tab == null) {
-          shown = usage.rank(orderable).take(_favoritesLimit).toList();
+          _favIds ??= usage
+              .rank(orderable)
+              .take(_favoritesLimit)
+              .map((p) => p.id)
+              .toList();
+          final byId = {for (final p in orderable) p.id: p};
+          shown = [
+            for (final id in _favIds!)
+              if (byId[id] != null) byId[id]!,
+          ];
         } else if (_tab == _allTab) {
           shown = orderable;
         } else {
@@ -171,6 +188,10 @@ class _CaptureGridState extends ConsumerState<CaptureGrid> {
             HapticFeedback.mediumImpact();
             widget.onAddWithOptions(p);
           },
+          onRemove: () {
+            HapticFeedback.selectionClick();
+            widget.onRemove(p);
+          },
         );
       },
     );
@@ -183,12 +204,14 @@ class _ProductTile extends StatelessWidget {
     required this.count,
     required this.onTap,
     required this.onLongPress,
+    required this.onRemove,
   });
 
   final Product product;
   final int count;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -239,6 +262,30 @@ class _ProductTile extends StatelessWidget {
             ),
           ),
         ),
+        // Quitar uno: solo aparece si ese producto está en la comanda, así la
+        // grilla no se llena de controles cuando está vacía.
+        if (has)
+          Positioned(
+            top: -8,
+            left: -8,
+            child: Material(
+              color: scheme.surfaceContainerHighest,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onRemove,
+                child: SizedBox(
+                  width: 26,
+                  height: 26,
+                  child: Icon(
+                    Icons.remove,
+                    size: 16,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          ),
         if (has)
           Positioned(
             top: -7,

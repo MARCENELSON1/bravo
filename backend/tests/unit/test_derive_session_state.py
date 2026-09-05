@@ -144,3 +144,26 @@ def test_new_round_after_served_returns_to_open():
         [_order([_item(ItemStatus.SERVED), _item(ItemStatus.PENDING)], OrderStatus.SENT)],
     )
     assert d.status is SessionStatus.OPEN
+
+
+def test_to_charge_needs_something_to_charge():
+    # Se pidió la cuenta pero la mesa no tiene nada pedido (se anuló todo, o
+    # fue un toque por error): no puede quedar trabada en "a cobrar" con $0.
+    bill = _T0 + timedelta(minutes=5)
+    d = derive_session_state(_session(bill_requested_at=bill), [])
+    assert d.status is SessionStatus.OPEN
+
+    d = derive_session_state(
+        _session(bill_requested_at=bill), [_order([], OrderStatus.OPEN)]
+    )
+    assert d.status is SessionStatus.OPEN
+
+
+def test_to_charge_when_bill_requested_with_items():
+    bill = _T0 + timedelta(minutes=5)
+    d = derive_session_state(
+        _session(bill_requested_at=bill),
+        [_order([_item(ItemStatus.SERVED)], OrderStatus.SERVED)],
+    )
+    assert d.status is SessionStatus.TO_CHARGE
+    assert d.since == bill

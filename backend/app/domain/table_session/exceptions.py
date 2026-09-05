@@ -23,3 +23,10 @@ class SessionHasActiveOrders(DomainError):
 
     code = "session_has_active_orders"
     message = "La mesa tiene una comanda activa: cobrala o anulala antes de cerrarla."
+
+
+class NothingToCharge(DomainError):
+    """Asking for the bill of a table with nothing ordered."""
+
+    code = "nothing_to_charge"
+    message = "La mesa no tiene nada para cobrar."

@@ -37,7 +37,33 @@ class OrderController extends AutoDisposeFamilyAsyncNotifier<Order, String> {
   Future<void> _lock = Future<void>.value();
 
   @override
-  Future<Order> build(String arg) => ref.read(orderRepositoryProvider).get(arg);
+  Future<Order> build(String arg) {
+    // La comanda es EN VIVO, como el piso: mientras el mozo la tiene abierta, la
+    // cocina puede marcar un curso listo o alguien puede servir desde el plano.
+    // Sin esto la pantalla queda congelada y TODA acción falla contra el server
+    // ("no puede cambiar a ese estado") hasta salir y volver a entrar.
+    final poll = Timer.periodic(const Duration(seconds: 10), (_) => refresh());
+    final sse = ref.read(realtimeServiceProvider).events('floor').listen((e) {
+      if (e.name == 'floor.changed' || e.name == 'order.ready') refresh();
+    });
+    ref.onDispose(() {
+      poll.cancel();
+      sse.cancel();
+    });
+    return ref.read(orderRepositoryProvider).get(arg);
+  }
+
+  /// Trae la orden autoritativa. Se serializa con las mutaciones (no pisa una
+  /// captura en vuelo) y se traga los errores: es un refresco de fondo.
+  Future<void> refresh() async {
+    try {
+      await _serialized(() async {
+        state = AsyncData(await _repo.get(arg));
+      });
+    } catch (_) {
+      // Error transitorio del poll/SSE: no pisamos datos buenos.
+    }
+  }
 
   OrderRepository get _repo => ref.read(orderRepositoryProvider);
   SyncQueue get _queue => ref.read(syncQueueProvider);
@@ -64,6 +90,11 @@ class OrderController extends AutoDisposeFamilyAsyncNotifier<Order, String> {
     String? note,
     List<String> optionIds = const [],
   }) async {
+    // Tocar dos veces el mismo producto suma a la línea (2× Milanesa), no crea
+    // otro renglón. Solo mezcla si nota y modificadores coinciden.
+    final same = mergeableLine(_current, p, note: note, optionIds: optionIds);
+    if (same != null) return setQty(same.id, same.quantity + qty);
+
     final itemId = const Uuid().v4();
     state = AsyncData(
       applyAdd(

@@ -99,6 +99,7 @@ from app.domain.shared.exceptions import (
 )
 from app.domain.table.exceptions import TableNotFound
 from app.domain.table_session.exceptions import (
+    NothingToCharge,
     SectorNotFound,
     SessionHasActiveOrders,
     SessionNotFound,
@@ -153,6 +154,7 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (SessionNotFound, 404),
     (TableAlreadyAssigned, 409),
     (SessionHasActiveOrders, 409),
+    (NothingToCharge, 409),
     (SectorNotFound, 404),
     (CustomerNotFound, 404),
     (ProductNotFound, 404),

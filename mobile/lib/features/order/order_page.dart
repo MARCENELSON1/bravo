@@ -16,6 +16,7 @@ import '../floor/floor_dtos.dart';
 import '../floor/floor_providers.dart';
 import '../settings/printer_page.dart';
 import 'capture_grid.dart';
+import 'capture_logic.dart';
 import 'order_dtos.dart';
 import 'order_providers.dart';
 import 'product_dtos.dart';
@@ -119,6 +120,7 @@ class _OrderPageState extends ConsumerState<OrderPage> {
             order: order,
             onAdd: _add,
             onAddWithOptions: _addWithOptions,
+            onRemove: _removeOne,
           ),
         ),
         _actionBar(context, s, order),
@@ -502,10 +504,76 @@ class _OrderPageState extends ConsumerState<OrderPage> {
 
   // --- Barra de acción fija (zona del pulgar) ---
 
+  /// Barra fija: UNA acción primaria según lo que la mesa necesita ahora
+  /// (servir el curso listo > marchar lo cargado > marchar el que espera >
+  /// cobrar cuando ya está todo servido). Cobrar deja de ser un iconito
+  /// escondido: cuando es lo que toca, es el botón grande.
   Widget _actionBar(BuildContext context, Strings s, Order order) {
     final scheme = Theme.of(context).colorScheme;
-    final ready = order.readyCount;
+    final readyCourse = order.readyCourse;
     final pending = order.pendingCount;
+    final items = order.liveItems;
+    final allServed =
+        items.isNotEmpty && items.every((i) => i.status == ItemStatus.served);
+
+    Widget primary({
+      required String label,
+      required IconData icon,
+      required VoidCallback? onPressed,
+      Color? background,
+      Color? foreground,
+    }) => Expanded(
+      child: FilledButton.icon(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(0, 48),
+          backgroundColor: background,
+          foregroundColor: foreground,
+        ),
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(label),
+      ),
+    );
+
+    final Widget action;
+    var showCharge =
+        true; // el iconito de cobrar, salvo que cobrar sea primario
+    if (readyCourse != null) {
+      action = primary(
+        label: s.serveCourse(readyCourse),
+        icon: Icons.room_service_outlined,
+        onPressed: () => _serveCourse(readyCourse),
+        background: WellnodPalette.warn,
+        foreground: Colors.black,
+      );
+    } else if (pending > 0) {
+      action = primary(
+        label: s.marchCount(pending),
+        icon: Icons.send,
+        onPressed: _march,
+      );
+    } else if (order.nextCourse != null) {
+      action = primary(
+        label: s.fireCourse(order.nextCourse!),
+        icon: Icons.send,
+        onPressed: _fireNext,
+      );
+    } else if (allServed) {
+      // Todo servido: lo único que queda es cobrar.
+      showCharge = false;
+      action = primary(
+        label: s.cobro,
+        icon: Icons.payments_outlined,
+        onPressed: _openCobro,
+      );
+    } else {
+      action = primary(
+        label: s.marchCount(0),
+        icon: Icons.send,
+        onPressed: null,
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       decoration: BoxDecoration(
@@ -516,61 +584,16 @@ class _OrderPageState extends ConsumerState<OrderPage> {
       ),
       child: Row(
         children: [
-          // Hay platos listos: servir es lo primario (ámbar de atención).
-          if (ready > 0) ...[
-            Expanded(
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: WellnodPalette.warn,
-                  foregroundColor: Colors.black,
-                  minimumSize: const Size(0, 48),
-                ),
-                onPressed: _serve,
-                icon: const Icon(Icons.room_service_outlined),
-                label: Text(s.markServedCount(ready)),
-              ),
-            ),
+          action,
+          if (showCharge) ...[
             const SizedBox(width: 8),
+            IconButton.outlined(
+              onPressed: _openCobro,
+              icon: const Icon(Icons.payments_outlined),
+              tooltip: s.cobro,
+              style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+            ),
           ],
-          // Se está cargando: marchar. Sin pendientes pero con un curso en
-          // espera: "Marchar principales". Sin nada: marchar deshabilitado.
-          if (pending > 0) ...[
-            Expanded(
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
-                onPressed: _march,
-                icon: const Icon(Icons.send),
-                label: Text(s.marchCount(pending)),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ] else if (order.nextCourse != null) ...[
-            Expanded(
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
-                onPressed: _fireNext,
-                icon: const Icon(Icons.send),
-                label: Text(s.fireCourse(order.nextCourse!)),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ] else if (ready == 0) ...[
-            Expanded(
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
-                onPressed: null,
-                icon: const Icon(Icons.send),
-                label: Text(s.marchCount(0)),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          IconButton.outlined(
-            onPressed: _openCobro,
-            icon: const Icon(Icons.payments_outlined),
-            tooltip: s.cobro,
-            style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
-          ),
         ],
       ),
     );
@@ -636,6 +659,17 @@ class _OrderPageState extends ConsumerState<OrderPage> {
     }
   }
 
+  /// "−" en la grilla: descuenta uno de la última línea pendiente de ese
+  /// producto (y si queda en cero, la saca).
+  Future<void> _removeOne(Product p) async {
+    final order = ref.read(orderControllerProvider(orderId)).valueOrNull;
+    if (order == null) return;
+    final line = lastPendingLine(order, p.id);
+    if (line == null) return;
+    if (line.quantity > 1) return _setQty(line, line.quantity - 1);
+    return _remove(line);
+  }
+
   Future<void> _setQty(OrderItem it, int qty) async {
     if (qty < 1) return _remove(it);
     try {
@@ -653,27 +687,13 @@ class _OrderPageState extends ConsumerState<OrderPage> {
     }
   }
 
-  Future<void> _serve() async {
-    final s = context.s;
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      HapticFeedback.mediumImpact();
-      await _ctrl.served();
-      if (!mounted) return;
-      ref.read(floorProvider.notifier).refresh();
-      messenger.showSnackBar(SnackBar(content: Text(s.readyServedDone)));
-    } on ApiError catch (e) {
-      _toast(e.message);
-    }
-  }
-
   Future<void> _fireNext() async {
     try {
       HapticFeedback.mediumImpact();
       await _ctrl.fireNext();
       if (mounted) ref.read(floorProvider.notifier).refresh();
     } on ApiError catch (e) {
-      _toast(e.message);
+      _heal(e);
     }
   }
 
@@ -683,20 +703,29 @@ class _OrderPageState extends ConsumerState<OrderPage> {
       await _ctrl.fireAll();
       if (mounted) ref.read(floorProvider.notifier).refresh();
     } on ApiError catch (e) {
-      _toast(e.message);
+      _heal(e);
     }
   }
 
   Future<void> _serveCourse(Course c) async {
     final done = context.s.readyServedDone;
     try {
+      HapticFeedback.mediumImpact();
       await _ctrl.serveCourse(c);
       if (!mounted) return;
       ref.read(floorProvider.notifier).refresh();
       _toast(done);
     } on ApiError catch (e) {
-      _toast(e.message);
+      _heal(e);
     }
+  }
+
+  /// La acción chocó contra el estado real (la cocina o el plano movieron la
+  /// comanda): avisar y recargar del server para que la pantalla se corrija
+  /// sola, en vez de quedar clavada fallando.
+  void _heal(ApiError e) {
+    _toast(e.message);
+    _ctrl.refresh();
   }
 
   Future<void> _march() async {

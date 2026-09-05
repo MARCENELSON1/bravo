@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/session_notifier.dart';
 import '../../data/realtime/realtime_service.dart';
 import '../../l10n/strings.dart';
+import '../floor/floor_dtos.dart';
 import '../floor/floor_providers.dart';
 import '../order/comanda_lista_sheet.dart';
 
@@ -13,7 +14,9 @@ import '../order/comanda_lista_sheet.dart';
 /// datos del modal. Función pura (testeable). Devuelve null si no aplica (otro
 /// evento, otro mozo, o sin `order_id`).
 ({String orderId, int? tableNumber})? readyOrderFor(
-    RealtimeEvent e, String userId) {
+  RealtimeEvent e,
+  String userId,
+) {
   if (e.name != 'order.ready') return null;
   if (e.data['waiter_id'] != userId) return null;
   final orderId = e.data['order_id'] as String?;
@@ -38,6 +41,11 @@ class ReadyAlert extends ConsumerStatefulWidget {
 class _ReadyAlertState extends ConsumerState<ReadyAlert> {
   StreamSubscription<RealtimeEvent>? _sub;
 
+  /// Orden del banner visible. Si esa comanda deja de tener un curso listo
+  /// (la sirvió el propio mozo desde la comanda, o alguien más), el aviso se
+  /// descarta solo: si no, queda pegado y su "Marcar servido" falla.
+  String? _bannerOrderId;
+
   @override
   void initState() {
     super.initState();
@@ -53,26 +61,50 @@ class _ReadyAlertState extends ConsumerState<ReadyAlert> {
     _showBanner(ready.orderId, ready.tableNumber);
   }
 
+  /// Ya no hay nada listo en esa mesa → sacar el aviso.
+  void _dismissIfServed(List<FloorTable> tables) {
+    final id = _bannerOrderId;
+    if (id == null) return;
+    for (final t in tables) {
+      if (t.activeOrder?.id == id) {
+        if (t.activeOrder!.readyCourse != null) return; // sigue habiendo listo
+        break;
+      }
+    }
+    _bannerOrderId = null;
+    ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+  }
+
   void _showBanner(String orderId, int? tableNumber) {
     final s = context.s;
     final messenger = ScaffoldMessenger.of(context);
+    _bannerOrderId = orderId;
     final scheme = Theme.of(context).colorScheme;
     messenger.showMaterialBanner(
       MaterialBanner(
         leading: Icon(Icons.room_service_outlined, color: scheme.primary),
-        content: Text(tableNumber != null
-            ? s.readyBannerTitle(tableNumber)
-            : s.readyBannerTitleNoTable),
+        content: Text(
+          tableNumber != null
+              ? s.readyBannerTitle(tableNumber)
+              : s.readyBannerTitleNoTable,
+        ),
         actions: [
           TextButton(
-            onPressed: () => messenger.hideCurrentMaterialBanner(),
+            onPressed: () {
+              _bannerOrderId = null;
+              messenger.hideCurrentMaterialBanner();
+            },
             child: Text(s.readyBannerDismiss),
           ),
           FilledButton(
             onPressed: () {
+              _bannerOrderId = null;
               messenger.hideCurrentMaterialBanner();
-              ComandaListaSheet.show(context,
-                  orderId: orderId, tableNumber: tableNumber);
+              ComandaListaSheet.show(
+                context,
+                orderId: orderId,
+                tableNumber: tableNumber,
+              );
             },
             child: Text(s.readyBannerAction),
           ),
@@ -88,5 +120,13 @@ class _ReadyAlertState extends ConsumerState<ReadyAlert> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    // El piso es la fuente en vivo: en cuanto la mesa deja de tener un curso
+    // listo, el aviso se va solo.
+    ref.listen(floorProvider, (_, next) {
+      final tables = next.valueOrNull;
+      if (tables != null && mounted) _dismissIfServed(tables);
+    });
+    return widget.child;
+  }
 }

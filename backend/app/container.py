@@ -737,6 +737,7 @@ class Container(containers.DeclarativeContainer):
         RequestBill,
         sessions=table_session_repository,
         tenant_context=tenant_context,
+        orders=order_repository,
     )
     assign_table_waiter = providers.Factory(
         AssignTableWaiter,

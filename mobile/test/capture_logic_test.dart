@@ -156,4 +156,126 @@ void main() {
       expect(snap.map((o) => o.priceDelta), [0, 800]);
     });
   });
+
+  group('readyCourse (servir SIEMPRE por curso)', () {
+    OrderItem it(String id, Course c, ItemStatus st) => OrderItem(
+      id: id,
+      productId: id,
+      name: id,
+      unitPriceAmount: 1000,
+      quantity: 1,
+      status: st,
+      station: Station.kitchen,
+      course: c,
+    );
+    Order ord(List<OrderItem> items) => Order(
+      id: 'o',
+      tableId: 't',
+      status: 'SENT',
+      currency: 'ARS',
+      items: items,
+      totalAmount: 0,
+    );
+
+    test('devuelve el curso más bajo que está listo', () {
+      final o = ord([
+        it('bife', Course.main, ItemStatus.ready),
+        it('prov', Course.starter, ItemStatus.ready),
+      ]);
+      expect(o.readyCourse, Course.starter); // la entrada primero
+    });
+
+    test('ignora cursos en cocina o ya servidos', () {
+      final o = ord([
+        it('prov', Course.starter, ItemStatus.served),
+        it('bife', Course.main, ItemStatus.sent),
+      ]);
+      expect(o.readyCourse, isNull);
+    });
+
+    test('un curso con un plato aún en cocina NO está listo', () {
+      final o = ord([
+        it('prov', Course.starter, ItemStatus.ready),
+        it('rabas', Course.starter, ItemStatus.preparing),
+      ]);
+      expect(o.courseState(Course.starter), CourseState.inKitchen);
+      expect(o.readyCourse, isNull);
+    });
+
+    test('regresión: entrada servida + bebida en cocina → nada para servir', () {
+      // El caso que rompía: la pantalla vieja mostraba "Listo" y todo fallaba.
+      final o = ord([
+        it('burrata', Course.starter, ItemStatus.served),
+        it('empanadas', Course.starter, ItemStatus.served),
+        it('aperol', Course.immediate, ItemStatus.sent),
+      ]);
+      expect(o.readyCourse, isNull);
+      expect(o.readyCount, 0);
+    });
+  });
+
+  group('merge de líneas (tocar 2 veces = 2×, no 2 renglones)', () {
+    final mila = _p('mila', 'Milanesa');
+    OrderItem line(String id, String prod, int qty,
+            {String? note, List<String> opts = const []}) =>
+        OrderItem(
+          id: id,
+          productId: prod,
+          name: prod,
+          unitPriceAmount: 1000,
+          quantity: qty,
+          status: ItemStatus.pending,
+          station: Station.kitchen,
+          note: note,
+          selectedOptions: [
+            for (final o in opts)
+              SelectedOption(optionId: o, name: o, priceDelta: 0),
+          ],
+        );
+    Order ord(List<OrderItem> items) => Order(
+      id: 'o',
+      tableId: 't',
+      status: 'OPEN',
+      currency: 'ARS',
+      items: items,
+      totalAmount: 0,
+    );
+
+    test('encuentra la línea del mismo producto sin nota ni opciones', () {
+      final o = ord([line('a', 'mila', 1)]);
+      expect(mergeableLine(o, mila)?.id, 'a');
+    });
+
+    test('no mezcla si la nota difiere', () {
+      final o = ord([line('a', 'mila', 1, note: 'sin sal')]);
+      expect(mergeableLine(o, mila), isNull);
+      expect(mergeableLine(o, mila, note: 'sin sal')?.id, 'a');
+    });
+
+    test('no mezcla si los modificadores difieren', () {
+      final o = ord([line('a', 'mila', 1, opts: ['jugoso'])]);
+      expect(mergeableLine(o, mila), isNull);
+      expect(mergeableLine(o, mila, optionIds: ['jugoso'])?.id, 'a');
+      expect(mergeableLine(o, mila, optionIds: ['cocido']), isNull);
+    });
+
+    test('no toca líneas ya marchadas', () {
+      final marchada = OrderItem(
+        id: 'x',
+        productId: 'mila',
+        name: 'Milanesa',
+        unitPriceAmount: 1000,
+        quantity: 1,
+        status: ItemStatus.sent,
+        station: Station.kitchen,
+      );
+      expect(mergeableLine(ord([marchada]), mila), isNull);
+    });
+
+    test('lastPendingLine devuelve la última pendiente del producto', () {
+      final o = ord([line('a', 'mila', 1), line('b', 'mila', 2)]);
+      expect(lastPendingLine(o, 'mila')?.id, 'b');
+      expect(lastPendingLine(o, 'bife'), isNull);
+    });
+  });
 }

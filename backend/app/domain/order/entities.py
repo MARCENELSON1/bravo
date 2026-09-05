@@ -251,7 +251,8 @@ class Order:
 
     # --- courses: derived, never stored ---------------------------------------
 
-    def _live(self) -> list[OrderItem]:
+    def live_items(self) -> list[OrderItem]:
+        """Items that still count (everything but the cancelled ones)."""
         return [it for it in self.items if it.status is not ItemStatus.CANCELLED]
 
     def active_course(self) -> Course | None:
@@ -259,17 +260,17 @@ class Order:
         the kitchen is working on / the table is eating."""
         fired = (ItemStatus.SENT, ItemStatus.PREPARING, ItemStatus.READY)
         courses = {
-            it.course for it in self._live() if it.status in fired and it.course.coursed
+            it.course for it in self.live_items() if it.status in fired and it.course.coursed
         }
         return min(courses, key=lambda c: c.sequence) if courses else None
 
     def next_held_course(self) -> Course | None:
-        held = {it.course for it in self._live() if it.status is ItemStatus.HELD}
+        held = {it.course for it in self.live_items() if it.status is ItemStatus.HELD}
         return min(held, key=lambda c: c.sequence) if held else None
 
     def course_state(self, course: Course) -> CourseState | None:
         """Cooking > ready plates > held > pending > served. None = no plates."""
-        st = {it.status for it in self._live() if it.course is course}
+        st = {it.status for it in self.live_items() if it.course is course}
         if not st:
             return None
         if st & {ItemStatus.SENT, ItemStatus.PREPARING}:

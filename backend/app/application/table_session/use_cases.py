@@ -11,6 +11,7 @@ from app.domain.table.exceptions import TableNotFound
 from app.domain.table.repository import TableRepository
 from app.domain.table_session.entities import TableSession
 from app.domain.table_session.exceptions import (
+    NothingToCharge,
     SessionHasActiveOrders,
     SessionNotFound,
     TableAlreadyAssigned,
@@ -97,19 +98,31 @@ class RequestBill:
         self,
         sessions: TableSessionRepository,
         tenant_context: TenantContext,
+        orders: OrderRepository | None = None,
     ) -> None:
         self._sessions = sessions
         self._tenant_context = tenant_context
+        self._orders = orders
 
     async def execute(self, *, tenant_id: str, session_id: str) -> TableSession:
         self._tenant_context.set(tenant_id)
         session = await self._sessions.get_by_id(tenant_id, session_id)
         if session is None:
             raise SessionNotFound()
+        if self._orders is not None and not await self._has_items(tenant_id, session):
+            # Sin nada pedido no hay cuenta que pedir; si no, la mesa queda
+            # trabada en "a cobrar" mostrando $0.
+            raise NothingToCharge()
         if session.bill_requested_at is None:
             session.bill_requested_at = utcnow()
             await self._sessions.save(session)
         return session
+
+    async def _has_items(self, tenant_id: str, session: TableSession) -> bool:
+        active = await self._orders.list_active(tenant_id)  # type: ignore[union-attr]
+        return any(
+            o.table_id == session.table_id and o.live_items() for o in active
+        )
 
 
 class AssignTableWaiter:
