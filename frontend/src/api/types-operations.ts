@@ -10,14 +10,22 @@ export type OrderStatus =
   | "CANCELLED"
 
 // Per-item kitchen lifecycle (Fase 14) + the station that prepares it.
+// HELD = marched but waiting for its course to be fired: the kitchen SEES it
+// (mise en place) and does not cook it until the waiter fires that course.
 export type ItemStatus =
   | "PENDING"
+  | "HELD"
   | "SENT"
   | "PREPARING"
   | "READY"
   | "SERVED"
   | "CANCELLED"
 export type Station = "KITCHEN" | "BAR"
+
+// Tiempo de servicio del plato. Es del PRODUCTO (se define una vez en la carta)
+// y se copia a cada línea; el mozo puede cambiarlo por línea antes del fuego.
+// IMMEDIATE = sin tiempos (barra, lo que sale ya).
+export type Course = "IMMEDIATE" | "STARTER" | "MAIN" | "DESSERT"
 
 export interface ProductDTO {
   id: string
@@ -161,6 +169,9 @@ export interface OrderItemDTO {
   note: string | null
   status: ItemStatus
   station: Station
+  // Tiempo de servicio de la línea. Opcional para no romper fixtures viejos:
+  // leelo siempre con `courseOf()`, que cae a MAIN (el default del backend).
+  course?: Course
   sent_at: string | null // ISO-8601; how long the item has waited on the KDS
   // Modificadores elegidos (Carta QR F2). Vacío en la mayoría de las comandas.
   selected_options?: SelectedOptionDTO[]
@@ -169,11 +180,19 @@ export interface OrderItemDTO {
 // Origen de la comanda (Carta QR F2): la cargó el mozo o el comensal por QR.
 export type OrderSource = "WAITER" | "CUSTOMER_QR"
 
-// One item flattened with its order context — the unit the KDS board renders.
+// Un CURSO de una comanda en una estación — la unidad que renderiza el KDS.
+// La cocina lo bumpea entero: "Empezar" cuando lo pone al fuego y "Listo"
+// cuando terminó todos los platos del tiempo (no plato por plato).
 export interface KdsTicket {
   orderId: string
   tableId: string
-  item: OrderItemDTO
+  course: Course
+  items: OrderItemDTO[]
+  // Todo el curso está en espera: se ve para el mise en place, no se cocina.
+  held: boolean
+  // Hay platos sin empezar → la acción es "Empezar"; si no, "Listo".
+  canStart: boolean
+  sentAt: string | null // el más viejo del curso, para el timer
 }
 
 export interface OrderDTO {
@@ -185,6 +204,10 @@ export interface OrderDTO {
   items: OrderItemDTO[]
   total_amount: number
   source: OrderSource // Carta QR F2: WAITER | CUSTOMER_QR
+  // Cursos derivados por el server: el que está al fuego y el próximo en
+  // espera ("Marchar principal"). null / ausente = no aplica.
+  active_course?: Course | null
+  next_course?: Course | null
   created_at: string | null // ISO-8601; used by the KDS waiting timer
   customer_id: string | null // CRM: cliente atribuido a la comanda
 }

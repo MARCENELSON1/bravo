@@ -7,7 +7,7 @@ import { isApiError } from "@/api/api-error"
 import { apiErrorText } from "@/api/translate-error"
 import { dateLocale } from "@/lib/format"
 import type { DocType } from "@/api/types-invoicing"
-import type { OrderDTO, PaymentMethod, ProductDTO } from "@/api/types-operations"
+import type { Course, OrderDTO, PaymentMethod, ProductDTO } from "@/api/types-operations"
 import { useAuth } from "@/auth/auth-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -33,6 +33,9 @@ import {
   useOrder,
   useRemoveItem,
   useReopenOrder,
+  useAdvanceCourse,
+  useFireAllCourses,
+  useFireNextCourse,
   useSendOrder,
   useSetItemQuantity,
   useTransferOrder,
@@ -50,6 +53,7 @@ import {
 import { presetAmounts, sumLineItems } from "@/lib/cobro"
 import { newId } from "@/lib/ids"
 import { formatMoney } from "@/lib/money"
+import { courseState, coursesOf, heldCount, itemsOfCourse, nextHeldCourse, readyCourse } from "@/lib/courses"
 import { bumpUsage } from "@/lib/product-usage"
 import { printTicket, receiptHtml, ticketHtml } from "@/lib/ticket"
 
@@ -85,6 +89,9 @@ export function OrderPage() {
   const removeItem = useRemoveItem(orderId)
   const setItemQty = useSetItemQuantity(orderId)
   const sendOrder = useSendOrder()
+  const fireNext = useFireNextCourse()
+  const fireAll = useFireAllCourses()
+  const advanceCourse = useAdvanceCourse()
   const navigate = useNavigate()
 
   const isPaid = order.data?.status === "PAID"
@@ -119,6 +126,12 @@ export function OrderPage() {
   // when it's OPEN. Only a PAID/CANCELLED order is closed to new items.
   const canAddRound = canEdit && !isPaid && data.status !== "CANCELLED"
   const pendingCount = data.items.filter((it) => it.status === "PENDING").length
+  // Tiempos de servicio: qué toca ahora. Servir es SIEMPRE por curso (servir
+  // "toda la orden" mezclaría la entrada lista con el principal recién salido).
+  const courses = coursesOf(data.items)
+  const nextCourse = nextHeldCourse(data)
+  const courseToServe = readyCourse(data)
+  const held = heldCount(data)
   const tableNumber = tables.data?.find((tbl) => tbl.id === data.table_id)?.number
   const tableLabel =
     tableNumber != null ? t("orders.table", { number: tableNumber }) : t("orders.orderFallback")
@@ -138,6 +151,30 @@ export function OrderPage() {
       {
         onError: (error) =>
           toast.error(apiErrorText(error, t, t("orders.errors.addItemFailed"))),
+      }
+    )
+  }
+
+  const fireNextCourse = () => {
+    fireNext.mutate(orderId, {
+      onError: (error) =>
+        toast.error(apiErrorText(error, t, t("orders.errors.fireCourseFailed"))),
+    })
+  }
+
+  const fireEverything = () => {
+    fireAll.mutate(orderId, {
+      onError: (error) =>
+        toast.error(apiErrorText(error, t, t("orders.errors.fireCourseFailed"))),
+    })
+  }
+
+  const serveCourse = (course: Course) => {
+    advanceCourse.mutate(
+      { orderId, course, action: "served" },
+      {
+        onError: (error) =>
+          toast.error(apiErrorText(error, t, t("orders.errors.serveCourseFailed"))),
       }
     )
   }
@@ -220,15 +257,48 @@ export function OrderPage() {
         <CardContent>
           {data.items.length > 0 ? (
             <ul className="flex flex-col divide-y divide-border">
-              {data.items.map((it) => (
+              {courses.flatMap((course) => [
+                // Cabecera del tiempo: su estado y la acción que le toca.
+                <li key={`c-${course}`} className="flex items-center gap-2 pt-3 pb-1">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t(`orders.courses.${course}`)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {t(`orders.courseStates.${courseState(data.items, course) ?? "PENDING"}`)}
+                  </span>
+                  <span className="ml-auto">
+                    {courseToServe === course ? (
+                      <Button
+                        variant="outline"
+                        className="h-7 px-2 text-xs"
+                        disabled={advanceCourse.isPending}
+                        onClick={() => serveCourse(course)}
+                      >
+                        {t("orders.serveCourse", { course: t(`orders.courses.${course}`) })}
+                      </Button>
+                    ) : nextCourse === course && canAddRound ? (
+                      <Button
+                        variant="outline"
+                        className="h-7 px-2 text-xs"
+                        disabled={fireNext.isPending}
+                        onClick={fireNextCourse}
+                      >
+                        {t("orders.fireCourse", { course: t(`orders.courses.${course}`) })}
+                      </Button>
+                    ) : null}
+                  </span>
+                </li>,
+                ...itemsOfCourse(data.items, course).map((it) => (
                 <li key={it.id} className="flex items-center justify-between gap-2 py-2 text-sm">
                   <span className="flex-1">
                     {it.quantity}× {it.name}
                     {it.note ? (
                       <span className="text-muted-foreground"> ({it.note})</span>
                     ) : null}
-                    {it.status !== "PENDING" ? (
-                      <span className="ml-1 text-xs text-muted-foreground">· {it.status}</span>
+                    {it.status === "READY" || it.status === "SERVED" ? (
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        · {t(`orders.courseStates.${it.status}`)}
+                      </span>
                     ) : null}
                     {it.selected_options && it.selected_options.length > 0 ? (
                       <span className="block text-xs text-muted-foreground">
@@ -279,11 +349,15 @@ export function OrderPage() {
                     {formatMoney(it.unit_price_amount * it.quantity, data.currency)}
                   </span>
                 </li>
-              ))}
+                )),
+              ])}
             </ul>
           ) : (
             <p className="text-sm text-muted-foreground">{t("orders.noItems")}</p>
           )}
+          {held > 0 ? (
+            <p className="pt-2 text-xs text-muted-foreground">{t("orders.courseHint")}</p>
+          ) : null}
           <OrderTotalBreakdown
             orderId={data.id}
             subtotal={data.total_amount}
@@ -293,13 +367,32 @@ export function OrderPage() {
       </Card>
 
       {canAddRound ? (
-        <Button onClick={send} disabled={sendOrder.isPending || pendingCount === 0}>
-          {sendOrder.isPending
-            ? t("orders.marching")
-            : pendingCount > 0
-              ? t("orders.marchCount", { count: pendingCount })
-              : t("orders.march")}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          {/* Lo que toca ahora: marchar lo cargado, o disparar el tiempo en espera. */}
+          {pendingCount > 0 || nextCourse === null ? (
+            <Button
+              className="flex-1"
+              onClick={send}
+              disabled={sendOrder.isPending || pendingCount === 0}
+            >
+              {sendOrder.isPending
+                ? t("orders.marching")
+                : pendingCount > 0
+                  ? t("orders.marchCount", { count: pendingCount })
+                  : t("orders.march")}
+            </Button>
+          ) : (
+            <Button className="flex-1" onClick={fireNextCourse} disabled={fireNext.isPending}>
+              {t("orders.fireCourse", { course: t(`orders.courses.${nextCourse}`) })}
+            </Button>
+          )}
+          {/* "Traé todo junto": solo si quedó algún tiempo en espera. */}
+          {held > 0 ? (
+            <Button variant="outline" onClick={fireEverything} disabled={fireAll.isPending}>
+              {t("orders.fireAll")}
+            </Button>
+          ) : null}
+        </div>
       ) : null}
 
       {canAddRound ? <TableMoveSection order={data} /> : null}

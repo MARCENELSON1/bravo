@@ -19,6 +19,14 @@ export const orders = {
   march: "Marchar",
   marchCount: "Marchar ({{count}})",
   marching: "Marchando…",
+  // Tiempos de servicio: el curso es del plato; la cocina cocina uno por vez y
+  // el mozo dispara el siguiente.
+  courses: { IMMEDIATE: "Bebidas", STARTER: "Entrada", MAIN: "Principal", DESSERT: "Postre" },
+  courseStates: { PENDING: "Sin marchar", HELD: "En espera", IN_KITCHEN: "En cocina", READY: "Listo", SERVED: "Servido" },
+  fireCourse: "Marchar {{course}}",
+  serveCourse: "Servir {{course}}",
+  fireAll: "Marchar todo",
+  courseHint: "Cocina prepara un tiempo por vez; vos marchás el siguiente.",
 
   customer: "Cliente",
   customerAssigned: "Cliente asignado",
@@ -105,6 +113,8 @@ export const orders = {
   errors: {
     addItemFailed: "No pudimos agregar el ítem.",
     marchFailed: "No pudimos marchar la comanda.",
+    fireCourseFailed: "No pudimos marchar el tiempo.",
+    serveCourseFailed: "No pudimos marcar el tiempo como servido.",
     removeItemFailed: "No pudimos quitar el ítem.",
     customerAssignFailed: "No pudimos asignar el cliente.",
     moveFailed: "No pudimos mover la mesa.",

@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { Query } from "@tanstack/react-query"
 
-import type { ItemAction, OrderAction } from "@/api/orders-api"
-import type { OrderDTO, OrderItemDTO, Station } from "@/api/types-operations"
+import type { CourseAction, ItemAction, OrderAction } from "@/api/orders-api"
+import type { Course, OrderDTO, OrderItemDTO, Station } from "@/api/types-operations"
 import { newId } from "@/lib/ids"
 import { useServices } from "@/services/services-context"
 
@@ -235,6 +235,75 @@ interface AdvanceItemVars {
 }
 
 // Bump/recall a single item from the per-station KDS board.
+interface AdvanceCourseVars {
+  orderId: string
+  course: Course
+  action: CourseAction
+  station?: Station
+}
+
+/** Bumpea un CURSO entero (el "Listo" del KDS por tiempo, y "Servir <curso>"). */
+export function useAdvanceCourse() {
+  const { ordersApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (vars: AdvanceCourseVars) =>
+      ordersApi.advanceCourse(vars.orderId, vars.course, vars.action, vars.station),
+    onSuccess: (order) => {
+      void queryClient.invalidateQueries({ queryKey: ["order", order.id] })
+      void queryClient.invalidateQueries({ queryKey: ["kds-orders"] })
+      void queryClient.invalidateQueries({ queryKey: ["floor"] })
+    },
+  })
+}
+
+/** "Marchar <curso>": manda al fuego el curso en espera más bajo. */
+export function useFireNextCourse() {
+  const { ordersApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (orderId: string) => ordersApi.fireNext(orderId),
+    onSuccess: (order) => {
+      void queryClient.invalidateQueries({ queryKey: ["order", order.id] })
+      void queryClient.invalidateQueries({ queryKey: ["kds-orders"] })
+      void queryClient.invalidateQueries({ queryKey: ["floor"] })
+    },
+  })
+}
+
+/** "Marchar todo": pendientes y en espera al fuego. */
+export function useFireAllCourses() {
+  const { ordersApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (orderId: string) => ordersApi.fireAll(orderId),
+    onSuccess: (order) => {
+      void queryClient.invalidateQueries({ queryKey: ["order", order.id] })
+      void queryClient.invalidateQueries({ queryKey: ["kds-orders"] })
+      void queryClient.invalidateQueries({ queryKey: ["floor"] })
+    },
+  })
+}
+
+interface SetItemCourseVars {
+  orderId: string
+  itemId: string
+  course: Course
+}
+
+/** Override del tiempo de una línea, antes de que esté al fuego. */
+export function useSetItemCourse() {
+  const { ordersApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (vars: SetItemCourseVars) =>
+      ordersApi.setItemCourse(vars.orderId, vars.itemId, vars.course),
+    onSuccess: (order) => {
+      void queryClient.invalidateQueries({ queryKey: ["order", order.id] })
+    },
+  })
+}
+
 export function useAdvanceItem() {
   const { ordersApi } = useServices()
   const queryClient = useQueryClient()

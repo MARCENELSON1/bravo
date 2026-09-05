@@ -1,4 +1,5 @@
-import type { KdsTicket, OrderDTO, Station } from "@/api/types-operations"
+import type { ItemStatus, KdsTicket, OrderDTO, Station } from "@/api/types-operations"
+import { COURSE_ORDER, courseOf } from "@/lib/courses"
 
 // How long an order has been waiting in the kitchen, and a severity level the
 // KDS uses to colour the card so cooks see the oldest tickets at a glance.
@@ -16,25 +17,45 @@ export function kdsDelay(
   return { minutes, level }
 }
 
-// Items still being made (SENT/PREPARING) on the kitchen lifecycle.
-const _ACTIVE_ITEM_STATUSES = new Set(["SENT", "PREPARING"])
+// Lo que la cocina tiene en mano: al fuego (SENT/PREPARING) y en espera (HELD).
+// HELD entra a propósito: la cocina VE el curso que viene para hacer el mise en
+// place, aunque todavía no lo cocine.
+const _ACTIVE_ITEM_STATUSES = new Set<ItemStatus>(["HELD", "SENT", "PREPARING"])
 
-// Flatten the orders into per-item tickets for one station, oldest first (by
-// sent_at). This is what the per-station board renders: a cook bumps items one
-// by one, and the order they were marched in is the order they appear.
+// Agrupa las comandas de una estación en tickets por (comanda, CURSO): todos
+// los platos del tiempo juntos, para que la cocina los bumpee de una sola vez
+// ("Listo" cuando terminó el tiempo entero, no plato por plato). Los que están
+// al fuego van primero, más viejo arriba; los en espera al final (se ven, no
+// apuran).
 export function kdsTickets(orders: OrderDTO[], station: Station): KdsTicket[] {
   const tickets: KdsTicket[] = []
   for (const order of orders) {
-    for (const item of order.items) {
-      if (item.station === station && _ACTIVE_ITEM_STATUSES.has(item.status)) {
-        tickets.push({ orderId: order.id, tableId: order.table_id, item })
-      }
+    const active = order.items.filter(
+      (item) => item.station === station && _ACTIVE_ITEM_STATUSES.has(item.status)
+    )
+    for (const course of COURSE_ORDER) {
+      const items = active.filter((item) => courseOf(item) === course)
+      if (items.length === 0) continue
+      const sentAts = items
+        .map((item) => item.sent_at)
+        .filter((at): at is string => Boolean(at))
+        .sort()
+      tickets.push({
+        orderId: order.id,
+        tableId: order.table_id,
+        course,
+        items,
+        held: items.every((item) => item.status === "HELD"),
+        canStart: items.some((item) => item.status === "SENT"),
+        sentAt: sentAts[0] ?? null,
+      })
     }
   }
   return tickets.sort((a, b) => {
-    const ta = a.item.sent_at ? Date.parse(a.item.sent_at) : 0
-    const tb = b.item.sent_at ? Date.parse(b.item.sent_at) : 0
-    return ta - tb // oldest marched first
+    if (a.held !== b.held) return a.held ? 1 : -1 // en espera al final
+    const ta = a.sentAt ? Date.parse(a.sentAt) : 0
+    const tb = b.sentAt ? Date.parse(b.sentAt) : 0
+    return ta - tb // más viejo primero
   })
 }
 

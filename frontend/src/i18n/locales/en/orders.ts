@@ -19,6 +19,14 @@ export const orders = {
   march: "Send",
   marchCount: "Send ({{count}})",
   marching: "Sending…",
+  // Tiempos de servicio: el curso es del plato; la cocina cocina uno por vez y
+  // el mozo dispara el siguiente.
+  courses: { IMMEDIATE: "Drinks", STARTER: "Starter", MAIN: "Main", DESSERT: "Dessert" },
+  courseStates: { PENDING: "Not sent", HELD: "On hold", IN_KITCHEN: "In kitchen", READY: "Ready", SERVED: "Served" },
+  fireCourse: "Send {{course}}",
+  serveCourse: "Serve {{course}}",
+  fireAll: "Send everything",
+  courseHint: "The kitchen cooks one course at a time; you fire the next one.",
 
   customer: "Customer",
   customerAssigned: "Customer assigned",
@@ -105,6 +113,8 @@ export const orders = {
   errors: {
     addItemFailed: "We couldn't add the item.",
     marchFailed: "We couldn't send the order.",
+    fireCourseFailed: "Couldn't send that course.",
+    serveCourseFailed: "Couldn't mark that course served.",
     removeItemFailed: "We couldn't remove the item.",
     customerAssignFailed: "We couldn't assign the customer.",
     moveFailed: "We couldn't move the table.",
