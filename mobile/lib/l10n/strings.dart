@@ -86,6 +86,15 @@ class Strings {
   String paxLabel(int pax) => '· ${pax}p';
   String minutesLabel(int m) => "$m′";
 
+  // Resumen operativo + acciones rápidas del plano.
+  String get floorSummaryMine => _en ? 'mine' : 'mías';
+  String get floorSummaryToServe => _en ? 'to serve' : 'para servir';
+  String get floorSummaryMyTables => _en ? 'my tables' : 'mis mesas';
+  String get quickServe => _en ? 'Serve now' : 'Servir ahora';
+  String get quickServeShort => _en ? 'Serve' : 'Servir';
+  String get quickMarch => _en ? 'Send to kitchen' : 'Marchar';
+  String get quickOpen => _en ? 'Open order' : 'Abrir comanda';
+
   String get chipAll => _en ? 'All' : 'Todas';
   String get chipToServe => _en ? 'To serve' : 'A servir';
   String get chipToCharge => _en ? 'To charge' : 'A cobrar';
