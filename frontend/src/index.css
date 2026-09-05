@@ -28,6 +28,10 @@
     --color-input: var(--input);
     --color-border: var(--border);
     --color-destructive: var(--destructive);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
     --color-muted-foreground: var(--muted-foreground);
@@ -67,6 +71,12 @@
     --accent: oklch(0.95 0.03 165);
     --accent-foreground: oklch(0.2 0.02 165);
     --destructive: oklch(0.577 0.245 27.325);
+    /* Estados. Verde de éxito y ámbar de alerta: antes vivían sueltos como
+       emerald-600/amber-600 y su variante dark escrita a mano en cada uso. */
+    --success: oklch(0.6 0.14 160);
+    --success-foreground: oklch(0.985 0 0);
+    --warning: oklch(0.66 0.15 70);
+    --warning-foreground: oklch(0.16 0.01 165);
     --border: oklch(0.9 0.01 165);
     --input: oklch(0.9 0.01 165);
     --ring: oklch(0.63 0.14 163);
@@ -102,6 +112,10 @@
     --accent: oklch(0.27 0.02 165);
     --accent-foreground: oklch(0.97 0.005 165);
     --destructive: oklch(0.704 0.191 22.216);
+    --success: oklch(0.75 0.15 160);
+    --success-foreground: oklch(0.16 0.02 165);
+    --warning: oklch(0.82 0.15 80);
+    --warning-foreground: oklch(0.16 0.01 165);
     --border: oklch(1 0 0 / 8%);
     --input: oklch(1 0 0 / 12%);
     --ring: oklch(0.7 0.16 163);
@@ -183,7 +197,8 @@
   --os-handle-min-size: 24px;
 }
 
-/* Variante siempre visible y un poco más oscura (barra horizontal de los tabs) */
+/* Variante siempre visible. Mismo gris que .os-theme-wellnod: lo único que
+   cambia es que no se autoesconde. */
 .os-theme-wellnod-static {
   --os-size: 9px;
   --os-padding-perpendicular: 2px;
@@ -192,8 +207,8 @@
   --os-track-bg-hover: transparent;
   --os-track-bg-active: transparent;
   --os-handle-border-radius: 9999px;
-  --os-handle-bg: rgba(64, 64, 72, 0.9);
-  --os-handle-bg-hover: rgba(113, 113, 122, 0.9);
+  --os-handle-bg: rgba(82, 82, 91, 0.6);
+  --os-handle-bg-hover: rgba(113, 113, 122, 0.85);
   --os-handle-bg-active: rgba(113, 113, 122, 1);
   --os-handle-min-size: 24px;
 }
@@ -230,15 +245,15 @@
   scroll-behavior: auto !important;
 }
 
-/* Scroll fade en la sidebar: el tamaño del degradé (--fade-top/--fade-bottom) lo
+/* Scroll fade vertical: el tamaño del degradé (--fade-top/--fade-bottom) lo
    setea el JS proporcional al scroll, y se hereda al viewport. Así aparece
    progresivo en vez de prenderse de golpe. */
-.nav-scroll-fade {
+.scroll-fade {
   --fade-top: 0px;
   --fade-bottom: 0px;
 }
-.nav-scroll-fade [data-overlayscrollbars-viewport],
-.nav-scroll-fade .os-viewport {
+.scroll-fade [data-overlayscrollbars-viewport],
+.scroll-fade .os-viewport {
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent 0,

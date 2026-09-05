@@ -4,11 +4,11 @@ import {
   Calculator,
   CalendarCheck,
   ChefHat,
+  ClipboardList,
   Clock,
   Coffee,
   Coins,
   CreditCard,
-  FileText,
   Home,
   Lightbulb,
   LineChart,
@@ -16,14 +16,15 @@ import {
   QrCode,
   Receipt,
   ScanLine,
+  ScrollText,
   Sparkles,
   Truck,
   Users,
   UtensilsCrossed,
+  Wallet,
 } from "lucide-react"
 
 import type { Role } from "@/api/types"
-
 export interface NavItem {
   label: string
   to: string
@@ -31,12 +32,10 @@ export interface NavItem {
   roles: Role[]
   end?: boolean
 }
-
 export interface NavGroup {
   label: string
   items: NavItem[]
 }
-
 // Nav híbrida (identidad Wellnod): los destinos principales planos arriba +
 // grupos "Operación" y "Gestión" debajo. Cada ítem sigue gateado por rol
 // (además de los route guards) — misma cobertura de rutas que la nav previa.
@@ -48,7 +47,7 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["OWNER", "MANAGER", "WAITER", "KITCHEN", "BAR", "CASHIER"],
     end: true,
   },
-  { label: "shell.nav.finance", to: "/app/finanzas", icon: LineChart, roles: ["OWNER", "MANAGER"] },
+  { label: "shell.nav.finance", to: "/app/finanzas", icon: Wallet, roles: ["OWNER", "MANAGER"] },
   {
     label: "shell.nav.customers",
     to: "/app/clientes",
@@ -65,9 +64,8 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "shell.nav.aiInsights", to: "/app/copilot", icon: Lightbulb, roles: ["OWNER", "MANAGER"] },
   { label: "shell.nav.advisor", to: "/app/advisor", icon: Sparkles, roles: ["OWNER", "MANAGER"] },
   { label: "shell.nav.analytics", to: "/app/analytics", icon: LineChart, roles: ["OWNER", "MANAGER"] },
-  { label: "shell.nav.reports", to: "/app/reportes", icon: FileText, roles: ["OWNER", "MANAGER"] },
+  { label: "shell.nav.reports", to: "/app/reportes", icon: ClipboardList, roles: ["OWNER", "MANAGER"] },
 ]
-
 export const NAV_GROUPS: NavGroup[] = [
   {
     label: "shell.groups.operation",
@@ -107,7 +105,7 @@ export const NAV_GROUPS: NavGroup[] = [
       {
         label: "shell.nav.invoices",
         to: "/app/invoices",
-        icon: FileText,
+        icon: ScrollText,
         roles: ["OWNER", "MANAGER"],
       },
       { label: "shell.nav.supplies", to: "/app/stock", icon: Boxes, roles: ["OWNER", "MANAGER"] },

@@ -23,7 +23,7 @@ const _LABELS: Record<FloorViewState, string> = {
   FREE: "Libre",
   OPEN: "Abierta",
   IN_KITCHEN: "En cocina",
-  TO_SERVE: "Para servir ⚡",
+  TO_SERVE: "Para servir",
   SERVED: "Servida",
   TO_CHARGE: "A cobrar",
   CLOSED: "Cerrada",

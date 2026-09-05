@@ -205,7 +205,7 @@ export const products = {
     allCurrent: "All up to date",
     laggingBadge_one: "{{count}} price fell behind",
     laggingBadge_other: "{{count}} prices fell behind",
-    noneLagging: "No price fell more than 5% behind inflation. 🎉",
+    noneLagging: "No price fell more than 5% behind inflation.",
     worstPre: "The one furthest behind is ",
     worstMid: ": it's at {{price}} and should be near ",
     worstSuffix: " ({{gap}} below).",

@@ -165,7 +165,7 @@ const COPY: Record<Locale, Copy> = {
     inicio: {
       profitLabel: "Tu ganancia de hoy",
       profitValue: "$386.300",
-      delta: "Vas 18% arriba de ayer 🎉",
+      delta: "Vas 18% arriba de ayer ↑",
       kpis: [
         { l: "Facturaste hoy", v: "$482.500" },
         { l: "Gastaste hoy", v: "$96.200" },
@@ -375,7 +375,7 @@ const COPY: Record<Locale, Copy> = {
     inicio: {
       profitLabel: "Your profit today",
       profitValue: "$38,630",
-      delta: "Up 18% from yesterday 🎉",
+      delta: "Up 18% from yesterday ↑",
       kpis: [
         { l: "Billed today", v: "$48,250" },
         { l: "Spent today", v: "$9,620" },

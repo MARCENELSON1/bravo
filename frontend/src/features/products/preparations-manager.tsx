@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next"
 import { apiErrorText } from "@/api/translate-error"
 import type { IngredientDTO, PreparationDTO } from "@/api/types-inventory"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/ui/empty-state"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -330,9 +331,9 @@ export function PreparationsManager() {
             ))}
           </ul>
         ) : (
-          <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
+          <EmptyState>
             {t("products.preparations.empty")}
-          </p>
+          </EmptyState>
         )}
       </div>
     </section>

@@ -205,7 +205,7 @@ export const products = {
     allCurrent: "Todo al día",
     laggingBadge_one: "{{count}} precio quedó atrás",
     laggingBadge_other: "{{count}} precios quedaron atrás",
-    noneLagging: "Ningún precio quedó rezagado más de un 5% frente a la inflación. 🎉",
+    noneLagging: "Ningún precio quedó rezagado más de un 5% frente a la inflación.",
     worstPre: "El más rezagado es ",
     worstMid: ": está en {{price}} y debería estar cerca de ",
     worstSuffix: " ({{gap}} por debajo).",

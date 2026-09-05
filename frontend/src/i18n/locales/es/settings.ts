@@ -17,6 +17,8 @@ export const settings = {
     reduceMotionDesc: "Desactiva las animaciones de la interfaz.",
   },
   // Acciones (texto de los botones "Editar/Configurar…"). El code no cambia.
+  // Nombre del idioma activo, para la fila Idioma del perfil.
+  languageNames: { es: "Español (Argentina)", en: "Inglés (Estados Unidos)" },
   actions: {
     change: "Cambiar",
     edit: "Editar",
@@ -52,8 +54,8 @@ export const settings = {
       email: { label: "Email de contacto" },
       phone: { label: "Teléfono" },
       language: { label: "Idioma", value: "Español (Argentina)" },
-      timezone: { label: "Zona horaria", value: "GMT−3 · Buenos Aires" },
-      timeFormat: { label: "Formato de hora", value: "24 h" },
+      timezone: { label: "Zona horaria" },
+      timeFormat: { label: "Formato de hora" },
       homeScreen: {
         label: "Pantalla de inicio",
         desc: "Adónde entrás al abrir la app.",

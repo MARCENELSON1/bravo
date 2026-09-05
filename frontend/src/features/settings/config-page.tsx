@@ -9,6 +9,10 @@ import {
 } from "overlayscrollbars-react"
 import { useNavigate } from "react-router-dom"
 
+import { edgeFadeClass, useEdgeFade } from "@/lib/edge-fade"
+import { SCROLL_FADE_EVENTS } from "@/lib/scroll-fade"
+import { hourCycleLabel, timeZoneLabel } from "@/lib/format"
+
 // Tab bar horizontal: siempre visible y un gris un poco más oscuro.
 const OS_OPTIONS_TABS = {
   scrollbars: { theme: "os-theme-wellnod-static", autoHide: "never" },
@@ -25,7 +29,6 @@ import { AppBackground } from "@/components/shell/app-background"
 import { GlassCard } from "@/components/ui/glass-card"
 import { InviteUserForm } from "@/features/identity/invite-user-page"
 import { IntegrationsPanel } from "@/features/integrations/integrations-page"
-import { useEdgePeek } from "@/lib/edge-peek"
 import { setReduceMotion, useReduceMotion } from "@/lib/reduce-motion"
 import { setThemeAnimated } from "@/lib/theme-transition"
 import { CommissionRatesCard } from "@/features/finance/commission-rates-card"
@@ -82,7 +85,7 @@ type RowDef = {
   kind?: "toggle"
   action?: string
   value?: string
-  valueKey?: "name" | "email" | "tenant" | "avatar"
+  valueKey?: "name" | "email" | "tenant" | "avatar" | "language" | "timezone" | "timeFormat"
 }
 
 // Filas por sección. `apariencia` incluye solo los extras (tema y reducir
@@ -91,13 +94,13 @@ type RowDef = {
 // renderizar. Los slugs y los códigos (valueKey, kind) no cambian.
 const SECTIONS: Record<TabId, RowDef[]> = {
   perfil: [
-    { label: "settings.rows.perfil.avatar.label", desc: "settings.rows.perfil.avatar.desc", valueKey: "avatar", action: "settings.actions.change" },
+    { label: "settings.rows.perfil.avatar.label", desc: "settings.rows.perfil.avatar.desc", valueKey: "avatar", action: "settings.actions.edit" },
     { label: "settings.rows.perfil.name.label", required: true, valueKey: "name" },
     { label: "settings.rows.perfil.email.label", required: true, valueKey: "email" },
     { label: "settings.rows.perfil.phone.label", action: "settings.actions.edit" },
-    { label: "settings.rows.perfil.language.label", value: "settings.rows.perfil.language.value" },
-    { label: "settings.rows.perfil.timezone.label", value: "settings.rows.perfil.timezone.value" },
-    { label: "settings.rows.perfil.timeFormat.label", value: "settings.rows.perfil.timeFormat.value" },
+    { label: "settings.rows.perfil.language.label", valueKey: "language" },
+    { label: "settings.rows.perfil.timezone.label", valueKey: "timezone" },
+    { label: "settings.rows.perfil.timeFormat.label", valueKey: "timeFormat" },
     { label: "settings.rows.perfil.homeScreen.label", desc: "settings.rows.perfil.homeScreen.desc", value: "settings.rows.perfil.homeScreen.value" },
   ],
   apariencia: [
@@ -303,7 +306,13 @@ const initialsOf = (name: string | null, email: string) => {
 function ScrollCard({ children }: { children: ReactNode }) {
   return (
     <GlassCard className="flex max-h-full flex-col overflow-hidden">
-      <OverlayScrollbarsComponent element="div" className="min-h-0" options={OS_OPTIONS_CARD} defer>
+      <OverlayScrollbarsComponent
+        element="div"
+        className="scroll-fade min-h-0"
+        options={OS_OPTIONS_CARD}
+        events={SCROLL_FADE_EVENTS}
+        defer
+      >
         {children}
       </OverlayScrollbarsComponent>
     </GlassCard>
@@ -312,15 +321,15 @@ function ScrollCard({ children }: { children: ReactNode }) {
 
 // ── Página ────────────────────────────────────────────────────────────────────
 export function ConfigPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { session } = useAuth()
   const { theme, setTheme } = useTheme()
   const reduceMotion = useReduceMotion()
   const [tab, setTab] = useState<TabId>("perfil")
-  const tabsOsRef = useRef<OverlayScrollbarsComponentRef>(null)
   const navigate = useNavigate()
+  const tabsOsRef = useRef<OverlayScrollbarsComponentRef>(null)
+  const tabEdges = useEdgeFade(tabsOsRef)
   const [closing, setClosing] = useState(false)
-  useEdgePeek(tabsOsRef)
 
   if (!session) return null
 
@@ -334,9 +343,15 @@ export function ConfigPage() {
         ? session.email
         : r.valueKey === "tenant"
           ? session.tenantName
-          : r.value
-            ? t(r.value)
-            : undefined
+          : r.valueKey === "language"
+            ? t(`settings.languageNames.${i18n.language?.startsWith("en") ? "en" : "es"}`)
+            : r.valueKey === "timezone"
+              ? timeZoneLabel()
+              : r.valueKey === "timeFormat"
+                ? hourCycleLabel()
+                : r.value
+                  ? t(r.value)
+                  : undefined
 
   return (
     <div className="h-svh overflow-hidden">
@@ -369,7 +384,12 @@ export function ConfigPage() {
 
           {/* Pestañas (fijas) */}
           <div className="mb-6 shrink-0 border-b border-border">
-            <OverlayScrollbarsComponent ref={tabsOsRef} options={OS_OPTIONS_TABS} className="pb-3" defer>
+            <OverlayScrollbarsComponent
+              ref={tabsOsRef}
+              options={OS_OPTIONS_TABS}
+              className={cn("pb-3", edgeFadeClass(tabEdges))}
+              defer
+            >
               <div className="flex gap-1">
                 {tabs.map((item) => (
                   <button
@@ -377,13 +397,21 @@ export function ConfigPage() {
                     type="button"
                     onClick={() => setTab(item.id)}
                     className={cn(
-                      "shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium whitespace-nowrap transition duration-200 ease-out active:scale-[0.97]",
+                      "relative shrink-0 rounded-xl px-3 py-2.5 text-sm font-medium whitespace-nowrap transition duration-200 ease-out active:scale-[0.97]",
                       tab === item.id
-                        ? "bg-card text-foreground shadow-sm ring-1 ring-border"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "text-sidebar-accent-foreground"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/15 hover:text-sidebar-foreground"
                     )}
                   >
-                    {t(item.label)}
+                    {tab === item.id ? (
+                      <motion.span
+                        initial={reduceMotion ? false : { opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={reduceMotion ? { duration: 0 } : { duration: 0.15, ease: "easeOut" }}
+                        className="absolute inset-0 rounded-xl bg-sidebar-accent shadow-sm"
+                      />
+                    ) : null}
+                    <span className="relative z-10">{t(item.label)}</span>
                   </button>
                 ))}
               </div>
@@ -421,21 +449,21 @@ export function ConfigPage() {
                       {THEME_OPTIONS.map((opt) => {
                         const active = theme === opt.value
                         return (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setThemeAnimated(setTheme, opt.value)}
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setThemeAnimated(setTheme, opt.value)}
                             aria-pressed={active}
-                            className={cn(
+                          className={cn(
                               "flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition duration-200 ease-out active:scale-[0.97]",
                               active
                                 ? "border-primary bg-primary/10 text-foreground"
                                 : "border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                            )}
-                          >
+                          )}
+                        >
                             <opt.icon className="size-4" />
                             {t(opt.label)}
-                          </button>
+                        </button>
                         )
                       })}
                     </div>
@@ -501,12 +529,12 @@ export function ConfigPage() {
                       <span className="truncate text-foreground">{value}</span>
                     ) : (
                       <span />
-                    )}
+                  )}
                     {r.kind === "toggle" ? (
                       <Switch checked={false} disabled />
                     ) : (
                       <EditSoon label={r.action ? t(r.action) : undefined} />
-                    )}
+                  )}
                   </Row>
                 )
               })}

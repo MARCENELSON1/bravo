@@ -73,7 +73,7 @@ export const dashboard = {
     empty: "No tables set up.",
     occupied: "occupied",
     free: "free",
-    toServe: "to serve ⚡",
+    toServe: "to serve",
     toCharge: "to charge",
   },
 
@@ -93,8 +93,8 @@ export const dashboard = {
     allClear: "Nothing urgent right now. All clear ✓",
   },
   alerts: {
-    toServe_one: "{{count}} table to serve ⚡",
-    toServe_other: "{{count}} tables to serve ⚡",
+    toServe_one: "{{count}} table to serve",
+    toServe_other: "{{count}} tables to serve",
     toCharge_one: "{{count}} table to charge",
     toCharge_other: "{{count}} tables to charge",
     cashClosed: "Register not opened",

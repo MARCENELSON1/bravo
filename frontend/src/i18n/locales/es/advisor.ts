@@ -44,6 +44,7 @@ export const advisor = {
     primeCost: "Prime cost",
     breakEven: "Punto de equilibrio",
     configureCosts: "Configurá costos",
+    sectionTitle: "Los números detrás",
   },
   bucketLabels: {
     TODAY: "Actuá hoy",

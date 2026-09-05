@@ -19,7 +19,7 @@ const COPY = {
     terms: "Términos",
     privacy: "Privacidad",
     rights: `© ${YEAR} Wellnod. Todos los derechos reservados.`,
-    madeIn: "Hecho en Argentina 🧉",
+    madeIn: "Hecho en Argentina",
   },
   "en-US": {
     tagline: "Your restaurant's brain: orders, payments, and your copilot in English.",
@@ -35,7 +35,7 @@ const COPY = {
     terms: "Terms",
     privacy: "Privacy",
     rights: `© ${YEAR} Wellnod. All rights reserved.`,
-    madeIn: "Built for US restaurants 🇺🇸",
+    madeIn: "Built for US restaurants",
   },
 } as const
 
@@ -51,7 +51,7 @@ export function Footer() {
   const t = COPY[locale]
   const toIntl = region === "AR"
   const switchHref = toIntl ? "/en/" : "/"
-  const switchLabel = toIntl ? "🇺🇸 English · USD" : "🇦🇷 Español · ARS"
+  const switchLabel = toIntl ? "English · USD" : "Español · ARS"
 
   const columns = [
     {

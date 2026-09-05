@@ -17,9 +17,9 @@ import { waLink } from "@/lib/wa"
 // "ocasional" no son acciones → no tienen chip (pero cuentan en cobertura).
 // El label se resuelve en el consumidor con t(`crm.segmentLabels.${key}`).
 const SEGMENTS: { key: CustomerSegment; dot: string }[] = [
-  { key: "en_riesgo", dot: "bg-orange-500" },
+  { key: "en_riesgo", dot: "bg-warning" },
   { key: "vip", dot: "bg-violet-500" },
-  { key: "nuevo", dot: "bg-emerald-500" },
+  { key: "nuevo", dot: "bg-success" },
   { key: "recurrente", dot: "bg-sky-500" },
   { key: "ocasional", dot: "bg-neutral-400" },
 ]

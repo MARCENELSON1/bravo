@@ -1,6 +1,5 @@
-import { Link } from "react-router-dom"
 import { useTranslation } from "react-i18next"
-import { ArrowLeft, Check } from "lucide-react"
+import { Check } from "lucide-react"
 import { toast } from "sonner"
 
 import { apiErrorText } from "@/api/translate-error"
@@ -49,7 +48,7 @@ function PlanCard({ plan }: { plan: BillingPlanDTO }) {
         <ul className="flex flex-col gap-1.5">
           {plan.features.map((f) => (
             <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Check className="size-4 text-emerald-500" />
+              <Check className="size-4 text-success" />
               {f}
             </li>
           ))}
@@ -84,13 +83,6 @@ export function SubscriptionPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex items-center gap-3">
-        <Link
-          to="/app"
-          className="text-muted-foreground transition hover:text-foreground"
-          aria-label={t("billing.back")}
-        >
-          <ArrowLeft className="size-5" />
-        </Link>
         <GradientHeading>{t("billing.title")}</GradientHeading>
       </header>
 
@@ -112,7 +104,7 @@ export function SubscriptionPage() {
                   : ""}
               </p>
             </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-success/40 bg-success/10 px-3 py-1 text-sm font-medium text-success">
               <Check className="size-4" /> {t("billing.statusLabels.ACTIVE")}
             </span>
           </div>

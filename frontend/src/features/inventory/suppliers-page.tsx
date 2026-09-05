@@ -6,6 +6,7 @@ import { apiErrorText } from "@/api/translate-error"
 import type { SupplierDTO } from "@/api/types-inventory"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/ui/empty-state"
 import { GlassCard } from "@/components/ui/glass-card"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Input } from "@/components/ui/input"
@@ -227,9 +228,9 @@ export function SuppliersPage() {
           <Spinner className="size-5 text-muted-foreground" />
         </div>
       ) : rows.length === 0 ? (
-        <p className="rounded-xl border border-border bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
+        <EmptyState className="rounded-xl border border-border">
           {t("inventory.suppliers.emptyState")}
-        </p>
+        </EmptyState>
       ) : (
         <div className="flex flex-col gap-2">
           {rows.map((s) => (

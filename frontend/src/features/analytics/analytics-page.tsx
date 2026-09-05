@@ -2,8 +2,10 @@ import { useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { Badge } from "@/components/ui/badge"
+import { EmptyState } from "@/components/ui/empty-state"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Input } from "@/components/ui/input"
+import { KpiCard } from "@/components/ui/kpi-card"
 import { Spinner } from "@/components/ui/spinner"
 import {
   Table,
@@ -19,30 +21,6 @@ import {
   useRevenue,
 } from "@/hooks/use-analytics"
 import { formatMoney } from "@/lib/money"
-
-function KpiCard({
-  label,
-  value,
-  hint,
-  negative,
-}: {
-  label: string
-  value: string
-  hint?: string
-  negative?: boolean
-}) {
-  return (
-    <div className="flex flex-col gap-1 rounded-xl border border-border p-4">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span
-        className={`text-lg font-semibold tabular-nums sm:text-xl ${negative ? "text-destructive" : "text-foreground"}`}
-      >
-        {value}
-      </span>
-      {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
-    </div>
-  )
-}
 
 export function AnalyticsPage() {
   const { t } = useTranslation()
@@ -148,9 +126,9 @@ export function AnalyticsPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
+            <EmptyState>
               {t("analytics.paymentMix.empty")}
-            </p>
+            </EmptyState>
           )}
         </div>
       </section>
@@ -188,9 +166,9 @@ export function AnalyticsPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="bg-black/[0.06] p-8 text-center text-sm font-medium text-muted-foreground dark:bg-white/[0.05]">
+            <EmptyState>
               {t("analytics.topProducts.empty")}
-            </p>
+            </EmptyState>
           )}
         </div>
       </section>

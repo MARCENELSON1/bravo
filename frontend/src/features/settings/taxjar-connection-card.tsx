@@ -71,7 +71,7 @@ function ConnectForm({ connected, sandbox }: { connected: boolean; sandbox: bool
           <span
             className={
               connected
-                ? "rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-emerald-600 dark:text-emerald-400"
+                ? "rounded-full border border-success/40 bg-success/10 px-2 py-0.5 text-success"
                 : "rounded-full border border-border px-2 py-0.5 text-muted-foreground"
             }
           >

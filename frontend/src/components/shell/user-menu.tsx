@@ -88,7 +88,7 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
               type="button"
               role="menuitem"
               onClick={() => void logout()}
-              className={cn(ITEM, "text-red-500 hover:bg-red-500/10 hover:text-red-500")}
+              className={ITEM}
             >
               <LogOut className="size-4 shrink-0" />
               {t("shell.userMenu.logout")}

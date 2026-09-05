@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Input } from "@/components/ui/input"
+import { KpiCard } from "@/components/ui/kpi-card"
 import {
   Sheet,
   SheetContent,
@@ -25,30 +26,6 @@ import {
 } from "@/hooks/use-advisor"
 import { BUCKET_ORDER, formatPct, SEVERITY_VARIANT } from "@/lib/advisor"
 import { formatMoney } from "@/lib/money"
-
-function KpiCard({
-  label,
-  value,
-  hint,
-  negative,
-}: {
-  label: string
-  value: string
-  hint?: string
-  negative?: boolean
-}) {
-  return (
-    <div className="flex flex-col gap-1 rounded-xl border border-border p-4">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span
-        className={`text-lg font-semibold tabular-nums sm:text-xl ${negative ? "text-destructive" : "text-foreground"}`}
-      >
-        {value}
-      </span>
-      {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
-    </div>
-  )
-}
 
 function SettingsForm({
   initial,
@@ -250,26 +227,32 @@ function KpiGrid({ kpis }: { kpis: AdvisorKpisDTO }) {
   const lockedHint = kpis.configured ? undefined : t("advisor.kpis.configureCosts")
   const locked = (value: string) => (kpis.configured ? value : "—")
   return (
-    <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      <KpiCard label={t("advisor.kpis.sales")} value={money(kpis.sales_amount)} />
-      <KpiCard label={t("advisor.kpis.grossMargin")} value={money(kpis.gross_margin_amount)} />
+    <section className="flex flex-col gap-3">
+      <h2 className="text-sm font-semibold text-foreground">{t("advisor.kpis.sectionTitle")}</h2>
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-3">
+      <KpiCard variant="cell" label={t("advisor.kpis.sales")} value={money(kpis.sales_amount)} />
+      <KpiCard variant="cell" label={t("advisor.kpis.grossMargin")} value={money(kpis.gross_margin_amount)} />
       <KpiCard
+        variant="cell"
         label={t("advisor.kpis.netMargin")}
         value={locked(money(kpis.net_margin_amount))}
         hint={lockedHint}
         negative={kpis.configured && kpis.net_margin_amount < 0}
       />
-      <KpiCard label={t("advisor.kpis.foodCost")} value={formatPct(kpis.food_cost_ratio_bps)} />
+      <KpiCard variant="cell" label={t("advisor.kpis.foodCost")} value={formatPct(kpis.food_cost_ratio_bps)} />
       <KpiCard
+        variant="cell"
         label={t("advisor.kpis.primeCost")}
         value={locked(formatPct(kpis.prime_cost_ratio_bps))}
         hint={lockedHint}
       />
       <KpiCard
+        variant="cell"
         label={t("advisor.kpis.breakEven")}
         value={locked(money(kpis.break_even_amount))}
         hint={lockedHint}
       />
+      </div>
     </section>
   )
 }
@@ -314,8 +297,6 @@ export function AdvisorPage() {
         </div>
       ) : null}
 
-      <KpiGrid kpis={report.data.kpis} />
-
       <div className="flex flex-col gap-6">
         {BUCKET_ORDER.map((bucket) => {
           const items = report.data.insights.filter((i) => i.bucket === bucket)
@@ -346,6 +327,8 @@ export function AdvisorPage() {
           )
         })}
       </div>
+
+      <KpiGrid kpis={report.data.kpis} />
     </>
   ) : null
 

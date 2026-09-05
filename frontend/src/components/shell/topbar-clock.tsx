@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 
-import { dateLocale } from "@/lib/format"
+import { dateLocale, timeOptions } from "@/lib/format"
 
 // Hora actual en vivo (HH:MM, formato Argentina). Se actualiza cada segundo.
 export function TopbarClock() {
@@ -11,7 +11,7 @@ export function TopbarClock() {
     return () => clearInterval(id)
   }, [])
 
-  const time = now.toLocaleTimeString(dateLocale(), { hour: "2-digit", minute: "2-digit" })
+  const time = now.toLocaleTimeString(dateLocale(), timeOptions())
 
   return <span className="text-sm font-medium tabular-nums text-muted-foreground">{time}</span>
 }

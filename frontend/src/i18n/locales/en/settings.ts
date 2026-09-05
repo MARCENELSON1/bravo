@@ -16,6 +16,8 @@ export const settings = {
     reduceMotion: "Reduce motion",
     reduceMotionDesc: "Turns off interface animations.",
   },
+  // Name of the active language, for the profile Language row.
+  languageNames: { es: "Spanish (Argentina)", en: "English (United States)" },
   actions: {
     change: "Change",
     edit: "Edit",
@@ -50,8 +52,8 @@ export const settings = {
       email: { label: "Contact email" },
       phone: { label: "Phone" },
       language: { label: "Language", value: "Spanish (Argentina)" },
-      timezone: { label: "Time zone", value: "GMT−3 · Buenos Aires" },
-      timeFormat: { label: "Time format", value: "24 h" },
+      timezone: { label: "Time zone" },
+      timeFormat: { label: "Time format" },
       homeScreen: {
         label: "Start screen",
         desc: "Where you land when you open the app.",

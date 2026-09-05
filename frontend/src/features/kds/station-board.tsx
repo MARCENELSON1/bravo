@@ -17,8 +17,8 @@ import { kdsDelay, kdsTickets, playNewOrderChime } from "@/lib/kds"
 
 const DELAY_BORDER: Record<KdsDelayLevel, string> = {
   fresh: "border-border",
-  warn: "border-amber-400",
-  late: "border-red-500",
+  warn: "border-warning",
+  late: "border-destructive",
 }
 
 // Identidad de un ticket = comanda + curso (lo que se bumpea de una).
@@ -115,7 +115,7 @@ export function StationBoard({
                     ) : (
                       <span className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
                         {delay.level === "late" ? (
-                          <span className="rounded-full bg-red-100 px-2 py-0.5 font-medium text-red-700">
+                          <span className="rounded-full bg-destructive/10 px-2 py-0.5 font-medium text-destructive">
                             {t("kds.delayed")}
                           </span>
                         ) : null}
