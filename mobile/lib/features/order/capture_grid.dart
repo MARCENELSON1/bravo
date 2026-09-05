@@ -9,6 +9,7 @@ import 'capture_logic.dart';
 import 'order_dtos.dart';
 import 'order_providers.dart';
 import 'product_dtos.dart';
+import 'product_tile_style.dart';
 
 /// Grilla de captura (tipo POS): búsqueda de respaldo + pestañas de categoría
 /// + grilla de productos con badge de cantidad. Abre en "★ Frecuentes" (ranking
@@ -154,7 +155,7 @@ class _CaptureGridState extends ConsumerState<CaptureGrid> {
         crossAxisCount: 3,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
-        childAspectRatio: 1.12,
+        childAspectRatio: 1.0,
       ),
       itemCount: products.length,
       itemBuilder: (context, i) {
@@ -194,59 +195,47 @@ class _ProductTile extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final has = count > 0;
+    final accent = categoryAccent(product.category, product.station);
+    final icon = categoryIcon(product.category, product.station);
+    final url = product.imageUrl;
+    final hasImage = url != null && url.isNotEmpty;
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
         Material(
-          color: has
-              ? scheme.primary.withValues(alpha: 0.14)
-              : scheme.surface.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(14),
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
             onLongPress: onLongPress,
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+            child: Ink(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
+                // Tinte de la categoría; si ya está en la comanda, el primario manda.
+                color: has
+                    ? scheme.primary.withValues(alpha: 0.16)
+                    : accent.withValues(alpha: 0.10),
                 border: Border.all(
                   color: has
-                      ? scheme.primary.withValues(alpha: 0.6)
-                      : scheme.outlineVariant.withValues(alpha: 0.5),
+                      ? scheme.primary.withValues(alpha: 0.65)
+                      : accent.withValues(alpha: 0.28),
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      product.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        height: 1.15,
+              child: hasImage
+                  ? _WithImage(
+                      product: product,
+                      url: url,
+                      accent: accent,
+                      icon: icon,
+                      fallback: _Plain(
+                        product: product,
+                        accent: accent,
+                        icon: icon,
                       ),
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          formatMoney(product.priceAmount, product.currency),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                      // Tiene grupo obligatorio: al tocar, primero se elige.
-                      if (product.needsChoice)
-                        Icon(Icons.tune, size: 13, color: scheme.primary),
-                    ],
-                  ),
-                ],
-              ),
+                    )
+                  : _Plain(product: product, accent: accent, icon: icon),
             ),
           ),
         ),
@@ -273,6 +262,176 @@ class _ProductTile extends StatelessWidget {
               ),
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// Tile sin foto: categoría (ícono + nombre) arriba, nombre del plato grande,
+/// precio abajo, y el ícono como marca de agua para darle textura.
+class _Plain extends StatelessWidget {
+  const _Plain({
+    required this.product,
+    required this.accent,
+    required this.icon,
+  });
+
+  final Product product;
+  final Color accent;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Stack(
+      clipBehavior: Clip.hardEdge,
+      children: [
+        Positioned(
+          right: -8,
+          bottom: -10,
+          child: Icon(icon, size: 58, color: accent.withValues(alpha: 0.13)),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10, 9, 10, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 13, color: accent),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      product.category ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: accent,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5),
+              Expanded(
+                child: Text(
+                  product.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    height: 1.15,
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      formatMoney(product.priceAmount, product.currency),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onSurface.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  ),
+                  // Tiene grupo obligatorio: al tocar, primero se elige.
+                  if (product.needsChoice)
+                    Icon(Icons.tune, size: 14, color: scheme.primary),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Tile con foto: la imagen llena la tile con un degradé abajo y el nombre
+/// encima; franja de la categoría arriba. Si la foto falla, cae a la simple.
+class _WithImage extends StatelessWidget {
+  const _WithImage({
+    required this.product,
+    required this.url,
+    required this.accent,
+    required this.icon,
+    required this.fallback,
+  });
+
+  final Product product;
+  final String url;
+  final Color accent;
+  final IconData icon;
+  final Widget fallback;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.network(
+          url,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => fallback,
+          loadingBuilder: (_, child, progress) =>
+              progress == null ? child : fallback,
+        ),
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: [0.3, 1],
+              colors: [Colors.transparent, Color(0xCC000000)],
+            ),
+          ),
+        ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: Container(height: 3, color: accent),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10, 9, 10, 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                product.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  height: 1.15,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      formatMoney(product.priceAmount, product.currency),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (product.needsChoice)
+                    const Icon(Icons.tune, size: 14, color: Colors.white),
+                ],
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

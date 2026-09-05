@@ -30,16 +30,21 @@ String normalizeText(String s) {
   return sb.toString().trim();
 }
 
-/// Categorías distintas, en el orden en que aparecen en la carta.
+/// Categorías distintas, en el orden en que aparecen en la carta. Se unifican
+/// sin distinguir mayúsculas ni tildes ("CAFÉ" y "Café" son una sola pestaña;
+/// gana el nombre que aparece primero).
 List<String> categoriesOf(List<Product> products) {
   final seen = <String>{};
   final out = <String>[];
   for (final p in products) {
     final c = p.category;
-    if (c != null && c.isNotEmpty && seen.add(c)) out.add(c);
+    if (c != null && c.isNotEmpty && seen.add(normalizeText(c))) out.add(c);
   }
   return out;
 }
+
+bool sameCategory(String? a, String? b) =>
+    a != null && b != null && normalizeText(a) == normalizeText(b);
 
 /// Filtra por categoría (null = todas) o por búsqueda normalizada sobre nombre
 /// y categoría. La búsqueda manda: si hay texto, busca en toda la carta e
@@ -60,7 +65,7 @@ List<Product> filterProducts(
         .toList();
   }
   if (category == null) return products;
-  return products.where((p) => p.category == category).toList();
+  return products.where((p) => sameCategory(p.category, category)).toList();
 }
 
 /// Cantidad de ese producto todavía PENDING en la comanda (lo que se está
