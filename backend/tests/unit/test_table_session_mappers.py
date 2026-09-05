@@ -36,3 +36,20 @@ def test_sector_roundtrip():
     assert back.name == "Terraza"
     assert back.color == "#0f0"
     assert back.sort_order == 2
+
+
+def test_table_session_close_seals_closed_state():
+    # La visita termina (última orden pagada/anulada o cierre manual): queda
+    # CLOSED con closed_at → `list_open` deja de devolverla y la mesa se libera.
+    s = TableSession(
+        id="s2",
+        tenant_id="t1",
+        table_id="tb1",
+        opened_at=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+    assert s.closed_at is None
+    s.close(datetime(2026, 1, 1, 14, 0, tzinfo=UTC))
+    assert s.status is SessionStatus.CLOSED
+    assert s.closed_at == datetime(2026, 1, 1, 14, 0, tzinfo=UTC)
+    back = table_session_to_domain(table_session_to_orm(s))
+    assert back.closed_at is not None

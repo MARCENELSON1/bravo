@@ -44,6 +44,12 @@ class TableSession:
     customer_id: str | None = None
     notes: str | None = None
 
+    def close(self, now: datetime) -> None:
+        """The visit is over (last order paid / cancelled, or staff closed the
+        table): sealed as CLOSED so the floor shows the table free again."""
+        self.status = SessionStatus.CLOSED
+        self.closed_at = now
+
     def assign_waiter(self, waiter_id: str) -> None:
         """Set (or change) the owner of the visit. Único punto de mutación del
         dueño tras abrir la sesión: lo usan confirmar-QR, tomar mesa y reasignar."""

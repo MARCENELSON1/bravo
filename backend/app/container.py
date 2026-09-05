@@ -203,6 +203,7 @@ from app.application.table_session.sectors import (
 )
 from app.application.table_session.use_cases import (
     AssignTableWaiter,
+    CloseSession,
     OpenSession,
     RequestBill,
     SetSessionPax,
@@ -726,6 +727,12 @@ class Container(containers.DeclarativeContainer):
         sessions=table_session_repository,
         tenant_context=tenant_context,
     )
+    close_session = providers.Factory(
+        CloseSession,
+        sessions=table_session_repository,
+        orders=order_repository,
+        tenant_context=tenant_context,
+    )
     request_bill = providers.Factory(
         RequestBill,
         sessions=table_session_repository,
@@ -872,6 +879,7 @@ class Container(containers.DeclarativeContainer):
         tenant_context=tenant_context,
         event_bus=event_bus,
         notifications=push_service,
+        sessions=table_session_repository,
     )
     advance_item = providers.Factory(
         AdvanceItem,
@@ -967,6 +975,7 @@ class Container(containers.DeclarativeContainer):
         payments=payment_repository,
         tenant_context=tenant_context,
         event_bus=event_bus,
+        sessions=table_session_repository,
     )
     # Outbox de reportes de sales tax (TaxJar AutoFile). Se enqueue en la
     # transición a PAID solo si se cobró tax (>0) → vacío en AR (paridad).
@@ -1163,6 +1172,7 @@ class Container(containers.DeclarativeContainer):
         policy=cash_session_policy,
         fee_rates=payment_fee_rate_repository,
         tax_outbox=tax_report_ledger,
+        sessions=table_session_repository,
     )
     # Cobro del comensal (Carta QR F3): mismo motor que el cajero pero con la
     # política de caja RELAJADA (cash=None, policy=None) → no exige caja abierta ni
@@ -1200,6 +1210,7 @@ class Container(containers.DeclarativeContainer):
         event_bus=event_bus,
         push=push_service,
         tables=table_repository,
+        sessions=table_session_repository,
     )
     register_expense = providers.Factory(
         RegisterExpense,

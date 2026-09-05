@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 from app.application.floor.dtos import FloorTable
 from app.application.floor.use_cases import GetFloor
 from app.application.table_session.use_cases import (
+    CloseSession,
     OpenSession,
     RequestBill,
     SetSessionPax,
@@ -99,6 +100,21 @@ async def request_bill(
     identity: AccessClaims = Depends(require_roles(*_FLOOR_ROLES)),
     use_case: RequestBill = Depends(Provide[Container.request_bill]),
 ) -> SessionResponse:
+    session = await use_case.execute(
+        tenant_id=identity.tenant_id, session_id=session_id
+    )
+    return _session_response(session)
+
+
+@router.post("/sessions/{session_id}/close", response_model=SessionResponse)
+@inject
+async def close_session(
+    session_id: str,
+    identity: AccessClaims = Depends(require_roles(Role.MANAGER, Role.OWNER)),
+    use_case: CloseSession = Depends(Provide[Container.close_session]),
+) -> SessionResponse:
+    """Cerrar la mesa a mano (abierta por error, se fueron sin pedir). Se niega
+    si queda una comanda activa: cobrarla o anularla primero."""
     session = await use_case.execute(
         tenant_id=identity.tenant_id, session_id=session_id
     )

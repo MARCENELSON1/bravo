@@ -4,9 +4,11 @@ import logging
 from uuid import uuid4
 
 from app.application.analytics.ports import SalesProjector
+from app.application.clock import utcnow
 from app.application.inventory.ports import InventoryConsumer
 from app.application.order.auto_assign import AutoAssignWaiter
 from app.application.order.use_cases import SendOrder
+from app.application.table_session.use_cases import close_session_if_idle
 from app.application.tax.reporting import TaxReportLedger
 from app.domain.cashier.exceptions import NoOpenCashSession
 from app.domain.cashier.policy import CashSessionPolicy
@@ -34,6 +36,7 @@ from app.domain.payment.value_objects import PaymentDirection, PaymentMethod, Pa
 from app.domain.realtime.ports import DomainEvent, EventBus
 from app.domain.shared.money import Money
 from app.domain.table.repository import TableRepository
+from app.domain.table_session.repository import TableSessionRepository
 from app.domain.tenant.exceptions import TenantNotFound
 from app.domain.tenant.repository import TenantRepository
 
@@ -48,6 +51,7 @@ async def _settle_order(
     inventory: InventoryConsumer | None = None,
     sales: SalesProjector | None = None,
     tax_outbox: TaxReportLedger | None = None,
+    sessions: TableSessionRepository | None = None,
 ) -> None:
     """Mark the order PAID once confirmed INFLOW payments cover its total.
 
@@ -71,6 +75,9 @@ async def _settle_order(
     if paid >= order.total().amount and order.status is not OrderStatus.PAID:
         order.mark_paid()
         await orders.save(order)
+        if sessions is not None:
+            # Saldada la última orden viva → la visita terminó: mesa libre.
+            await close_session_if_idle(sessions, orders, tenant_id, order.table_id, utcnow())
         await _fire_sale_effects(
             tenant_id,
             order_id,
@@ -137,10 +144,12 @@ class RegisterPayment:
         policy: CashSessionPolicy | None = None,
         fee_rates: PaymentFeeRateRepository | None = None,
         tax_outbox: TaxReportLedger | None = None,
+        sessions: TableSessionRepository | None = None,
     ) -> None:
         self._payments = payments
         self._orders = orders
         self._gateway = gateway
+        self._sessions = sessions
         self._tenant_context = tenant_context
         self._inventory = inventory
         self._sales = sales
@@ -218,6 +227,7 @@ class RegisterPayment:
             self._inventory,
             self._sales,
             self._tax_outbox,
+            sessions=self._sessions,
         )
         return payment
 
@@ -334,9 +344,11 @@ class ConfirmGatewayPayment:
         event_bus: EventBus | None = None,
         push: NotificationService | None = None,
         tables: TableRepository | None = None,
+        sessions: TableSessionRepository | None = None,
     ) -> None:
         self._payments = payments
         self._orders = orders
+        self._sessions = sessions
         self._notifications = notifications
         self._resolver = resolver
         self._tenant_context = tenant_context
@@ -403,6 +415,7 @@ class ConfirmGatewayPayment:
                         self._inventory,
                         self._sales,
                         self._tax_outbox,
+                        sessions=self._sessions,
                     )
         elif status.status is PaymentStatus.FAILED:
             payment.fail()

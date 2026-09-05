@@ -6,7 +6,10 @@ from app.application.analytics.ports import SalesProjector
 from app.application.clock import utcnow
 from app.application.inventory.ports import InventoryConsumer
 from app.application.order.dtos import BatchOrderItemInput, CreateOrderResult
-from app.application.table_session.use_cases import AssignTableWaiter
+from app.application.table_session.use_cases import (
+    AssignTableWaiter,
+    close_session_if_idle,
+)
 from app.domain.identity.ports import TenantContext
 from app.domain.invoice.repository import InvoiceRepository
 from app.domain.invoice.value_objects import InvoiceStatus
@@ -680,12 +683,14 @@ class AdvanceOrder:
         tenant_context: TenantContext,
         event_bus: EventBus,
         notifications: NotificationService,
+        sessions: TableSessionRepository | None = None,
     ) -> None:
         self._orders = orders
         self._tables = tables
         self._tenant_context = tenant_context
         self._event_bus = event_bus
         self._notifications = notifications
+        self._sessions = sessions
 
     async def execute(self, *, tenant_id: str, order_id: str, action: str) -> Order:
         self._tenant_context.set(tenant_id)
@@ -703,6 +708,11 @@ class AdvanceOrder:
         else:
             raise InvalidOrderTransition()
         await self._orders.save(order)
+        if action == "cancel" and self._sessions is not None:
+            # Última orden viva anulada → la visita terminó: la mesa vuelve a libre.
+            await close_session_if_idle(
+                self._sessions, self._orders, tenant_id, order.table_id, utcnow()
+            )
         for event in _kds_changed(order, {it.station for it in order.items}):
             await self._event_bus.publish(event)
         await self._event_bus.publish(_floor_changed(order))
@@ -887,11 +897,13 @@ class CloseSettledOrder:
         payments: PaymentRepository,
         tenant_context: TenantContext,
         event_bus: EventBus,
+        sessions: TableSessionRepository | None = None,
     ) -> None:
         self._orders = orders
         self._payments = payments
         self._tenant_context = tenant_context
         self._event_bus = event_bus
+        self._sessions = sessions
 
     async def execute(self, *, tenant_id: str, order_id: str) -> Order:
         self._tenant_context.set(tenant_id)
@@ -911,5 +923,9 @@ class CloseSettledOrder:
             raise OrderNotFullyPaid()
         order.mark_paid()
         await self._orders.save(order)
+        if self._sessions is not None:
+            await close_session_if_idle(
+                self._sessions, self._orders, tenant_id, order.table_id, utcnow()
+            )
         await self._event_bus.publish(_floor_changed(order))
         return order

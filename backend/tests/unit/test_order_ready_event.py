@@ -107,11 +107,15 @@ async def test_order_ready_only_when_all_items_ready() -> None:
     readies = _readies(bus)
     assert len(readies) == 1
     assert readies[0].tenant_id == "t1"
+    # Con cursos, el aviso es POR CURSO: ambos platos son principales (default)
+    # → un solo aviso cuando el último queda listo, etiquetado con su curso.
     assert readies[0].payload == {
         "order_id": order.id,
         "table_id": "tb1",
         "table_number": "7",
         "waiter_id": "w1",
+        "course": "MAIN",
+        "course_label": "principales",
     }
 
 
@@ -169,4 +173,5 @@ async def test_push_notifies_waiter_on_ready() -> None:
 
     await uc.execute(tenant_id="t1", order_id=order.id, item_id=i2.id, action="preparing")
     await uc.execute(tenant_id="t1", order_id=order.id, item_id=i2.id, action="ready")
-    assert push.sent == [("w1", "Mesa 7 · para servir", "1× Milanesa · 1× Ensalada")]
+    # Título por curso (ambos principales) + los platos de ESE curso en el cuerpo.
+    assert push.sent == [("w1", "Mesa 7 · principales listos", "1× Milanesa · 1× Ensalada")]

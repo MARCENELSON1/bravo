@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from uuid import uuid4
 
 from app.application.clock import utcnow
@@ -9,7 +10,11 @@ from app.domain.order.value_objects import CUSTOMER_WAITER_ID
 from app.domain.table.exceptions import TableNotFound
 from app.domain.table.repository import TableRepository
 from app.domain.table_session.entities import TableSession
-from app.domain.table_session.exceptions import SessionNotFound, TableAlreadyAssigned
+from app.domain.table_session.exceptions import (
+    SessionHasActiveOrders,
+    SessionNotFound,
+    TableAlreadyAssigned,
+)
 from app.domain.table_session.repository import TableSessionRepository
 from app.domain.table_session.value_objects import SessionStatus
 
@@ -156,4 +161,52 @@ class AssignTableWaiter:
             if order.waiter_id != waiter_id:
                 order.waiter_id = waiter_id
                 await self._orders.save(order)
+        return session
+
+
+async def close_session_if_idle(
+    sessions: TableSessionRepository,
+    orders: OrderRepository,
+    tenant_id: str,
+    table_id: str,
+    now: datetime,
+) -> bool:
+    """When a table's LAST live order ends (paid / cancelled), the visit is
+    over: close its open session so the floor shows the table free again —
+    otherwise "Abierta" would linger forever. Returns True if it closed one."""
+    session = await sessions.get_open_by_table(tenant_id, table_id)
+    if session is None:
+        return False
+    active = await orders.list_active(tenant_id)
+    if any(o.table_id == table_id for o in active):
+        return False
+    session.close(now)
+    await sessions.save(session)
+    return True
+
+
+class CloseSession:
+    """Staff closes a table by hand (opened by mistake, party left without
+    ordering). Refuses while a live order exists — pay or cancel it first."""
+
+    def __init__(
+        self,
+        sessions: TableSessionRepository,
+        orders: OrderRepository,
+        tenant_context: TenantContext,
+    ) -> None:
+        self._sessions = sessions
+        self._orders = orders
+        self._tenant_context = tenant_context
+
+    async def execute(self, *, tenant_id: str, session_id: str) -> TableSession:
+        self._tenant_context.set(tenant_id)
+        session = await self._sessions.get_by_id(tenant_id, session_id)
+        if session is None:
+            raise SessionNotFound()
+        active = await self._orders.list_active(tenant_id)
+        if any(o.table_id == session.table_id for o in active):
+            raise SessionHasActiveOrders()
+        session.close(utcnow())
+        await self._sessions.save(session)
         return session

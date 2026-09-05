@@ -62,6 +62,7 @@ from app.domain.order.exceptions import (
     InvalidOrderTransition,
     ItemNotFound,
     ItemNotPending,
+    NoCourseToFire,
     OrderHasAuthorizedInvoice,
     OrderNotFound,
     OrderNotFullyPaid,
@@ -99,6 +100,7 @@ from app.domain.shared.exceptions import (
 from app.domain.table.exceptions import TableNotFound
 from app.domain.table_session.exceptions import (
     SectorNotFound,
+    SessionHasActiveOrders,
     SessionNotFound,
     TableAlreadyAssigned,
 )
@@ -150,6 +152,7 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (TableNotFound, 404),
     (SessionNotFound, 404),
     (TableAlreadyAssigned, 409),
+    (SessionHasActiveOrders, 409),
     (SectorNotFound, 404),
     (CustomerNotFound, 404),
     (ProductNotFound, 404),
@@ -162,6 +165,7 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (EmptyOrder, 422),
     (ItemNotFound, 404),
     (ItemNotPending, 409),
+    (NoCourseToFire, 409),
     (InvalidItemTransition, 409),
     (OrderHasAuthorizedInvoice, 409),
     (InvalidItemQuantity, 422),
