@@ -4,7 +4,7 @@ import 'product_dtos.dart';
 /// Transformaciones optimistas puras sobre una `Order` (para feedback instantáneo
 /// antes de que responda el server). Solo tocan ítems PENDING; el server manda.
 
-Order applyAdd(Order o, Product p, int qty, String itemId) {
+Order applyAdd(Order o, Product p, int qty, String itemId, {String? note}) {
   final item = OrderItem(
     id: itemId,
     productId: p.id,
@@ -13,6 +13,7 @@ Order applyAdd(Order o, Product p, int qty, String itemId) {
     quantity: qty,
     status: ItemStatus.pending,
     station: Station.fromApi(p.station),
+    note: note,
   );
   return o.copyWith(
     items: [...o.items, item],

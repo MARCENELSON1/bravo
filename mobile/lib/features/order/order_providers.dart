@@ -55,19 +55,24 @@ class OrderController extends AutoDisposeFamilyAsyncNotifier<Order, String> {
     return completer.future;
   }
 
-  Future<void> addProduct(Product p, int qty) async {
+  Future<void> addProduct(Product p, int qty, {String? note}) async {
     final itemId = const Uuid().v4();
-    state = AsyncData(applyAdd(_current, p, qty, itemId));
+    state = AsyncData(applyAdd(_current, p, qty, itemId, note: note));
     await ref.read(productUsageProvider).bump(p.id);
     await _serialized(() async {
       try {
         state = AsyncData(
-          await _repo.addItem(arg, id: itemId, productId: p.id, quantity: qty),
+          await _repo.addItem(arg,
+              id: itemId, productId: p.id, quantity: qty, note: note),
         );
       } on ApiError catch (e) {
         if (e.code == 'network_error') {
           await _queue.enqueue(OrderOp.addItem(
-              orderId: arg, itemId: itemId, productId: p.id, quantity: qty));
+              orderId: arg,
+              itemId: itemId,
+              productId: p.id,
+              quantity: qty,
+              note: note));
           // se mantiene el estado optimista; se drena al reconectar
         } else {
           state = AsyncData(await _repo.get(arg));

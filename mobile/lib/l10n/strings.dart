@@ -118,6 +118,19 @@ class Strings {
   String get addProducts => _en ? 'Add products' : 'Agregar productos';
   String get searchProduct => _en ? 'Search product' : 'Buscar producto';
   String get done => _en ? 'Done' : 'Listo';
+  // Grilla de captura (comanda tipo POS).
+  String get chipFavorites => _en ? '★ Frequent' : '★ Frecuentes';
+  String get chipAllProducts => _en ? 'All' : 'Todos';
+  String get captureNoResults => _en ? 'No results' : 'Sin resultados';
+  String get captureNoteHint => _en
+      ? 'Note for the kitchen (no salt, well done…)'
+      : 'Nota para cocina (sin sal, bien cocido…)';
+  String addQty(int n) => _en ? 'Add ×$n' : 'Agregar ×$n';
+  String ticketItems(int n) =>
+      _en ? (n == 1 ? '1 item' : '$n items') : (n == 1 ? '1 ítem' : '$n ítems');
+  String get captureRemove => _en ? 'Remove' : 'Quitar';
+  String get captureSave => _en ? 'Save' : 'Guardar';
+  String get stationBar => _en ? 'Bar' : 'Barra';
   String marchCount(int n) => _en ? 'Send to kitchen ($n)' : 'Marchar ($n)';
   String markServedCount(int n) =>
       _en ? 'Mark served ($n)' : 'Marcar servido ($n)';
