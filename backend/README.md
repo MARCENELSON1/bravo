@@ -54,6 +54,33 @@ poetry run pytest tests/integration -q
 - **Rate limiting**: v1 relies on per-user DB lockout; per-IP throttling (and HTTPS/HSTS at
   the reverse proxy) are deployment follow-ups.
 
+## Running more than one replica
+
+The app defaults to in-process cache, event bus and rate limiter. That is correct
+for a single worker and needs no extra infrastructure, but it does **not** survive
+horizontal scaling: each replica would keep its own catalog cache (an invalidation
+on one is invisible to the others), a waiter's SSE stream would miss what another
+replica published, and the abuse limit on the public QR endpoints would be
+enforced N times over instead of once.
+
+Before raising the replica count, move all three onto Redis:
+
+| Variable | Value | Without it, when scaled |
+| --- | --- | --- |
+| `REDIS_URL` | `redis://…` (Railway's Redis service URL) | — |
+| `CACHE_BACKEND` | `redis` | Stale products/menu after an edit, per replica |
+| `EVENT_BUS_BACKEND` | `redis` | KDS/floor updates only reach the publishing replica |
+| `RATE_LIMITER_BACKEND` | `redis` | The public rate limit multiplies by replica count |
+
+`REDIS_URL` has **no default on purpose**: the three adapters fail open, so a
+default pointing at localhost would boot a healthy-looking process with no cache,
+no cross-replica events and no rate limit, silently. Setting any of the three to
+`redis` without a URL fails at startup instead.
+
+Redis is a **nudge and a cache, never the source of truth** — Postgres is. A Redis
+outage degrades the system (cache always misses, realtime falls back to the
+client's poll, the abuse guard opens) but never takes it down or loses data.
+
 ## Multi-tenant & RLS
 
 - The app connects with a dedicated **non-superuser** role (`bravo_app`).

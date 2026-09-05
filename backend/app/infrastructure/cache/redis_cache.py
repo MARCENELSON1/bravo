@@ -5,12 +5,10 @@ import pickle
 from typing import Any
 
 from app.domain.shared.cache import CachePort
+from app.infrastructure.redis.connection import RedisProvider
 
 logger = logging.getLogger(__name__)
 
-# A cache read must never be slower than the query it replaces, so the backend
-# gets a hard budget: past this, we give up and hit the database instead.
-_TIMEOUT_SECONDS = 0.2
 # Namespace versions outlive the entries they guard; without this an idle
 # tenant's counter would live forever.
 _VERSION_TTL_SECONDS = 24 * 60 * 60
@@ -26,31 +24,21 @@ class RedisCache(CachePort):
     pickle — safe here because the payloads are written and read only by this
     application, never by an untrusted producer.
 
+    The connection is owned by :class:`RedisProvider` and shared with the event
+    bus and the rate limiter; closing it is the lifespan's job, not this class's.
+
     **Fail-open by design**: every operation swallows backend errors and
     timeouts, logging at debug level. A Redis outage degrades the system to
     "always miss" (slower, still correct) instead of taking it down.
     """
 
-    def __init__(self, url: str, timeout_seconds: float = _TIMEOUT_SECONDS) -> None:
-        self._url = url
-        self._timeout = timeout_seconds
-        self._client: Any | None = None
+    def __init__(self, redis: RedisProvider) -> None:
+        self._redis = redis
 
     def _get_client(self) -> Any | None:
-        """Lazily build the client so importing the module never needs Redis."""
-        if self._client is None:
-            try:
-                from redis.asyncio import Redis
-
-                self._client = Redis.from_url(
-                    self._url,
-                    socket_timeout=self._timeout,
-                    socket_connect_timeout=self._timeout,
-                )
-            except Exception:  # pragma: no cover - misconfigured URL / missing dep
-                logger.warning("redis cache unavailable, falling back to no cache")
-                return None
-        return self._client
+        """The process-wide client (short read timeout), or ``None`` if Redis is
+        unusable — in which case every operation degrades to a miss."""
+        return self._redis.client()
 
     async def get(self, key: str) -> Any | None:
         client = self._get_client()
@@ -118,11 +106,3 @@ class RedisCache(CachePort):
     @staticmethod
     def _version_key(namespace: str) -> str:
         return f"ns:{namespace}"
-
-    async def close(self) -> None:
-        """Release the connection pool (called from the app lifespan)."""
-        if self._client is not None:
-            try:
-                await self._client.aclose()
-            except Exception:  # pragma: no cover - best effort on shutdown
-                logger.debug("cache close failed", exc_info=True)

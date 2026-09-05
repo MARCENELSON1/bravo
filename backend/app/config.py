@@ -207,13 +207,45 @@ class Settings(BaseSettings):
     # invalidación no cruza procesos. "redis" lo comparte entre réplicas, que es
     # lo que hace segura la invalidación al escalar horizontalmente.
     cache_backend: Literal["memory", "redis"] = "memory"
-    redis_url: str = "redis://localhost:6379/0"
+    # Sin default a propósito: los tres adapters de Redis fallan *open*, así que
+    # una URL por default (localhost) haría arrancar un proceso "sano" apuntando a
+    # un Redis que no existe — sin caché, sin eventos entre réplicas y sin rate
+    # limit, en silencio. Vacío + el validator de abajo convierte eso en un error
+    # al arrancar. Quien prenda un backend compartido setea REDIS_URL.
+    redis_url: str = ""
+
+    # Bus de realtime (SSE) y rate limiter de los endpoints públicos. "memory"
+    # vive en el proceso: alcanza para una sola instancia, que es como corre hoy.
+    # Con varias réplicas hay que pasar ambos a "redis": si no, un mozo conectado
+    # a una réplica no recibe lo que publica otra, y el límite de abuso se
+    # multiplica por la cantidad de réplicas.
+    event_bus_backend: Literal["memory", "redis"] = "memory"
+    rate_limiter_backend: Literal["memory", "redis"] = "memory"
 
     push_provider: Literal["none", "fcm"] = "none"
     # Credencial del service-account de Firebase (el project_id sale de ahí). En
     # Railway conviene el JSON inline (env var); local puede ser una ruta a archivo.
     fcm_credentials_json: str = ""
     fcm_credentials_path: str = ""
+
+    @model_validator(mode="after")
+    def _require_redis_url_for_shared_backends(self) -> "Settings":
+        """Los backends compartidos necesitan una URL de Redis, en cualquier env.
+
+        Va aparte de ``_reject_insecure_production`` a propósito: ese validator
+        retorna temprano cuando ``env == "dev"``, así que lo que vive adentro no
+        se chequea en desarrollo — justo donde uno prende un backend nuevo por
+        primera vez y quiere el error al arrancar, no un fallo silencioso.
+        """
+        shared = {
+            "CACHE_BACKEND": self.cache_backend,
+            "EVENT_BUS_BACKEND": self.event_bus_backend,
+            "RATE_LIMITER_BACKEND": self.rate_limiter_backend,
+        }
+        enabled = [name for name, value in shared.items() if value == "redis"]
+        if enabled and not self.redis_url:
+            raise ValueError(f"{', '.join(enabled)}=redis requiere REDIS_URL")
+        return self
 
     @model_validator(mode="after")
     def _reject_insecure_production(self) -> "Settings":
@@ -231,8 +263,6 @@ class Settings(BaseSettings):
             problems.append("EMAIL_TRANSPORT must be 'resend' or 'smtp' (console logs tokens)")
         if self.email_transport == "resend" and not self.resend_api_key:
             problems.append("RESEND_API_KEY must be set when EMAIL_TRANSPORT=resend")
-        if self.cache_backend == "redis" and not self.redis_url:
-            raise ValueError("CACHE_BACKEND=redis requiere REDIS_URL")
         if self.push_provider == "fcm" and not (
             self.fcm_credentials_json or self.fcm_credentials_path
         ):

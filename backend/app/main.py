@@ -64,6 +64,9 @@ def create_app() -> FastAPI:
         # Releases the shared outbound connection pool; adapters never close it
         # themselves, since they share it for the life of the process.
         await container.http_pool().aclose()
+        # Idem para Redis: el caché, el bus y el rate limiter comparten este
+        # pool, así que se cierra una sola vez y acá.
+        await container.redis_pool().aclose()
 
     app = FastAPI(title="BRAVO API", version="0.1.0", lifespan=lifespan)
     app.state.container = container

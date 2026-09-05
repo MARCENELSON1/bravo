@@ -95,10 +95,19 @@ class _BrokenRedis:
         raise ConnectionError("redis down")
 
 
+class _StubProvider:
+    """Stands in for :class:`RedisProvider`, handing back a prepared client."""
+
+    def __init__(self, client: Any | None) -> None:
+        self._client = client
+
+    def client(self) -> Any | None:
+        return self._client
+
+
 async def test_redis_failure_degrades_to_a_miss_without_raising() -> None:
     # Fail-open: a cache outage must slow the system down, never break it.
-    cache = RedisCache(url="redis://unused")
-    cache._client = _BrokenRedis()
+    cache = RedisCache(_StubProvider(_BrokenRedis()))
 
     await cache.set("k", "v", ttl_seconds=60)  # no raise
     assert await cache.get("k") is None  # behaves as a miss
@@ -126,10 +135,21 @@ async def test_redis_roundtrip_with_a_fake_backend() -> None:
         async def expire(self, key: str, ttl: int) -> None:
             return None
 
-    cache = RedisCache(url="redis://unused")
-    cache._client = _FakeRedis()
+    cache = RedisCache(_StubProvider(_FakeRedis()))
 
     await cache.set("k", {"a": 1}, ttl_seconds=60)
     assert await cache.get("k") == {"a": 1}  # values survive the pickle round-trip
     await cache.bump_namespace("products:t-1")
     assert await cache.namespace_version("products:t-1") == 1
+
+
+async def test_without_a_backend_every_operation_degrades_to_a_miss() -> None:
+    # What the provider returns when the URL or driver is unusable: the app must
+    # keep serving, just without a cache.
+    cache = RedisCache(_StubProvider(None))
+
+    await cache.set("k", "v", ttl_seconds=60)
+    assert await cache.get("k") is None
+    await cache.delete("k")
+    await cache.bump_namespace("products:t-1")
+    assert await cache.namespace_version("products:t-1") == 0

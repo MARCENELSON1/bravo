@@ -408,9 +408,12 @@ from app.infrastructure.persistence.verification_token_repo import (
 )
 from app.infrastructure.public_menu.signed_table_qr import HmacTableQrToken
 from app.infrastructure.realtime.memory_bus import InMemoryEventBus
+from app.infrastructure.realtime.redis_bus import RedisEventBus
+from app.infrastructure.redis.connection import RedisProvider
 from app.infrastructure.security.fernet_cipher import FernetTokenCipher
 from app.infrastructure.security.hasher import Argon2Hasher
 from app.infrastructure.security.rate_limiter import InMemoryRateLimiter
+from app.infrastructure.security.redis_rate_limiter import RedisRateLimiter
 from app.infrastructure.security.tenant_context import ContextVarTenantContext
 from app.infrastructure.security.token_service import JwtTokenService
 from app.infrastructure.tax.reporter_resolver import DbTaxJarReporterResolver
@@ -442,6 +445,11 @@ class Container(containers.DeclarativeContainer):
     # un tenant al request de otro.
     http_pool = providers.Singleton(HttpClientProvider)
 
+    # Conexión Redis compartida por el caché, el bus y el rate limiter: un solo
+    # pool por proceso en vez de uno por adapter. Se construye igual aunque los
+    # backends estén en "memory" (es lazy: no conecta hasta que alguien la usa).
+    redis_pool = providers.Singleton(RedisProvider, url=config.provided.redis_url)
+
     # --- external services (singletons) ---
     password_hasher = providers.Singleton(Argon2Hasher)
     token_service = providers.Singleton(
@@ -452,8 +460,13 @@ class Container(containers.DeclarativeContainer):
     )
     tenant_context = providers.Singleton(ContextVarTenantContext)
     # Realtime bus (Fase 13 T4): SINGLETON so publishers (order use cases) and
-    # SSE subscribers share the same in-process instance.
-    event_bus = providers.Singleton(InMemoryEventBus)
+    # SSE subscribers share the same instance. "memory" no cruza procesos: con
+    # varias réplicas hay que pasarlo a "redis" o media sala deja de recibir.
+    event_bus = providers.Selector(
+        config.provided.event_bus_backend,
+        memory=providers.Singleton(InMemoryEventBus),
+        redis=providers.Singleton(RedisEventBus, redis=redis_pool),
+    )
     email_sender = providers.Selector(
         config.provided.email_transport,
         console=providers.Singleton(ConsoleEmailSender),
@@ -512,7 +525,7 @@ class Container(containers.DeclarativeContainer):
     cache = providers.Selector(
         config.provided.cache_backend,
         memory=providers.Singleton(InMemoryCache),
-        redis=providers.Singleton(RedisCache, url=config.provided.redis_url),
+        redis=providers.Singleton(RedisCache, redis=redis_pool),
     )
 
     # Repos de catálogo: el decorador cachea lecturas e invalida al escribir.
@@ -1522,7 +1535,13 @@ class Container(containers.DeclarativeContainer):
     # --- Carta QR (autopedido F1): token firmado de mesa + carta pública ---
     # Rate limiter en memoria (baranda de abuso de los endpoints públicos). Singleton
     # → el estado (hits por mesa) vive mientras corre el proceso.
-    public_rate_limiter = providers.Singleton(InMemoryRateLimiter)
+    # Guard anti-abuso de los endpoints públicos (Carta QR). "memory" cuenta por
+    # proceso: con N réplicas el límite real se multiplica por N sin que se note.
+    public_rate_limiter = providers.Selector(
+        config.provided.rate_limiter_backend,
+        memory=providers.Singleton(InMemoryRateLimiter),
+        redis=providers.Singleton(RedisRateLimiter, redis=redis_pool),
+    )
     table_qr_token = providers.Singleton(
         HmacTableQrToken, secret=config.provided.effective_table_qr_secret
     )
