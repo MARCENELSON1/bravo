@@ -70,6 +70,9 @@ export function SiteBackground() {
     >
       {/* Base: el gradiente de la app, semitransparente sobre el fondo del tema. */}
       <div className="absolute inset-0 opacity-40 bg-[radial-gradient(125%_125%_at_18%_12%,#f6f6f6_0%,#e9e9e9_50%,#d7d7d7_100%)] dark:bg-[radial-gradient(125%_125%_at_18%_12%,#1d1d1d_0%,#131313_52%,#0a0a0a_100%)]" />
+      {/* Grano fino. Va DEBAJO de las manchas: su mezcla es cara y arriba se
+          recalculaba en cada cuadro de la animación. */}
+      <div className="bg-grain absolute inset-0 opacity-[0.12] mix-blend-overlay" />
 
       {/* Tres niveles por mancha: el scroll la desplaza (--depth), la sección la
           reacomoda (.aurora-mood) y el keyframe le da la deriva lenta. Cada uno
@@ -103,7 +106,6 @@ export function SiteBackground() {
       <div className="vignette" />
 
       {/* Grano fino, igual que en la app. Va último: unifica todas las capas. */}
-      <div className="bg-grain absolute inset-0 opacity-[0.12] mix-blend-overlay" />
     </div>
   )
 }

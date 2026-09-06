@@ -210,6 +210,9 @@
   transform: translate3d(0, calc(var(--scroll, 0) * var(--depth, 0) * 1vh), 0);
   will-change: transform;
 }
+/* Sin `filter: blur()` a propósito: el desenfoque en el mismo elemento que anima
+   `transform` obliga a rasterizar en cada cuadro. La suavidad la da la parada
+   intermedia del degradado, que no cuesta nada. */
 .aurora {
   position: absolute;
   border-radius: 50%;
@@ -221,8 +224,12 @@
   left: -5%;
   width: 55vw;
   height: 55vw;
-  background: radial-gradient(circle, var(--aurora-a) 0%, transparent 70%);
-  filter: blur(90px);
+  background: radial-gradient(
+    circle,
+    var(--aurora-a) 0%,
+    var(--aurora-a) 14%,
+    transparent 72%
+  );
   animation: auroraA 90s ease-in-out infinite alternate;
 }
 .aurora-b {
@@ -230,8 +237,12 @@
   right: -15%;
   width: 45vw;
   height: 45vw;
-  background: radial-gradient(circle, var(--aurora-b) 0%, transparent 70%);
-  filter: blur(110px);
+  background: radial-gradient(
+    circle,
+    var(--aurora-b) 0%,
+    var(--aurora-b) 14%,
+    transparent 72%
+  );
   animation: auroraB 115s ease-in-out infinite alternate;
 }
 .aurora-c {
@@ -239,8 +250,12 @@
   left: 20%;
   width: 60vw;
   height: 50vw;
-  background: radial-gradient(circle, var(--aurora-c) 0%, transparent 70%);
-  filter: blur(130px);
+  background: radial-gradient(
+    circle,
+    var(--aurora-c) 0%,
+    var(--aurora-c) 14%,
+    transparent 72%
+  );
   animation: auroraC 140s ease-in-out infinite alternate;
 }
 
