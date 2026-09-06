@@ -56,11 +56,18 @@ export function Navbar() {
   const [open, setOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 border-b border-black/10 bg-white/60 backdrop-blur-2xl dark:border-white/10 dark:bg-black/30">
-      <div className="relative mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+    <header className="sticky top-0 z-50 border-b border-black/10 bg-white/85 backdrop-blur-2xl dark:border-white/10 dark:bg-neutral-900/80">
+      <div className="relative mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-5">
         {/* Solo el wordmark, igual que el software y que el mockup del hero. */}
-        <a href="#top" className="shrink-0" aria-label={t.home}>
-          <span className="font-brand block translate-y-0.5 text-xl leading-none tracking-tight text-foreground">
+        <a
+          href="#top"
+          aria-label={t.home}
+          className="shrink-0 rounded-md transition-opacity duration-200 hover:opacity-70 focus-visible:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+        >
+          {/* Sin `leading-none` ni empujones a mano: con el interlineado natural, el
+              flex del contenedor lo centra igual que a los links de al lado. Mezclar
+              los dos criterios era lo que los desalineaba. */}
+          <span className="font-brand block text-2xl tracking-tight text-foreground">
             <span className="font-bold">Well</span>
             <span className="-ml-[2px] font-light text-foreground/55">nod</span>
           </span>
@@ -105,8 +112,8 @@ export function Navbar() {
 
       {/* Menú móvil (integrado, a lo ancho) */}
       {open ? (
-        <div className="border-t border-black/10 bg-white/60 backdrop-blur-2xl md:hidden dark:border-white/10 dark:bg-black/30">
-          <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
+        <div className="border-t border-black/10 bg-white/85 backdrop-blur-2xl md:hidden dark:border-white/10 dark:bg-neutral-900/80">
+          <div className="mx-auto max-w-6xl px-5 py-3">
             <nav className="flex flex-col gap-1">
               {t.links.map((link) => (
                 <a
