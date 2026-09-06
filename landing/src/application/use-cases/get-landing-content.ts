@@ -11,11 +11,7 @@ export interface LandingContent {
 export class GetLandingContent {
   constructor(private readonly content: ContentRepository) {}
 
-  async execute(): Promise<LandingContent> {
-    const [features, steps] = await Promise.all([
-      this.content.getFeatures(),
-      this.content.getSteps(),
-    ])
-    return { features, steps }
+  execute(): LandingContent {
+    return { features: this.content.getFeatures(), steps: this.content.getSteps() }
   }
 }

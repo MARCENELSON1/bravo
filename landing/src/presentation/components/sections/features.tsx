@@ -9,7 +9,7 @@ const COPY = {
   "es-AR": {
     eyebrow: "Wellnod",
     heading: "Una sola herramienta para operar todo el local",
-    sub: "Nada de apps sueltas ni de exportar planillas de un lado a otro. Comandas, cocina, caja, facturación, carta, stock, reservas, clientes, fichaje, finanzas, reportes y tu copiloto trabajan con los mismos datos.",
+    sub: "Nada de apps sueltas ni de exportar planillas de un lado a otro. Mesas, comandas, cocina, caja, facturación, reservas, carta, stock, clientes, equipo, fichaje, finanzas, reportes y tu copiloto trabajan con los mismos datos.",
     groups: {
       operation: "El turno",
       management: "El negocio",
@@ -19,7 +19,7 @@ const COPY = {
   "en-US": {
     eyebrow: "Wellnod",
     heading: "One tool to run the whole restaurant",
-    sub: "No more scattered apps or exporting spreadsheets back and forth. Orders, kitchen, register, tax, menu, inventory, reservations, guests, time tracking, finance, reports, and your copilot all run on the same data.",
+    sub: "No more scattered apps or exporting spreadsheets back and forth. Tables, orders, kitchen, register, tax, reservations, menu, inventory, guests, team, time tracking, finance, reports, and your copilot all run on the same data.",
     groups: {
       operation: "The shift",
       management: "The business",
@@ -31,9 +31,10 @@ const COPY = {
 // De lo inmediato a lo estratégico: así es como se usa el software durante el día.
 const ORDER: readonly FeatureGroup[] = ["operation", "management", "intelligence"]
 
-// Las doce áreas, en tres bloques. Doce ítems en una grilla plana son un muro sin
-// jerarquía; agrupados se recorren de lo que pasa ahora a lo que se decide después.
-// Los bloques son 3 / 6 / 3, así ninguna fila queda coja.
+// Las quince áreas, en tres bloques. Quince ítems en una grilla plana son un muro
+// sin jerarquía; agrupados se recorren de lo que pasa ahora a lo que se decide
+// después. Los bloques son 6 / 6 / 3: múltiplos de tres, así en la grilla ancha
+// ninguna fila queda coja.
 export function Features() {
   const { features } = useLandingContent()
   const t = COPY[useContainer().locale]

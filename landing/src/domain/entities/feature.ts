@@ -2,6 +2,7 @@
 // `icon` es una clave semántica (string) — el dominio no conoce lucide ni React;
 // la capa de presentación traduce la clave a un componente de ícono.
 export type FeatureIcon =
+  | "floor"
   | "orders"
   | "kds"
   | "payments"
@@ -9,6 +10,8 @@ export type FeatureIcon =
   | "menu"
   | "inventory"
   | "reservations"
+  | "crm"
+  | "team"
   | "timeclock"
   | "finance"
   | "reports"
