@@ -1,29 +1,30 @@
-// Fondo de la app: gradiente verde suave (base) + textura semi-transparente +
-// grano. Reutilizable entre el shell y las pantallas full-screen (ej. Config).
+// Fondo escénico de la app: gradiente neutro, tres manchas de luz sin tinte,
+// viñeta y grano. Es el mismo tratamiento que la landing —los tokens de color ya
+// eran idénticos entre las dos, así que ahora también coincide el fondo.
+//
+// El verde quedó reservado para la marca y los acentos: cuando el fondo también
+// era verde, el acento dejaba de destacarse contra él.
+//
+// Reutilizable entre el shell y las pantallas full-screen (ej. Configuración).
 export function AppBackground() {
   return (
-    <>
-      {/* Base: gradiente verde suave (borroso) por tema */}
-      <div
-        aria-hidden
-        className="fixed inset-0 -z-20 bg-[radial-gradient(125%_125%_at_18%_12%,#d7e6df_0%,#aec7bb_50%,#85a394_100%)] dark:bg-[radial-gradient(125%_125%_at_18%_12%,#2a4b43_0%,#16241f_52%,#0a120e_100%)]"
-      />
-      {/* Textura (imagen) semi-transparente encima del gradiente */}
-      <div
-        aria-hidden
-        className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-[0.32] mix-blend-soft-light dark:hidden"
-        style={{ backgroundImage: "url('/app-bg-light.png')" }}
-      />
-      <div
-        aria-hidden
-        className="fixed inset-0 -z-10 hidden bg-cover bg-center bg-no-repeat opacity-[0.32] mix-blend-soft-light dark:block"
-        style={{ backgroundImage: "url('/app-bg-dark.png')" }}
-      />
-      {/* Grano/ruido sutil sobre el fondo */}
-      <div
-        aria-hidden
-        className="bg-grain pointer-events-none fixed inset-0 -z-10 opacity-[0.18] mix-blend-overlay"
-      />
-    </>
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      {/* Base: gradiente neutro por tema. */}
+      <div className="absolute inset-0 bg-[radial-gradient(125%_125%_at_18%_12%,#f6f6f6_0%,#e9e9e9_50%,#d7d7d7_100%)] dark:bg-[radial-gradient(125%_125%_at_18%_12%,#1d1d1d_0%,#131313_52%,#0a0a0a_100%)]" />
+      {/* Grano fino. Va DEBAJO de las manchas: su mezcla es cara y arriba se
+          recalculaba en cada cuadro de la animación. */}
+      <div className="bg-grain absolute inset-0 opacity-[0.12] mix-blend-overlay" />
+
+      {/* Manchas de luz. Derivan solas, muy lento; sin parallax porque el shell no
+          scrollea la ventana. */}
+      <div className="aurora aurora-a" />
+      <div className="aurora aurora-b" />
+      <div className="aurora aurora-c" />
+
+      {/* Viñeta: cierra los bordes y concentra la atención en el centro. */}
+      <div className="vignette" />
+
+      {/* Grano fino. Va último: unifica todas las capas. */}
+    </div>
   )
 }

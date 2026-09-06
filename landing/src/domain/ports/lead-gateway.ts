@@ -2,6 +2,9 @@
 export interface Lead {
   readonly email: string
   readonly name?: string
+  /** Nombre del local o la cadena. */
+  readonly business?: string
+  readonly phone?: string
   readonly message?: string
 }
 

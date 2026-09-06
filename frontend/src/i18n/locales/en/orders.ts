@@ -111,6 +111,10 @@ export const orders = {
     subcategory: "Subcategory",
     station: "Station",
     category: "Category",
+    back: "Back",
+    pickCategory: "Pick a category",
+    itemCount_one: "{{count}} product",
+    itemCount_other: "{{count}} products",
     stationLabels: { KITCHEN: "Kitchen", BAR: "Bar" },
   },
 

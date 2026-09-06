@@ -18,14 +18,14 @@ const REGION_SD = {
     inLanguage: "es-AR",
     description:
       "Sistema de gestión para restaurantes, bares y cafés: comandas digitales, " +
-      "cobros, facturación electrónica y copiloto de IA en español.",
+      "cobros, facturación electrónica y copiloto de IA.",
   },
   INTL: {
     country: "United States",
     inLanguage: "en-US",
     description:
       "Restaurant management system for restaurants, bars and cafés: digital order " +
-      "taking, card payments, automated sales tax, and an AI copilot in English.",
+      "taking, card payments, automated sales tax, and an AI copilot.",
   },
 } as const
 
@@ -33,11 +33,7 @@ export async function buildStructuredData(container: Container): Promise<string>
   // Los planes de INTL salen por HTTP; si el backend no está disponible en build,
   // el JSON-LD sale sin offers (degradación) en vez de romper el prerender — la
   // pantalla igual los carga en runtime del lado del cliente.
-  const [plans, content] = await Promise.all([
-    container.getPricingPlans.execute().catch(() => []),
-    container.getLandingContent.execute(),
-  ])
-  const faqs = content.faqs
+  const plans = await container.getPricingPlans.execute().catch(() => [])
   const sd = REGION_SD[container.region]
   const path = seoMetaFor(container.region).path
   const plansUrl = `${SITE}${path}#planes`
@@ -71,20 +67,9 @@ export async function buildStructuredData(container: Container): Promise<string>
     })),
   }
 
-  // Lo que más citan los motores de respuesta: preguntas con su respuesta textual.
-  const faqPage = {
-    "@type": "FAQPage",
-    "@id": `${SITE}/#faq`,
-    mainEntity: faqs.map((faq) => ({
-      "@type": "Question",
-      name: faq.question,
-      acceptedAnswer: { "@type": "Answer", text: faq.answer },
-    })),
-  }
-
   const graph = {
     "@context": "https://schema.org",
-    "@graph": [organization, software, faqPage],
+    "@graph": [organization, software],
   }
   // </script> dentro del JSON cerraría la etiqueta antes de tiempo.
   return JSON.stringify(graph).replace(/</g, "\\u003c")

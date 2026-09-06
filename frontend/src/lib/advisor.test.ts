@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest"
 
 import i18n from "@/i18n"
-import { BUCKET_LABELS, BUCKET_ORDER, formatPct, SEVERITY_VARIANT } from "@/lib/advisor"
+import { BUCKET_LABELS, BUCKET_ORDER, formatPct, SEVERITY_VARIANT, summaryTone } from "@/lib/advisor"
 
 // formatPct sigue el idioma activo (numberLocale). Fijamos español para asertar
 // el formato es-AR ("10,7%") de forma determinista.
@@ -24,5 +24,43 @@ describe("advisor helpers", () => {
   it("formats basis points as a percent", () => {
     expect(formatPct(3300)).toBe("33%")
     expect(formatPct(1067)).toBe("10,7%")
+  })
+
+  describe("summaryTone", () => {
+    const kpis = { configured: true, net_margin_amount: 100 }
+
+    it("es crítico si hay un diagnóstico crítico", () => {
+      expect(
+        summaryTone({ insights: [{ severity: "GOOD" }, { severity: "CRITICAL" }], kpis })
+      ).toBe("critical")
+    })
+
+    it("es crítico cuando el margen neto da negativo", () => {
+      expect(
+        summaryTone({
+          insights: [{ severity: "GOOD" }],
+          kpis: { configured: true, net_margin_amount: -1 },
+        })
+      ).toBe("critical")
+    })
+
+    it("ignora el margen negativo si todavía no cargaron los costos", () => {
+      expect(
+        summaryTone({
+          insights: [],
+          kpis: { configured: false, net_margin_amount: -1 },
+        })
+      ).toBe("good")
+    })
+
+    it("avisa en amarillo con la peor advertencia", () => {
+      expect(summaryTone({ insights: [{ severity: "WARN" }, { severity: "INFO" }], kpis })).toBe(
+        "warn"
+      )
+    })
+
+    it("queda en verde si no hay nada malo", () => {
+      expect(summaryTone({ insights: [{ severity: "GOOD" }], kpis })).toBe("good")
+    })
   })
 })

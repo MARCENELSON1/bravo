@@ -46,6 +46,12 @@ export const advisor = {
     configureCosts: "Configurá costos",
     sectionTitle: "Los números detrás",
   },
+  severityLabels: {
+    CRITICAL: "Crítico",
+    WARN: "Atención",
+    INFO: "Info",
+    GOOD: "Bien",
+  },
   bucketLabels: {
     TODAY: "Actuá hoy",
     THIS_WEEK: "Esta semana",

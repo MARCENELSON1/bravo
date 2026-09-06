@@ -1,28 +1,12 @@
-import { useEffect, useState } from "react"
+import { useMemo } from "react"
 
-import type { LandingContent } from "@/application/use-cases/get-landing-content"
 import { useContainer } from "@/presentation/providers/container-provider"
 
-const EMPTY: LandingContent = { features: [], steps: [], integrations: [], faqs: [] }
-
-// Puente entre el caso de uso GetLandingContent y React.
+// Puente entre el caso de uso GetLandingContent y React. Devuelve el contenido en
+// el primer render —sin estado ni efecto— para que también salga en el HTML del
+// prerender: si esto se llenara en un useEffect, el servidor renderizaría las
+// secciones vacías y los buscadores no verían ni un área ni un paso.
 export function useLandingContent() {
   const { getLandingContent } = useContainer()
-  const [content, setContent] = useState<LandingContent>(EMPTY)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    let alive = true
-    getLandingContent.execute().then((result) => {
-      if (alive) {
-        setContent(result)
-        setLoading(false)
-      }
-    })
-    return () => {
-      alive = false
-    }
-  }, [getLandingContent])
-
-  return { ...content, loading }
+  return useMemo(() => getLandingContent.execute(), [getLandingContent])
 }

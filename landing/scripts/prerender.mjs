@@ -11,7 +11,7 @@
  * no ejecute JavaScript.
  */
 import { readFile, writeFile, rm, mkdir } from "node:fs/promises"
-import { fileURLToPath } from "node:url"
+import { fileURLToPath, pathToFileURL } from "node:url"
 import path from "node:path"
 
 const projectDir = fileURLToPath(new URL("../", import.meta.url))
@@ -19,7 +19,11 @@ const distDir = path.join(projectDir, "dist")
 const indexPath = path.join(distDir, "index.html")
 const serverEntry = path.join(projectDir, "dist-ssr", "entry-server.js")
 
-const { render, structuredData, seoHead, seoMetaFor } = await import(serverEntry)
+// `import()` necesita una URL file://, no una ruta del sistema: en Windows una
+// ruta absoluta como C:... hace que Node lea "c:" como esquema y falle.
+const { render, structuredData, seoHead, seoMetaFor } = await import(
+  pathToFileURL(serverEntry).href,
+)
 
 const base = await readFile(indexPath, "utf8")
 

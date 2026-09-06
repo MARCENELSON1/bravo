@@ -1,3 +1,4 @@
+import { Fragment } from "react"
 import { ArrowRight } from "lucide-react"
 
 import { useAuthLinks } from "@/presentation/hooks/use-auth-links"
@@ -21,21 +22,37 @@ const COPY = {
   },
 } as const
 
+const BRAND = "Wellnod"
+
+// Pinta el nombre de la marca dentro de una frase, sin meter markup en la copia.
+function withBrand(text: string) {
+  return text.split(BRAND).map((part, i, all) => (
+    <Fragment key={i}>
+      {part}
+      {i < all.length - 1 ? <span className="text-primary">{BRAND}</span> : null}
+    </Fragment>
+  ))
+}
+
 export function FinalCta() {
   const { login, register } = useAuthLinks()
   const t = COPY[useContainer().locale]
 
   return (
-    <section className="mx-auto max-w-6xl px-5 pb-24">
-      <Reveal className="relative overflow-hidden rounded-3xl border border-primary/30 bg-primary/8 px-6 py-14 text-center sm:px-12">
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-0 h-72 w-2/3 -translate-x-1/2 rounded-[50%] bg-primary/20 blur-[100px]" />
-        </div>
-        <h2 className="mx-auto max-w-2xl font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-          {t.heading}
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">{t.sub}</p>
-        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+    <section data-watermark="hide" className="border-t border-border/60">
+      <div className="mx-auto max-w-4xl overflow-hidden px-5 py-32 text-center md:py-40">
+        {/* Tres tiempos: primero sube el titular, después la bajada y al final los
+            botones. Todo junto se leía como un bloque que aparece; escalonado se
+            lee como algo que se arma. */}
+        <Reveal anim="left">
+          <h2 className="mx-auto max-w-3xl font-display text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-6xl">
+            {withBrand(t.heading)}
+          </h2>
+        </Reveal>
+        <Reveal anim="left" delay={260}>
+          <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">{t.sub}</p>
+        </Reveal>
+        <Reveal anim="left" delay={440} className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
           <a href={register} className={cn(buttonVariants({ variant: "primary", size: "lg" }))}>
             {t.primary}
             <ArrowRight className="size-4" />
@@ -43,8 +60,8 @@ export function FinalCta() {
           <a href={login} className={cn(buttonVariants({ variant: "outline", size: "lg" }))}>
             {t.secondary}
           </a>
-        </div>
-      </Reveal>
+        </Reveal>
+      </div>
     </section>
   )
 }

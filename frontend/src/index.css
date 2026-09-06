@@ -71,6 +71,12 @@
     --accent: oklch(0.95 0.03 165);
     --accent-foreground: oklch(0.2 0.02 165);
     --destructive: oklch(0.577 0.245 27.325);
+    /* Fondo escénico (ver app-background). Manchas sin tinte —croma 0— para que
+       se lean como luz y sombra y no compitan con el verde de la marca. */
+    --aurora-a: oklch(0.38 0 0 / 0.16);
+    --aurora-b: oklch(0.32 0 0 / 0.12);
+    --aurora-c: oklch(0.45 0 0 / 0.09);
+    --vignette: oklch(0.20 0 0 / 0.10);
     /* Estados. Verde de éxito y ámbar de alerta: antes vivían sueltos como
        emerald-600/amber-600 y su variante dark escrita a mano en cada uso. */
     --success: oklch(0.6 0.14 160);
@@ -112,6 +118,10 @@
     --accent: oklch(0.27 0.02 165);
     --accent-foreground: oklch(0.97 0.005 165);
     --destructive: oklch(0.704 0.191 22.216);
+    --aurora-a: oklch(0.82 0 0 / 0.15);
+    --aurora-b: oklch(0.76 0 0 / 0.11);
+    --aurora-c: oklch(0.88 0 0 / 0.08);
+    --vignette: oklch(0 0 0 / 0.40);
     --success: oklch(0.75 0.15 160);
     --success-foreground: oklch(0.16 0.02 165);
     --warning: oklch(0.82 0.15 80);
@@ -268,4 +278,86 @@
     #000 calc(100% - var(--fade-bottom)),
     transparent 100%
   );
+}
+/* Fondo escénico del shell. Tres manchas muy difusas que derivan solas, más una
+   viñeta que cierra los bordes. Es el mismo tratamiento que la landing.
+
+   El desenfoque se aplica UNA vez y no se anima —animar `filter` obliga a
+   rasterizar cada cuadro—: lo único que se mueve es `transform`, que va por GPU.
+
+   A diferencia de la landing no hay parallax por scroll: el shell es h-svh con
+   overflow oculto, así que la ventana nunca scrollea y no habría nada que seguir. */
+/* Sin `filter: blur()` a propósito: el desenfoque en el mismo elemento que anima
+   `transform` obliga a rasterizar en cada cuadro. La suavidad la da la parada
+   intermedia del degradado, que no cuesta nada. */
+.aurora {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+.aurora-a {
+  top: -10%;
+  left: -5%;
+  width: 55vw;
+  height: 55vw;
+  background: radial-gradient(
+    circle,
+    var(--aurora-a) 0%,
+    var(--aurora-a) 14%,
+    transparent 72%
+  );
+  animation: auroraA 90s ease-in-out infinite alternate;
+}
+.aurora-b {
+  top: 25%;
+  right: -15%;
+  width: 45vw;
+  height: 45vw;
+  background: radial-gradient(
+    circle,
+    var(--aurora-b) 0%,
+    var(--aurora-b) 14%,
+    transparent 72%
+  );
+  animation: auroraB 115s ease-in-out infinite alternate;
+}
+.aurora-c {
+  bottom: -20%;
+  left: 20%;
+  width: 60vw;
+  height: 50vw;
+  background: radial-gradient(
+    circle,
+    var(--aurora-c) 0%,
+    var(--aurora-c) 14%,
+    transparent 72%
+  );
+  animation: auroraC 140s ease-in-out infinite alternate;
+}
+
+@keyframes auroraA {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(6vw, 4vh, 0); }
+}
+@keyframes auroraB {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-7vw, -5vh, 0); }
+}
+@keyframes auroraC {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(5vw, -3vh, 0); }
+}
+
+/* Viñeta: oscurece los bordes y deja el centro limpio. Reemplaza a la textura
+   fotográfica, que pesaba más de un mega y tenía demasiado contraste. */
+.vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 95% 75% at 50% 38%, transparent 0%, var(--vignette) 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora {
+    animation: none;
+  }
 }

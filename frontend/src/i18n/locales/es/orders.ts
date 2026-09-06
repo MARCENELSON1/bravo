@@ -111,6 +111,10 @@ export const orders = {
     subcategory: "Subcategoría",
     station: "Estación",
     category: "Categoría",
+    back: "Volver",
+    pickCategory: "Elegí una categoría",
+    itemCount_one: "{{count}} producto",
+    itemCount_other: "{{count}} productos",
     stationLabels: { KITCHEN: "Cocina", BAR: "Barra" },
   },
 

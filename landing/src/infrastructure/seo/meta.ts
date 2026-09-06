@@ -26,9 +26,9 @@ const META: Record<Region, SeoMeta> = {
     path: "/",
     title: "Wellnod · El cerebro de tu local",
     description:
-      "Wellnod es el sistema todo-en-uno para tu restaurante: comandas digitales, cobros y facturación ARCA, fichaje de empleados y un copiloto de IA en español.",
+      "Wellnod es el sistema todo-en-uno para tu restaurante: comandas digitales, cobros y facturación ARCA, fichaje de empleados y un copiloto de IA.",
     ogDescription:
-      "Comandas digitales, cobros y facturación ARCA, fichaje y un copiloto de IA en español. Todo tu restaurante en una sola app.",
+      "Comandas digitales, cobros y facturación ARCA, fichaje y un copiloto de IA. Todo tu restaurante en una sola app.",
     ogImage: "/og.png",
   },
   INTL: {
@@ -37,9 +37,9 @@ const META: Record<Region, SeoMeta> = {
     path: "/en/",
     title: "Wellnod · Your restaurant's brain",
     description:
-      "Wellnod is the all-in-one system for your restaurant: digital order taking, card payments with automated sales tax, employee time tracking, and an AI copilot in English.",
+      "Wellnod is the all-in-one system for your restaurant: digital order taking, card payments with automated sales tax, employee time tracking, and an AI copilot.",
     ogDescription:
-      "Digital order taking, card payments & automated sales tax, time tracking, and an AI copilot in English. Your whole restaurant in one app.",
+      "Digital order taking, card payments & automated sales tax, time tracking, and an AI copilot. Your whole restaurant in one app.",
     ogImage: "/og-en.png",
   },
 }
