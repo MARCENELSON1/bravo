@@ -1,10 +1,10 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Sparkles } from "lucide-react"
+import { AlertTriangle, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 
 import { apiErrorText } from "@/api/translate-error"
-import type { AdvisorKpisDTO, AdvisorSettingsDTO } from "@/api/types-advisor"
+import type { AdvisorKpisDTO, AdvisorReportDTO, AdvisorSettingsDTO } from "@/api/types-advisor"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { GradientHeading } from "@/components/ui/gradient-heading"
@@ -24,8 +24,30 @@ import {
   useAdvisorSettings,
   useUpdateAdvisorSettings,
 } from "@/hooks/use-advisor"
-import { BUCKET_ORDER, formatPct, SEVERITY_VARIANT } from "@/lib/advisor"
+import {
+  BUCKET_ORDER,
+  formatPct,
+  SEVERITY_VARIANT,
+  summaryTone,
+  type SummaryTone,
+} from "@/lib/advisor"
 import { formatMoney } from "@/lib/money"
+import { cn } from "@/lib/utils"
+
+// Tinte de la tarjeta según su severidad. Lo bueno y lo informativo se quedan con
+// el marco neutro: si todo llamara la atención, no la llamaría nada.
+const INSIGHT_BOX: Record<string, string> = {
+  CRITICAL: "border-destructive/40 bg-destructive/5",
+  WARN: "border-warning/40 bg-warning/5",
+}
+
+// Cómo se ve el resumen según lo que informa. El texto queda en color de lectura
+// normal: el marco y el ícono son los que dan el aviso, no el párrafo.
+const SUMMARY_STYLE: Record<SummaryTone, { box: string; icon: string }> = {
+  good: { box: "border-primary/30 bg-primary/5", icon: "text-primary" },
+  warn: { box: "border-warning/40 bg-warning/10", icon: "text-warning" },
+  critical: { box: "border-destructive/40 bg-destructive/10", icon: "text-destructive" },
+}
 
 function SettingsForm({
   initial,
@@ -221,6 +243,18 @@ function SettingsSheet() {
   )
 }
 
+function Summary({ report }: { report: AdvisorReportDTO }) {
+  const tone = summaryTone(report)
+  const style = SUMMARY_STYLE[tone]
+  const Icon = tone === "good" ? Sparkles : AlertTriangle
+  return (
+    <div className={cn("flex items-start gap-3 rounded-xl border p-4", style.box)}>
+      <Icon className={cn("mt-0.5 size-4 shrink-0", style.icon)} />
+      <p className="text-sm text-foreground">{report.summary}</p>
+    </div>
+  )
+}
+
 function KpiGrid({ kpis }: { kpis: AdvisorKpisDTO }) {
   const { t } = useTranslation()
   const money = (amount: number) => formatMoney(amount, kpis.currency)
@@ -290,12 +324,7 @@ export function AdvisorPage() {
     </div>
   ) : report.data ? (
     <>
-      {report.data.summary ? (
-        <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
-          <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
-          <p className="text-sm text-foreground">{report.data.summary}</p>
-        </div>
-      ) : null}
+      {report.data.summary ? <Summary report={report.data} /> : null}
 
       <div className="flex flex-col gap-6">
         {BUCKET_ORDER.map((bucket) => {
@@ -310,12 +339,17 @@ export function AdvisorPage() {
                 {items.map((insight) => (
                   <div
                     key={insight.code}
-                    className="flex flex-col gap-1 rounded-xl border border-border p-4"
+                    className={cn(
+                      "flex flex-col gap-1 rounded-xl border border-border p-4",
+                      INSIGHT_BOX[insight.severity]
+                    )}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-medium text-foreground">{insight.title}</span>
                       <Badge variant={SEVERITY_VARIANT[insight.severity] ?? "outline"}>
-                        {insight.severity}
+                        {t(`advisor.severityLabels.${insight.severity}`, {
+                          defaultValue: insight.severity,
+                        })}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">{insight.body}</p>
