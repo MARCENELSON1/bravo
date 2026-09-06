@@ -139,6 +139,7 @@ from app.application.order.use_cases import (
     SetItemQuantity,
     TransferOrder,
 )
+from app.application.outbox.drain import DrainAllTenants, DrainOutbox
 from app.application.payment.connect_mercadopago import (
     CompleteMercadoPagoConnection,
     DisconnectMercadoPago,
@@ -266,6 +267,7 @@ from app.infrastructure.marketing.log_lead_gateway import LogLeadGateway
 from app.infrastructure.marketing.twenty_lead_gateway import TwentyLeadGateway
 from app.infrastructure.notification.fcm_service import FcmPushService
 from app.infrastructure.notification.null_service import NullPushService
+from app.infrastructure.notification.outbox_service import OutboxPushService
 from app.infrastructure.payments.credentials_resolver import DbPaymentCredentialsResolver
 from app.infrastructure.payments.manual_gateway import ManualPaymentGateway
 from app.infrastructure.payments.mercadopago_gateway import MercadoPagoGateway
@@ -341,6 +343,7 @@ from app.infrastructure.persistence.invoice_repo import SqlAlchemyInvoiceReposit
 from app.infrastructure.persistence.labor_cost_repo import SqlAlchemyLaborCostReadModel
 from app.infrastructure.persistence.modifier_repo import SqlAlchemyModifierRepository
 from app.infrastructure.persistence.order_repo import SqlAlchemyOrderRepository
+from app.infrastructure.persistence.outbox_repo import SqlAlchemyOutbox
 from app.infrastructure.persistence.payment_fee_repo import (
     SqlAlchemyPaymentFeeRateRepository,
 )
@@ -490,7 +493,9 @@ class Container(containers.DeclarativeContainer):
     device_token_repository = providers.Factory(
         SqlAlchemyDeviceTokenRepository, session_factory=db.provided.session
     )
-    push_service = providers.Selector(
+    # El que realmente manda el push. Lo usa el worker del outbox; los casos de
+    # uso reciben ``push_service`` (abajo), que por default solo encola.
+    push_sender = providers.Selector(
         config.provided.push_provider,
         none=providers.Singleton(NullPushService),
         fcm=providers.Singleton(
@@ -500,6 +505,15 @@ class Container(containers.DeclarativeContainer):
             credentials_json=config.provided.fcm_credentials_json,
             transport=http_pool.provided.transport.call(),
         ),
+    )
+    outbox = providers.Factory(SqlAlchemyOutbox, session_factory=db.provided.session)
+    # Escalabilidad Fase 4: lo que ven los casos de uso. "outbox" escribe una fila
+    # y vuelve (el FCM real queda para el worker); "inline" manda en el request.
+    # Ambos cumplen el mismo port, así que ningún caso de uso se entera.
+    push_service = providers.Selector(
+        config.provided.push_delivery,
+        outbox=providers.Factory(OutboxPushService, outbox=outbox),
+        inline=push_sender,
     )
     lead_gateway = providers.Selector(
         config.provided.lead_gateway,
@@ -1425,6 +1439,24 @@ class Container(containers.DeclarativeContainer):
         tenants=tenant_repository,
         tenant_context=tenant_context,
     )
+    # --- outbox (Escalabilidad Fase 4) ---
+    # El drainer usa el sender REAL, no ``push_service``: si tomara ese, con
+    # PUSH_DELIVERY=outbox se encolaría a sí mismo para siempre.
+    drain_outbox = providers.Factory(
+        DrainOutbox,
+        outbox=outbox,
+        tenant_context=tenant_context,
+        notifications=push_sender,
+    )
+    # El drain de tax ya existía y nunca se agendaba: hasta acá esas filas solo se
+    # movían si alguien pegaba a mano en POST /finance/tax/report-pending.
+    drain_all_tenants = providers.Factory(
+        DrainAllTenants,
+        tenants=tenant_repository,
+        drain=drain_outbox,
+        tax_drain=report_pending_tax_sales,
+    )
+
     tax_report_status_read_model = providers.Factory(
         SqlAlchemyTaxReportStatusReadModel, session_factory=db.provided.session
     )

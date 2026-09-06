@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from functools import partial
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +13,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.container import Container
+from app.infrastructure.outbox.worker import OutboxWorker
 from app.presentation.api.v1 import (
     advisor,
     analytics,
@@ -59,7 +61,20 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        # Corre en cada réplica: los claims son exclusivos (FOR UPDATE SKIP
+        # LOCKED), así que varias instancias drenando es redundancia, no doble
+        # envío. Arranca acá y no en create_app() para que los tests (que montan
+        # la app sin lifespan) no queden con un timer colgado.
+        settings = container.config()
+        worker = OutboxWorker(
+            partial(
+                container.drain_all_tenants().execute, limit=settings.outbox_batch_size
+            ),
+            interval_s=settings.outbox_interval_s,
+        )
+        worker.start()
         yield
+        await worker.stop()
         await container.db().dispose()
         # Releases the shared outbound connection pool; adapters never close it
         # themselves, since they share it for the life of the process.

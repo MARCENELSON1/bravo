@@ -59,6 +59,9 @@ class FakeTenantRepository(TenantRepository):
     async def add(self, tenant: Tenant) -> None:
         self.by_id[tenant.id] = tenant
 
+    async def list_ids(self) -> list[str]:
+        return sorted(self.by_id)
+
     async def update_fiscal_address(
         self,
         tenant_id: str,

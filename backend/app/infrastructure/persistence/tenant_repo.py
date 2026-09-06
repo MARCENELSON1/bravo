@@ -28,6 +28,11 @@ class SqlAlchemyTenantRepository(TenantRepository):
         async with self._session_factory() as session:
             session.add(tenant_to_orm(tenant))
 
+    async def list_ids(self) -> list[str]:
+        async with self._session_factory() as session:
+            rows = await session.execute(select(TenantORM.id).order_by(TenantORM.id))
+            return list(rows.scalars().all())
+
     async def update_fiscal_address(
         self,
         tenant_id: str,

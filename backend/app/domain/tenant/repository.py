@@ -16,6 +16,12 @@ class TenantRepository(ABC):
     async def add(self, tenant: Tenant) -> None: ...
 
     @abstractmethod
+    async def list_ids(self) -> list[str]:
+        """Every tenant id. Background work (draining the outbox) runs outside any
+        request, and row-level security hides tenant-scoped rows until a tenant is
+        in context — so a worker starts here and then scopes itself per tenant."""
+
+    @abstractmethod
     async def update_fiscal_address(
         self,
         tenant_id: str,

@@ -1174,3 +1174,50 @@ class ContactLogORM(Base):
     contacted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), index=True
     )
+
+
+class OutboxTaskORM(Base):
+    """Generic queue of work deferred off the request path (push, sale effects,
+    tax reports). Same database as the business change, so it survives restarts.
+
+    There is no IN_FLIGHT state on purpose: claiming a task pushes ``run_after``
+    forward by a lease instead, which hides the row from other drainers while it
+    runs and — unlike a status flag — releases itself if the process dies
+    mid-task, with no stuck rows to sweep. ``attempts`` is bumped at claim time
+    so a task that crashes the worker still burns a retry and eventually dies
+    instead of looping forever.
+
+    Payloads carry order/user ids and rendered notification text → RLS.
+    """
+
+    __tablename__ = "outbox_tasks"
+    __table_args__ = (
+        # Idempotency: re-enqueuing the same logical work is a no-op, so a retried
+        # request cannot turn into two pushes for the same course.
+        UniqueConstraint(
+            "tenant_id", "kind", "dedup_key", name="uq_outbox_tasks_tenant_kind_dedup"
+        ),
+        # Drives the claim query: due work for one tenant, oldest first.
+        Index("ix_outbox_tasks_due", "tenant_id", "status", "run_after"),
+    )
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(40))
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    # PENDING (due or retrying) | DONE (ran ok) | DEAD (gave up, kept for inspection)
+    status: Mapped[str] = mapped_column(String(20), server_default="PENDING")
+    dedup_key: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    attempts: Mapped[int] = mapped_column(Integer, server_default="0")
+    last_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    run_after: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )

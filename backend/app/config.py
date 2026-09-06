@@ -228,6 +228,18 @@ class Settings(BaseSettings):
     fcm_credentials_json: str = ""
     fcm_credentials_path: str = ""
 
+    # Cómo sale el push (Escalabilidad Fase 4). "outbox": marcar un curso listo
+    # encola el aviso y contesta al toque; el worker lo manda después, con
+    # reintentos. "inline": el push sale dentro del request, como antes — es el
+    # rollback de la fase, una env var, sin deploy de código.
+    push_delivery: Literal["outbox", "inline"] = "outbox"
+    # Cada cuánto pasa el worker. Cinco segundos es el techo del retraso del aviso
+    # al mozo: más corto no se nota y hace más queries en vacío, más largo sí.
+    outbox_interval_s: int = 5
+    # Cuántas tareas toma por tenant y por pasada. Acota el trabajo de un ciclo
+    # para que un backlog no monopolice el proceso.
+    outbox_batch_size: int = 20
+
     @model_validator(mode="after")
     def _require_redis_url_for_shared_backends(self) -> "Settings":
         """Los backends compartidos necesitan una URL de Redis, en cualquier env.

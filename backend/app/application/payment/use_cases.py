@@ -100,7 +100,14 @@ async def _fire_sale_effects(
     """The post-sale collaborators, all idempotent and all behind a port: discount
     recipe stock, project the canonical sale facts, and (only if tax was collected)
     enqueue the sale for the tax provider. Fired on the PAID transition (pay-at-end)
-    and on the prepay march (Self-service, Fase 3) — the sale is real either way."""
+    and on the prepay march (Self-service, Fase 3) — the sale is real either way.
+
+    Kept inline on purpose. These are local writes with an *inverse*: reopening a
+    paid comanda reverses them. Deferring them to the outbox would buy about a
+    tenth of a second and open a window where the reversal runs before the work it
+    is meant to undo — stock discounted for a comanda that is open again. The
+    latency worth chasing here left the process entirely; see the push outbox.
+    """
     if inventory is not None:
         await inventory.consume_for_order(tenant_id, order_id)
     if sales is not None:
