@@ -16,7 +16,6 @@ from app.application.order.use_cases import (
     FireAllCourses,
     FireNextCourse,
     GetOrder,
-    ListOrders,
     ListPendingQrOrders,
     MergeOrders,
     RemoveOrderItem,
@@ -116,16 +115,6 @@ async def create_order(
         order_id=body.id,
     )
     return CreateOrderResponse(order_id=result.order_id)
-
-
-@router.get("", response_model=list[OrderResponse])
-@inject
-async def list_orders(
-    identity: AccessClaims = Depends(current_identity),
-    use_case: ListOrders = Depends(Provide[Container.list_orders]),
-) -> list[OrderResponse]:
-    orders = await use_case.execute(tenant_id=identity.tenant_id)
-    return [order_to_response(o) for o in orders]
 
 
 @router.get("/pending-qr", response_model=list[OrderResponse])

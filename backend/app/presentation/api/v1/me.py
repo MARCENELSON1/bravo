@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends
 from dependency_injector.wiring import Provide, inject
+from fastapi import APIRouter, Depends
 
 from app.application.identity.get_my_profile import GetMyProfile
 from app.container import Container

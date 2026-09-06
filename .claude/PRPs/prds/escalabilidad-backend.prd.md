@@ -151,7 +151,7 @@ El comensal de la Carta QR (su ruta ya es liviana y cacheable aparte). Los repor
 | 2 | Event loop + pool | Argon2 a `to_thread`, pool dimensionado por env, `httpx.AsyncClient` reutilizado por adapter, client zeep de AFIP cacheado | complete | - | - | (commit `2874a86`) |
 | 3 | Escalado horizontal | Bus compartido (Redis pub/sub) + rate limiter compartido + colas SSE con `maxsize`; recién ahí, `--workers`/réplicas | complete | - | 1, 2 | (commit `a41902c`) |
 | 4 | Outbox del camino crítico | Push y efectos de venta (stock, proyección) fuera del request + **drainer** (el `tax_outbox` existente no tenía consumidor) | in-progress | - | 1 | `.claude/PRPs/plans/escalabilidad-fase-4-outbox.plan.md` |
-| 5 | Higiene de lectura | Paginar o eliminar `GET /orders`, `FinanceProductDetail` agregando en SQL, revisar `refetchInterval` del frontend | pending | with 3 | - | - |
+| 5 | Higiene de lectura | `GET /orders` **eliminado** (no lo usaba nadie), `FinanceProductDetail` agregando en SQL + serie por día + tope con aviso, poll del front consciente de si el stream está vivo | complete | with 3 | - | - |
 
 ### Phase Details
 
@@ -175,10 +175,19 @@ El comensal de la Carta QR (su ruta ya es liviana y cacheable aparte). Los repor
 - **Scope**: push y efectos de venta (consumo de stock, proyección de `sale_facts`) por outbox + drain, siguiendo `tax_outbox`.
 - **Success signal**: el pago responde sin esperar FCM ni la proyección; los efectos se aplican igual (con reintento si fallan).
 
-**Phase 5: Higiene de lectura**
+**Phase 5: Higiene de lectura** — ✅ completa
 - **Goal**: que ninguna consulta pueda colgar un worker con el historial.
 - **Scope**: `GET /orders` paginado o eliminado; `FinanceProductDetail` agregando con `func.sum` y `lines` limitado; revisar el poll del frontend.
 - **Success signal**: ningún endpoint devuelve tablas completas sin cota.
+- **Cómo salió**, con dos desvíos que valen:
+  1. `GET /orders` se **eliminó**, no se paginó: no lo llamaba nadie (ni el front ni el mobile), así que paginarlo era mantener una mina enterrada. El `list_by_status` del repo **se queda**: lo usa `RebuildSalesFacts`.
+  2. Acotar `lines` **habría roto el gráfico** de evolución de costo de la ficha, que lo derivaba en el navegador agrupando esas mismas líneas por día — un plato muy vendido habría perdido los días viejos en silencio, justo el peor caso. Por eso la serie **también** se movió a SQL (`cost_series`, un punto por día) y el listado quedó con tope 500 + `lines_truncated` para que la UI lo diga.
+  3. El poll del front pasó a depender de si el stream SSE está vivo (`fallbackInterval`): lento conectado, 5s cortado. **El plano quedó en 10s a propósito**: `_settle_order` libera la mesa pero no publica `floor.changed`, así que ese poll es el único que ve la transición pagado→libre. Subirlo exige primero publicar ese evento — anotado abajo.
+
+**Follow-ups detectados, NO hechos (fuera de alcance de la fase):**
+- Publicar `floor.changed` en el flujo de pago. Destraba bajar el poll del plano de 10s a 30s, que es el endpoint más consultado del sistema.
+- `RebuildSalesFacts` carga todas las órdenes PAID sin cota. Es admin manual (`POST`), no un camino de la UI, pero es el mismo patrón.
+- No se agregó índice `(tenant_id, product_id, occurred_at)` en `sale_facts`: el índice suelto de `product_id` ya hace selectivo el drill-down.
 
 ### Parallelism Notes
 

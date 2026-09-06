@@ -21,10 +21,6 @@ export class OrdersApi {
     this.http = http
   }
 
-  list(): Promise<OrderDTO[]> {
-    return this.http.request<OrderDTO[]>("GET", "/orders", { auth: true })
-  }
-
   get(id: string): Promise<OrderDTO> {
     return this.http.request<OrderDTO>("GET", `/orders/${id}`, { auth: true })
   }

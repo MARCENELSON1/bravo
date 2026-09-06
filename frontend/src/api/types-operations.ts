@@ -500,6 +500,11 @@ export interface ProductSaleLineDTO {
   margin_amount: number
 }
 
+export interface ProductCostPointDTO {
+  day: string // YYYY-MM-DD (UTC)
+  unit_cost: number
+}
+
 export interface ProductDetailDTO {
   product_id: string
   currency: string
@@ -507,7 +512,12 @@ export interface ProductDetailDTO {
   sales_amount: number
   food_cost_amount: number
   margin_amount: number
+  // Acotada a las más recientes (`lines_truncated` avisa si hubo más). Los
+  // totales y `cost_series` los calcula el backend sobre la ventana ENTERA, así
+  // que NO derivar agregados de acá: darían de menos sin decirlo.
   lines: ProductSaleLineDTO[]
+  cost_series: ProductCostPointDTO[]
+  lines_truncated: boolean
 }
 
 // --- Reporting ---

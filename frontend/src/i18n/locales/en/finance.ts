@@ -48,6 +48,7 @@ export const finance = {
     product: "Product",
     unitsMargin: "Units · Margin",
     noLines: "No lines in the period.",
+    linesTruncated: "Showing the latest {{count}} sales. Totals cover the whole period.",
   },
   exports: {
     title: "Export for your accountant",

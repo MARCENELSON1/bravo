@@ -845,18 +845,6 @@ class ReopenOrder:
         return order
 
 
-class ListOrders:
-    def __init__(self, orders: OrderRepository, tenant_context: TenantContext) -> None:
-        self._orders = orders
-        self._tenant_context = tenant_context
-
-    async def execute(
-        self, *, tenant_id: str, status: OrderStatus | None = None
-    ) -> list[Order]:
-        self._tenant_context.set(tenant_id)
-        return await self._orders.list_by_status(tenant_id, status)
-
-
 class GetKdsOrders:
     def __init__(self, orders: OrderRepository, tenant_context: TenantContext) -> None:
         self._orders = orders

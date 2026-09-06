@@ -60,6 +60,11 @@ class ProductSaleLineResponse(BaseModel):
     margin_amount: int
 
 
+class ProductCostPointResponse(BaseModel):
+    day: str
+    unit_cost: int
+
+
 class ProductDetailResponse(BaseModel):
     product_id: str
     currency: str
@@ -67,7 +72,11 @@ class ProductDetailResponse(BaseModel):
     sales_amount: int
     food_cost_amount: int
     margin_amount: int
+    # ``lines`` viene acotada a las más recientes; los totales y ``cost_series``
+    # cubren la ventana entera. ``lines_truncated`` avisa que hubo más.
     lines: list[ProductSaleLineResponse]
+    cost_series: list[ProductCostPointResponse] = []
+    lines_truncated: bool = False
 
 
 class FinanceSnapshotRebuildResponse(BaseModel):

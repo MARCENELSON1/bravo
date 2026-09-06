@@ -128,7 +128,6 @@ from app.application.order.use_cases import (
     FireNextCourse,
     GetKdsOrders,
     GetOrder,
-    ListOrders,
     ListPendingQrOrders,
     MergeOrders,
     RemoveOrderItem,
@@ -983,9 +982,6 @@ class Container(containers.DeclarativeContainer):
         orders=order_repository,
         tenant_context=tenant_context,
         event_bus=event_bus,
-    )
-    list_orders = providers.Factory(
-        ListOrders, orders=order_repository, tenant_context=tenant_context
     )
     get_kds_orders = providers.Factory(
         GetKdsOrders, orders=order_repository, tenant_context=tenant_context

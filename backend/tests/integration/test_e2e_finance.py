@@ -32,7 +32,7 @@ async def test_finance_overview_reports_commissions(client):
     assert o["collected_net_amount"] == 194000  # lo que queda tras comisión
 
 
-async def _sell_with_recipe(http, h, *, price: int, qty: int, cost_per_kg: int) -> None:
+async def _sell_with_recipe(http, h, *, price: int, qty: int, cost_per_kg: int) -> str:
     pid = (
         await http.post(
             "/api/v1/products", json={"name": "Milanesa", "price_amount": price}, headers=h
@@ -69,6 +69,27 @@ async def _sell_with_recipe(http, h, *, price: int, qty: int, cost_per_kg: int) 
         json={"method": "CASH", "amount": price * qty},
         headers=h,
     )
+    return pid
+
+
+async def test_product_drill_down_cost_series_comes_from_the_window(client):
+    """La evolución del costo por día se arma en SQL sobre la ventana entera.
+
+    Antes la derivaba el navegador desde ``lines``; al acotar ese listado, esa
+    cuenta habría perdido los días más viejos de un plato muy vendido. Acá se
+    verifica el valor, no solo que exista: receta de 0,2 KG a 80.000/KG = 16.000
+    por unidad, y el punto del día es el costo unitario, no el de la línea.
+    """
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="serie", email="o@serie.com"))
+    pid = await _sell_with_recipe(http, h, price=150000, qty=2, cost_per_kg=80000)
+
+    body = (await http.get(f"/api/v1/finance/products/{pid}", headers=h)).json()
+
+    assert len(body["cost_series"]) == 1, "una sola venta → un solo día"
+    assert body["cost_series"][0]["unit_cost"] == 16000
+    assert len(body["cost_series"][0]["day"]) == 10, "YYYY-MM-DD"
+    assert body["lines_truncated"] is False
 
 
 async def test_finance_overview_returns_vital_kpis(client):
@@ -112,7 +133,8 @@ async def test_finance_overview_revpash_and_turnover(client):
 
     await _sell_with_recipe(http, h, price=150000, qty=2, cost_per_kg=80000)
 
-    kpis = {k["key"]: k for k in (await http.get("/api/v1/finance/overview", headers=h)).json()["kpis"]}
+    overview = (await http.get("/api/v1/finance/overview", headers=h)).json()
+    kpis = {k["key"]: k for k in overview["kpis"]}
     # RevPASH: ventas 300000 / (40 asientos × 8h × días) > 0, en $ por asiento-hora.
     assert kpis["revpash"]["kind"] == "money"
     assert kpis["revpash"]["value"] > 0
@@ -126,7 +148,8 @@ async def test_finance_overview_revpash_zero_without_seats(client):
     http, fake_email = client
     h = _auth(await _onboard_verify_login(http, fake_email, slug="bar", email="o@bar.com"))
     await _sell_with_recipe(http, h, price=100000, qty=1, cost_per_kg=50000)
-    kpis = {k["key"]: k for k in (await http.get("/api/v1/finance/overview", headers=h)).json()["kpis"]}
+    overview = (await http.get("/api/v1/finance/overview", headers=h)).json()
+    kpis = {k["key"]: k for k in overview["kpis"]}
     assert kpis["revpash"]["value"] == 0  # sin asientos/horario cargados → 0, no crashea
 
 
@@ -179,6 +202,56 @@ async def test_product_drill_down_lists_sale_lines(client):
     assert body["margin_amount"] == 300000  # sin receta → food cost 0
     assert len(body["lines"]) == 1
     assert body["lines"][0]["order_id"] == order_id
+
+
+async def test_product_drill_down_totals_survive_the_line_cap(client, monkeypatch):
+    """El tope de ``lines`` acota lo que se lista, NO lo que se suma.
+
+    Es la garantía que hace seguro haber acotado el drill-down: con el listado
+    cortado, los totales y la evolución por día siguen cubriendo la ventana
+    entera — si se derivaran del listado, un plato muy vendido mostraría de menos
+    sin decirlo. ``lines_truncated`` es lo que deja avisarlo en la UI.
+    """
+    from app.infrastructure.persistence.finance_repo import (
+        SqlAlchemyFinanceProductDetailReadModel as ReadModel,
+    )
+
+    monkeypatch.setattr(ReadModel, "_LINE_LIMIT", 2)
+
+    http, fake_email = client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="cap", email="o@cap.com"))
+    pid = (
+        await http.post(
+            "/api/v1/products", json={"name": "Bife", "price_amount": 50000}, headers=h
+        )
+    ).json()["product_id"]
+    table_id = (
+        await http.post("/api/v1/tables", json={"number": 1, "name": None}, headers=h)
+    ).json()["table_id"]
+
+    # Tres ventas del mismo plato, en órdenes distintas → tres filas de sale_facts.
+    for _ in range(3):
+        order_id = (
+            await http.post("/api/v1/orders", json={"table_id": table_id}, headers=h)
+        ).json()["order_id"]
+        await http.post(
+            f"/api/v1/orders/{order_id}/items",
+            json={"product_id": pid, "quantity": 1},
+            headers=h,
+        )
+        await http.post(
+            f"/api/v1/orders/{order_id}/payments",
+            json={"method": "CASH", "amount": 50000},
+            headers=h,
+        )
+
+    body = (await http.get(f"/api/v1/finance/products/{pid}", headers=h)).json()
+
+    assert len(body["lines"]) == 2, "el listado se corta en el tope"
+    assert body["lines_truncated"] is True, "y lo avisa"
+    # Los totales cubren las TRES ventas, no las dos listadas.
+    assert body["units_sold"] == 3
+    assert body["sales_amount"] == 150000
 
 
 async def _expense(http, h, *, category: str, amount: int) -> None:

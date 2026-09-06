@@ -28,6 +28,7 @@ from app.presentation.schemas.finance import (
     FinanceProjectionResponse,
     FinanceSnapshotRebuildResponse,
     MovementResponse,
+    ProductCostPointResponse,
     ProductDetailResponse,
     ProductMarginResponse,
     ProductSaleLineResponse,
@@ -115,6 +116,11 @@ def _detail_response(d: ProductDetail) -> ProductDetailResponse:
             )
             for line in d.lines
         ],
+        cost_series=[
+            ProductCostPointResponse(day=p.day, unit_cost=p.unit_cost)
+            for p in d.cost_series
+        ],
+        lines_truncated=d.lines_truncated,
     )
 
 
