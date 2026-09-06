@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from app.application.analytics.ports import SalesProjector
 from app.application.clock import utcnow
+from app.application.floor.events import floor_changed as _floor_changed_table
 from app.application.inventory.ports import InventoryConsumer
 from app.application.order.dtos import BatchOrderItemInput, CreateOrderResult
 from app.application.table_session.use_cases import (
@@ -352,14 +353,6 @@ def _kds_changed(order: Order, stations: set[Station]) -> list[DomainEvent]:
 def _floor_changed(order: Order) -> DomainEvent:
     """A 'refetch the floor' signal — a table's occupancy/total changed."""
     return _floor_changed_table(order.tenant_id, order.table_id)
-
-
-def _floor_changed_table(tenant_id: str, table_id: str) -> DomainEvent:
-    return DomainEvent(
-        type="floor.changed",
-        tenant_id=tenant_id,
-        payload={"table_id": table_id},
-    )
 
 
 # Concordancia del "listo/a(s)" con la etiqueta del curso.

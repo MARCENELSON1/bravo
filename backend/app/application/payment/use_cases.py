@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from app.application.analytics.ports import SalesProjector
 from app.application.clock import utcnow
+from app.application.floor.events import floor_changed
 from app.application.inventory.ports import InventoryConsumer
 from app.application.order.auto_assign import AutoAssignWaiter
 from app.application.order.use_cases import SendOrder
@@ -52,6 +53,7 @@ async def _settle_order(
     sales: SalesProjector | None = None,
     tax_outbox: TaxReportLedger | None = None,
     sessions: TableSessionRepository | None = None,
+    event_bus: EventBus | None = None,
 ) -> None:
     """Mark the order PAID once confirmed INFLOW payments cover its total.
 
@@ -61,6 +63,11 @@ async def _settle_order(
     if any sales tax was actually collected — enqueue the sale to report to the
     tax provider (``tax_outbox``). The ``tax > 0`` gate keeps AR untouched: it
     never collects tax, so nothing is ever enqueued (perfect parity).
+
+    Y **avisa al plano** (``event_bus``). Cobrar es lo único que cambiaba una mesa
+    sin publicar ``floor.changed``, así que la transición pagado→libre la veía solo
+    el poll del cliente — que por eso tenía que ir 3× más seguido que el resto de
+    las pantallas. El aviso no puede fallar el cobro: el bus es fire-and-forget.
     """
     order = await orders.get_by_id(tenant_id, order_id)
     if order is None:
@@ -78,6 +85,11 @@ async def _settle_order(
         if sessions is not None:
             # Saldada la última orden viva → la visita terminó: mesa libre.
             await close_session_if_idle(sessions, orders, tenant_id, order.table_id, utcnow())
+        if event_bus is not None:
+            # Se publica en la transición a PAID, no solo cuando cierra la visita:
+            # el plano cambia igual cuando quedan otras órdenes vivas en la mesa.
+            # El `if` de arriba ya garantiza que esto pasa una sola vez por orden.
+            await event_bus.publish(floor_changed(tenant_id, order.table_id))
         await _fire_sale_effects(
             tenant_id,
             order_id,
@@ -152,6 +164,7 @@ class RegisterPayment:
         fee_rates: PaymentFeeRateRepository | None = None,
         tax_outbox: TaxReportLedger | None = None,
         sessions: TableSessionRepository | None = None,
+        event_bus: EventBus | None = None,
     ) -> None:
         self._payments = payments
         self._orders = orders
@@ -164,6 +177,7 @@ class RegisterPayment:
         self._policy = policy
         self._fee_rates = fee_rates
         self._tax_outbox = tax_outbox
+        self._event_bus = event_bus
 
     async def execute(
         self,
@@ -235,6 +249,7 @@ class RegisterPayment:
             self._sales,
             self._tax_outbox,
             sessions=self._sessions,
+            event_bus=self._event_bus,
         )
         return payment
 
@@ -423,6 +438,7 @@ class ConfirmGatewayPayment:
                         self._sales,
                         self._tax_outbox,
                         sessions=self._sessions,
+                        event_bus=self._event_bus,
                     )
         elif status.status is PaymentStatus.FAILED:
             payment.fail()

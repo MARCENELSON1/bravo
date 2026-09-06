@@ -182,10 +182,18 @@ El comensal de la Carta QR (su ruta ya es liviana y cacheable aparte). Los repor
 - **Cómo salió**, con dos desvíos que valen:
   1. `GET /orders` se **eliminó**, no se paginó: no lo llamaba nadie (ni el front ni el mobile), así que paginarlo era mantener una mina enterrada. El `list_by_status` del repo **se queda**: lo usa `RebuildSalesFacts`.
   2. Acotar `lines` **habría roto el gráfico** de evolución de costo de la ficha, que lo derivaba en el navegador agrupando esas mismas líneas por día — un plato muy vendido habría perdido los días viejos en silencio, justo el peor caso. Por eso la serie **también** se movió a SQL (`cost_series`, un punto por día) y el listado quedó con tope 500 + `lines_truncated` para que la UI lo diga.
-  3. El poll del front pasó a depender de si el stream SSE está vivo (`fallbackInterval`): lento conectado, 5s cortado. **El plano quedó en 10s a propósito**: `_settle_order` libera la mesa pero no publica `floor.changed`, así que ese poll es el único que ve la transición pagado→libre. Subirlo exige primero publicar ese evento — anotado abajo.
+  3. El poll del front pasó a depender de si el stream SSE está vivo (`fallbackInterval`): lento conectado, 5s cortado.
+
+**Fase 5.1 — el aviso que faltaba en el cobro** (mismo commit que el resto de 5.1)
+
+Cobrar era **el único** cambio de estado de una mesa que no publicaba `floor.changed` (abrir, marchar, mover, servir sí lo hacían). Deuda vieja —el comentario de `use-floor.ts` la anotaba desde `05d46cf`, junio— que se agrandó sola en `75b37ce` (sept): hasta ahí la mesa no se liberaba nunca, así que no había transición que avisar; al hacerla ocurrir se le pasó a `_settle_order` el repositorio de sesiones pero no el bus.
+
+Costo real: no era el retraso de 10s, era que **el plano no podía bajar el poll** mientras el resto de las pantallas iba a 30s — en el endpoint más consultado del sistema.
+
+Ahora `_settle_order` recibe `event_bus` y publica en la transición a PAID (no solo al cerrar la visita: el plano cambia igual si quedan otras órdenes vivas). El `if` de PAID garantiza una publicación por orden. `floor_changed` se extrajo a `app/application/floor/events.py` porque ahora lo usan dos flujos. **`use-floor.ts` bajó a 30s** y la mesa se ve libre al instante. Cableado en los dos `RegisterPayment` del container (cajero y comensal QR).
 
 **Follow-ups detectados, NO hechos (fuera de alcance de la fase):**
-- Publicar `floor.changed` en el flujo de pago. Destraba bajar el poll del plano de 10s a 30s, que es el endpoint más consultado del sistema.
+- `register_public_payment` no recibe `sessions` (el cobro del comensal por QR no cierra la visita). Puede ser deliberado — autoservicio tiene "Liberar mesa" manual— pero **no está documentado como decisión**; verificar antes de tocarlo.
 - `RebuildSalesFacts` carga todas las órdenes PAID sin cota. Es admin manual (`POST`), no un camino de la UI, pero es el mismo patrón.
 - No se agregó índice `(tenant_id, product_id, occurred_at)` en `sale_facts`: el índice suelto de `product_id` ya hace selectivo el drill-down.
 

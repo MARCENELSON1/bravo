@@ -80,9 +80,11 @@ export function useRealtimeEvent(
 // vivo el poll es solo una red de seguridad (los cambios llegan por evento);
 // cortado, pasa a ser la única fuente y conviene que sea rápido.
 //
-// ``whenConnected`` se pasa más corto cuando el poll NO es solo red de seguridad
-// sino que además tapa un cambio que nadie publica — ahí el intervalo es el techo
-// del retraso real, no del retraso en un caso degradado.
+// ``whenConnected`` se pasa más corto SOLO si el poll dejó de ser red de seguridad
+// porque tapa un cambio que nadie publica — ahí el intervalo es el techo del
+// retraso real, no el de un caso degradado. Hoy ninguna pantalla está en esa
+// situación: el hueco que quedaba (la mesa que se libera al cobrar) se cerró
+// publicando `floor.changed` desde el flujo de pago.
 export function fallbackInterval(connected: boolean, whenConnected = 30_000): number {
   return connected ? whenConnected : 5_000
 }

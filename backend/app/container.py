@@ -1263,6 +1263,7 @@ class Container(containers.DeclarativeContainer):
         fee_rates=payment_fee_rate_repository,
         tax_outbox=tax_report_ledger,
         sessions=table_session_repository,
+        event_bus=event_bus,
     )
     # Cobro del comensal (Carta QR F3): mismo motor que el cajero pero con la
     # política de caja RELAJADA (cash=None, policy=None) → no exige caja abierta ni
@@ -1277,6 +1278,7 @@ class Container(containers.DeclarativeContainer):
         sales=project_order_sales,
         fee_rates=payment_fee_rate_repository,
         tax_outbox=tax_report_ledger,
+        event_bus=event_bus,
     )
     auto_assign_waiter = providers.Factory(
         AutoAssignWaiter,
