@@ -279,6 +279,56 @@
     transparent 100%
   );
 }
+/* Pantallas de identidad. El alta de comercio pide más lugar que el login —cinco
+   campos contra tres— así que la tarjeta crece y la grilla le cede ancho a su
+   columna. El relato de marca se queda: sigue siendo lo que explica dónde estás.
+
+   Se anima una sola cosa, el reparto de columnas (`fr`), y la tarjeta la sigue con
+   la misma curva y duración. Nada aparece ni desaparece: los saltos de la versión
+   anterior venían de plegar la columna a cero, que obliga a tocar `display` y
+   `height`, y ninguna de las dos se puede animar.
+
+   Abajo de lg no hay dos columnas: ahí la tarjeta ya ocupa todo el ancho útil. */
+.auth-grid {
+  display: grid;
+}
+.auth-card {
+  width: 100%;
+  max-width: 24rem;
+  margin-inline: auto;
+}
+
+@media (min-width: 1024px) {
+  .auth-grid {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 4rem;
+    transition: grid-template-columns 380ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .auth-grid[data-wide='true'] {
+    grid-template-columns: 0.78fr 1.22fr;
+  }
+  .auth-card {
+    transition: max-width 380ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .auth-grid[data-wide='true'] .auth-card {
+    max-width: 34rem;
+  }
+}
+
+/* Con la tarjeta grande el formulario es largo: se recorta el aire de arriba y
+   abajo para que entre entero en pantalla. */
+.auth-grid[data-wide='true'] {
+  padding-block: 2rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-grid,
+  .auth-card {
+    transition: none;
+  }
+}
+
+
 /* Fondo escénico del shell. Tres manchas muy difusas que derivan solas, más una
    viñeta que cierra los bordes. Es el mismo tratamiento que la landing.
 

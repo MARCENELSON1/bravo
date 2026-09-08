@@ -1,102 +1,138 @@
 import type { ReactNode } from "react"
 import { motion } from "motion/react"
 import { useTranslation } from "react-i18next"
+import { Check } from "lucide-react"
 
-import { WellnodMark } from "@/components/brand/wellnod-mark"
+import { AppBackground } from "@/components/shell/app-background"
+import { GlassCard } from "@/components/ui/glass-card"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { useReduceMotion } from "@/lib/reduce-motion"
+import { cn } from "@/lib/utils"
 
-// Split-screen shell reused by every identity screen. The brand panel is hidden
-// on mobile; the form sits on the right. Changing this re-skins all auth pages.
+// Shell de las pantallas de identidad (login, alta de comercio, invitación,
+// verificación, recuperar y restablecer contraseña). Tocar esto las re-skinea a
+// todas.
+//
+// Antes era un split con un panel verde y una textura fotográfica encima: un
+// lenguaje visual que no existía ni en la app ni en la landing, así que entrar a
+// Wellnod se sentía como llegar a otro producto. Ahora usa las mismas tres piezas
+// que el resto: el fondo escénico neutro, el vidrio de los paneles y el verde
+// reservado para la marca y los acentos.
+//
+// La columna de la izquierda repite el título del hero de la landing y sus tres
+// grupos de producto: quien viene de la web reconoce la promesa con la que entró.
+
+// El wordmark, con la misma receta que la navbar de la landing.
+function Wordmark({ className }: { className?: string }) {
+  return (
+    <span className={cn("font-heading text-3xl tracking-tight text-foreground", className)}>
+      <span className="font-bold">Well</span>
+      <span className="-ml-[2px] font-light text-foreground/55">nod</span>
+    </span>
+  )
+}
+
+const BULLETS = ["shift", "business", "decisions"] as const
+
 export function AuthLayout({
   title,
   description,
   children,
   footer,
+  variant = "default",
+  enter = true,
 }: {
   title: string
   description?: string
   children: ReactNode
   footer?: ReactNode
+  /**
+   * "wide" ensancha la tarjeta y le cede ancho a su columna, para los formularios
+   * largos (el alta de comercio). El relato de marca se queda en su lugar.
+   */
+  variant?: "default" | "wide"
+  /**
+   * La animación de entrada de la tarjeta. Se apaga cuando se llega desde otra
+   * pantalla de identidad que ya la animó: si no, la tarjeta termina de crecer y
+   * acto seguido se desvanece y vuelve, que es el parpadeo que se veía.
+   */
+  enter?: boolean
 }) {
   const reduce = useReduceMotion()
   const { t } = useTranslation()
-  // Bullets de marca: mapeamos las claves del namespace `auth` a una lista
-  const bulletKeys = ["realtime", "areas", "ai"] as const
+
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <aside
-        className="relative isolate hidden flex-col justify-between overflow-hidden bg-[radial-gradient(125%_125%_at_18%_12%,#2a4b43_0%,#16241f_52%,#0a120e_100%)] p-10 text-white lg:flex"
+    <div className="relative min-h-svh">
+      <AppBackground />
+
+      <div
+        data-wide={variant === "wide"}
+        className="auth-grid mx-auto min-h-svh max-w-6xl items-center px-5 py-10"
       >
-        {/* imagen como textura sobre el gradiente verde: mismo tratamiento y color
-            que el fondo principal de la app (soft-light + grano) */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50 mix-blend-soft-light"
-          style={{ backgroundImage: "url('/login-bg.png')" }}
-        />
-        <div
-          aria-hidden
-          className="bg-grain pointer-events-none absolute inset-0 opacity-[0.18] mix-blend-overlay"
-        />
-        {/* oscurecido leve para legibilidad del texto */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-black/25 via-transparent to-black/40"
-        />
+        {/* Relato de marca. Se esconde en pantallas angostas: ahí el formulario es
+            todo lo que importa y el discurso ya lo leyeron en la landing. */}
+        <motion.section
+          className="hidden flex-col lg:flex"
+          initial={reduce || !enter ? false : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={reduce ? { duration: 0 } : { duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <Wordmark />
 
-        <div className="relative mt-1 flex items-center gap-3">
-          <WellnodMark className="h-11 w-auto shrink-0 text-white/90" />
-          <span className="font-heading translate-y-0.5 text-3xl leading-none">
-            <span className="font-bold">Well</span>
-            <span className="-ml-[3px] font-light text-white/70">nod</span>
-          </span>
-        </div>
-
-        <div className="relative">
-          <h2 className="font-heading text-4xl font-semibold leading-tight">
-            {t("auth.brandHeading")}
-          </h2>
-          <p className="mt-4 max-w-sm text-sm text-white/70">
+          <h1 className="font-heading mt-10 text-4xl font-bold tracking-tight text-balance text-foreground">
+            {t("auth.brandTitleBefore")}
+            <span className="text-primary">{t("auth.brandTitleHighlight")}</span>.
+          </h1>
+          <p className="mt-4 max-w-md text-base text-muted-foreground">
             {t("auth.brandSubtitle")}
           </p>
-          <ul className="mt-6 flex flex-col gap-2 text-sm text-white/80">
-            {bulletKeys.map((key) => (
-              <li key={key}>{t(`auth.bullets.${key}`)}</li>
+
+          <ul className="mt-8 flex max-w-md flex-col gap-3">
+            {BULLETS.map((key) => (
+              <li key={key} className="flex gap-3">
+                <Check className="mt-1 size-4 shrink-0 text-primary" />
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">
+                    {t(`auth.bullets.${key}.label`)}
+                  </span>
+                  {" — "}
+                  {t(`auth.bullets.${key}.text`)}
+                </p>
+              </li>
             ))}
           </ul>
-        </div>
+        </motion.section>
 
-        <div className="relative text-xs text-white/50">© Wellnod</div>
-      </aside>
-
-      <main className="flex items-center justify-center bg-background p-6">
-        <motion.div
-          className="w-full max-w-sm"
-          initial={reduce ? false : { opacity: 0, y: 8 }}
+        {/* Formulario */}
+        <motion.main
+          className="auth-card"
+          initial={reduce || !enter ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={reduce ? { duration: 0 } : { duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
         >
-          {/* Logo Wellnod arriba del formulario, solo en móvil (en desktop está en el panel de marca) */}
-          <div className="mb-6 flex items-center justify-center gap-3 lg:hidden">
-            <WellnodMark className="h-11 w-auto shrink-0 text-foreground" />
-            <span className="font-heading translate-y-0.5 text-3xl leading-none text-foreground">
-              <span className="font-bold">Well</span>
-              <span className="-ml-[3px] font-light text-foreground/55">nod</span>
-            </span>
+          {/* En angosto el wordmark encabeza el formulario; en ancho ya está en la
+              columna de marca y repetirlo sería decir la marca dos veces. */}
+          <div className="mb-6 flex justify-center lg:hidden">
+            <Wordmark />
           </div>
-          <div className="mb-6 flex flex-col gap-1">
-            <GradientHeading size="sm" weight="bold">
-              {title}
-            </GradientHeading>
-            {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
-          </div>
-          {children}
+
+          <GlassCard className="p-6 sm:p-8">
+            <div className="mb-6 flex flex-col gap-1">
+              <GradientHeading size="sm" weight="bold">
+                {title}
+              </GradientHeading>
+              {description ? (
+                <p className="text-sm text-muted-foreground">{description}</p>
+              ) : null}
+            </div>
+            {children}
+          </GlassCard>
+
           {footer ? (
             <div className="mt-6 text-center text-sm text-muted-foreground">{footer}</div>
           ) : null}
-        </motion.div>
-      </main>
+        </motion.main>
+      </div>
     </div>
   )
 }
