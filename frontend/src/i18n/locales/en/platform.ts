@@ -1,7 +1,7 @@
 // Namespace `platform` (P3 management): super-admin plans panel.
 export const platform = {
   heading: "Platform · Plans",
-  back: "Back",
+  back: "Home",
   newPlan: "New plan",
   catalog: "Catalog",
   empty: "No plans yet. Create the first one with “New plan”.",

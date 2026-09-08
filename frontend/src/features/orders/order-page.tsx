@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link, useNavigate, useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
@@ -10,6 +10,7 @@ import type { DocType } from "@/api/types-invoicing"
 import type { OrderDTO, PaymentMethod, ProductDTO } from "@/api/types-operations"
 import { useAuth } from "@/auth/auth-context"
 import { Badge } from "@/components/ui/badge"
+import { BackButton } from "@/components/ui/back-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { GradientHeading } from "@/components/ui/gradient-heading"
@@ -105,11 +106,9 @@ export function OrderPage() {
 
   if (order.isError || !order.data) {
     return (
-      <div className="mx-auto max-w-md p-10 text-center text-sm text-muted-foreground">
-        {t("orders.notFound")}{" "}
-        <Link to="/app/floor" className="underline underline-offset-4">
-          {t("orders.backToFloor")}
-        </Link>
+      <div className="mx-auto flex max-w-md flex-col items-center gap-3 p-10 text-center text-sm text-muted-foreground">
+        <p>{t("orders.notFound")}</p>
+        <BackButton className="self-center" to="/app/floor" label={t("orders.backToFloor")} />
       </div>
     )
   }
@@ -173,12 +172,7 @@ export function OrderPage() {
         <GradientHeading size="md" weight="bold">
           {t("orders.heading")}
         </GradientHeading>
-        <Link
-          to="/app/floor"
-          className="text-sm text-muted-foreground underline underline-offset-4"
-        >
-          {t("orders.backToTables")}
-        </Link>
+        <BackButton to="/app/floor" label={t("orders.backToTables")} />
       </header>
 
       <OrderCustomer order={data} />
@@ -901,13 +895,17 @@ function CobroSection({
               ))}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setSplitMode((s) => !s)}
-              className="self-start text-xs text-muted-foreground underline underline-offset-4"
-            >
-              {splitMode ? t("orders.chargeAnAmount") : t("orders.splitByItem")}
-            </button>
+            {splitMode ? (
+              <BackButton onClick={() => setSplitMode(false)} label={t("orders.chargeAnAmount")} />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setSplitMode(true)}
+                className="self-start text-xs text-muted-foreground underline underline-offset-4"
+              >
+                {t("orders.splitByItem")}
+              </button>
+            )}
 
             {splitMode ? (
               <div className="flex flex-col gap-1 rounded-md border p-2 text-sm">

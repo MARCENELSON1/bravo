@@ -1,7 +1,7 @@
 // Namespace `orders`: order taking (order-page, product-grid) and lib/ticket.
 export const orders = {
   heading: "Order",
-  backToTables: "← Tables",
+  backToTables: "Tables",
   backToFloor: "Back",
   notFound: "We couldn't find the order.",
 
@@ -55,7 +55,7 @@ export const orders = {
   paid: "Paid",
   remaining: "Remaining",
   chargeAmount: "Charge {{amount}}",
-  chargeAnAmount: "← Charge an amount",
+  chargeAnAmount: "Charge an amount",
   splitByItem: "Split by item",
   selected: "Selected",
   tip: "Tip",

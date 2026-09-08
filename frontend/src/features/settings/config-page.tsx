@@ -1,7 +1,7 @@
 import { useRef, useState, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import { motion } from "motion/react"
-import { ArrowLeft, Monitor, Moon, Sun } from "lucide-react"
+import { Monitor, Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 import {
   OverlayScrollbarsComponent,
@@ -37,6 +37,7 @@ import { FiscalAddressCard } from "@/features/settings/fiscal-address-card"
 import { TaxJarConnectionCard } from "@/features/settings/taxjar-connection-card"
 import { SectorsManager } from "@/features/settings/sectors-manager"
 import { cn } from "@/lib/utils"
+import { BackButton } from "@/components/ui/back-button"
 
 // `label` guarda la clave i18n; el consumidor la resuelve con t(). `value` es el
 // código del tema (light/dark/system), no cambia.
@@ -366,14 +367,7 @@ export function ConfigPage() {
         }}
       >
         <div className="mx-auto flex h-full w-full max-w-4xl flex-col px-4 py-6 sm:px-6 sm:py-8">
-          <button
-            type="button"
-            onClick={() => setClosing(true)}
-            className="mb-5 inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg text-sm font-medium text-muted-foreground transition duration-200 ease-out hover:text-foreground active:scale-[0.97]"
-          >
-            <ArrowLeft className="size-4" />
-            {t("settings.back")}
-          </button>
+          <BackButton className="mb-5" onClick={() => setClosing(true)} label={t("settings.back")} />
 
           <header className="mb-6 shrink-0">
             <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">

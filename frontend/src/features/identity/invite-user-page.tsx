@@ -3,7 +3,6 @@ import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useTranslation } from "react-i18next"
-import { Link } from "react-router-dom"
 import { toast } from "sonner"
 
 import { isApiError } from "@/api/api-error"
@@ -11,6 +10,7 @@ import { apiErrorText } from "@/api/translate-error"
 import { INVITABLE_ROLES } from "@/api/types"
 import { FormError } from "@/components/form-error"
 import { Button } from "@/components/ui/button"
+import { BackButton } from "@/components/ui/back-button"
 import {
   Card,
   CardContent,
@@ -142,9 +142,7 @@ export function InviteUserForm({
 
       <div className="flex items-center justify-between gap-3">
         {showBack ? (
-          <Link to="/app" className="text-sm text-muted-foreground underline underline-offset-4">
-            {t("identity.invite.back")}
-          </Link>
+          <BackButton to="/app" label={t("identity.invite.back")} />
         ) : (
           <span />
         )}

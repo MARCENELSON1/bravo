@@ -83,7 +83,7 @@ export const identity = {
     emailLabel: "Email",
     roleLabel: "Role",
     rolePlaceholder: "Choose a role",
-    back: "Back",
+    back: "Home",
     submit: "Send invitation",
     submitting: "Sending…",
     sent: "Invitation sent.",

@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 
 import type { ProductDTO, Station } from "@/api/types-operations"
 import { Button } from "@/components/ui/button"
+import { BackButton } from "@/components/ui/back-button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { formatMoney } from "@/lib/money"
@@ -247,15 +248,8 @@ export function ProductGrid({
   // Dónde está parado y cómo volver. El botón sube un nivel; el texto de al lado
   // dice el camino, para que en la grilla de productos se sepa qué se está viendo.
   const crumb = (
-    <div className="flex items-center gap-2">
-      <button
-        type="button"
-        onClick={back}
-        aria-label={t("orders.picker.back")}
-        className="flex size-9 shrink-0 items-center justify-center rounded-lg border transition-colors hover:bg-accent active:scale-[0.98]"
-      >
-        <ChevronLeft className="size-4" />
-      </button>
+    <div className="flex items-center gap-3">
+      <BackButton onClick={back} label={t("orders.picker.back")} />
       <span className="min-w-0 truncate text-sm font-medium">
         {category !== null ? nameOf(category) : null}
         {subcategory !== null ? (

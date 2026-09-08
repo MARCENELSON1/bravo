@@ -1,7 +1,5 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link } from "react-router-dom"
-import { ArrowLeft } from "lucide-react"
 import { toast } from "sonner"
 
 import { apiErrorText } from "@/api/translate-error"
@@ -9,6 +7,7 @@ import type { FeatureDTO, PlatformPlanDTO, PlatformPlanInput } from "@/api/types
 import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/ui/glass-card"
 import { GradientHeading } from "@/components/ui/gradient-heading"
+import { BackButton } from "@/components/ui/back-button"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import {
@@ -208,17 +207,10 @@ export function PlatformPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8">
+      <BackButton to="/app" label={t("platform.back")} />
+
       <header className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Link
-            to="/app"
-            className="text-muted-foreground transition hover:text-foreground"
-            aria-label={t("platform.back")}
-          >
-            <ArrowLeft className="size-5" />
-          </Link>
-          <GradientHeading>{t("platform.heading")}</GradientHeading>
-        </div>
+        <GradientHeading>{t("platform.heading")}</GradientHeading>
         <Button size="sm" variant="outline" onClick={() => edit(null)}>
           {t("platform.newPlan")}
         </Button>

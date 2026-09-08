@@ -1,7 +1,6 @@
 // Namespace `billing` (P3 management). Subscription screen (plans/status/payment).
 export const billing = {
   title: "Subscription",
-  back: "Back",
   activePlan: "Active plan",
   statusLine: "Status: {{value}}",
   renewsOn: " · renews on {{date}}",
