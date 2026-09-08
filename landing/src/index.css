@@ -196,6 +196,86 @@
   }
 }
 
+/* Menú de la navbar al abrirse. Se despliega de arriba abajo animando la fila de
+   grilla de 0fr a 1fr: eso anima el ALTO real, así el contenido de abajo acompaña
+   en vez de saltar de golpe (el header está en el flujo, abrirlo lo empuja).
+
+   El contenido entra un pelo después y desde arriba, para que se lea como que baja
+   con el panel y no como que aparece dentro de él.
+
+   Si el navegador no interpola `fr`, el panel abre instantáneo y queda el fundido:
+   pierde el despliegue, nunca la usabilidad. */
+/* El `grid` y el `overflow-hidden` los pone el markup con utilidades: una clase
+   suelta le ganaría a `md:hidden` (lo que está fuera de @layer pesa más). */
+.menu-panel {
+  grid-template-rows: 1fr;
+  animation: menuPanelIn 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.menu-panel-body {
+  animation: menuBodyIn 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Cierre: el mismo camino al revés, pero más corto y con la curva invertida —sale
+   despacio y termina rápido—. Irse tarda menos que llegar: nadie quiere esperar a
+   que algo que ya descartó termine de desaparecer.
+
+   Va DESPUÉS de .menu-panel a propósito: las dos son una clase sola, así que el
+   orden en el archivo es lo que decide cuál animación gana. `forwards` deja el
+   panel plegado hasta que React lo desmonta. */
+.menu-panel-closing {
+  animation: menuPanelOut 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+}
+.menu-panel-closing .menu-panel-body {
+  animation: menuBodyOut 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes menuPanelIn {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+  to {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+}
+@keyframes menuBodyIn {
+  from {
+    transform: translateY(-8px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes menuPanelOut {
+  from {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+  to {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+@keyframes menuBodyOut {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-panel,
+  .menu-panel-body,
+  .menu-panel-closing,
+  .menu-panel-closing .menu-panel-body {
+    animation: none;
+  }
+}
+
 /* Fondo animado: manchas de color muy difusas que derivan solas y, además, se
    desplazan con el scroll a distinta velocidad (parallax por capas). El desenfoque
    se aplica UNA vez y nunca se anima —animar `filter` es carísimo—: lo que se mueve
@@ -259,6 +339,25 @@
   animation: auroraC 140s ease-in-out infinite alternate;
 }
 
+/* En teléfono vertical el lado largo es el alto, así que las manchas se miden en
+   svh: mantienen la misma presencia que en escritorio —donde 55vw cubre casi toda
+   la pantalla— en vez de quedar chicas y sueltas. `svh` y no `vh` para que no se
+   reescalen cuando el navegador esconde la barra de direcciones. */
+@media (max-width: 767px) and (orientation: portrait) {
+  .aurora-a {
+    width: 55svh;
+    height: 55svh;
+  }
+  .aurora-b {
+    width: 45svh;
+    height: 45svh;
+  }
+  .aurora-c {
+    width: 60svh;
+    height: 50svh;
+  }
+}
+
 /* Viñeta: oscurece los bordes y deja el centro limpio. Reemplaza a la textura
    fotográfica, que tenía demasiado contraste y pesaba más de un mega. Da
    profundidad sin dibujar nada. */
@@ -278,6 +377,22 @@
   user-select: none;
   color: var(--watermark);
   transition: opacity 800ms ease;
+}
+
+/* En teléfono la marca crece hasta ocupar casi todo el ancho. Con el 20vw de base
+   la palabra mide dos tercios: en escritorio son casi mil píxeles y la pantalla es
+   suya, pero en un celular quedan 273px flotando en el medio, que se leen como un
+   texto chico y no como una marca de agua.
+
+   24vw y no más: entra sin recortar la W ni la d con cualquiera de los avances
+   posibles de Geist en negrita, y cortar el nombre de la marca parece un error, no
+   una decisión. El tracking se cierra un poco más porque a este cuerpo el de base
+   queda suelto — a mayor tamaño, menos aire entre letras. */
+@media (max-width: 767px) {
+  .watermark {
+    font-size: 24vw;
+    letter-spacing: -0.06em;
+  }
 }
 
 /* Se retira en las secciones que lo piden (ver data-watermark). El fundido dura

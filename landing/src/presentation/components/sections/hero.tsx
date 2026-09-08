@@ -574,6 +574,13 @@ const NAV_OPS: { id: OpsId; icon: typeof Home }[] = [
   { id: "clockin", icon: QrCode },
 ]
 
+// El título completo, tal como se lee en pantalla (el hero lo parte en dos para
+// pintar la segunda mitad). Lo usa el footer: la frase se escribe una sola vez.
+export function heroTitle(locale: Locale): string {
+  const { titleBefore, titleHighlight } = COPY[locale]
+  return `${titleBefore}${titleHighlight}.`
+}
+
 export function Hero() {
   const locale = useContainer().locale
   const t = COPY[locale]

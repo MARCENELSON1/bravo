@@ -19,8 +19,12 @@ export function Audience() {
   const t = COPY[useContainer().locale]
   const loop = [...t.types, ...t.types]
 
+  // Abajo va menos padding que arriba a propósito: los rubros son texto grande y
+  // casi ninguno tiene descendentes, así que la caja de línea deja unos diez píxeles
+  // vacíos bajo la tinta. Con py-12 parejo, la raya de abajo se veía más lejos que
+  // la de arriba.
   return (
-    <section className="border-y border-border/60 py-12">
+    <section className="border-y border-border/60 pt-12 pb-10">
       <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         {t.label}
       </p>

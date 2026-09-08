@@ -1,3 +1,4 @@
+import { heroTitle } from "@/presentation/components/sections/hero"
 import { useAuthLinks } from "@/presentation/hooks/use-auth-links"
 import { useContainer } from "@/presentation/providers/container-provider"
 
@@ -5,7 +6,6 @@ const YEAR = 2026
 
 const COPY = {
   "es-AR": {
-    tagline: "El cerebro de tu local: comandas, cobros y tu copiloto.",
     company: "Empresa",
     legal: "Legal",
     contact: "Contacto",
@@ -16,7 +16,6 @@ const COPY = {
     madeIn: "Hecho en Argentina",
   },
   "en-US": {
-    tagline: "Your restaurant's brain: orders, payments, and your copilot.",
     company: "Company",
     legal: "Legal",
     contact: "Contact",
@@ -61,13 +60,17 @@ export function Footer() {
 
   return (
     <footer className="border-t border-border/60">
-      <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="lg:col-span-1">
+      {/* En móvil son dos columnas: la marca ocupa la fila entera y abajo van Empresa
+          y Legal, una al lado de la otra. De sm para arriba no cambia nada. */}
+      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-8 gap-y-10 px-5 py-12 sm:gap-12 sm:py-20 lg:grid-cols-3">
+        <div className="col-span-2 sm:col-span-1">
           <span className="font-brand block text-2xl tracking-tight text-foreground">
             <span className="font-bold">Well</span>
             <span className="-ml-[2px] font-light text-foreground/55">nod</span>
           </span>
-          <p className="mt-4 max-w-xs text-sm text-muted-foreground">{t.tagline}</p>
+          {/* La misma frase que el título del hero, para que el cierre repita la
+              promesa con la que abre la página. */}
+          <p className="mt-4 max-w-xs text-sm text-muted-foreground">{heroTitle(locale)}</p>
         </div>
 
         {columns.map((column) => (

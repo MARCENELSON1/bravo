@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, type AnimationEvent } from "react"
 import { Menu, X } from "lucide-react"
 
 import { useAuthLinks } from "@/presentation/hooks/use-auth-links"
@@ -53,7 +53,33 @@ const COPY: Record<Locale, {
 export function Navbar() {
   const { login, register } = useAuthLinks()
   const t = COPY[useContainer().locale]
+  // `open` es «está montado», no «está abierto»: al cerrar se queda montado
+  // mientras corre la animación de salida, que si no no habría nada que animar.
   const [open, setOpen] = useState(false)
+  const [closing, setClosing] = useState(false)
+  const expanded = open && !closing
+
+  const openMenu = () => {
+    setClosing(false)
+    setOpen(true)
+  }
+
+  // Con «reducir movimiento» no hay animación y `animationend` nunca llega: sin
+  // este atajo el panel se quedaría montado y cerrándose para siempre.
+  const closeMenu = () => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setOpen(false)
+      return
+    }
+    setClosing(true)
+  }
+
+  // Solo la animación del panel; la del contenido burbujea hasta acá y no cuenta.
+  const onPanelAnimationEnd = (event: AnimationEvent<HTMLElement>) => {
+    if (event.target !== event.currentTarget || !closing) return
+    setOpen(false)
+    setClosing(false)
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-black/10 bg-white/85 backdrop-blur-2xl dark:border-white/10 dark:bg-neutral-900/80">
@@ -100,45 +126,58 @@ export function Navbar() {
         <div className="flex items-center gap-2 md:hidden">
           <button
             type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-label={open ? t.menuClose : t.menuOpen}
-            aria-expanded={open}
+            onClick={() => (expanded ? closeMenu() : openMenu())}
+            aria-label={expanded ? t.menuClose : t.menuOpen}
+            aria-expanded={expanded}
             className="inline-flex size-10 items-center justify-center rounded-xl border border-border text-foreground transition active:scale-[0.97]"
           >
-            {open ? <X className="size-5" /> : <Menu className="size-5" />}
+            {expanded ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
       </div>
 
-      {/* Menú móvil (integrado, a lo ancho) */}
+      {/* Menú móvil. Las filas van a sangre —el resaltado llega a los dos bordes, como
+          la línea del header— y su texto arranca a la misma altura que el wordmark;
+          los botones son un bloque aparte, adentro del margen. Todo en una grilla de
+          48px: fila y botón miden lo mismo y usan el mismo cuerpo. */}
       {open ? (
-        <div className="border-t border-black/10 bg-white/85 backdrop-blur-2xl md:hidden dark:border-white/10 dark:bg-neutral-900/80">
-          <div className="mx-auto max-w-6xl px-5 py-3">
-            <nav className="flex flex-col gap-1">
-              {t.links.map((link) => (
+        <div
+          onAnimationEnd={onPanelAnimationEnd}
+          className={cn(
+            "menu-panel grid border-t border-black/10 bg-white/85 backdrop-blur-2xl md:hidden dark:border-white/10 dark:bg-neutral-900/80",
+            closing && "menu-panel-closing",
+          )}
+        >
+          {/* Dos envoltorios que la animación necesita: este recorta mientras la fila
+              de grilla crece, y el de adentro baja el contenido con el panel. */}
+          <div className="overflow-hidden">
+            <div className="menu-panel-body">
+              <nav className="flex flex-col py-2">
+                {t.links.map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    onClick={closeMenu}
+                    className="flex h-12 items-center px-5 text-base font-medium text-foreground transition-colors hover:bg-accent active:bg-accent"
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </nav>
+              <div className="grid gap-2 border-t border-border px-5 pt-4 pb-5">
                 <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  className="rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
+                  href={login}
+                  className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}
                 >
-                  {link.label}
+                  {t.login}
                 </a>
-              ))}
-            </nav>
-            <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
-              <a
-                href={login}
-                className={cn(buttonVariants({ variant: "outline", size: "md" }), "w-full")}
-              >
-                {t.login}
-              </a>
-              <a
-                href={register}
-                className={cn(buttonVariants({ variant: "primary", size: "md" }), "w-full")}
-              >
-                {t.register}
-              </a>
+                <a
+                  href={register}
+                  className={cn(buttonVariants({ variant: "primary", size: "lg" }), "w-full")}
+                >
+                  {t.register}
+                </a>
+              </div>
             </div>
           </div>
         </div>
