@@ -20,8 +20,8 @@ export function usePricingPlans() {
         }
       })
       // Si el catálogo no responde, corta el skeleton en vez de dejarlo girando
-      // para siempre. Las DOS regiones leen del backend, así que las dos pueden
-      // fallar; en desarrollo el repositorio devuelve planes de respaldo.
+      // para siempre y la sección queda sin planes. No hay precios de respaldo en
+      // ningún entorno: el precio que se publica es el que cobra el backend.
       .catch(() => {
         if (alive) setLoading(false)
       })
