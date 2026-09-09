@@ -28,7 +28,10 @@ export function LanguageSwitcher({ className }: { className?: string }) {
             onClick={() => setLanguage(lang)}
             aria-pressed={active}
             className={cn(
-              "rounded-full px-2.5 py-1 text-xs font-medium transition duration-200 ease-out",
+              // La misma curva y un tiempo parecido al del contenido: el selector es
+              // el disparador del cambio, no puede sentirse más brusco que lo que
+              // dispara.
+              "rounded-full px-2.5 py-1 text-xs font-medium transition duration-500 ease-in-out",
               active
                 ? "bg-foreground text-background"
                 : "text-muted-foreground hover:text-foreground"

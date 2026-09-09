@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useLogin } from "@/hooks/use-login"
-import { useReduceMotion } from "@/lib/reduce-motion"
 import { cn } from "@/lib/utils"
 
 type LoginValues = { slug: string; email: string; password: string }
@@ -42,7 +41,7 @@ export function LoginPage() {
   const login = useLogin()
   const navigate = useNavigate()
   const location = useLocation()
-  const reduce = useReduceMotion()
+
   const [serverError, setServerError] = useState<string | null>(null)
   const [needsVerification, setNeedsVerification] = useState(false)
   const [remembered] = useState(readRemembered)
@@ -102,45 +101,16 @@ export function LoginPage() {
     })
   })
 
-  // Ir a "crear comercio" no corta la pantalla: la tarjeta crece primero —acá
-  // mismo, con el formulario de login adentro— y recién cuando terminó navega. Las
-  // dos rutas usan el mismo layout, así que al llegar la geometría ya coincide y el
-  // cambio de página no se nota. Se avisa por `state` para que la pantalla de
-  // destino no repita la animación de entrada.
-  //
-  // El timer se limpia al desmontar: si el usuario se va antes (atrás del
-  // navegador, por ejemplo), no queda una navegación pendiente.
-  const [expanding, setExpanding] = useState(false)
-  const foldTimer = useRef<number | undefined>(undefined)
-  useEffect(() => () => window.clearTimeout(foldTimer.current), [])
-
-  const goToOnboarding = () => {
-    if (reduce) {
-      navigate("/onboarding")
-      return
-    }
-    setExpanding(true)
-    foldTimer.current = window.setTimeout(
-      () => navigate("/onboarding", { state: { grown: true } }),
-      380
-    )
-  }
-
   return (
     <AuthLayout
-      variant={expanding ? "wide" : "default"}
       title={t("login.title")}
       description={t("login.description")}
       footer={
         <span>
           {t("login.noAccount")}{" "}
-          <button
-            type="button"
-            onClick={goToOnboarding}
-            className="font-medium text-foreground underline underline-offset-4"
-          >
+          <Link to="/onboarding" className="font-medium text-foreground underline underline-offset-4">
             {t("login.createBusiness")}
-          </button>
+          </Link>
         </span>
       }
     >

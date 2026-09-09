@@ -32,6 +32,7 @@ import { InvoicesPage } from "@/features/invoices/invoices-page"
 import { BarPage } from "@/features/kds/bar-page"
 import { KdsPage } from "@/features/kds/kds-page"
 import { OrderPage } from "@/features/orders/order-page"
+import { AuthShell } from "@/components/auth/auth-shell"
 import { ProductsPage } from "@/features/products/products-page"
 import { ReservationsPage } from "@/features/reservations/reservations-page"
 import { PresenceDisplayPage } from "@/features/timeclock/presence-display-page"
@@ -39,13 +40,20 @@ import { PunchPage } from "@/features/timeclock/punch-page"
 import { StaffPage } from "@/features/timeclock/staff-page"
 
 export const router = createBrowserRouter([
-  // Public
-  { path: "/login", element: <LoginPage /> },
-  { path: "/onboarding", element: <OnboardingPage /> },
-  { path: "/verify-email", element: <VerifyEmailPage /> },
-  { path: "/accept-invitation", element: <AcceptInvitationPage /> },
-  { path: "/forgot-password", element: <ForgotPasswordPage /> },
-  { path: "/reset-password", element: <ResetPasswordPage /> },
+  // Public. Las seis pantallas de identidad comparten <AuthShell />: es un layout
+  // route sin path, así que el fondo animado que vive ahí NO se desmonta al pasar
+  // de una a otra y sus manchas siguen su recorrido en vez de reiniciarse.
+  {
+    element: <AuthShell />,
+    children: [
+      { path: "/login", element: <LoginPage /> },
+      { path: "/onboarding", element: <OnboardingPage /> },
+      { path: "/verify-email", element: <VerifyEmailPage /> },
+      { path: "/accept-invitation", element: <AcceptInvitationPage /> },
+      { path: "/forgot-password", element: <ForgotPasswordPage /> },
+      { path: "/reset-password", element: <ResetPasswordPage /> },
+    ],
+  },
   // Local fichaje display (device-authenticated, no employee session).
   { path: "/fichaje", element: <PresenceDisplayPage /> },
 

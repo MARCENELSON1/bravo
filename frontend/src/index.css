@@ -283,48 +283,210 @@
    campos contra tres— así que la tarjeta crece y la grilla le cede ancho a su
    columna. El relato de marca se queda: sigue siendo lo que explica dónde estás.
 
-   Se anima una sola cosa, el reparto de columnas (`fr`), y la tarjeta la sigue con
-   la misma curva y duración. Nada aparece ni desaparece: los saltos de la versión
-   anterior venían de plegar la columna a cero, que obliga a tocar `display` y
-   `height`, y ninguna de las dos se puede animar.
+   La grilla NO se toca: las dos columnas miden siempre lo mismo, así el relato de
+   la izquierda queda clavado donde está. Si se angostara, el texto cortaría los
+   renglones en otro lugar y parecería que salta — eso era lo que se veía raro.
+
+   Lo único que se anima es el ancho de la tarjeta. Va centrada en su columna, así
+   que crece y se achica por los dos lados a la vez y queda en el mismo lugar en las
+   dos pantallas.
 
    Abajo de lg no hay dos columnas: ahí la tarjeta ya ocupa todo el ancho útil. */
 .auth-grid {
   display: grid;
 }
 .auth-card {
+  /* El ancho de la pantalla actual. Una custom property NO transiciona: cambia de
+     golpe, y de ella sale tanto el `max-width` que sí se anima como la medida del
+     contenido, que necesita ser la final desde el primer cuadro. */
+  --card-w: 24rem;
   width: 100%;
-  max-width: 24rem;
+  max-width: var(--card-w);
   margin-inline: auto;
+}
+.auth-grid[data-wide='true'] .auth-card {
+  --card-w: 32rem;
+}
+
+/* El padding del vidrio, también como variable: el contenido lo necesita para
+   calcular su ancho. */
+.auth-panel {
+  --panel-pad: 1.5rem;
+  padding: var(--panel-pad);
+  /* Recorta mientras la tarjeta se abre: eso es lo que hace el revelado. */
+  overflow-x: hidden;
+}
+/* El mismo aire en las dos pantallas: el contenido tiene que arrancar en la misma
+   columna se llame como se llame el formulario. */
+@media (min-width: 640px) {
+  .auth-panel {
+    --panel-pad: 2rem;
+  }
 }
 
 @media (min-width: 1024px) {
   .auth-grid {
     grid-template-columns: 1fr 1fr;
     column-gap: 4rem;
-    transition: grid-template-columns 380ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  .auth-grid[data-wide='true'] {
-    grid-template-columns: 0.78fr 1.22fr;
-  }
-  .auth-card {
-    transition: max-width 380ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  .auth-grid[data-wide='true'] .auth-card {
-    max-width: 34rem;
   }
 }
 
-/* Con la tarjeta grande el formulario es largo: se recorta el aire de arriba y
-   abajo para que entre entero en pantalla. */
-.auth-grid[data-wide='true'] {
-  padding-block: 2rem;
+/* El estirado. Va de 1152px para arriba —el ancho del contenedor— porque recién ahí
+   la columna es más grande que la tarjeta ancha; abajo de eso la tarjeta queda
+   limitada por la columna y el cambio es instantáneo.
+
+   El contenido va centrado, igual que la tarjeta. Su ancho es fijo (el final de esta
+   pantalla), así que en reposo llena exactamente la caja; centrarlo importa mientras
+   la tarjeta todavía es más chica que él, que es cuando está oculto. */
+@media (min-width: 1152px) {
+  .auth-card {
+    /* Curva pareja por los dos extremos: sale despacio y frena despacio. La
+       anterior arrancaba disparada y se leía como un tirón. */
+    transition: max-width 650ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .auth-panel {
+    display: flex;
+    /* El contenido mide lo que mide: el sobrante de la tarjeta queda abajo. */
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .auth-body {
+    flex: none;
+    width: calc(var(--card-w) - 2 * var(--panel-pad));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .auth-grid,
   .auth-card {
     transition: none;
+  }
+}
+
+/* El contenido entra escalonado, de arriba hacia abajo: un fundido suave por
+   parte. Dos niveles: primero los bloques de la tarjeta —encabezado, formulario,
+   pie— y adentro del formulario, los campos uno por uno.
+
+   Solo `opacity`, sin desplazamiento: nada se mueve de lugar, cada parte se enciende
+   donde está. Y la opacidad no participa del layout, así que la cascada no puede
+   mover la tarjeta ni el texto de la izquierda.
+
+   Todo arranca a los 380ms, que es lo que tarda la tarjeta en abrirse (650ms, pero
+   sobre el final ya está prácticamente en su medida). El `both` mantiene el
+   contenido invisible durante esa espera, y eso es lo que evita verlo recortado:
+   está a su ancho FINAL desde el primer cuadro para no re-acomodarse, así que
+   mientras la caja es más chica que él, algo le sobra. */
+/* "¿Ya tenés cuenta?" / "¿No tenés cuenta?": pegado al formulario, justo después del
+   último botón. El espacio que sobra en la tarjeta queda debajo.
+
+   Nada lo empuja hacia abajo a propósito. Empujarlo al fondo con un margen automático
+   funciona solo cuando sobra lugar, y al formulario del alta —cinco campos— no le
+   sobra: su pie quedaba en una altura y el del login en otra. Siguiendo al contenido,
+   los dos están a la misma distancia de su formulario. */
+.auth-foot {
+  padding-top: 1.5rem;
+}
+
+.auth-in > * {
+  animation: authFade 520ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.auth-in > *:nth-child(1) {
+  animation-delay: 380ms;
+}
+.auth-in > *:nth-child(2) {
+  animation-delay: 420ms;
+}
+.auth-in > *:nth-child(3) {
+  animation-delay: 460ms;
+}
+.auth-in > *:nth-child(n + 4) {
+  animation-delay: 500ms;
+}
+
+/* Los campos del formulario, adentro del bloque que ya entró. Arrancan después que
+   él para que se lea como una cascada y no como dos animaciones sueltas. */
+.auth-in [data-slot='field'] {
+  animation: authFade 480ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.auth-in [data-slot='field']:nth-child(1) {
+  animation-delay: 470ms;
+}
+.auth-in [data-slot='field']:nth-child(2) {
+  animation-delay: 505ms;
+}
+.auth-in [data-slot='field']:nth-child(3) {
+  animation-delay: 540ms;
+}
+.auth-in [data-slot='field']:nth-child(4) {
+  animation-delay: 575ms;
+}
+.auth-in [data-slot='field']:nth-child(5) {
+  animation-delay: 610ms;
+}
+.auth-in [data-slot='field']:nth-child(n + 6) {
+  animation-delay: 645ms;
+}
+
+@keyframes authFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-in > *,
+  .auth-in [data-slot='field'] {
+    animation: none;
+  }
+}
+
+/* El encabezado de la tarjeta. En la variante ancha va más apretado, como el
+   resto de esa pantalla: el formulario es largo y cada milímetro cuenta. */
+.auth-head {
+  margin-bottom: 1.5rem;
+}
+.auth-grid[data-dense='true'] .auth-head {
+  margin-bottom: 1.25rem;
+}
+
+/* Alto FIJO e igual en las dos pantallas, no "mínimo": mientras las dos no midan
+   exactamente lo mismo, cambiar de una a otra corre la fila de la grilla y el relato
+   de la izquierda se recentra — se ve como que el texto se mueve solo.
+
+   El sobrante queda al pie y el contenido arriba, así el título arranca a la misma
+   altura en las dos. Si algún formulario llegara a pasarse, scrollea adentro de la
+   tarjeta en vez de estirarla y mover todo lo de afuera.
+
+   El alto sale de la VENTANA, nunca del contenido: 42rem, o lo que entre si la
+   ventana es más baja. Los 42 no son un capricho — es lo que necesita el formulario
+   más largo para que le sobre lugar, y sin sobrante el pie no se puede apoyar abajo. Así las dos pantallas siempre dan el mismo número y ninguna
+   se pasa de la pantalla; si un formulario no entra, scrollea adentro de la tarjeta.
+   Los 5rem descontados son el aire de arriba y abajo del contenedor (py-10). */
+@media (min-width: 1024px) {
+  .auth-panel {
+    height: min(42rem, calc(100svh - 5rem));
+    overflow-y: auto;
+  }
+}
+
+/* El formulario del alta es largo, así que adentro va más apretado cuando la
+   ventana es baja: mejor los campos juntos que una barra de scroll dentro de la
+   tarjeta.
+
+   Solo el aire INTERIOR. El de afuera es el mismo en las dos pantallas, si no la
+   tarjeta arrancaría y terminaría en distinta altura según dónde estés. */
+@media (max-height: 820px) {
+  /* En ventanas bajas se achica el aire, pero en las DOS: si solo se apretara la
+     pantalla larga, el contenido quedaría a distinta distancia del borde en cada una. */
+  .auth-panel {
+    --panel-pad: 1.5rem;
+  }
+  /* Esto sí es solo del alta: son los campos más juntos entre sí —espacio vertical—
+     para que el formulario largo entre sin scrollear adentro de la tarjeta. */
+  .auth-grid[data-dense='true'] [data-slot='field-group'] {
+    gap: 0.5rem;
   }
 }
 
@@ -343,7 +505,9 @@
 .aurora {
   position: absolute;
   border-radius: 50%;
-  will-change: transform;
+  /* Se anuncian las dos propiedades que cambian, para que el navegador promueva
+     la capa una sola vez y no en cada cuadro. */
+  will-change: transform, opacity;
 }
 .aurora-a {
   top: -10%;
@@ -356,7 +520,7 @@
     var(--aurora-a) 14%,
     transparent 72%
   );
-  animation: auroraA 90s ease-in-out infinite alternate;
+  animation: auroraA 19s ease-in-out infinite;
 }
 .aurora-b {
   top: 25%;
@@ -369,7 +533,7 @@
     var(--aurora-b) 14%,
     transparent 72%
   );
-  animation: auroraB 115s ease-in-out infinite alternate;
+  animation: auroraB 25s ease-in-out infinite;
 }
 .aurora-c {
   bottom: -20%;
@@ -382,20 +546,26 @@
     var(--aurora-c) 14%,
     transparent 72%
   );
-  animation: auroraC 140s ease-in-out infinite alternate;
+  animation: auroraC 31s ease-in-out infinite;
 }
 
 @keyframes auroraA {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(6vw, 4vh, 0); }
+  0% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
+  33% { transform: translate3d(16vw, 9vh, 0) scale(1.18); opacity: 0.75; }
+  66% { transform: translate3d(6vw, 18vh, 0) scale(0.88); opacity: 0.95; }
+  100% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
 }
 @keyframes auroraB {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(-7vw, -5vh, 0); }
+  0% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
+  33% { transform: translate3d(-18vw, -11vh, 0) scale(0.86); opacity: 0.92; }
+  66% { transform: translate3d(-8vw, 10vh, 0) scale(1.22); opacity: 0.68; }
+  100% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
 }
 @keyframes auroraC {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(5vw, -3vh, 0); }
+  0% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
+  33% { transform: translate3d(14vw, -8vh, 0) scale(1.14); opacity: 0.8; }
+  66% { transform: translate3d(-10vw, -15vh, 0) scale(0.92); opacity: 0.97; }
+  100% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
 }
 
 /* Viñeta: oscurece los bordes y deja el centro limpio. Reemplaza a la textura

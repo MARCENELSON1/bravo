@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useTranslation } from "react-i18next"
-import { Link, useLocation, useSearchParams } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 
 import { isApiError } from "@/api/api-error"
 import { apiErrorText } from "@/api/translate-error"
@@ -31,7 +31,6 @@ export function OnboardingPage() {
   // El login avisa por `state` que ya animó la tarjeta creciendo hasta acá. Sin
   // esto la pantalla repetiría su animación de entrada apenas termina la otra: la
   // tarjeta se desvanecía y volvía, que es el parpadeo que se veía en la transición.
-  const grown = (useLocation().state as { grown?: boolean } | null)?.grown === true
   const rawCountry = params.get("country") ?? ""
   const country = /^[A-Za-z]{2}$/.test(rawCountry) ? rawCountry.toUpperCase() : undefined
   const [serverError, setServerError] = useState<string | null>(null)
@@ -108,8 +107,6 @@ export function OnboardingPage() {
   if (done) {
     return (
       <AuthLayout
-        variant="wide"
-        enter={!grown}
         title={t("identity.onboarding.done.title")}
         description={t("identity.onboarding.done.description")}
         footer={
@@ -127,8 +124,6 @@ export function OnboardingPage() {
 
   return (
     <AuthLayout
-      variant="wide"
-      enter={!grown}
       title={t("identity.onboarding.title")}
       description={t("identity.onboarding.description")}
       footer={
@@ -144,7 +139,7 @@ export function OnboardingPage() {
         {/* Un campo abajo del otro y a todo el ancho de la tarjeta: se completa de
             arriba a abajo sin saltar de columna. El gap va más justo que el de
             fábrica para que los cinco campos entren sin scroll. */}
-        <FieldGroup className="gap-4">
+        <FieldGroup className="gap-3">
           <Field>
             <FieldLabel htmlFor="tenantName">{t("identity.onboarding.tenantNameLabel")}</FieldLabel>
             <Input id="tenantName" placeholder={t("identity.onboarding.tenantNamePlaceholder")} aria-invalid={!!errors.tenantName} {...register("tenantName")} />
