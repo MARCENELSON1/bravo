@@ -491,6 +491,36 @@
 }
 
 
+/* Textura del fondo. Un recorrido cerrado y lentísimo: termina donde empezó, así
+   que el ciclo no tiene costura. Solo `transform`, que va por GPU.
+
+   El scale de base deja margen para desplazarla sin que asome el borde. */
+.bg-texture {
+  animation: bgTexture 40s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes bgTexture {
+  0% {
+    transform: scale(1.08) translate3d(0, 0, 0);
+  }
+  33% {
+    transform: scale(1.18) translate3d(-3%, 2%, 0);
+  }
+  66% {
+    transform: scale(1.12) translate3d(2.5%, -1.5%, 0);
+  }
+  100% {
+    transform: scale(1.08) translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-texture {
+    animation: none;
+  }
+}
+
 /* Fondo escénico del shell. Tres manchas muy difusas que derivan solas, más una
    viñeta que cierra los bordes. Es el mismo tratamiento que la landing.
 

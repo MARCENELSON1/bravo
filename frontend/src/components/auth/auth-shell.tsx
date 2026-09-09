@@ -72,7 +72,9 @@ export function AuthShell() {
 
   return (
     <div className="relative min-h-svh">
-      <AppBackground />
+      {/* El fondo de siempre: neutro, con viñeta y sin textura. Acá se ve directo,
+          sin los paneles de vidrio que en la consola lo filtran. */}
+      <AppBackground scene="identity" />
 
       {/* El ancho lo maneja el CSS (ver .auth-grid): al cambiar `data-wide` la
           tarjeta se ensancha con una transición, sin que nada se desmonte. */}
