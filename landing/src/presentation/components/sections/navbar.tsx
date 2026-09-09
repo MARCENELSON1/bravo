@@ -83,7 +83,11 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-black/10 bg-white/85 backdrop-blur-2xl dark:border-white/10 dark:bg-neutral-900/80">
-      <div className="relative mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-5">
+      {/* A todo el ancho, no dentro del contenedor de las secciones: en una pantalla
+          grande el wordmark va contra el borde izquierdo y las acciones contra el
+          derecho. El padding crece un poco en pantallas anchas para que no queden
+          pegados al vidrio. */}
+      <div className="relative flex h-14 w-full items-center justify-between gap-3 px-5 lg:px-8">
         {/* Solo el wordmark, igual que el software y que el mockup del hero. */}
         <a
           href="#top"
@@ -93,7 +97,7 @@ export function Navbar() {
           {/* Sin `leading-none` ni empujones a mano: con el interlineado natural, el
               flex del contenedor lo centra igual que a los links de al lado. Mezclar
               los dos criterios era lo que los desalineaba. */}
-          <span className="font-brand block text-2xl tracking-tight text-foreground">
+          <span className="font-brand block text-3xl tracking-tight text-foreground">
             <span className="font-bold">Well</span>
             <span className="-ml-[2px] font-light text-foreground/55">nod</span>
           </span>

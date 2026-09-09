@@ -4,12 +4,19 @@ import { useContainer } from "@/presentation/providers/container-provider"
 
 const YEAR = 2026
 
+// Los canales reales, no traducibles: el mismo usuario y el mismo buzón en las dos
+// regiones. Están acá y no en COPY para que no se dupliquen por idioma.
+const INSTAGRAM = "wellnodhq"
+const EMAIL = "wellnodsupport@gmail.com"
+
 const COPY = {
   "es-AR": {
     company: "Empresa",
     legal: "Legal",
     contact: "Contacto",
     login: "Iniciar sesión",
+    product: "Producto",
+    plans: "Planes",
     terms: "Términos",
     privacy: "Privacidad",
     rights: `© ${YEAR} Wellnod. Todos los derechos reservados.`,
@@ -20,6 +27,8 @@ const COPY = {
     legal: "Legal",
     contact: "Contact",
     login: "Log in",
+    product: "Product",
+    plans: "Plans",
     terms: "Terms",
     privacy: "Privacy",
     rights: `© ${YEAR} Wellnod. All rights reserved.`,
@@ -43,10 +52,20 @@ export function Footer() {
 
   const columns = [
     {
-      title: t.company,
+      title: t.contact,
+      wide: true,
       links: [
-        { label: t.contact, href: "#contacto" },
+        { label: `@${INSTAGRAM}`, href: `https://instagram.com/${INSTAGRAM}` },
+        { label: EMAIL, href: `mailto:${EMAIL}` },
+      ],
+    },
+    {
+      title: t.company,
+      // Los anchors son ids de sección, iguales en los dos idiomas (ver navbar).
+      links: [
         { label: t.login, href: login },
+        { label: t.product, href: "#producto" },
+        { label: t.plans, href: "#planes" },
       ],
     },
     {
@@ -60,9 +79,10 @@ export function Footer() {
 
   return (
     <footer className="border-t border-border/60">
-      {/* En móvil son dos columnas: la marca ocupa la fila entera y abajo van Empresa
-          y Legal, una al lado de la otra. De sm para arriba no cambia nada. */}
-      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-8 gap-y-10 px-5 py-12 sm:gap-12 sm:py-20 lg:grid-cols-3">
+      {/* En móvil son dos columnas. La marca y Contacto ocupan la fila entera —la
+          bajada y el mail son largos y en media columna se parten—; Empresa y Legal,
+          que son de una o dos palabras, van una al lado de la otra. */}
+      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-8 gap-y-10 px-5 py-12 sm:gap-12 sm:py-20 lg:grid-cols-4">
         <div className="col-span-2 sm:col-span-1">
           <span className="font-brand block text-2xl tracking-tight text-foreground">
             <span className="font-bold">Well</span>
@@ -74,19 +94,25 @@ export function Footer() {
         </div>
 
         {columns.map((column) => (
-          <div key={column.title}>
+          <div key={column.title} className={column.wide ? "col-span-2 sm:col-span-1" : undefined}>
             <p className="text-sm font-semibold">{column.title}</p>
             <ul className="mt-5 flex flex-col gap-3">
-              {column.links.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground transition hover:text-foreground"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
+              {column.links.map((link) => {
+                // Instagram se va del sitio; el resto navega o abre el correo.
+                const external = link.href.startsWith("http")
+                return (
+                  <li key={link.label}>
+                    <a
+                      href={link.href}
+                      target={external ? "_blank" : undefined}
+                      rel={external ? "noreferrer" : undefined}
+                      className="text-sm break-all text-muted-foreground transition hover:text-foreground"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                )
+              })}
             </ul>
           </div>
         ))}
