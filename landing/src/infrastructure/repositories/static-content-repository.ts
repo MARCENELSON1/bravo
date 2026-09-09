@@ -133,36 +133,50 @@ const FEATURES: readonly Feature[] = [
 
 // El recorrido completo, del alta al cierre y del cierre a la decisión. Cada paso
 // cuenta qué hacés Y qué queda hecho solo, que es lo que justifica el software.
+// El recorrido completo, encadenado: cada paso usa lo que dejó el anterior. La carga
+// alimenta la carta, la carta alimenta la comanda, la comanda alimenta el cobro, el
+// cobro alimenta los datos y los datos alimentan la decisión.
+//
+// OJO: dos cosas de este texto NO están implementadas todavía.
+//   - Que el Copiloto ACCIONE (destacar un plato, tocar un precio). Hoy es de solo
+//     lectura: allow-list read-only en el backend y un único endpoint /copilot/ask.
+//   - La CARTA PARA EL CLIENTE, con sus recomendaciones y el detalle de cada plato.
+//     No hay ninguna pantalla pública de carta; lo que existe es el catálogo interno
+//     que usa el mozo, y las recomendaciones no están construidas en ningún lado.
+//   - La MIGRACIÓN desde otro sistema. En la app solo hay exportación a CSV para el
+//     contador (finance); no existe ninguna importación.
+// Las dos se agregaron a pedido, con la función prevista para más adelante — la misma
+// decisión que ya se tomó en la tarjeta del copiloto, más arriba.
 const STEPS: readonly Step[] = [
   {
     id: "setup",
-    title: "Cargás tu local una vez",
+    title: "Arrancás en minutos, no en semanas",
     description:
-      "Mesas y sectores, la carta con sus recetas y costos, y tu equipo con el rol de cada uno. En minutos y sin ayuda técnica.",
+      "Se carga una sola vez toda la información requerida del local: mesas, carta con el costo de cada plato, proveedores, etc. Y si venís de otro sistema, migrás lo que ya tenías. Sin instalar nada: esa carga es la base, todo lo que sigue se alimenta de ahí.",
   },
   {
     id: "order",
-    title: "Abrís la mesa y tomás la comanda",
+    title: "Una sola carta, dos pantallas",
     description:
-      "Desde el celular, en el salón. Cocina y barra reciben lo suyo al instante y avisan cuando el plato sale.",
+      "El mozo toma el pedido desde la comandera, o los comensales eligen lo que van a pedir desde la misma carta, con recomendaciones y el detalle de cada plato. En los dos casos el pedido marcha igual: cada ítem cae en su estación, cocina o barra, y la mesa avisa cuando está para servir.",
   },
   {
     id: "charge",
-    title: "Cobrás, facturás y cerrás la caja",
+    title: "El cobro cierra el círculo",
     description:
-      "Cualquier medio de pago, factura ARCA en el mismo paso, propinas repartidas y arqueo al cierre. El stock se descuenta según la receta.",
+      "Cobrás por cualquier medio y dividís por ítem si hace falta. La factura ARCA la podés emitir en el mismo paso o dejarla para después. El stock baja según la receta y la caja queda lista para el arqueo del cierre.",
   },
   {
     id: "copilot",
-    title: "Le preguntás al Copiloto",
+    title: "El Copiloto responde y hace",
     description:
-      "“¿Cuánto vendí hoy?”, “¿qué plato deja más margen?”. Responde con tus datos y te muestra de dónde sale cada número.",
+      "Cada dato que junta la operación se vuelve una respuesta: “¿cuánto vendí este mes?”, “¿qué plato se vendió más?”. Te contesta, te muestra de dónde sale la información y te sugiere qué hacer con ella. Y si querés, el cambio lo hace él.",
   },
   {
     id: "advisor",
-    title: "El Asesor te dice qué hacer",
+    title: "El Asesor te dice dónde está la plata",
     description:
-      "Con tus costos cargados: margen neto, prime cost y punto de equilibrio, más qué conviene hacer hoy y qué esta semana.",
+      "Lee esos mismos números —margen neto, food cost, prime cost, punto de equilibrio— y los convierte en una lista corta: qué tocar hoy, qué mirar esta semana y qué se viene. Con los datos a la vista, para que la decisión la tomes vos.",
   },
 ]
 

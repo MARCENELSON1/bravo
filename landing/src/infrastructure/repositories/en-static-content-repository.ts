@@ -131,36 +131,42 @@ const FEATURES: readonly Feature[] = [
   },
 ]
 
+// El recorrido completo, encadenado: cada paso usa lo que dejó el anterior.
+//
+// OJO: dos cosas de este texto NO están implementadas todavía — que el Copiloto
+// ACCIONE (hoy es de solo lectura), la CARTA PARA EL CLIENTE con sus recomendaciones
+// y la MIGRACIÓN desde otro sistema. Ver la nota larga en
+// static-content-repository.ts.
 const STEPS: readonly Step[] = [
   {
     id: "setup",
-    title: "Set up your restaurant once",
+    title: "Up and running in minutes, not weeks",
     description:
-      "Tables and sections, the menu with its recipes and costs, and your team with each person's role. In minutes and with no technical help.",
+      "Everything the restaurant needs gets loaded once: tables, menu with each dish's cost, suppliers, and so on. And if you're coming from another system, you bring over what you already had. Nothing to install: that setup is the base, everything that follows feeds off it.",
   },
   {
     id: "order",
-    title: "Open the table and take the order",
+    title: "One menu, two screens",
     description:
-      "From a phone, out on the floor. The kitchen and bar get their part right away and flag when the plate is up.",
+      "Your server takes the order on the handheld, or your guests choose what they want from that same menu, with recommendations and the detail of every dish. Either way the order fires the same: each item lands in its station, kitchen or bar, and the table flags when it's ready to run.",
   },
   {
     id: "charge",
-    title: "Charge, file tax, and close out",
+    title: "The sale closes the loop",
     description:
-      "Any payment method, tax filed in the same step, tips shared out, and a count at close. Stock draws down from the recipe.",
+      "Take any payment and split by item when you need to. You can file the tax in the same step or leave it for later. Stock draws down from the recipe and the register is ready for the count at close.",
   },
   {
     id: "copilot",
-    title: "You ask the Copilot",
+    title: "The Copilot answers — and acts",
     description:
-      "“How much did I sell today?”, “Which dish has the best margin?”. It answers with your data and shows where every number came from.",
+      "Every piece of data the floor produces turns into an answer: “how much did I sell this month?”, “which dish sold the most?”. It answers, shows you where the information comes from, and suggests what to do with it. And if you want, it makes the change itself.",
   },
   {
     id: "advisor",
-    title: "The Advisor tells you what to do",
+    title: "The Advisor tells you where the money is",
     description:
-      "With your costs in: net margin, prime cost, and break-even, plus what is worth doing today and this week.",
+      "It reads those same numbers —net margin, food cost, prime cost, break-even— and turns them into a short list: what to fix today, what to watch this week, and what's coming. With the data in front of you, so the call is yours.",
   },
 ]
 

@@ -4,8 +4,14 @@ import { Stagger } from "@/presentation/components/ui/reveal"
 import { useContainer } from "@/presentation/providers/container-provider"
 
 const COPY = {
-  "es-AR": { eyebrow: "Cómo funciona", heading: "De la mesa a la decisión, en cinco pasos" },
-  "en-US": { eyebrow: "How it works", heading: "From table to decision, in five steps" },
+  "es-AR": {
+    eyebrow: "Cómo funciona",
+    heading: "De la mesa a la decisión, sin planillas en el medio",
+  },
+  "en-US": {
+    eyebrow: "How it works",
+    heading: "From the table to the decision, with no spreadsheets in between",
+  },
 } as const
 
 // Cinco pasos numerados, sin línea conectora ni nodos. El número ya dice que es
@@ -19,13 +25,16 @@ export function HowItWorks() {
     <section id="como-funciona" className="mx-auto max-w-6xl px-5 py-28 md:py-36">
       <SectionHeading eyebrow={t.eyebrow} heading={t.heading} />
 
-      <Stagger as="ol" className="mt-20 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-5">
+      <Stagger
+        as="ol"
+        className="mt-20 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-5 lg:grid-rows-[auto_auto_1fr] lg:gap-y-0"
+      >
         {steps.map((step, i) => (
-          <li key={step.id}>
-            <span className="font-display text-sm font-bold tabular-nums text-primary">
+          <li key={step.id} className="lg:row-span-3 lg:grid lg:grid-rows-subgrid">
+            <span className="font-display text-base font-bold tabular-nums text-primary">
               {String(i + 1).padStart(2, "0")}
             </span>
-            <h3 className="mt-4 font-semibold tracking-tight">{step.title}</h3>
+            <h3 className="mt-3 text-lg font-semibold tracking-tight text-balance">{step.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               {step.description}
             </p>
