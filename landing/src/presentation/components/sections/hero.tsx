@@ -731,11 +731,12 @@ function AppMockup({ locale }: { locale: Locale }) {
       </div>
 
       {/* Shell: fondo verde + textura de la app + grano + paneles de glass */}
-      <div className="relative flex h-[30rem] gap-3 bg-[radial-gradient(125%_125%_at_18%_12%,#d7e6df_0%,#aec7bb_50%,#85a394_100%)] p-3 dark:bg-[radial-gradient(125%_125%_at_18%_12%,#2a4b43_0%,#16241f_52%,#0a120e_100%)]">
-        {/* Misma textura de imagen que usa el fondo del software */}
+      <div className="relative flex h-[30rem] gap-3 overflow-hidden bg-[radial-gradient(125%_125%_at_18%_12%,#d7e6df_0%,#aec7bb_50%,#85a394_100%)] p-3 dark:bg-[radial-gradient(125%_125%_at_18%_12%,#2a4b43_0%,#16241f_52%,#0a120e_100%)]">
+        {/* Misma textura de imagen que usa el fondo del software, y con su misma
+            animación */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50 mix-blend-soft-light"
+          className="bg-texture pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50 mix-blend-soft-light"
           style={{ backgroundImage: "url('/app-bg-dark.png')" }}
         />
         {/* Grano/ruido sutil, igual que en la app */}
