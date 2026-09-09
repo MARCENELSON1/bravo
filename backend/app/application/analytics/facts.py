@@ -37,3 +37,11 @@ class SaleFact:
     # Versión de la receta al momento de la venta (Fase 2D); None = sin receta o
     # fila previa. Es metadata de atribución; no afecta ningún agregado de costo.
     recipe_version: int | None = None
+    # Cuánto de ``unit_price_amount`` son adicionales elegidos por el comensal
+    # (+panceta, doble queso). El precio unitario los trae ya sumados —una milanesa
+    # a $8.000 con panceta de $1.200 se registra a $9.200— y sin esto el mismo plato
+    # aparece con precios distintos según lo que cada uno le agregó: el promedio
+    # deja de ser comparable con el de la carta y los adicionales, que suelen ser
+    # margen alto, no se pueden medir como línea. El precio de carta es
+    # ``unit_price_amount − options_amount``. No entra en ningún agregado existente.
+    options_amount: int = 0

@@ -955,6 +955,9 @@ class SaleFactORM(Base):
     food_cost_net_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     # Versión de la receta al momento de la venta (Fase 2D); NULL en filas previas.
     recipe_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Cuánto de `unit_price_amount` eran adicionales (+panceta). Default 0 → filas
+    # previas y platos sin opciones se leen como "todo precio de carta" (paridad).
+    options_amount: Mapped[int] = mapped_column(BigInteger, nullable=False, server_default="0")
     currency: Mapped[str] = mapped_column(String(3))
     waiter_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
     table_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True)

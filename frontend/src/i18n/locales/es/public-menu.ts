@@ -66,6 +66,8 @@ export const publicMenu = {
     loading: "Cargando la cuenta…",
     empty: "No hay nada para pagar todavía.",
     balance: "A pagar",
+    someoneElsePaying: "Alguien de la mesa está pagando la cuenta ahora. Esperá un momento.",
+    overpaid: "Se cobró {{amount}} de más. Avisale al mozo para que te lo devuelva.",
     total: "Total",
     split: {
       title: "Dividir la cuenta",

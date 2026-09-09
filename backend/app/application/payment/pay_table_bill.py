@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from app.application.clock import utcnow
 from app.application.payment.use_cases import RegisterPayment
 from app.domain.identity.ports import TenantContext
 from app.domain.order.entities import Order
@@ -12,13 +13,18 @@ from app.domain.payment.entities import Payment
 from app.domain.payment.exceptions import (
     InvalidPaymentAmount,
     NothingToPay,
+    PaymentInProgress,
     PaymentNotFound,
     SelfPayDisabled,
 )
 from app.domain.payment.repository import PaymentRepository
 from app.domain.payment.self_pay_settings import SelfPaySettingsRepository
+from app.domain.payment.settlement import (
+    available_to_charge,
+    outstanding_amount,
+    reserved_amount,
+)
 from app.domain.payment.value_objects import (
-    PaymentDirection,
     PaymentMethod,
     PaymentStatus,
 )
@@ -118,6 +124,11 @@ class PayTableBill:
         orders = await self._orders.list_open_by_session(tenant_id, session.id)
         target = await self._first_unpaid(tenant_id, orders)
         if target is None:
+            # Nada cobrable puede ser "ya está saldada" o "alguien la está pagando
+            # ahora". Para el comensal son situaciones opuestas: en la segunda
+            # tiene que volver a intentar en un rato, no irse creyendo que pagó.
+            if await self._has_reservation(tenant_id, orders):
+                raise PaymentInProgress()
             raise NothingToPay()
         order, balance = target
 
@@ -153,20 +164,35 @@ class PayTableBill:
     async def _first_unpaid(
         self, tenant_id: str, orders: list[Order]
     ) -> tuple[Order, int] | None:
-        """The oldest open order that still owes money, with its remaining balance
-        (order total − confirmed inflows). ``orders`` come created-at ascending."""
+        """La comanda abierta más vieja que todavía se puede cobrar, con cuánto.
+
+        Lo cobrable descuenta **lo reservado** además de lo cobrado: sin eso, dos
+        comensales dividiendo la cuenta ven el saldo completo cada uno, los dos
+        pasan el tope al crear su cobro (ninguno está confirmado todavía) y el
+        local termina cobrando el doble. ``orders`` viene ascendente por fecha.
+
+        Devuelve ``None`` si no queda nada cobrable — incluyendo el caso en que lo
+        que falta ya está reservado por otro. Quien llama distingue los dos: no es
+        lo mismo "está saldada" que "esperá, alguien está pagando".
+        """
+        now = utcnow()
         for order in orders:
-            paid = 0
-            for payment in await self._payments.list_by_order(tenant_id, order.id):
-                if (
-                    payment.direction is PaymentDirection.INFLOW
-                    and payment.status is PaymentStatus.CONFIRMED
-                ):
-                    paid += payment.amount.amount
-            balance = order.total().amount - paid
-            if balance > 0:
-                return order, balance
+            payments = await self._payments.list_by_order(tenant_id, order.id)
+            chargeable = available_to_charge(order.total().amount, payments, now=now)
+            if chargeable > 0:
+                return order, chargeable
         return None
+
+    async def _has_reservation(self, tenant_id: str, orders: list[Order]) -> bool:
+        """¿Lo que falta cobrar está tomado por un cobro en curso?"""
+        now = utcnow()
+        for order in orders:
+            payments = await self._payments.list_by_order(tenant_id, order.id)
+            if outstanding_amount(order.total().amount, payments) > 0 and reserved_amount(
+                payments, now=now
+            ):
+                return True
+        return False
 
 
 class GetPublicPaymentStatus:

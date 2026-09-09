@@ -66,6 +66,8 @@ export const publicMenu = {
     loading: "Loading your check…",
     empty: "Nothing to pay yet.",
     balance: "Amount due",
+    someoneElsePaying: "Someone at your table is paying right now. Give it a moment.",
+    overpaid: "{{amount}} was charged in excess. Let your server know so they can refund it.",
     total: "Total",
     split: {
       title: "Split the bill",

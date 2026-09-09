@@ -100,6 +100,42 @@ async def test_selfservice_holds_then_pay_marches_and_assigns(mp_client):  # noq
     assert freed.json()["status"] == "PAID"
 
 
+async def test_selfservice_sale_reaches_the_books(mp_client):  # noqa: F811
+    """La venta prepaga se registra al confirmarse el pago, sin liberar la mesa.
+
+    Era el agujero de la auditoría: la comanda prepaga NO se marca PAID a
+    propósito (marcarla liberaría la mesa mientras comen), y la escritura del
+    libro de ventas colgaba de ese mismo estado. Resultado: se descontaba el
+    stock y la venta no existía para Finanzas, el Asesor ni las analíticas — la
+    caja mostraba plata que las ventas no explicaban.
+
+    Se verifica ANTES de liberar la mesa a propósito: si la registración
+    dependiera de esa acción manual, una mesa que nadie libera quedaría fuera de
+    los libros para siempre.
+    """
+    http, fake_email, _ = mp_client
+    h = _auth(await _onboard_verify_login(http, fake_email, slug="libro", email="o@libro.com"))
+    # Sin mozo fichado a propósito: la comanda marcha huérfana igual, y lo que se
+    # verifica acá —que la venta se registre— no depende de que haya alguien.
+    pid = await _product(http, h, "Pizza", 1200000)
+    await _set_mode(http, h, "SELF_SERVICE")
+    await _enable_self_pay(http, h, tips_enabled=False)
+    token = await _qr_token(http, h, 31)
+
+    order_id = (await _submit(http, token, pid))["order_id"]
+    await http.post("/api/v1/public/table/pay", json={"token": token})
+    assert (await http.post(_HOOK, headers=_SIG)).status_code == 200
+
+    # La mesa sigue ocupada (no se liberó), pero la venta YA está en los libros.
+    assert (await http.get(f"/api/v1/orders/{order_id}", headers=h)).json()["status"] == "SENT"
+
+    detail = await http.get(f"/api/v1/finance/products/{pid}", headers=h)
+    assert detail.status_code == 200, detail.text
+    body = detail.json()
+    assert body["units_sold"] == 1, "la venta del canal prepago no llegó al libro"
+    assert body["sales_amount"] == 1200000
+
+
 async def test_selfservice_without_clocked_in_waiter_marches_orphan(mp_client):  # noqa: F811
     http, fake_email, _ = mp_client
     h = _auth(await _onboard_verify_login(http, fake_email, slug="resto", email="o@resto.com"))

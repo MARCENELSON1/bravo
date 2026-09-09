@@ -133,6 +133,15 @@ class _NoSettings(AdvisorSettingsRepository):
     async def save(self, settings) -> None: ...
 
 
+class _NoPayments:
+    """La orden del fake ya es PAID, así que el proyector corta antes de mirar
+    los pagos. Está igual para que el caso prepago (no-PAID pero cobrado) tenga
+    dónde apoyarse si alguien lo agrega acá."""
+
+    async def list_by_order(self, tenant_id: str, order_id: str) -> list:
+        return []
+
+
 def _order() -> Order:
     order = Order(
         id="o1",
@@ -178,6 +187,7 @@ async def _project(products: _SpyProductRepository) -> _SaleFacts:
         sale_facts=facts,  # type: ignore[arg-type]
         snapshots=_Snapshots(),  # type: ignore[arg-type]
         advisor_settings=_NoSettings(),
+        payments=_NoPayments(),  # type: ignore[arg-type]
         tenant_context=FakeTenantContext(),
     )
     await projector.project_order(_TENANT, "o1")
@@ -215,6 +225,7 @@ async def test_no_recipes_means_no_catalog_reads_at_all() -> None:
         sale_facts=_SaleFacts(),  # type: ignore[arg-type]
         snapshots=_Snapshots(),  # type: ignore[arg-type]
         advisor_settings=_NoSettings(),
+        payments=_NoPayments(),  # type: ignore[arg-type]
         tenant_context=FakeTenantContext(),
     )
 

@@ -103,9 +103,14 @@ class TableBillResponse(BaseModel):
     items: list[TableBillItemResponse]
     total: int
     paid: int
+    # Puede ser NEGATIVO si entró de más (cuenta dividida con cobros simultáneos):
+    # ese excedente es plata a devolver y se publica en vez de esconderse en cero.
     balance: int
     online_pay_available: bool
     tips_enabled: bool
+    # Comprometido en cobros en curso. `balance - reserved` es lo que este comensal
+    # puede pagar ahora; el resto lo está pagando otro.
+    reserved: int = 0
 
 
 class TablePayRequest(BaseModel):

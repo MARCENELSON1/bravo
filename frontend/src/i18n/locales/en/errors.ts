@@ -34,6 +34,7 @@ export const errors = {
   // Payments / cash
   invalid_payment_amount: "Invalid payment amount.",
   payment_not_found: "Payment not found.",
+  payment_in_progress: "Someone is paying this bill right now. Wait a moment and try again.",
   payment_not_refundable: "This payment can't be refunded.",
   payment_gateway_not_connected: "The payment gateway isn't connected.",
   cash_session_already_open: "There's already an open cash session.",

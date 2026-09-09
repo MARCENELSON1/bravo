@@ -83,9 +83,14 @@ export interface TableBillDTO {
   items: TableBillItemDTO[]
   total: number
   paid: number
+  // Puede ser NEGATIVO si entró de más (dos comensales pagando a la vez): ese
+  // excedente es plata a devolver y el server lo publica en vez de esconderlo en 0.
   balance: number
   online_pay_available: boolean
   tips_enabled: boolean
+  // Comprometido en cobros en curso. Lo que ESTE comensal puede pagar ahora es
+  // `balance - reserved`; el resto lo está pagando otro en este momento.
+  reserved: number
 }
 
 export interface TablePayResultDTO {

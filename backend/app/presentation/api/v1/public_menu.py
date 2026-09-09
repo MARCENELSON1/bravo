@@ -116,6 +116,7 @@ async def get_table_bill(
         balance=bill.balance,
         online_pay_available=bill.online_pay_available,
         tips_enabled=bill.tips_enabled,
+        reserved=bill.reserved,
     )
 
 

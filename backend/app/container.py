@@ -1037,6 +1037,11 @@ class Container(containers.DeclarativeContainer):
     advisor_settings_repository = providers.Factory(
         SqlAlchemyAdvisorSettingsRepository, session_factory=db.provided.session
     )
+    # Ídem: project_order_sales lo necesita para saber si la comanda está cobrada
+    # (una prepaga nunca llega a PAID, y así y todo la venta es real).
+    payment_repository = providers.Factory(
+        SqlAlchemyPaymentRepository, session_factory=db.provided.session
+    )
     project_order_sales = providers.Factory(
         ProjectOrderSales,
         orders=order_repository,
@@ -1047,13 +1052,12 @@ class Container(containers.DeclarativeContainer):
         sale_facts=sale_facts_repository,
         snapshots=finance_snapshot_repository,
         advisor_settings=advisor_settings_repository,
+        payments=payment_repository,
         tenant_context=tenant_context,
     )
 
     # --- Fase 3: pagos (ingresos/egresos) ---
-    payment_repository = providers.Factory(
-        SqlAlchemyPaymentRepository, session_factory=db.provided.session
-    )
+    # (``payment_repository`` se define más arriba: lo necesita project_order_sales.)
     # "Liberar mesa" (Autoservicio): cierra una comanda ya paga → libera el plano.
     close_settled_order = providers.Factory(
         CloseSettledOrder,

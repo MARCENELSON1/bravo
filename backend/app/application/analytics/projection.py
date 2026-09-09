@@ -23,18 +23,34 @@ from app.domain.inventory.repository import (
     PreparationRepository,
     RecipeRepository,
 )
+from app.domain.order.entities import Order
 from app.domain.order.repository import OrderRepository
 from app.domain.order.value_objects import OrderStatus
+from app.domain.payment.repository import PaymentRepository
+from app.domain.payment.settlement import settled_amount
 from app.domain.product.repository import ProductRepository
 from app.domain.shared.vat import net_of_vat
 
 
 class ProjectOrderSales(SalesProjector):
-    """Project a PAID order's lines into sale_facts.
+    """Project a sold order's lines into sale_facts.
 
     Idempotent per order (guarded by existing facts). Snapshots the line's
     name/category/price and the recipe food cost at sale time (None when the
     product has no recipe). One ``SaleFact`` per order item.
+
+    **Qué cuenta como vendida.** Antes: que la comanda estuviera ``PAID``. Eso
+    dejaba afuera el autoservicio prepago, que a propósito NO se marca pagada
+    —marcarla liberaría la mesa mientras el comensal come— con lo cual se
+    descontaba el stock y la venta no se registraba en ninguna parte: todo ese
+    canal era invisible para Finanzas, el Asesor y las analíticas, con la caja
+    mostrando plata que las ventas no explicaban.
+
+    Ahora alcanza con que **la plata esté** (cobros confirmados que cubren el
+    total), sin importar en qué punto del ciclo esté la mesa. Se mantiene el
+    camino viejo —``PAID`` sigue proyectando aunque después se haya reembolsado—
+    para no sacarle la venta a nada que hoy la tenga: reembolsar es un movimiento
+    de plata y deshacer la venta es reabrir, que es otro flujo.
     """
 
     def __init__(
@@ -47,6 +63,7 @@ class ProjectOrderSales(SalesProjector):
         sale_facts: SaleFactsRepository,
         snapshots: FinanceSnapshotWriter,
         advisor_settings: AdvisorSettingsRepository,
+        payments: PaymentRepository,
         tenant_context: TenantContext,
     ) -> None:
         self._orders = orders
@@ -57,14 +74,24 @@ class ProjectOrderSales(SalesProjector):
         self._sale_facts = sale_facts
         self._snapshots = snapshots
         self._advisor_settings = advisor_settings
+        self._payments = payments
         self._tenant_context = tenant_context
+
+    async def _is_sold(self, tenant_id: str, order: Order) -> bool:
+        """¿Hay venta que registrar? Una comanda anulada nunca, tenga plata o no."""
+        if order.status is OrderStatus.CANCELLED:
+            return False
+        if order.status is OrderStatus.PAID:
+            return True
+        payments = await self._payments.list_by_order(tenant_id, order.id)
+        return settled_amount(payments) >= order.total().amount
 
     async def project_order(self, tenant_id: str, order_id: str) -> None:
         self._tenant_context.set(tenant_id)
         if await self._sale_facts.exists_for_order(tenant_id, order_id):
             return  # already projected — idempotent no-op
         order = await self._orders.get_by_id(tenant_id, order_id)
-        if order is None or order.status is not OrderStatus.PAID:
+        if order is None or not await self._is_sold(tenant_id, order):
             return
         if not order.items:
             return
@@ -173,6 +200,10 @@ class ProjectOrderSales(SalesProjector):
                     food_cost_amount=food_cost_amount,
                     food_cost_net_amount=food_cost_net_amount,
                     recipe_version=recipe.version if recipe is not None else None,
+                    # Los adicionales ya vienen sumados en `unit_price`; acá se
+                    # congela cuánto de ese precio eran, para que el reporte pueda
+                    # separar precio de carta de lo que se factura por agregados.
+                    options_amount=sum(o.price_delta for o in item.selected_options),
                     currency=order.currency,
                     waiter_id=order.waiter_id,
                     table_id=order.table_id,

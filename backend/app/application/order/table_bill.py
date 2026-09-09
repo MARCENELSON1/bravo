@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from app.application.clock import utcnow
 from app.domain.identity.ports import TenantContext
 from app.domain.order.repository import OrderRepository
 from app.domain.order.value_objects import ItemStatus, SelectedOption
@@ -9,7 +10,7 @@ from app.domain.payment.credentials import ConnectionStatus, PaymentProvider
 from app.domain.payment.credentials_repository import PaymentCredentialRepository
 from app.domain.payment.repository import PaymentRepository
 from app.domain.payment.self_pay_settings import SelfPaySettingsRepository
-from app.domain.payment.value_objects import PaymentDirection, PaymentStatus
+from app.domain.payment.settlement import reserved_amount, settled_amount
 from app.domain.public_menu.exceptions import InvalidTableQrToken
 from app.domain.public_menu.ports import TableQrToken
 from app.domain.table_session.repository import TableSessionRepository
@@ -42,9 +43,16 @@ class TableBill:
     items: list[TableBillItem]
     total: int
     paid: int
+    # Lo que falta pagar. **Puede ser negativo**: antes se publicaba con piso en
+    # cero, así que un cobro de más se veía igual que una mesa saldada y nadie se
+    # enteraba. Si sobra plata es un pasivo con el comensal y tiene que verse.
     balance: int
     online_pay_available: bool
     tips_enabled: bool
+    # Comprometido en cobros iniciados y todavía sin confirmar. Es lo que separa
+    # "queda esto por pagar" de "esto podés pagar vos ahora": con la cuenta
+    # dividida, la parte que otro está pagando no está disponible.
+    reserved: int = 0
 
 
 class GetTableBill:
@@ -103,6 +111,8 @@ class GetTableBill:
         items: list[TableBillItem] = []
         total = 0
         paid = 0
+        reserved = 0
+        now = utcnow()
         for order in orders:
             total += order.total().amount
             for item in order.items:
@@ -116,21 +126,19 @@ class GetTableBill:
                         selected_options=list(item.selected_options),
                     )
                 )
-            for payment in await self._payments.list_by_order(tenant_id, order.id):
-                if (
-                    payment.direction is PaymentDirection.INFLOW
-                    and payment.status is PaymentStatus.CONFIRMED
-                ):
-                    paid += payment.amount.amount
+            order_payments = await self._payments.list_by_order(tenant_id, order.id)
+            paid += settled_amount(order_payments)
+            reserved += reserved_amount(order_payments, now=now)
 
         return TableBill(
             currency=tenant.currency,
             items=items,
             total=total,
             paid=paid,
-            balance=max(total - paid, 0),  # never show a negative saldo
+            balance=total - paid,
             online_pay_available=online_pay_available,
             tips_enabled=cfg.tips_enabled,
+            reserved=reserved,
         )
 
     async def _mp_connected(self, tenant_id: str) -> bool:

@@ -247,7 +247,12 @@ export function PublicMenuPage() {
   // El local ofrece pago online (cobro prendido + MercadoPago conectado) y hay
   // saldo → mostramos "Pagar" en vez de "Pedir la cuenta" (F1 queda de fallback).
   const billData = bill.data
-  const canPay = billData?.online_pay_available === true && billData.balance > 0
+  // Lo que ESTE comensal puede pagar descuenta lo que otro ya está pagando: sin
+  // eso ve el saldo completo, intenta pagarlo entero y el server lo rechaza.
+  const available = billData ? billData.balance - billData.reserved : 0
+  const canPay = billData?.online_pay_available === true && available > 0
+  // Entró más plata que el total (cobros simultáneos) → hay que devolver.
+  const overpaid = billData ? Math.max(-billData.balance, 0) : 0
   const openPay = () => {
     setIdemKey(crypto.randomUUID()) // una clave nueva por intento (retries la reusan)
     setPayOpen(true)
@@ -332,6 +337,18 @@ export function PublicMenuPage() {
               <span>{`${t("publicMenu.cart.review")} · ${count}`}</span>
               <span className="tabular-nums">{formatMoney(total, currency)}</span>
             </Button>
+          ) : null}
+          {/* Alguien más está pagando: decirlo, en vez de dejar que intente y
+              se coma un error. Y si entró de más, que se vea: es plata a devolver. */}
+          {billData && billData.reserved > 0 && available <= 0 ? (
+            <p className="mb-2 text-center text-xs text-muted-foreground">
+              {t("publicMenu.pay.someoneElsePaying")}
+            </p>
+          ) : null}
+          {overpaid > 0 ? (
+            <p className="mb-2 text-center text-xs font-medium text-amber-600 dark:text-amber-400">
+              {t("publicMenu.pay.overpaid", { amount: formatMoney(overpaid, bill.data!.currency) })}
+            </p>
           ) : null}
           <div className="flex gap-3">
             <Button
@@ -430,7 +447,9 @@ function PaySheet({
   const [customTip, setCustomTip] = useState<string>("")
   const [tipCustomOpen, setTipCustomOpen] = useState(false)
 
-  const balance = bill.balance
+  // El tope es lo DISPONIBLE, no el saldo: la parte que otro está pagando ahora
+  // no se puede volver a cobrar (era el camino al doble cobro de la cuenta dividida).
+  const balance = Math.max(bill.balance - bill.reserved, 0)
   const currency = bill.currency
   const toMinor = (s: string) => Math.max(0, Math.round(Number(s.replace(",", ".")) * 100) || 0)
 

@@ -216,10 +216,25 @@ class RegisterPayment:
         # Comisiones (cimiento): estampamos lo que retiene la pasarela y el neto que
         # queda. Sin tasas cargadas → fee 0 → net == amount (paridad). Se congela por
         # cobro (estable ante cambios de tasa posteriores).
+        #
+        # **La base incluye la propina.** La pasarela cobra comisión sobre todo lo
+        # que pasa por la cuenta, y la propina viaja en el mismo cobro (es un ítem
+        # más del checkout), así que estimar solo sobre la venta subestimaba el
+        # costo en exactamente `tasa × propina` — siempre para el mismo lado, en
+        # cada cobro con propina. Peor: al llegar el webhook la real pisaba a la
+        # estimada y quedaban conviviendo una comisión de una base y un `amount` de
+        # otra, con lo que `comisión / amount` daba una tasa que nadie pactó y no
+        # había forma de auditar el acuerdo con la pasarela desde los datos.
+        # Con la misma base, `fee / (amount + tip)` es la tasa real, verificable.
+        #
+        # Ojo, decisión de negocio que esto hace visible: el local absorbe la
+        # comisión de la propina del mozo (el neto sigue siendo `amount − fee`).
+        # Es lo que ya pasaba de hecho; ahora al menos se puede medir —
+        # `fee_of(tip, bps)` es cuánto cuesta— y decidir a conciencia.
         fee_bps = 0
         if self._fee_rates is not None:
             fee_bps = (await self._fee_rates.rates_for(tenant_id)).get(method, 0)
-        fee = fee_of(amount, fee_bps)
+        fee = fee_of(amount + tip, fee_bps)
         # The tip rides on top of the sale ``amount`` — it does NOT count toward
         # covering the order total (settle only looks at ``amount``).
         payment = Payment(

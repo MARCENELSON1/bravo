@@ -10,14 +10,18 @@ Implements two ports:
   * ``PaymentNotificationGateway`` — validates the ``x-signature`` HMAC and asks
     the Payments API for the authoritative status (notifications aren't trusted).
 
-Money crosses the API boundary as a float in major units (pesos); inside the
-domain it is always an integer in minor units. Credentials never get logged.
+Money crosses the API boundary in major units (pesos); inside the domain it is
+always an integer in minor units. La conversión entre las dos va por ``Decimal``,
+no por ``float``: acá es donde el proyecto tocaba plata con punto flotante, y un
+error de un centavo en esta frontera es el que aparece meses después en una
+conciliación. Credentials never get logged.
 """
 
 from __future__ import annotations
 
 import hashlib
 import hmac
+from decimal import ROUND_HALF_UP, Decimal
 
 import httpx
 
@@ -45,6 +49,28 @@ _STATUS_MAP = {
 }
 
 
+def _to_minor(major: object) -> int:
+    """Unidad mayor (lo que habla la API de MP) → minor units enteros.
+
+    Vía ``Decimal(str(...))`` y no ``float``: el proyecto maneja plata en enteros
+    de centavos justamente para no arrastrar el error de representación binaria, y
+    esta frontera era el único lugar donde se colaba. ``0.1 + 0.2`` no da ``0.3``
+    en float, y ese centavo perdido aparece meses después en una conciliación.
+    """
+    return int((Decimal(str(major or 0)) * _MINOR_UNIT).to_integral_value(ROUND_HALF_UP))
+
+
+def _to_major(minor: int) -> float:
+    """Minor units → unidad mayor para el body JSON de MP.
+
+    La división es exacta (``Decimal``) y el redondeo a dos decimales explícito;
+    recién al final se pasa a ``float`` porque JSON no tiene otro tipo numérico y
+    ``httpx`` no serializa ``Decimal``. Es UNA conversión de un valor ya
+    cuantizado, no aritmética encadenada en punto flotante — que era el problema.
+    """
+    return float((Decimal(minor) / _MINOR_UNIT).quantize(Decimal("0.01")))
+
+
 def _mp_fee_amount(data: dict) -> int | None:
     """Comisiones slice C: comisión real (minor units) del payload de MP — suma de
     ``fee_details[].amount`` (unidad mayor) → minor units. None si MP no la reporta
@@ -52,8 +78,7 @@ def _mp_fee_amount(data: dict) -> int | None:
     details = data.get("fee_details") or []
     if not details:
         return None
-    total = sum(float(d.get("amount") or 0) for d in details)
-    return round(total * _MINOR_UNIT)
+    return sum(_to_minor(d.get("amount")) for d in details)
 
 
 class MercadoPagoGateway(PaymentGateway, PaymentNotificationGateway):
@@ -99,7 +124,7 @@ class MercadoPagoGateway(PaymentGateway, PaymentNotificationGateway):
                 "title": payment.description or "Cobro",
                 "quantity": 1,
                 "currency_id": payment.amount.currency,
-                "unit_price": payment.amount.amount / _MINOR_UNIT,
+                "unit_price": _to_major(payment.amount.amount),
             }
         ]
         if payment.tip_amount > 0:
@@ -108,7 +133,7 @@ class MercadoPagoGateway(PaymentGateway, PaymentNotificationGateway):
                     "title": "Propina",
                     "quantity": 1,
                     "currency_id": payment.amount.currency,
-                    "unit_price": payment.tip_amount / _MINOR_UNIT,
+                    "unit_price": _to_major(payment.tip_amount),
                 }
             )
         body: dict[str, object] = {
@@ -128,7 +153,7 @@ class MercadoPagoGateway(PaymentGateway, PaymentNotificationGateway):
             }
             body["auto_return"] = "approved"
         if self._marketplace_fee > 0:
-            body["marketplace_fee"] = self._marketplace_fee / _MINOR_UNIT
+            body["marketplace_fee"] = _to_major(self._marketplace_fee)
 
         async with self._client(creds.access_token) as client:
             resp = await client.post("/checkout/preferences", json=body)

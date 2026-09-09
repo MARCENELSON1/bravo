@@ -214,7 +214,15 @@ async def test_only_confirmed_inflows_count_towards_paid() -> None:
     assert bill.balance == 600000
 
 
-async def test_balance_never_negative_when_overpaid() -> None:
+async def test_overpaying_shows_a_negative_balance() -> None:
+    """Cobrar de más se ve, no se esconde en cero.
+
+    Este test afirmaba lo contrario (``balance == 0`` con piso), que es lo que
+    hacía invisible el doble cobro de la cuenta dividida: un excedente de $2.000
+    se veía exactamente igual que una mesa correctamente saldada, sin alerta ni
+    traza. Si sobra plata es un pasivo con el comensal y tiene que estar a la
+    vista de quien mira la cuenta.
+    """
     session = TableSession(id="sess-1", tenant_id="t1", table_id="tbl-1")
     orders = [_order("o1", [_item("Pizza", 1000000, 1)])]
     payments = {"o1": [_inflow(1200000, PaymentStatus.CONFIRMED, "o1")]}
@@ -229,7 +237,8 @@ async def test_balance_never_negative_when_overpaid() -> None:
 
     bill = await uc.execute(token=token.issue("t1", "tbl-1"))
 
-    assert bill.balance == 0
+    assert bill.paid == 1200000
+    assert bill.balance == -200000
 
 
 async def test_cancelled_items_are_excluded_from_the_bill() -> None:

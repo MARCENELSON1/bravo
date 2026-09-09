@@ -17,6 +17,7 @@ const EMPTY_BILL: TableBillDTO = {
   balance: 0,
   online_pay_available: false,
   tips_enabled: true,
+  reserved: 0,
 }
 
 function makeApi(getMenu: () => Promise<PublicMenuDTO>, bill: TableBillDTO = EMPTY_BILL) {
@@ -262,6 +263,7 @@ describe("PublicMenuPage", () => {
       balance: 2400000,
       online_pay_available: true,
       tips_enabled: false,
+      reserved: 0,
     }
     const api = makeApi(() => Promise.resolve(MENU), bill)
     renderMenu(api)
@@ -291,6 +293,7 @@ describe("PublicMenuPage", () => {
       balance: 2400000,
       online_pay_available: true,
       tips_enabled: false,
+      reserved: 0,
     }
     const api = makeApi(() => Promise.resolve(MENU), bill)
     renderMenu(api)
