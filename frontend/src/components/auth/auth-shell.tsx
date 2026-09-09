@@ -64,9 +64,9 @@ export function AuthShell() {
     }
     for (const el of [brandRef.current, bodyRef.current]) {
       if (!el) continue
-      el.classList.remove("auth-in")
+      el.classList.remove("lang-in")
       void el.offsetWidth
-      el.classList.add("auth-in")
+      el.classList.add("lang-in")
     }
   }, [i18n.language])
 
@@ -85,7 +85,7 @@ export function AuthShell() {
       >
         {/* Relato de marca. Se esconde en pantallas angostas: ahí el formulario es
             todo lo que importa y el discurso ya lo leyeron en la landing. */}
-        <section ref={brandRef} className="auth-in hidden flex-col lg:flex">
+        <section ref={brandRef} className="lang-in hidden flex-col lg:flex">
           <Wordmark />
 
           <h1 className="font-heading mt-10 text-4xl font-bold tracking-tight text-balance text-foreground">
@@ -142,7 +142,7 @@ export function AuthShell() {
                 que entra con su fundido. */}
             {/* La `key` es lo que dispara el barrido: al cambiar de ruta el
                 elemento se monta de nuevo y su animación CSS corre de cero. */}
-            <div key={pathname} ref={bodyRef} className="auth-body auth-in">
+            <div key={pathname} ref={bodyRef} className="auth-body lang-in">
               {outlet}
             </div>
           </div>

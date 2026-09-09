@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { motion } from "motion/react"
 import { Menu } from "lucide-react"
@@ -36,12 +36,34 @@ import { cn } from "@/lib/utils"
 const GLASS_PANEL = GLASS_SURFACE
 
 export function AppShell() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { session } = useAuth()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const location = useLocation()
   const reduce = useReduceMotion()
   const mainOsRef = useRef<OverlayScrollbarsComponentRef>(null)
+
+  // Al cambiar de idioma, el contenido vuelve a entrar con la misma cascada que el
+  // login (ver .lang-in): el texto aparece en el idioma nuevo en vez de reemplazarse
+  // de golpe.
+  //
+  // Se reinicia la animación —sacar la clase, forzar el recálculo de layout, volver a
+  // ponerla— en lugar de remontar: remontar destruiría el formulario de la pantalla
+  // abierta. Y se buscan las regiones en el DOM porque el sidebar se renderiza dos
+  // veces, fijo y dentro del cajón, y un ref apuntaría solo a una.
+  const rootRef = useRef<HTMLDivElement>(null)
+  const firstRender = useRef(true)
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false
+      return
+    }
+    rootRef.current?.querySelectorAll<HTMLElement>(".lang-in").forEach((el) => {
+      el.classList.remove("lang-in")
+      void el.offsetWidth
+      el.classList.add("lang-in")
+    })
+  }, [i18n.language])
   const navOsRef = useRef<OverlayScrollbarsComponentRef>(null)
   useEdgePeek(mainOsRef)
   useEdgePeek(navOsRef)
@@ -83,7 +105,7 @@ export function AppShell() {
   )
 
   const sidebar = (
-    <div className={cn("flex h-full w-64 flex-col text-sidebar-foreground", GLASS_PANEL)}>
+    <div className={cn("lang-in flex h-full w-64 flex-col text-sidebar-foreground", GLASS_PANEL)}>
       <div className="flex h-14 translate-y-1 items-center gap-3 px-6">
         <span className="font-heading translate-y-0.5 text-3xl leading-none">
           <span className="font-bold text-sidebar-foreground">Well</span>
@@ -123,6 +145,7 @@ export function AppShell() {
 
   return (
     <motion.div
+      ref={rootRef}
       className="relative flex h-svh gap-3 overflow-hidden p-3"
       initial={reduce ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -145,7 +168,7 @@ export function AppShell() {
       ) : null}
 
       <div
-        className={cn("flex h-full min-w-0 flex-1 flex-col overflow-hidden", GLASS_PANEL)}
+        className={cn("lang-in flex h-full min-w-0 flex-1 flex-col overflow-hidden", GLASS_PANEL)}
       >
         <header className="flex h-16 shrink-0 items-center gap-3 border-b border-black/10 px-4 sm:px-6 dark:border-white/10">
           <Button

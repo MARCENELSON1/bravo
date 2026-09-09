@@ -362,9 +362,10 @@
   }
 }
 
-/* El contenido entra escalonado, de arriba hacia abajo: un fundido suave por
-   parte. Dos niveles: primero los bloques de la tarjeta —encabezado, formulario,
-   pie— y adentro del formulario, los campos uno por uno.
+/* Cascada de entrada del contenido: un fundido suave, de arriba hacia abajo, parte
+   por parte. La usan el login y la consola —de ahí el nombre— tanto al abrirse como
+   al cambiar de idioma. Dos niveles: primero los bloques, y adentro de un formulario,
+   los campos uno por uno.
 
    Solo `opacity`, sin desplazamiento: nada se mueve de lugar, cada parte se enciende
    donde está. Y la opacidad no participa del layout, así que la cascada no puede
@@ -386,43 +387,43 @@
   padding-top: 1.5rem;
 }
 
-.auth-in > * {
+.lang-in > * {
   animation: authFade 520ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
-.auth-in > *:nth-child(1) {
+.lang-in > *:nth-child(1) {
   animation-delay: 380ms;
 }
-.auth-in > *:nth-child(2) {
+.lang-in > *:nth-child(2) {
   animation-delay: 420ms;
 }
-.auth-in > *:nth-child(3) {
+.lang-in > *:nth-child(3) {
   animation-delay: 460ms;
 }
-.auth-in > *:nth-child(n + 4) {
+.lang-in > *:nth-child(n + 4) {
   animation-delay: 500ms;
 }
 
 /* Los campos del formulario, adentro del bloque que ya entró. Arrancan después que
    él para que se lea como una cascada y no como dos animaciones sueltas. */
-.auth-in [data-slot='field'] {
+.lang-in [data-slot='field'] {
   animation: authFade 480ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
-.auth-in [data-slot='field']:nth-child(1) {
+.lang-in [data-slot='field']:nth-child(1) {
   animation-delay: 470ms;
 }
-.auth-in [data-slot='field']:nth-child(2) {
+.lang-in [data-slot='field']:nth-child(2) {
   animation-delay: 505ms;
 }
-.auth-in [data-slot='field']:nth-child(3) {
+.lang-in [data-slot='field']:nth-child(3) {
   animation-delay: 540ms;
 }
-.auth-in [data-slot='field']:nth-child(4) {
+.lang-in [data-slot='field']:nth-child(4) {
   animation-delay: 575ms;
 }
-.auth-in [data-slot='field']:nth-child(5) {
+.lang-in [data-slot='field']:nth-child(5) {
   animation-delay: 610ms;
 }
-.auth-in [data-slot='field']:nth-child(n + 6) {
+.lang-in [data-slot='field']:nth-child(n + 6) {
   animation-delay: 645ms;
 }
 
@@ -436,8 +437,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .auth-in > *,
-  .auth-in [data-slot='field'] {
+  .lang-in > *,
+  .lang-in [data-slot='field'] {
     animation: none;
   }
 }
