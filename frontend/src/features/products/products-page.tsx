@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { GradientHeading } from "@/components/ui/gradient-heading"
 import { Input } from "@/components/ui/input"
-import { MenuEngineering } from "@/features/products/menu-engineering-view"
+import { MenuDetailTable, MenuEngineering } from "@/features/products/menu-engineering-view"
 import { PreparationsManager } from "@/features/products/preparations-manager"
 import { PricingInflationCard } from "@/features/products/pricing-inflation-card"
 import { ProductCatalog } from "@/features/products/product-catalog"
@@ -178,14 +178,17 @@ export function ProductsPage() {
         </div>
       </header>
 
-      {/* Menu engineering (Productos v2 Tanda A): la carta clasificada. */}
+      {/* Menu engineering (Productos v2 Tanda A): la carta clasificada. El resumen
+          por categorías primero; la rotación se mete entre medio y la tabla de
+          detalle cierra el bloque. */}
       <MenuEngineering period={period} />
+      <RotationSchedule period={period} />
+      <MenuDetailTable period={period} />
 
-      {/* Productos v2 Tanda B: precios vs inflación + rotación por día. */}
-      <div className="grid gap-5 lg:grid-cols-2">
-        <PricingInflationCard />
-        <RotationSchedule period={period} />
-      </div>
+      {/* Productos v2 Tanda B: precios vs inflación. A todo el ancho y no a media
+          pantalla: es una lista que crece con los productos atrasados, y sus filas
+          separan el nombre de la acción a los dos extremos. */}
+      <PricingInflationCard />
 
       {/* Catálogo (Productos v3 Fase 1): costo/te deja/vendidos + buscador. */}
       <ProductCatalog period={period} />

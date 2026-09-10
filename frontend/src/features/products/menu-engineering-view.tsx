@@ -48,8 +48,13 @@ const ORDER: MenuCategory[] = [
   "sin_datos",
 ]
 
-export function MenuEngineering({ period }: { period: RangeWindow }) {
-  const { t } = useTranslation()
+// La carta clasificada, con todo lo que hace falta para dibujarla. Vive en un hook y
+// no adentro de una vista porque hay dos que la miran: el resumen por categorías y la
+// tabla de detalle, que la página coloca por separado.
+//
+// Llamarlo dos veces no cuesta un pedido más: las tres consultas van por React Query
+// con la misma clave, así que la segunda lectura sale del caché.
+function useMenuClassification(period: RangeWindow) {
   // limit alto para no truncar la clasificación (el endpoint corta en le=1000).
   const query = useMemo(() => ({ from: period.from, to: period.to, limit: 1000 }), [period])
   const perf = useProductPerformance(query)
@@ -93,7 +98,20 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
   )
   const currency = perf.data?.[0]?.currency ?? "ARS"
 
-  if (perf.isPending) {
+  return {
+    products,
+    currency,
+    foodCost: foodCost.data,
+    isPending: perf.isPending,
+    money: (n: number) => formatMoney(n, currency),
+  }
+}
+
+export function MenuEngineering({ period }: { period: RangeWindow }) {
+  const { t } = useTranslation()
+  const { products, foodCost, isPending, money } = useMenuClassification(period)
+
+  if (isPending) {
     return <p className="text-sm text-muted-foreground">{t("products.menu.analyzing")}</p>
   }
   if (products.length === 0) {
@@ -106,11 +124,10 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
 
   const byCat = (c: MenuCategory) => products.filter((p) => p.category === c)
   const top = topEarners(products)
-  const money = (n: number) => formatMoney(n, currency)
   // Fase 6: gate del hero. Bajo el umbral de cobertura ocultamos las conclusiones
   // de plata (top-earners, "Te dejan $X", "te dejaron $X") — nunca un total inflado
   // por costos estimados. Sin food cost cargado → open (paridad).
-  const gate = coverageGate(foodCost.data)
+  const gate = coverageGate(foodCost)
 
   return (
     <div className="flex flex-col gap-4">
@@ -140,11 +157,11 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
               </span>
               .
             </p>
-            {foodCost.data && foodCost.data.total_count > 0 ? (
+            {foodCost && foodCost.total_count > 0 ? (
               <p className="mt-2 text-xs text-muted-foreground">
                 {t("products.menu.confirmedCount", {
-                  confirmed: foodCost.data.confirmed_count,
-                  total: foodCost.data.total_count,
+                  confirmed: foodCost.confirmed_count,
+                  total: foodCost.total_count,
                 })}
               </p>
             ) : null}
@@ -230,33 +247,44 @@ export function MenuEngineering({ period }: { period: RangeWindow }) {
           </div>
         </GlassCard>
       ) : null}
-
-      {/* Tabla de detalle */}
-      <GlassCard className="p-6">
-        <h2 className="mb-3 text-base font-semibold text-foreground">{t("products.menu.detail.title")}</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-sm">
-            <thead>
-              <tr className="border-b text-xs font-medium text-muted-foreground">
-                <th className="py-1 text-left">{t("products.menu.detail.product")}</th>
-                <th className="py-1 text-right">{t("products.menu.detail.price")}</th>
-                <th className="py-1 text-right">{t("products.menu.detail.cost")}</th>
-                <th className="py-1 text-right">{t("products.menu.detail.leaves")}</th>
-                <th className="py-1 text-right">{t("products.menu.detail.sold")}</th>
-                <th className="py-1 text-right">{t("products.menu.detail.status")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...products]
-                .sort((a, b) => b.margin - a.margin)
-                .map((p) => (
-                  <MenuRow key={p.id} p={p} money={money} t={t} />
-                ))}
-            </tbody>
-          </table>
-        </div>
-      </GlassCard>
     </div>
+  )
+}
+
+// La tabla de detalle, aparte del resumen: son dos lecturas de la misma carta y la
+// página las ordena como quiere. Repite las guardas del resumen porque se dibuja por
+// su cuenta: sin ventas no tiene que dejar una tarjeta vacía en el medio.
+export function MenuDetailTable({ period }: { period: RangeWindow }) {
+  const { t } = useTranslation()
+  const { products, isPending, money } = useMenuClassification(period)
+
+  if (isPending || products.length === 0) return null
+
+  return (
+    <GlassCard className="p-6">
+      <h2 className="mb-3 text-base font-semibold text-foreground">{t("products.menu.detail.title")}</h2>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] text-sm">
+          <thead>
+            <tr className="border-b text-xs font-medium text-muted-foreground">
+              <th className="py-1 text-left">{t("products.menu.detail.product")}</th>
+              <th className="py-1 text-right">{t("products.menu.detail.price")}</th>
+              <th className="py-1 text-right">{t("products.menu.detail.cost")}</th>
+              <th className="py-1 text-right">{t("products.menu.detail.leaves")}</th>
+              <th className="py-1 text-right">{t("products.menu.detail.sold")}</th>
+              <th className="py-1 text-right">{t("products.menu.detail.status")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...products]
+              .sort((a, b) => b.margin - a.margin)
+              .map((p) => (
+                <MenuRow key={p.id} p={p} money={money} t={t} />
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </GlassCard>
   )
 }
 

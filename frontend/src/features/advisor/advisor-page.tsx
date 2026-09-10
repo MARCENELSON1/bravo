@@ -260,33 +260,44 @@ function KpiGrid({ kpis }: { kpis: AdvisorKpisDTO }) {
   const money = (amount: number) => formatMoney(amount, kpis.currency)
   const lockedHint = kpis.configured ? undefined : t("advisor.kpis.configureCosts")
   const locked = (value: string) => (kpis.configured ? value : "—")
+
+  // Las seis celdas se arman primero como datos y se dibujan después: para elegir el
+  // cuerpo de los números hay que conocerlos a todos, y el que manda es el más largo.
+  const cells = [
+    { label: t("advisor.kpis.sales"), value: money(kpis.sales_amount) },
+    { label: t("advisor.kpis.grossMargin"), value: money(kpis.gross_margin_amount) },
+    {
+      label: t("advisor.kpis.netMargin"),
+      value: locked(money(kpis.net_margin_amount)),
+      hint: lockedHint,
+      negative: kpis.configured && kpis.net_margin_amount < 0,
+      positive: kpis.configured && kpis.net_margin_amount > 0,
+    },
+    { label: t("advisor.kpis.foodCost"), value: formatPct(kpis.food_cost_ratio_bps) },
+    {
+      label: t("advisor.kpis.primeCost"),
+      value: locked(formatPct(kpis.prime_cost_ratio_bps)),
+      hint: lockedHint,
+    },
+    {
+      label: t("advisor.kpis.breakEven"),
+      value: locked(money(kpis.break_even_amount)),
+      hint: lockedHint,
+    },
+  ]
+  const fit = Math.max(...cells.map((cell) => cell.value.length))
+
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold text-foreground">{t("advisor.kpis.sectionTitle")}</h2>
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-3">
-      <KpiCard variant="cell" label={t("advisor.kpis.sales")} value={money(kpis.sales_amount)} />
-      <KpiCard variant="cell" label={t("advisor.kpis.grossMargin")} value={money(kpis.gross_margin_amount)} />
-      <KpiCard
-        variant="cell"
-        label={t("advisor.kpis.netMargin")}
-        value={locked(money(kpis.net_margin_amount))}
-        hint={lockedHint}
-        negative={kpis.configured && kpis.net_margin_amount < 0}
-        positive={kpis.configured && kpis.net_margin_amount > 0}
-      />
-      <KpiCard variant="cell" label={t("advisor.kpis.foodCost")} value={formatPct(kpis.food_cost_ratio_bps)} />
-      <KpiCard
-        variant="cell"
-        label={t("advisor.kpis.primeCost")}
-        value={locked(formatPct(kpis.prime_cost_ratio_bps))}
-        hint={lockedHint}
-      />
-      <KpiCard
-        variant="cell"
-        label={t("advisor.kpis.breakEven")}
-        value={locked(money(kpis.break_even_amount))}
-        hint={lockedHint}
-      />
+      {/* Un panel con divisiones finas y no seis tarjetas sueltas: los seis números
+          son lecturas del mismo cálculo y se leen de corrido. La línea va a media
+          fuerza: al borde entero, el panel se partía en casillas y se veía como una
+          planilla de cálculo. */}
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border/60 sm:grid-cols-3">
+        {cells.map((cell) => (
+          <KpiCard key={cell.label} variant="cell" fit={fit} {...cell} />
+        ))}
       </div>
     </section>
   )

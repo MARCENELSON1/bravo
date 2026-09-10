@@ -75,23 +75,7 @@ export function AnalyticsPage() {
           <Spinner className="size-5 text-muted-foreground" />
         </div>
       ) : revenue.data ? (
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <KpiCard label={t("analytics.kpis.sales")} value={money(revenue.data.sales_amount)} />
-          <KpiCard label={t("analytics.kpis.collected")} value={money(revenue.data.collected_amount)} />
-          <KpiCard label={t("analytics.kpis.expenses")} value={money(revenue.data.expense_amount)} />
-          <KpiCard
-            label={t("analytics.kpis.grossMargin")}
-            value={money(revenue.data.gross_margin_amount)}
-            hint={t("analytics.kpis.grossMarginHint")}
-            negative={revenue.data.gross_margin_amount < 0}
-          />
-          <KpiCard
-            label={t("analytics.kpis.averageTicket")}
-            value={money(revenue.data.average_ticket_amount)}
-            hint={t("analytics.ordersCount", { count: revenue.data.orders_count })}
-          />
-          <KpiCard label={t("analytics.kpis.foodCost")} value={money(revenue.data.food_cost_amount)} />
-        </section>
+        <KpiRow data={revenue.data} currency={currency} />
       ) : null}
 
       <section className="flex flex-col gap-3">
@@ -173,5 +157,45 @@ export function AnalyticsPage() {
         </div>
       </section>
     </div>
+  )
+}
+
+// Los seis números del período. Se arman como datos y se dibujan después: el cuerpo
+// de todos sale del valor más largo del grupo, así la fila no queda con números de
+// tamaños distintos.
+function KpiRow({
+  data,
+  currency,
+}: {
+  data: NonNullable<ReturnType<typeof useRevenue>["data"]>
+  currency: string
+}) {
+  const { t } = useTranslation()
+  const money = (amount: number) => formatMoney(amount, currency)
+  const cells = [
+    { label: t("analytics.kpis.sales"), value: money(data.sales_amount) },
+    { label: t("analytics.kpis.collected"), value: money(data.collected_amount) },
+    { label: t("analytics.kpis.expenses"), value: money(data.expense_amount) },
+    {
+      label: t("analytics.kpis.grossMargin"),
+      value: money(data.gross_margin_amount),
+      hint: t("analytics.kpis.grossMarginHint"),
+      negative: data.gross_margin_amount < 0,
+    },
+    {
+      label: t("analytics.kpis.averageTicket"),
+      value: money(data.average_ticket_amount),
+      hint: t("analytics.ordersCount", { count: data.orders_count }),
+    },
+    { label: t("analytics.kpis.foodCost"), value: money(data.food_cost_amount) },
+  ]
+  const fit = Math.max(...cells.map((cell) => cell.value.length))
+
+  return (
+    <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {cells.map((cell) => (
+        <KpiCard key={cell.label} fit={fit} {...cell} />
+      ))}
+    </section>
   )
 }

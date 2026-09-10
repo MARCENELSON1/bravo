@@ -14,6 +14,7 @@ export function KpiCard({
   hint,
   negative,
   positive,
+  fit,
   variant = "card",
 }: {
   label: string
@@ -24,12 +25,21 @@ export function KpiCard({
   negative?: boolean
   /** Tiñe la celda de verde: el número no es solo un dato, es una buena noticia. */
   positive?: boolean
+  /**
+   * Cuántos caracteres tiene que entrar. Por defecto, los del propio valor.
+   *
+   * Una grilla pasa acá el largo del valor MÁS largo del grupo, y así todas las
+   * celdas eligen el mismo cuerpo. Sin esto cada una se mide sola y la fila queda
+   * con números de tamaños distintos: se lee como un error de maquetación aunque
+   * cada celda por separado esté bien.
+   */
+  fit?: number
   variant?: "card" | "cell"
 }) {
   return (
     <div
       className={cn(
-        "@container flex flex-col gap-1 p-4",
+        "@container flex flex-col gap-1.5 p-5",
         variant === "card" ? "rounded-xl border border-border" : "bg-card",
         // Va después de la variante: entre dos utilidades del mismo tipo gana la
         // última, que es lo que resuelve `cn`.
@@ -56,9 +66,9 @@ export function KpiCard({
           separadores, así que el cálculo se queda corto y nunca largo: el número
           puede salir un pelo más chico de lo que entraría, jamás más grande. */}
       <span
-        style={{ "--len": value.length } as CSSProperties}
+        style={{ "--len": fit ?? value.length } as CSSProperties}
         className={cn(
-          "text-[min(1.25rem,calc(100cqi/(var(--len)*0.62)))] font-semibold whitespace-nowrap tabular-nums",
+          "text-[min(1.25rem,calc(100cqi/(var(--len)*0.62)))] font-semibold tracking-tight whitespace-nowrap tabular-nums",
           negative ? "text-destructive" : "text-foreground"
         )}
       >

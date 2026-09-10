@@ -114,11 +114,16 @@ export function LoginPage() {
         </span>
       }
     >
-      <div className="mb-4 flex justify-end">
+      {/* Pegado al formulario: el aire de esta fila es lo unico que se puede
+          apretar para subir los campos sin mover el titulo, que tiene que quedar a la
+          misma altura que el de crear comercio. */}
+      <div className="mb-1 flex justify-end">
         <LanguageSwitcher />
       </div>
       <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
-        <FieldGroup>
+        {/* Campos más separados entre sí que el resto del formulario: son tres y
+            tienen que ocupar el alto que en el alta ocupan cinco. */}
+        <FieldGroup className="gap-7">
           <Field>
             <FieldLabel htmlFor="slug">{t("login.business")}</FieldLabel>
             <Input
@@ -156,7 +161,7 @@ export function LoginPage() {
           </Field>
         </FieldGroup>
 
-        <div className="-mt-1 flex justify-end">
+        <div className="flex justify-end">
           <Link
             to="/forgot-password"
             className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
