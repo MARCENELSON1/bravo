@@ -195,14 +195,12 @@ export function AppShell() {
           events={SCROLL_FADE_EVENTS}
           defer
         >
-          <motion.div
-            key={location.pathname}
-            initial={reduce ? false : { opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={reduce ? { duration: 0 } : { duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          >
+          {/* La ruta como `key`: al navegar, React reemplaza el nodo y la cascada de
+              .page-in vuelve a correr. El respeto por "reducir movimiento" lo resuelve
+              el propio CSS. */}
+          <div key={location.pathname} className="page-in">
             <Outlet />
-          </motion.div>
+          </div>
         </OverlayScrollbarsComponent>
       </div>
     </motion.div>

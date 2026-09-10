@@ -57,7 +57,7 @@ export function CashSnapshot() {
   const cash = useCurrentCashSession()
 
   return (
-    <GlassCard className="flex flex-col gap-2 p-5">
+    <GlassCard tone={cash.data ? "positive" : "neutral"} className="flex flex-col gap-2 p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-foreground">{t("dashboard.cash.title")}</h2>
         <Link to="/app/caja" className="text-xs font-medium text-primary hover:underline">

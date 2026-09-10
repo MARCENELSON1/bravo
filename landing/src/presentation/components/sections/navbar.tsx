@@ -42,7 +42,7 @@ const COPY: Record<Locale, {
   },
 }
 
-// Navbar integrada: logo a la izquierda, navegación centrada y acciones a la
+// Navbar integrada: logo a la izquierda, y la navegación junto a las acciones a la
 // derecha, con el mismo vidrio que los paneles del software. NO reacciona al
 // scroll: mismo alto y mismo fondo, siempre.
 //
@@ -82,12 +82,11 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-black/10 bg-white/85 backdrop-blur-2xl dark:border-white/10 dark:bg-neutral-900/80">
-      {/* A todo el ancho, no dentro del contenedor de las secciones: en una pantalla
-          grande el wordmark va contra el borde izquierdo y las acciones contra el
-          derecho. El padding crece un poco en pantallas anchas para que no queden
-          pegados al vidrio. */}
-      <div className="relative flex h-14 w-full items-center justify-between gap-3 px-5 lg:px-8">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/70 backdrop-blur-xl">
+      {/* Un contenedor centrado, del ancho de las secciones: el wordmark cae sobre el
+          borde izquierdo del contenido y las acciones sobre el derecho, así la página
+          tiene un solo borde de cada lado. */}
+      <div className="mx-auto flex h-[4.375rem] w-full max-w-6xl items-center justify-between gap-3 px-5 lg:px-8">
         {/* Solo el wordmark, igual que el software y que el mockup del hero. */}
         <a
           href="#top"
@@ -103,27 +102,30 @@ export function Navbar() {
           </span>
         </a>
 
-        {/* Navegación centrada (desktop) */}
-        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex">
-          {t.links.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
-            >
-              {link.label}
-            </a>
-          ))}
-        </nav>
+        {/* Navegación y acciones, juntas a la derecha y separadas por una línea. */}
+        <div className="hidden items-center gap-6 md:flex">
+          <nav className="flex items-center gap-6">
+            {t.links.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="text-[0.8125rem] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
 
-        {/* Acciones (desktop) */}
-        <div className="hidden items-center gap-1.5 md:flex">
-          <a href={login} className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
-            {t.login}
-          </a>
-          <a href={register} className={cn(buttonVariants({ variant: "primary", size: "sm" }))}>
-            {t.register}
-          </a>
+          <span aria-hidden className="h-4 w-px bg-border" />
+
+          <div className="flex items-center gap-1.5">
+            <a href={login} className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
+              {t.login}
+            </a>
+            <a href={register} className={cn(buttonVariants({ variant: "primary", size: "sm" }))}>
+              {t.register}
+            </a>
+          </div>
         </div>
 
         {/* Acciones (móvil) */}
@@ -133,7 +135,7 @@ export function Navbar() {
             onClick={() => (expanded ? closeMenu() : openMenu())}
             aria-label={expanded ? t.menuClose : t.menuOpen}
             aria-expanded={expanded}
-            className="inline-flex size-10 items-center justify-center rounded-xl border border-border text-foreground transition active:scale-[0.97]"
+            className="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-white/[0.04] text-foreground transition hover:bg-white/[0.08] active:scale-[0.97]"
           >
             {expanded ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
@@ -143,18 +145,24 @@ export function Navbar() {
       {/* Menú móvil. Las filas van a sangre —el resaltado llega a los dos bordes, como
           la línea del header— y su texto arranca a la misma altura que el wordmark;
           los botones son un bloque aparte, adentro del margen. Todo en una grilla de
-          48px: fila y botón miden lo mismo y usan el mismo cuerpo. */}
+          48px: fila y botón miden lo mismo y usan el mismo cuerpo.
+
+          Cuelga del borde inferior del header y está FUERA del flujo: abrirlo no
+          empuja la apertura hacia abajo, se muestra encima. Por eso el vidrio va casi
+          opaco —detrás ya no hay página en blanco sino el título del hero— y por eso
+          no lleva línea propia arriba: la de abajo del header ya está ahí.
+
+          Este envoltorio solo recorta. Sin él, el panel entraría desde arriba pisando
+          la barra en vez de asomar por debajo. */}
       {open ? (
-        <div
-          onAnimationEnd={onPanelAnimationEnd}
-          className={cn(
-            "menu-panel grid border-t border-black/10 bg-white/85 backdrop-blur-2xl md:hidden dark:border-white/10 dark:bg-neutral-900/80",
-            closing && "menu-panel-closing",
-          )}
-        >
-          {/* Dos envoltorios que la animación necesita: este recorta mientras la fila
-              de grilla crece, y el de adentro baja el contenido con el panel. */}
-          <div className="overflow-hidden">
+        <div className="absolute inset-x-0 top-full overflow-hidden md:hidden">
+          <div
+            onAnimationEnd={onPanelAnimationEnd}
+            className={cn(
+              "menu-panel border-b border-border bg-background/95 backdrop-blur-xl",
+              closing && "menu-panel-closing",
+            )}
+          >
             <div className="menu-panel-body">
               <nav className="flex flex-col py-2">
                 {t.links.map((link) => (
@@ -162,7 +170,7 @@ export function Navbar() {
                     key={link.href}
                     href={link.href}
                     onClick={closeMenu}
-                    className="flex h-12 items-center px-5 text-base font-medium text-foreground transition-colors hover:bg-accent active:bg-accent"
+                    className="flex h-12 items-center px-5 text-[0.9375rem] font-medium text-foreground transition-colors hover:bg-white/[0.05] active:bg-white/[0.08]"
                   >
                     {link.label}
                   </a>

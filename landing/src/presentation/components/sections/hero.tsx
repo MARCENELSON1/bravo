@@ -730,14 +730,15 @@ function AppMockup({ locale }: { locale: Locale }) {
         </span>
       </div>
 
-      {/* Shell: fondo verde + textura de la app + grano + paneles de glass */}
-      <div className="relative flex h-[30rem] gap-3 overflow-hidden bg-[radial-gradient(125%_125%_at_18%_12%,#d7e6df_0%,#aec7bb_50%,#85a394_100%)] p-3 dark:bg-[radial-gradient(125%_125%_at_18%_12%,#2a4b43_0%,#16241f_52%,#0a120e_100%)]">
-        {/* Misma textura de imagen que usa el fondo del software, y con su misma
-            animación */}
+      {/* Shell: fondo neutro + textura de la app + grano + paneles de glass */}
+      <div className="relative flex h-[30rem] gap-3 overflow-hidden bg-[radial-gradient(125%_125%_at_18%_12%,#f6f6f6_0%,#e9e9e9_50%,#d7d7d7_100%)] dark:bg-[radial-gradient(125%_125%_at_18%_12%,#1d1d1d_0%,#131313_52%,#0a0a0a_100%)] p-3">
+        {/* Misma textura de imagen que usa el fondo del software, con su misma
+            animación y desaturada igual que allá: la foto es verde y a color le
+            devolvería el tinte a una base que es neutra a propósito. */}
         <div
           aria-hidden
-          className="bg-texture pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50 mix-blend-soft-light"
-          style={{ backgroundImage: "url('/app-bg-dark.png')" }}
+          className="bg-texture pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50 grayscale mix-blend-soft-light"
+          style={{ backgroundImage: "url('/app-bg-texture.webp')" }}
         />
         {/* Grano/ruido sutil, igual que en la app */}
         <div

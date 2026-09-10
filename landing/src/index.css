@@ -196,74 +196,72 @@
   }
 }
 
-/* Menú de la navbar al abrirse. Se despliega de arriba abajo animando la fila de
-   grilla de 0fr a 1fr: eso anima el ALTO real, así el contenido de abajo acompaña
-   en vez de saltar de golpe (el header está en el flujo, abrirlo lo empuja).
+/* Menú de la navbar. El panel asoma por debajo de la barra: parte escondido justo
+   encima de su propio recorte y baja hasta su lugar.
 
-   El contenido entra un pelo después y desde arriba, para que se lea como que baja
-   con el panel y no como que aparece dentro de él.
+   Solo se anima `transform` (y la opacidad del contenido), nunca el alto. Antes se
+   interpolaba la fila de grilla de 0fr a 1fr porque el panel estaba en el flujo y
+   tenía que empujar la página; eso recalcula el alto en cada cuadro y es justo lo
+   que hacía sentir la animación dura. Ahora el panel flota encima, así que el
+   despliegue se puede resolver moviéndolo, que va por GPU y no cuesta nada.
 
-   Si el navegador no interpola `fr`, el panel abre instantáneo y queda el fundido:
-   pierde el despliegue, nunca la usabilidad. */
-/* El `grid` y el `overflow-hidden` los pone el markup con utilidades: una clase
-   suelta le ganaría a `md:hidden` (lo que está fuera de @layer pesa más). */
+   El recorte lo pone el markup con `overflow-hidden`: una clase suelta le ganaría a
+   `md:hidden` (lo que está fuera de @layer pesa más).
+
+   El contenido entra apenas más tarde y con su propio fundido, para que se lea como
+   que baja con el panel y no como que aparece de golpe dentro de él. */
 .menu-panel {
-  grid-template-rows: 1fr;
-  animation: menuPanelIn 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: menuPanelIn 380ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .menu-panel-body {
-  animation: menuBodyIn 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: menuBodyIn 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Cierre: el mismo camino al revés, pero más corto y con la curva invertida —sale
-   despacio y termina rápido—. Irse tarda menos que llegar: nadie quiere esperar a
-   que algo que ya descartó termine de desaparecer.
+/* Cierre: el mismo camino al revés y algo más corto. Irse tarda menos que llegar,
+   pero no tanto menos como para que se sienta un corte: la curva arranca suave en
+   vez de tirar de golpe, que es lo que se veía antes.
 
    Va DESPUÉS de .menu-panel a propósito: las dos son una clase sola, así que el
    orden en el archivo es lo que decide cuál animación gana. `forwards` deja el
-   panel plegado hasta que React lo desmonta. */
+   panel arriba y escondido hasta que React lo desmonta. */
 .menu-panel-closing {
-  animation: menuPanelOut 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: menuPanelOut 300ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
   pointer-events: none;
 }
 .menu-panel-closing .menu-panel-body {
-  animation: menuBodyOut 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: menuBodyOut 240ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 @keyframes menuPanelIn {
   from {
-    grid-template-rows: 0fr;
-    opacity: 0;
+    transform: translateY(-100%);
   }
   to {
-    grid-template-rows: 1fr;
-    opacity: 1;
+    transform: translateY(0);
   }
 }
 @keyframes menuBodyIn {
   from {
-    transform: translateY(-8px);
+    opacity: 0;
   }
   to {
-    transform: translateY(0);
+    opacity: 1;
   }
 }
 @keyframes menuPanelOut {
   from {
-    grid-template-rows: 1fr;
-    opacity: 1;
+    transform: translateY(0);
   }
   to {
-    grid-template-rows: 0fr;
-    opacity: 0;
+    transform: translateY(-100%);
   }
 }
 @keyframes menuBodyOut {
   from {
-    transform: translateY(0);
+    opacity: 1;
   }
   to {
-    transform: translateY(-6px);
+    opacity: 0;
   }
 }
 
@@ -276,12 +274,10 @@
   }
 }
 
-/* Textura de fondo del mockup del hero, con el mismo recorrido que la del software:
-   un ciclo cerrado de 40 segundos —termina donde empezó, sin costura— hecho solo
-   con `transform`, que va por GPU.
+/* Textura del fondo. Un recorrido cerrado y lentísimo: termina donde empezó, así
+   que el ciclo no tiene costura. Solo `transform`, que va por GPU.
 
-   El scale de base deja margen para desplazarla sin que asome el borde; el recorte
-   lo pone el contenedor. */
+   El scale de base deja margen para desplazarla sin que asome el borde. */
 .bg-texture {
   animation: bgTexture 40s ease-in-out infinite;
   will-change: transform;

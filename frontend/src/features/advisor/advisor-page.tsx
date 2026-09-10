@@ -272,6 +272,7 @@ function KpiGrid({ kpis }: { kpis: AdvisorKpisDTO }) {
         value={locked(money(kpis.net_margin_amount))}
         hint={lockedHint}
         negative={kpis.configured && kpis.net_margin_amount < 0}
+        positive={kpis.configured && kpis.net_margin_amount > 0}
       />
       <KpiCard variant="cell" label={t("advisor.kpis.foodCost")} value={formatPct(kpis.food_cost_ratio_bps)} />
       <KpiCard

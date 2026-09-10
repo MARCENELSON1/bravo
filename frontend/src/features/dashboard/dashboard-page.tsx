@@ -95,6 +95,7 @@ export function DashboardPage() {
   const feesTotal = d?.fees_total ?? 0
   const net = (d?.collected_net ?? sales) - expenses
   const pctVsYesterday = revenuePctVsYesterday(daily.data ?? [])
+  const soldThisWeek = (daily.data ?? []).some((point) => point.sales_amount > 0)
   const verdict = dailyVerdict(net, pctVsYesterday)
   const verdictVs = verdict.vsKey
     ? t(`dashboard.verdict.${verdict.vsKey}`, { pct: verdict.pct })
@@ -131,7 +132,10 @@ export function DashboardPage() {
           Van en una sola fila: el total a la izquierda y sus partes a la derecha,
           para que se vea de dónde sale el número sin tener que scrollear. */}
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-5">
-        <GlassCard className="flex flex-col justify-center p-6 lg:col-span-2">
+        <GlassCard
+          tone={!summary.isPending && net > 0 ? "positive" : "neutral"}
+          className="flex flex-col justify-center p-6 lg:col-span-2"
+        >
           <p className="text-sm text-muted-foreground">{t("dashboard.todayProfit")}</p>
           <div
             className={`mt-1 text-3xl font-bold tabular-nums sm:text-4xl ${net < 0 ? "text-destructive" : "text-foreground"}`}
@@ -197,7 +201,7 @@ export function DashboardPage() {
       </section>
 
       {/* NIVEL 3 — Cobros del día por canal (bruto) */}
-      <GlassCard className="p-6">
+      <GlassCard tone={inflows.length > 0 ? "positive" : "neutral"} className="p-6">
         <h2 className="mb-1 text-base font-semibold text-foreground">
           {t("dashboard.channelsTitle")}
         </h2>
@@ -245,7 +249,7 @@ export function DashboardPage() {
 
       {/* NIVEL 5 — Progreso del mes */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <GlassCard className="p-6 lg:col-span-2">
+        <GlassCard tone={soldThisWeek ? "positive" : "neutral"} className="p-6 lg:col-span-2">
           <div className="mb-6">
             <h2 className="text-base font-semibold text-foreground">
               {t("dashboard.revenue7dTitle")}

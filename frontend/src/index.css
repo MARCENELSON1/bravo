@@ -443,6 +443,81 @@
   }
 }
 
+/* Entrada de cada pantalla. Al cambiar de sección el contenido no aparece de golpe:
+   sus partes se encienden una tras otra, de arriba abajo. Lo dispara el remontaje —el
+   contenedor de la ruta lleva la ruta como `key`—, así que no hace falta que ninguna
+   pantalla sepa que existe: alcanza con estar adentro.
+
+   Solo `opacity`, igual que la cascada del login (ver .lang-in). Nada se mueve de
+   lugar —cada parte se enciende donde está— y la opacidad no participa del layout, así
+   que la cascada no puede correr nada. Un desplazamiento, además, obligaría a poner un
+   `transform` en un ancestro, y eso rompe a los hijos `position: fixed` de la
+   pantalla: el botón flotante del Home pasaría a posicionarse contra ese ancestro y
+   saltaría a su lugar al terminar la animación.
+
+   Quién se escalona depende de la forma de la pantalla. Casi todas devuelven UN
+   contenedor con sus secciones adentro: ahí el que se enciende por partes es su
+   contenido, no él —encenderlo a él sería un fundido más, no una cascada—. Las pocas
+   que devuelven varios bloques sueltos escalonan esos. La regla de `:only-child` gana
+   por especificidad, así que el orden en el archivo no importa. */
+.page-in > *,
+.page-in > :only-child > * {
+  animation: pageIn 360ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.page-in > :only-child {
+  animation: none;
+}
+
+.page-in > :nth-child(2),
+.page-in > :only-child > :nth-child(2) {
+  animation-delay: 40ms;
+}
+.page-in > :nth-child(3),
+.page-in > :only-child > :nth-child(3) {
+  animation-delay: 80ms;
+}
+.page-in > :nth-child(4),
+.page-in > :only-child > :nth-child(4) {
+  animation-delay: 120ms;
+}
+.page-in > :nth-child(5),
+.page-in > :only-child > :nth-child(5) {
+  animation-delay: 160ms;
+}
+.page-in > :nth-child(6),
+.page-in > :only-child > :nth-child(6) {
+  animation-delay: 200ms;
+}
+.page-in > :nth-child(7),
+.page-in > :only-child > :nth-child(7) {
+  animation-delay: 240ms;
+}
+.page-in > :nth-child(8),
+.page-in > :only-child > :nth-child(8) {
+  animation-delay: 280ms;
+}
+.page-in > :nth-child(n + 9),
+.page-in > :only-child > :nth-child(n + 9) {
+  animation-delay: 320ms;
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Sin movimiento no hay cascada: el contenido está desde el primer cuadro. */
+@media (prefers-reduced-motion: reduce) {
+  .page-in > *,
+  .page-in > :only-child > * {
+    animation: none;
+  }
+}
+
 /* El encabezado de la tarjeta. En la variante ancha va más apretado, como el
    resto de esa pantalla: el formulario es largo y cada milímetro cuenta. */
 .auth-head {
@@ -491,6 +566,31 @@
   }
 }
 
+
+/* Vidrio verde: el de las tarjetas que traen una buena noticia. El resto de la
+   consola va en el vidrio neutro (ver GLASS_SURFACE), y es justamente el contraste
+   entre unas y otras lo que hace que el verde signifique algo.
+
+   El fondo lleva dos capas en una sola declaración: la que oscurece —o aclara, según
+   el tema— lo que hay detrás para que el texto se lea, y encima el velo verde. Van
+   juntas y no en dos divs porque cada tarjeta tendría que llevar un hijo de más solo
+   para pintarse; y no en dos utilidades de Tailwind porque `bg-` es una sola capa,
+   la segunda pisa a la primera. `color-mix` con un color translúcido mezcla también
+   el alfa, así que el resultado sigue siendo vidrio.
+
+   La mezcla va en oklab y NO en oklch. oklch es polar: el blanco y el negro tienen
+   croma 0 pero tono 0 igual, y al interpolar arrastran el tono del verde —163°—
+   hacia el rojo. En oklab no hay tono que arrastrar, solo ejes, y el verde llega
+   entero. Esto ya pasó: el panel salió rojizo.
+
+   Va fuera de @layer a propósito: así le gana al `bg-` de Tailwind que trae la
+   superficie neutra, sin tener que sacárselo de la lista de clases. */
+.glass-positive {
+  background: color-mix(in oklab, var(--primary) 14%, oklch(1 0 0 / 0.6));
+}
+.dark .glass-positive {
+  background: color-mix(in oklab, var(--primary) 16%, oklch(0 0 0 / 0.32));
+}
 
 /* Textura del fondo. Un recorrido cerrado y lentísimo: termina donde empezó, así
    que el ciclo no tiene costura. Solo `transform`, que va por GPU.

@@ -11,6 +11,7 @@ export function KpiCard({
   value,
   hint,
   negative,
+  positive,
   variant = "card",
 }: {
   label: string
@@ -19,13 +20,18 @@ export function KpiCard({
   hint?: string
   /** Pinta el número en rojo: sirve para un margen o un saldo negativo. */
   negative?: boolean
+  /** Tiñe la celda de verde: el número no es solo un dato, es una buena noticia. */
+  positive?: boolean
   variant?: "card" | "cell"
 }) {
   return (
     <div
       className={cn(
         "flex flex-col gap-1 p-4",
-        variant === "card" ? "rounded-xl border border-border" : "bg-card"
+        variant === "card" ? "rounded-xl border border-border" : "bg-card",
+        // Va después de la variante: entre dos utilidades del mismo tipo gana la
+        // última, que es lo que resuelve `cn`.
+        positive && (variant === "card" ? "border-primary/30 bg-primary/8" : "bg-primary/12")
       )}
     >
       <span className="text-xs text-muted-foreground">{label}</span>
