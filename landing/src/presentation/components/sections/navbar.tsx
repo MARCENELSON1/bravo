@@ -83,10 +83,11 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/70 backdrop-blur-xl">
-      {/* Un contenedor centrado, del ancho de las secciones: el wordmark cae sobre el
-          borde izquierdo del contenido y las acciones sobre el derecho, así la página
-          tiene un solo borde de cada lado. */}
-      <div className="mx-auto flex h-[4.375rem] w-full max-w-6xl items-center justify-between gap-3 px-5 lg:px-8">
+      {/* A todo el ancho, no dentro del contenedor de las secciones: en una pantalla
+          grande el wordmark va contra el borde izquierdo y las acciones contra el
+          derecho. El padding crece un poco en pantallas anchas para que no queden
+          pegados al vidrio. */}
+      <div className="flex h-[4.375rem] w-full items-center justify-between gap-3 px-5 lg:px-8">
         {/* Solo el wordmark, igual que el software y que el mockup del hero. */}
         <a
           href="#top"
