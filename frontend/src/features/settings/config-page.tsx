@@ -1,22 +1,13 @@
-import { useRef, useState, type ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
-import { motion } from "motion/react"
-import { Monitor, Moon, Sun } from "lucide-react"
+import { AnimatePresence, motion } from "motion/react"
+import { ChevronRight, Monitor, Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
-import {
-  OverlayScrollbarsComponent,
-  type OverlayScrollbarsComponentRef,
-} from "overlayscrollbars-react"
+import { OverlayScrollbarsComponent } from "overlayscrollbars-react"
 import { useNavigate } from "react-router-dom"
 
-import { edgeFadeClass, useEdgeFade } from "@/lib/edge-fade"
 import { SCROLL_FADE_EVENTS } from "@/lib/scroll-fade"
 import { hourCycleLabel, timeZoneLabel } from "@/lib/format"
-
-// Tab bar horizontal: siempre visible y un gris un poco más oscuro.
-const OS_OPTIONS_TABS = {
-  scrollbars: { theme: "os-theme-wellnod-static", autoHide: "never" },
-} as const
 
 // Cuadro de sección: la barra no se esconde (queda visible mientras haya contenido
 // para scrollear) y usa el mismo gris que la barra horizontal de las pestañas.
@@ -263,30 +254,16 @@ function Row({
   children: ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-3 py-5 md:flex-row md:items-center md:justify-between md:gap-6">
-      <div className="md:w-80 md:shrink-0">
+    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-xl px-4 py-4 transition-colors duration-200 ease-out hover:bg-sidebar-accent/10">
+      <div className="min-w-0">
         <p className="text-sm font-medium text-foreground">
           {label}
           {required ? <span className="text-primary"> *</span> : null}
         </p>
-        {desc ? <p className="mt-0.5 text-sm text-muted-foreground">{desc}</p> : null}
+        {desc ? <p className="mt-0.5 text-xs text-muted-foreground">{desc}</p> : null}
       </div>
-      <div className="flex flex-1 items-center justify-between gap-4">{children}</div>
+      <div className="flex max-w-full shrink-0 items-center gap-3 text-sm">{children}</div>
     </div>
-  )
-}
-
-function EditSoon({ label }: { label?: string }) {
-  const { t } = useTranslation()
-  return (
-    <button
-      type="button"
-      disabled
-      title={t("settings.editSoon")}
-      className="shrink-0 text-sm font-semibold text-muted-foreground underline underline-offset-4 opacity-60"
-    >
-      {label ?? t("settings.actions.edit")}
-    </button>
   )
 }
 
@@ -306,7 +283,7 @@ const initialsOf = (name: string | null, email: string) => {
 // cuando no entra en el alto disponible), en vez de scrollear la página entera.
 function ScrollCard({ children }: { children: ReactNode }) {
   return (
-    <GlassCard className="flex max-h-full flex-col overflow-hidden">
+    <GlassCard className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <OverlayScrollbarsComponent
         element="div"
         className="scroll-fade min-h-0"
@@ -320,22 +297,79 @@ function ScrollCard({ children }: { children: ReactNode }) {
   )
 }
 
+// ── Navegación entre el listado y una sección ─────────────────────────────────
+// Las dos vistas se cruzan: la que llega entra desde el lado hacia el que vas y la
+// que se va sale por el opuesto. Eso es lo que hace sentir que hay un adelante y un
+// atrás, en vez de dos pantallas que se funden una sobre la otra.
+//
+// El recorrido es corto —dos docenas de píxeles, no el ancho entero—. Un
+// deslizamiento completo grita "app de teléfono"; a esta distancia el movimiento se
+// percibe pero no se mira, que es de lo que vive una transición buena.
+//
+// Solo `x` y `opacity`. Nada de escala: sobre texto, un 2% se ve como si perdiera
+// foco mientras dura el movimiento.
+//
+// Un solo juego de variantes para el título y para el contenido, con el recorrido
+// como parámetro: el título viaja la mitad, así llega antes y ancla la pantalla
+// mientras lo de abajo todavía se acomoda. Que no todo se mueva a la misma velocidad
+// es lo que se lee como profundidad y no como un bloque que se corre entero.
+//
+// El tiempo de salida viaja en el mismo parámetro porque tiene que ir DENTRO de la
+// variante: la transición suelta del componente vale para la llegada, y si la salida
+// no trae la suya propia termina durando lo mismo.
+type Slide = { dir: number; travel: number; out: { duration: number } }
+
+const SLIDE = {
+  enter: ({ dir, travel }: Slide) => ({ opacity: 0, x: dir * travel }),
+  center: { opacity: 1, x: 0 },
+  exit: ({ dir, travel, out }: Slide) => ({ opacity: 0, x: dir * -travel, transition: out }),
+}
+
+// La curva: arranca rápido y frena largo. Es la que da sensación de peso —algo que se
+// mueve y se acomoda— en vez de la de un temporizador que se cumple.
+const EASE = [0.32, 0.72, 0, 1] as const
+
+// Llegar tarda más que irse: lo que entra es lo que hay que mirar; lo que se va, no.
+const IN = { duration: 0.42, ease: EASE }
+const OUT = { duration: 0.26, ease: EASE }
+
 // ── Página ────────────────────────────────────────────────────────────────────
 export function ConfigPage() {
   const { t, i18n } = useTranslation()
   const { session } = useAuth()
   const { theme, setTheme } = useTheme()
   const reduceMotion = useReduceMotion()
-  const [tab, setTab] = useState<TabId>("perfil")
+  const [tab, setTab] = useState<TabId | null>(null)
+  // Hacia dónde va el próximo cambio: 1 entra a una sección, -1 vuelve al listado.
+  // Sin esto las dos transiciones se verían iguales y no habría ida ni vuelta.
+  const [dir, setDir] = useState(1)
   const navigate = useNavigate()
-  const tabsOsRef = useRef<OverlayScrollbarsComponentRef>(null)
-  const tabEdges = useEdgeFade(tabsOsRef)
   const [closing, setClosing] = useState(false)
 
   if (!session) return null
 
   const canManage = session.role === "OWNER" || session.role === "MANAGER"
   const tabs = TABS.filter((item) => !item.managerOnly || canManage)
+  const current = tab === null ? null : (tabs.find((item) => item.id === tab) ?? null)
+
+  const openSection = (id: TabId) => {
+    setDir(1)
+    setTab(id)
+  }
+  const backToList = () => {
+    setDir(-1)
+    setTab(null)
+  }
+  // Con "reducir movimiento" no hay recorrido ni espera: el cambio es instantáneo.
+  const motionIn = reduceMotion ? { duration: 0 } : IN
+  const motionOut = reduceMotion ? { duration: 0 } : OUT
+  const slide = (travel: number): Slide => ({
+    dir,
+    travel: reduceMotion ? 0 : travel,
+    out: motionOut,
+  })
+  const titleSlide = slide(12)
+  const viewSlide = slide(24)
 
   const rowValue = (r: RowDef) =>
     r.valueKey === "name"
@@ -367,60 +401,93 @@ export function ConfigPage() {
         }}
       >
         <div className="mx-auto flex h-full w-full max-w-4xl flex-col px-4 py-6 sm:px-6 sm:py-8">
-          <BackButton className="mb-5" onClick={() => setClosing(true)} label={t("settings.back")} />
+          {/* Un solo control de volver y siempre un paso: desde una sección al
+              listado, desde el listado afuera de Configuración.
 
-          <header className="mb-6 shrink-0">
-            <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
-              {t("settings.title")}
-            </h1>
-            <p className="text-sm text-muted-foreground">{t("settings.subtitle")}</p>
-          </header>
-
-          {/* Pestañas (fijas) */}
-          <div className="mb-6 shrink-0 border-b border-border">
-            <OverlayScrollbarsComponent
-              ref={tabsOsRef}
-              options={OS_OPTIONS_TABS}
-              className={cn("pb-3", edgeFadeClass(tabEdges))}
-              defer
-            >
-              <div className="flex gap-1">
-                {tabs.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setTab(item.id)}
-                    className={cn(
-                      "relative shrink-0 rounded-xl px-3 py-2.5 text-sm font-medium whitespace-nowrap transition duration-200 ease-out active:scale-[0.97]",
-                      tab === item.id
-                        ? "text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/15 hover:text-sidebar-foreground"
-                    )}
-                  >
-                    {tab === item.id ? (
-                      <motion.span
-                        initial={reduceMotion ? false : { opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={reduceMotion ? { duration: 0 } : { duration: 0.15, ease: "easeOut" }}
-                        className="absolute inset-0 rounded-xl bg-sidebar-accent shadow-sm"
-                      />
-                    ) : null}
-                    <span className="relative z-10">{t(item.label)}</span>
-                  </button>
-                ))}
-              </div>
-            </OverlayScrollbarsComponent>
+              Va en una caja de alto fijo, igual que el título: durante el cruce hay
+              dos montados a la vez, y sin el alto reservado la cabecera pegaría un
+              salto justo cuando todo lo demás se está deslizando. */}
+          <div className="relative mb-5 h-5 shrink-0">
+            <AnimatePresence initial={false}>
+              <motion.div
+                key={current ? "section" : "index"}
+                initial={reduceMotion ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, transition: motionOut }}
+                transition={motionIn}
+                className="absolute inset-y-0 left-0"
+              >
+                {current ? (
+                  <BackButton onClick={backToList} label={t("settings.title")} />
+                ) : (
+                  <BackButton onClick={() => setClosing(true)} label={t("settings.back")} />
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
 
-          {/* Contenido: solo el cuadro scrollea, y solo si no entra */}
+          <header className="mb-6 shrink-0">
+            <div className="relative h-8">
+              <AnimatePresence initial={false} custom={titleSlide}>
+                <motion.h1
+                  key={tab ?? "index"}
+                  custom={titleSlide}
+                  variants={SLIDE}
+                  initial={reduceMotion ? false : "enter"}
+                  animate="center"
+                  exit="exit"
+                  transition={motionIn}
+                  className="absolute inset-x-0 top-0 font-display text-2xl font-bold tracking-tight text-foreground"
+                >
+                  {current ? t(current.label) : t("settings.title")}
+                </motion.h1>
+              </AnimatePresence>
+            </div>
+            {/* La bajada explica qué es Configuración: adentro de una sección ya se
+                sabe dónde se está y sobra. El renglón se reserva igual —vacío— para
+                que el título no cambie de altura al entrar y al salir. */}
+            <p className="min-h-5 text-sm text-muted-foreground">
+              {current ? "" : t("settings.subtitle")}
+            </p>
+          </header>
+
+          {/* Contenido: solo el cuadro scrollea, y solo si no entra.
+
+              Las dos vistas se superponen mientras se cruzan —por eso el contenedor
+              es `relative` y cada una `absolute`—. Apiladas en el flujo, la que se va
+              empujaría hacia abajo a la que llega y el cruce se vería como un salto. */}
+          <div className="relative min-h-0 flex-1">
+            <AnimatePresence initial={false} custom={viewSlide}>
           <motion.div
-            key={tab}
-            initial={reduceMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
-            className="min-h-0 flex-1"
+            key={tab ?? "index"}
+            custom={viewSlide}
+            variants={SLIDE}
+            initial={reduceMotion ? false : "enter"}
+            animate="center"
+            exit="exit"
+            transition={motionIn}
+            className="absolute inset-0 flex flex-col"
           >
-            {tab === "equipo" ? (
+            {tab === null ? (
+              /* Sin líneas entre opciones: lo que ordena la lista es el aire y el
+                 resaltado al pasar por encima. Es la misma pastilla redondeada del
+                 menú lateral, así las dos formas de navegar se ven como una sola. */
+              <ScrollCard>
+                <div className="flex flex-col gap-0.5 p-2 sm:p-3">
+                  {tabs.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => openSection(item.id)}
+                      className="group flex w-full items-center justify-between gap-4 rounded-xl px-4 py-4 text-left transition duration-200 ease-out hover:bg-sidebar-accent/15 active:scale-[0.99] active:bg-sidebar-accent/25"
+                    >
+                      <span className="text-sm font-medium text-foreground">{t(item.label)}</span>
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground/60 transition-transform duration-200 ease-out group-hover:translate-x-0.5 group-hover:text-muted-foreground" />
+                    </button>
+                  ))}
+                </div>
+              </ScrollCard>
+            ) : tab === "equipo" ? (
               <ScrollCard>
                 <div className="px-4 sm:px-6">
                   <InviteUserForm embedded />
@@ -434,7 +501,7 @@ export function ConfigPage() {
               </ScrollCard>
             ) : (
               <ScrollCard>
-                <div className="divide-y divide-border px-4 sm:px-6">
+                <div className="flex flex-col gap-0.5 p-2 sm:p-3">
                   {/* Apariencia: filas funcionales primero */}
                   {tab === "apariencia" ? (
                 <>
@@ -463,7 +530,6 @@ export function ConfigPage() {
                     </div>
                   </Row>
                   <Row label={t("settings.appearance.reduceMotion")} desc={t("settings.appearance.reduceMotionDesc")}>
-                    <span />
                     <LiveSwitch checked={reduceMotion} onChange={setReduceMotion} />
                   </Row>
                 </>
@@ -473,7 +539,7 @@ export function ConfigPage() {
                   Vive acá y no en el Asesor porque afecta también al Inicio y a
                   Finanzas: es un dato del negocio, no un parámetro de una pantalla. */}
               {tab === "caja" ? (
-                <div className="flex flex-col gap-4 py-4">
+                <div className="flex flex-col gap-4 px-2 py-4 sm:px-3">
                   <CashSettingsCard />
                   <CommissionRatesCard />
                 </div>
@@ -481,7 +547,7 @@ export function ConfigPage() {
 
               {/* Salones: CRUD real de sectores + asignación de mesas. */}
               {tab === "salones" ? (
-                <div className="py-4">
+                <div className="px-2 py-4 sm:px-3">
                   <SectorsManager />
                 </div>
               ) : null}
@@ -489,7 +555,7 @@ export function ConfigPage() {
               {/* Datos del local: dirección fiscal real (la usa el motor de
                   impuestos US/TaxJar). El resto son placeholders. */}
               {tab === "negocio" ? (
-                <div className="py-4">
+                <div className="px-2 py-4 sm:px-3">
                   <FiscalAddressCard />
                   <TaxJarConnectionCard />
                 </div>
@@ -516,19 +582,14 @@ export function ConfigPage() {
                 return (
                   <Row key={r.label} label={t(r.label)} required={r.required} desc={r.desc ? t(r.desc) : undefined}>
                     {r.valueKey === "avatar" ? (
-                      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
                         {initialsOf(session.name, session.email)}
                       </span>
-                    ) : value ? (
-                      <span className="truncate text-foreground">{value}</span>
-                    ) : (
-                      <span />
-                  )}
-                    {r.kind === "toggle" ? (
+                    ) : r.kind === "toggle" ? (
                       <Switch checked={false} disabled />
-                    ) : (
-                      <EditSoon label={r.action ? t(r.action) : undefined} />
-                  )}
+                    ) : value ? (
+                      <span className="truncate text-muted-foreground">{value}</span>
+                    ) : null}
                   </Row>
                 )
               })}
@@ -536,6 +597,8 @@ export function ConfigPage() {
               </ScrollCard>
             )}
           </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </motion.div>
     </div>

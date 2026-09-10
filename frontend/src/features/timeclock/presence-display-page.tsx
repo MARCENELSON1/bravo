@@ -73,7 +73,7 @@ export function PresenceDisplayPage() {
           </div>
         </>
       ) : (
-        <div className="h-72 w-72 animate-pulse rounded-2xl bg-muted" />
+        <div className="h-72 w-72 max-w-full animate-pulse rounded-2xl bg-muted" />
       )}
     </div>
   )

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { motion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
 import { Menu } from "lucide-react"
 
 import {
@@ -155,17 +155,37 @@ export function AppShell() {
 
       <aside className="hidden h-full md:block">{sidebar}</aside>
 
-      {drawerOpen ? (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <button
-            type="button"
-            aria-label={t("shell.aria.closeMenu")}
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setDrawerOpen(false)}
-          />
-          <div className="absolute inset-y-0 left-0 p-3 shadow-xl">{sidebar}</div>
-        </div>
-      ) : null}
+      <AnimatePresence>
+        {drawerOpen ? (
+          <motion.div
+            key="drawer"
+            className="fixed inset-0 z-50 md:hidden"
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: reduce ? 0 : 0.18, ease: "easeIn" } }}
+            transition={reduce ? { duration: 0 } : { duration: 0.24, ease: "easeOut" }}
+          >
+            <button
+              type="button"
+              aria-label={t("shell.aria.closeMenu")}
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setDrawerOpen(false)}
+            />
+            <motion.div
+              className="absolute inset-y-0 left-0 p-3 shadow-xl"
+              initial={reduce ? false : { x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{
+                x: "-100%",
+                transition: { duration: reduce ? 0 : 0.22, ease: [0.4, 0, 1, 1] },
+              }}
+              transition={reduce ? { duration: 0 } : { duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {sidebar}
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <div
         className={cn("lang-in flex h-full min-w-0 flex-1 flex-col overflow-hidden", GLASS_PANEL)}

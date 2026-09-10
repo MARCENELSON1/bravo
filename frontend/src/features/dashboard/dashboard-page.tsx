@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, type CSSProperties } from "react"
 import type { TFunction } from "i18next"
 import { ArrowRight, Plus } from "lucide-react"
 
@@ -116,7 +116,7 @@ export function DashboardPage() {
   const projection = overview.data?.projection ?? null
 
   return (
-    <div className="relative isolate mx-auto flex w-full max-w-5xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
+    <div className="relative isolate mx-auto flex w-full max-w-5xl flex-col gap-5 px-4 py-6 pb-24 sm:px-6 sm:py-8">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -top-40 left-1/2 h-[26rem] w-[80%] -translate-x-1/2 rounded-[50%] bg-primary/22 blur-[130px]" />
       </div>
@@ -402,7 +402,7 @@ function ProfitPart({
   muted?: boolean
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 px-5 py-4">
+    <div className="@container flex items-center justify-between gap-4 px-5 py-4">
       <div className="min-w-0">
         <p className="text-sm text-muted-foreground">{label}</p>
         <p className={cn("mt-0.5 text-xs", warn ? "text-warning" : "text-muted-foreground")}>
@@ -410,8 +410,9 @@ function ProfitPart({
         </p>
       </div>
       <p
+        style={{ "--len": value.length } as CSSProperties}
         className={cn(
-          "shrink-0 text-2xl font-bold tabular-nums",
+          "shrink-0 text-[min(1.5rem,calc(60cqi/(var(--len)*0.62)))] font-bold whitespace-nowrap tabular-nums",
           muted ? "text-muted-foreground" : "text-foreground"
         )}
       >
@@ -444,32 +445,42 @@ function RevenueChart({
   }
   const ticks = [max, max / 2, 0]
   return (
-    <div className="flex gap-3">
-      <div className="flex flex-col justify-between py-1 text-right text-[11px] text-muted-foreground">
+    <div className="flex gap-2 sm:gap-3">
+      {/* Eje y barras miden lo mismo: las referencias y las líneas se reparten sobre
+          esta altura, no sobre el bloque entero. Los días van aparte, debajo. */}
+      <div className="flex h-52 shrink-0 flex-col justify-between text-right text-[11px] text-muted-foreground">
         {ticks.map((tick) => (
           <span key={tick}>{compact(tick)}</span>
         ))}
       </div>
-      <div className="relative flex-1">
-        <div className="absolute inset-0 flex flex-col justify-between">
-          {ticks.map((tick) => (
-            <div key={tick} className="border-t border-dashed border-border/60" />
-          ))}
-        </div>
-        <div className="relative flex h-52 items-end justify-around gap-2">
-          {days.map((x) => (
-            <div key={x.key} className="flex flex-1 flex-col items-center gap-2">
+      <div className="min-w-0 flex-1">
+        <div className="relative h-52">
+          <div className="absolute inset-0 flex flex-col justify-between">
+            {ticks.map((tick) => (
+              <div key={tick} className="border-t border-dashed border-border/60" />
+            ))}
+          </div>
+          <div className="relative flex h-full items-end justify-around gap-1.5 sm:gap-2">
+            {days.map((x) => (
               <div
-                className="w-8 rounded-t-md bg-primary transition-all"
-                style={{ height: `${(x.value / max) * 100}%` }}
-                title={formatMoney(x.value, currency, 0)}
-              />
-            </div>
-          ))}
+                key={x.key}
+                className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
+              >
+                <div
+                  className="w-full max-w-8 rounded-t-md bg-primary transition-all"
+                  style={{ height: `${(x.value / max) * 100}%` }}
+                  title={formatMoney(x.value, currency, 0)}
+                />
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="mt-2 flex justify-around gap-2">
+        <div className="mt-2 flex justify-around gap-1.5 sm:gap-2">
           {days.map((x) => (
-            <span key={x.key} className="flex-1 text-center text-xs text-muted-foreground">
+            <span
+              key={x.key}
+              className="min-w-0 flex-1 truncate text-center text-[11px] text-muted-foreground sm:text-xs"
+            >
               {x.label}
             </span>
           ))}

@@ -116,14 +116,14 @@ function SalesByDay({ window }: { window: Win }) {
         <div className="flex flex-col gap-1.5">
           {rows.map((r) => (
             <div key={r.day} className="flex items-center gap-2 text-sm">
-              <span className="w-20 shrink-0 tabular-nums text-muted-foreground">{r.day}</span>
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+              <span className="min-w-20 shrink-0 tabular-nums text-muted-foreground">{r.day}</span>
+              <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full bg-primary/70"
                   style={{ width: max > 0 ? `${(r.sales_amount / max) * 100}%` : "0%" }}
                 />
               </div>
-              <span className="w-24 shrink-0 text-right tabular-nums">
+              <span className="min-w-24 shrink-0 text-right tabular-nums">
                 {formatMoney(r.sales_amount, "ARS")}
               </span>
             </div>

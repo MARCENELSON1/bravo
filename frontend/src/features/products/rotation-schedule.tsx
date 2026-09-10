@@ -52,16 +52,16 @@ export function RotationSchedule({ period }: { period: RangeWindow }) {
               <span className="w-9 shrink-0 text-xs font-medium text-muted-foreground">
                 {weekdays[r.weekday] ?? "?"}
               </span>
-              <div className="h-6 flex-1 overflow-hidden rounded-md bg-foreground/5">
+              <div className="h-6 min-w-0 flex-1 overflow-hidden rounded-md bg-foreground/5">
                 <div
                   className="h-full rounded-md bg-foreground/25"
                   style={{ width: `${Math.round((r.units / maxUnits) * 100)}%` }}
                 />
               </div>
-              <span className="w-28 shrink-0 truncate text-right text-xs text-muted-foreground">
+              <span className="w-20 shrink-0 truncate text-right text-xs text-muted-foreground sm:w-28">
                 {r.top_product_name ?? "—"}
               </span>
-              <span className="w-24 shrink-0 text-right text-sm tabular-nums text-foreground">
+              <span className="min-w-24 shrink-0 text-right text-sm tabular-nums text-foreground">
                 {formatMoney(r.sales_amount, currency)}
               </span>
             </li>
