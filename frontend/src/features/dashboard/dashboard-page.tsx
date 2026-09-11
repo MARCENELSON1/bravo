@@ -88,12 +88,14 @@ export function DashboardPage() {
   const money = (n: number) => formatMoney(Math.round(n), currency, 0)
   const firstName = session?.name ? session.name.trim().split(/\s+/)[0] : null
 
-  const sales = d?.sales ?? 0
+  const sales = d?.sales_collected ?? 0
   const expenses = d?.expenses ?? 0
-  // Comisiones (slice B): la ganancia REAL resta las comisiones de pasarela. Sin
-  // tasas cargadas, collected_net == sales → net == sales − expenses (paridad).
   const feesTotal = d?.fees_total ?? 0
-  const net = (d?.collected_net ?? sales) - expenses
+  // La calcula el backend (`profit_net_of_fees`: cobrado neto de comisiones
+  // menos egresos). Esta resta estaba acá, en Reportes web y en las dos
+  // pantallas equivalentes del móvil: cuatro copias de la misma definición de
+  // "ganancia", libres de separarse sin que nadie se entere.
+  const net = d?.profit_net_of_fees ?? 0
   const pctVsYesterday = revenuePctVsYesterday(daily.data ?? [])
   const verdict = dailyVerdict(net, pctVsYesterday)
   const verdictVs = verdict.vsKey

@@ -40,9 +40,9 @@ class DashboardSummary {
 
   factory DashboardSummary.fromJson(Map<String, dynamic> j) => DashboardSummary(
         currency: j['currency'] as String,
-        sales: (j['sales'] as int?) ?? 0,
+        sales: (j['sales_collected'] as int?) ?? (j['sales'] as int?) ?? 0,
         expenses: (j['expenses'] as int?) ?? 0,
-        net: (j['net'] as int?) ?? 0,
+        net: (j['profit_gross_of_fees'] as int?) ?? (j['net'] as int?) ?? 0,
         activeOrders: (j['active_orders'] as int?) ?? 0,
         paidOrders: (j['paid_orders'] as int?) ?? 0,
         avgTicket: (j['avg_ticket'] as int?) ?? 0,

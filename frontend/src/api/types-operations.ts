@@ -524,19 +524,26 @@ export interface ProductDetailDTO {
 
 export interface DashboardSummaryDTO {
   currency: string
-  sales: number // minor units
+  // Lo COBRADO (Σ cobros confirmados), bruto de comisiones. Lo VENDIDO es otro
+  // libro y vive en `/analytics/revenue` como `sales_amount` — llamar "ventas" a
+  // este campo era lo que hacía que dos pantallas se contradijeran.
+  sales_collected: number // minor units
   expenses: number
-  net: number
+  profit_gross_of_fees: number // sales_collected − expenses
   active_orders: number
   paid_orders: number
   avg_ticket: number
   payment_count: number
-  collected_net: number // neto financiero tras comisiones (== sales si no hay tasas)
+  collected_net: number // cobrado neto de comisiones
   // `collected_net - expenses`, ya calculado por el backend. NO volver a restarlo
   // acá: esa resta vivía en el componente y era la vía por la que una definición
   // más de "ganancia" entraba sin pasar por ningún caso de uso.
   profit_net_of_fees: number
   fees_total: number // total de comisiones de pasarela
+  /** @deprecated alias de `sales_collected`; se va cuando no queden apps viejas. */
+  sales?: number
+  /** @deprecated alias de `profit_gross_of_fees`. */
+  net?: number
 }
 
 // Comisiones (slice B): tasa de comisión por método (bps; 300 = 3%).

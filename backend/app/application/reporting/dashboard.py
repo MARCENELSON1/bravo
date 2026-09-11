@@ -13,26 +13,26 @@ from app.domain.identity.ports import TenantContext
 @dataclass(frozen=True)
 class DashboardSummary:
     currency: str
-    # OJO: ``sales`` es lo **COBRADO**, no lo vendido — Σ de cobros INFLOW
-    # confirmados. El nombre engaña y se conserva a propósito: lo lee una app
-    # móvil ya publicada, y renombrar el campo le mostraría $0. En la UI se
-    # rotula "Cobrado"; lo vendido (devengado) vive en `analytics.RevenueSummary`
-    # como ``sales_amount``. Dos libros distintos, dos lugares distintos.
-    sales: int  # confirmed INFLOW total (minor units) — es COBRADO
+    # Lo COBRADO: Σ de cobros INFLOW confirmados. Se llamaba ``sales``, que hacía
+    # que esta pantalla y Analytics mostraran dos cifras distintas bajo la misma
+    # palabra — lo vendido (devengado) vive aparte, en
+    # ``analytics.RevenueSummary.sales_amount``. Dos libros, dos nombres.
+    sales_collected: int  # minor units
     expenses: int  # confirmed OUTFLOW total (minor units)
-    net: int  # sales − expenses (bruto de comisiones)
+    # Las dos ganancias del período, nombradas por su base para que no se puedan
+    # confundir: una antes de la comisión de la pasarela y otra después.
+    profit_gross_of_fees: int  # sales_collected − expenses
     active_orders: int  # not PAID/CANCELLED
     paid_orders: int
-    avg_ticket: int  # sales / paid_orders (0 if none)
+    avg_ticket: int  # sales_collected / paid_orders (0 if none)
     payment_count: int  # confirmed inflow payments
     # Comisiones (slice B): neto financiero cobrado (tras comisión de pasarela) y
-    # total de comisiones. Sin tasas → collected_net == sales, fees_total == 0 (paridad).
+    # total de comisiones. Sin tasas → collected_net == sales_collected, fees == 0.
     collected_net: int = 0
     fees_total: int = 0
-    # La ganancia que efectivamente muestran las pantallas: lo que quedó en la
-    # cuenta tras la comisión, menos los egresos. Se calcula acá y no en cada
-    # cliente porque estaba escrita dos veces —una en el .tsx de Reportes y otra
-    # en el .dart del móvil— y esa es la vía por la que una quinta definición de
+    # La que muestran las pantallas. Se calcula acá y no en cada cliente porque
+    # estaba escrita TRES veces —el .tsx de Reportes, el .dart de Reportes y el
+    # .dart del Inicio— y esa es la vía por la que una definición más de
     # "ganancia" entra sin pasar por ningún caso de uso.
     profit_net_of_fees: int = 0
 

@@ -30,7 +30,9 @@ class ReportSummary {
   final int profit;
   factory ReportSummary.fromJson(Map<String, dynamic> j) => ReportSummary(
         currency: (j['currency'] as String?) ?? 'ARS',
-        sales: (j['sales'] as int?) ?? 0,
+        // Nombre nuevo; el viejo (`sales`) queda de respaldo para un backend
+        // anterior al renombre. Los dos traen lo COBRADO, no lo vendido.
+        sales: (j['sales_collected'] as int?) ?? (j['sales'] as int?) ?? 0,
         collectedNet: (j['collected_net'] as int?) ?? 0,
         expenses: (j['expenses'] as int?) ?? 0,
         avgTicket: (j['avg_ticket'] as int?) ?? 0,

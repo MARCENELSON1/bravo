@@ -44,9 +44,9 @@ async def dashboard(
     s = await use_case.execute(tenant_id=identity.tenant_id, since=since, until=until)
     return DashboardSummaryResponse(
         currency=s.currency,
-        sales=s.sales,
+        sales_collected=s.sales_collected,
         expenses=s.expenses,
-        net=s.net,
+        profit_gross_of_fees=s.profit_gross_of_fees,
         active_orders=s.active_orders,
         paid_orders=s.paid_orders,
         avg_ticket=s.avg_ticket,
@@ -54,6 +54,9 @@ async def dashboard(
         collected_net=s.collected_net,
         fees_total=s.fees_total,
         profit_net_of_fees=s.profit_net_of_fees,
+        # Alias deprecados: mismo valor, para las apps ya publicadas.
+        sales=s.sales_collected,
+        net=s.profit_gross_of_fees,
     )
 
 
