@@ -989,6 +989,19 @@ class Strings {
   String removeOneLabel(String product) =>
       _en ? 'Remove one $product' : 'Quitar un $product';
 
+  // --- Antes de pedir el permiso de notificaciones ---
+  String get pushPrimingTitle =>
+      _en ? 'Know the moment a table is ready' : 'Enterate apenas una mesa está lista';
+  String get pushPrimingBody => _en
+      ? "The kitchen marks a course ready and your phone tells you — even with the "
+          "app closed, so you don't have to keep checking. Only order alerts: no "
+          "ads, nothing else."
+      : 'La cocina marca un tiempo listo y el celular te avisa — con la app '
+          'cerrada también, así no tenés que estar mirando. Solo avisos de '
+          'comandas: nada de publicidad ni nada más.';
+  String get pushPrimingAccept => _en ? 'Turn on alerts' : 'Activar los avisos';
+  String get pushPrimingLater => _en ? 'Not now' : 'Ahora no';
+
   // --- Detalle de un plato en Finanzas (drill-down) ---
   String get financeProductDetailError => _en
       ? "We couldn't load this dish's detail."

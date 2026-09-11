@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/session_notifier.dart';
 import '../../data/push/push_service.dart';
+import 'push_priming.dart';
 import '../order/comanda_lista_sheet.dart';
 
 /// Montaje global del push (Fase 4): registra el token del device al haber sesión
@@ -32,8 +33,14 @@ class _PushHandlerState extends ConsumerState<PushHandler> {
 
   Future<void> _setup() async {
     // AppScaffold solo se monta con sesión → registramos el token del device.
+    // Pero primero explicamos para qué: iOS pregunta UNA sola vez y un "no" en
+    // frío deja al mozo sin el aviso de "mesa lista" para siempre. Si dice
+    // "ahora no", no se dispara el diálogo del sistema y se le puede volver a
+    // preguntar más adelante.
     if (ref.read(sessionProvider) is SessionAuthenticated) {
-      await ref.read(pushServiceProvider).start();
+      if (mounted && await PushPriming.shouldAsk(context)) {
+        await ref.read(pushServiceProvider).start();
+      }
     }
     try {
       // Tap con la app en background.
