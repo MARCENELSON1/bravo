@@ -638,7 +638,10 @@ class Strings {
   String get repPaymentMix => _en ? 'Payment mix' : 'Mix de pagos';
   String repUnits(int n) => _en ? '$n units' : '$n u.';
   String get repSummaryTitle => _en ? 'Summary' : 'Resumen';
-  String get repSales => _en ? 'Sales' : 'Ventas';
+  // OJO: en `/reports/dashboard` el campo `sales` es lo COBRADO (Σ cobros
+  // confirmados), no lo vendido. Rotularlo "Ventas" hacía que esta pantalla y
+  // Analytics mostraran dos cifras distintas bajo la misma palabra.
+  String get repSales => _en ? 'Collected' : 'Cobrado';
   String get repCollectedNet => _en ? 'Net collected' : 'Cobrado neto';
   String get repExpenses => _en ? 'Expenses' : 'Gastos';
   String get repProfit => _en ? 'Profit' : 'Ganancia';

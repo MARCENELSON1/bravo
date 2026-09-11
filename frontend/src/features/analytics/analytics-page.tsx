@@ -76,7 +76,11 @@ export function AnalyticsPage() {
         </div>
       ) : revenue.data ? (
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <KpiCard label={t("analytics.kpis.sales")} value={money(revenue.data.sales_amount)} />
+          <KpiCard
+            label={t("analytics.kpis.sales")}
+            value={money(revenue.data.sales_amount)}
+            hint={t("analytics.kpis.salesHint")}
+          />
           <KpiCard label={t("analytics.kpis.collected")} value={money(revenue.data.collected_amount)} />
           <KpiCard label={t("analytics.kpis.expenses")} value={money(revenue.data.expense_amount)} />
           <KpiCard

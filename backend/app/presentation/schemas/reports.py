@@ -14,6 +14,9 @@ class DashboardSummaryResponse(BaseModel):
     payment_count: int
     collected_net: int = 0  # neto financiero (tras comisiones); == sales sin tasas
     fees_total: int = 0
+    # La ganancia que muestran las pantallas (collected_net − expenses). Antes la
+    # restaba cada cliente por su cuenta; ahora viaja calculada.
+    profit_net_of_fees: int = 0
 
 
 class StaffReportRowResponse(BaseModel):

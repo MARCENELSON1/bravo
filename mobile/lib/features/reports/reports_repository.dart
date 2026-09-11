@@ -14,6 +14,7 @@ class ReportSummary {
     required this.expenses,
     required this.avgTicket,
     required this.paidOrders,
+    required this.profit,
   });
   final String currency;
   final int sales;
@@ -21,7 +22,12 @@ class ReportSummary {
   final int expenses;
   final int avgTicket;
   final int paidOrders;
-  int get profit => collectedNet - expenses;
+
+  /// Lo calcula el backend (`profit_net_of_fees`). Antes era `collectedNet -
+  /// expenses` acá, y la MISMA resta vivía en el `.tsx` de la web: dos
+  /// definiciones de "ganancia" que podían separarse sin que nadie se enterara.
+  /// El `??` cubre a un backend viejo, no a una versión nueva del cálculo.
+  final int profit;
   factory ReportSummary.fromJson(Map<String, dynamic> j) => ReportSummary(
         currency: (j['currency'] as String?) ?? 'ARS',
         sales: (j['sales'] as int?) ?? 0,
@@ -29,6 +35,8 @@ class ReportSummary {
         expenses: (j['expenses'] as int?) ?? 0,
         avgTicket: (j['avg_ticket'] as int?) ?? 0,
         paidOrders: (j['paid_orders'] as int?) ?? 0,
+        profit: (j['profit_net_of_fees'] as int?) ??
+            (((j['collected_net'] as int?) ?? 0) - ((j['expenses'] as int?) ?? 0)),
       );
 }
 

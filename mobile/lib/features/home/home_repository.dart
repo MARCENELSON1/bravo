@@ -19,6 +19,7 @@ class DashboardSummary {
     required this.collectedNet,
     required this.feesTotal,
     required this.paymentCount,
+    required this.profit,
   });
 
   final String currency;
@@ -32,6 +33,11 @@ class DashboardSummary {
   final int feesTotal;
   final int paymentCount;
 
+  /// Ganancia del período calculada por el backend (`profit_net_of_fees`):
+  /// cobrado neto de comisiones menos egresos. Ojo con `net`, que es la resta
+  /// BRUTA (`sales - expenses`) y da distinto en cuanto hay comisiones.
+  final int profit;
+
   factory DashboardSummary.fromJson(Map<String, dynamic> j) => DashboardSummary(
         currency: j['currency'] as String,
         sales: (j['sales'] as int?) ?? 0,
@@ -43,6 +49,9 @@ class DashboardSummary {
         collectedNet: (j['collected_net'] as int?) ?? 0,
         feesTotal: (j['fees_total'] as int?) ?? 0,
         paymentCount: (j['payment_count'] as int?) ?? 0,
+        profit: (j['profit_net_of_fees'] as int?) ??
+            (((j['collected_net'] as int?) ?? (j['sales'] as int?) ?? 0) -
+                ((j['expenses'] as int?) ?? 0)),
       );
 }
 

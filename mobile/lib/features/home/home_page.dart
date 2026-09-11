@@ -58,7 +58,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     final sales = d?.sales ?? 0;
     final expenses = d?.expenses ?? 0;
     final feesTotal = d?.feesTotal ?? 0;
-    final net = (d?.collectedNet ?? sales) - expenses;
+    // Lo calcula el backend (`profit_net_of_fees`). Esta resta estaba acá, en
+    // Reportes del móvil y en el .tsx de la web: tres copias de la misma
+    // definición de "ganancia", libres de separarse entre sí.
+    final net = d?.profit ?? 0;
     final pct = _pctVsYesterday(daily.valueOrNull ?? const []);
     final verdict = dailyVerdict(net, pct);
     final marginPer100 = sales > 0 ? (net / sales * 100).round() : 0;

@@ -53,6 +53,7 @@ async def dashboard(
         payment_count=s.payment_count,
         collected_net=s.collected_net,
         fees_total=s.fees_total,
+        profit_net_of_fees=s.profit_net_of_fees,
     )
 
 

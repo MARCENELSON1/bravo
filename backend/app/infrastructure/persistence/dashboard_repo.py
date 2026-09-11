@@ -99,4 +99,5 @@ class SqlAlchemyDashboardReadModel(DashboardReadModel):
                 payment_count=int(payment_count),
                 collected_net=int(collected_net),
                 fees_total=int(fees_total),
+                profit_net_of_fees=int(collected_net) - expenses,
             )

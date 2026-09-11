@@ -87,7 +87,7 @@ function Summary({ window }: { window: Win }) {
           <Stat label={t("reports.summary.expenses")} value={money(d.expenses)} />
           <Stat
             label={t("reports.summary.profit")}
-            value={money(d.collected_net - d.expenses)}
+            value={money(d.profit_net_of_fees)}
             accent
           />
           <Stat label={t("reports.summary.avgTicket")} value={money(d.avg_ticket)} />

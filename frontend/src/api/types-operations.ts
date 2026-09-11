@@ -532,6 +532,10 @@ export interface DashboardSummaryDTO {
   avg_ticket: number
   payment_count: number
   collected_net: number // neto financiero tras comisiones (== sales si no hay tasas)
+  // `collected_net - expenses`, ya calculado por el backend. NO volver a restarlo
+  // acá: esa resta vivía en el componente y era la vía por la que una definición
+  // más de "ganancia" entraba sin pasar por ningún caso de uso.
+  profit_net_of_fees: number
   fees_total: number // total de comisiones de pasarela
 }
 
