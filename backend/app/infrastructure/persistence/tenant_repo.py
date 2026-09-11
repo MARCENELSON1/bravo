@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 
 from app.domain.tenant.entities import Tenant
 from app.domain.tenant.repository import TenantRepository
@@ -53,3 +53,9 @@ class SqlAlchemyTenantRepository(TenantRepository):
                     fiscal_zip=zip_code,
                 )
             )
+
+    async def delete(self, tenant_id: str) -> None:
+        """Una sentencia; el resto lo hace ``ON DELETE CASCADE`` (44 tablas)."""
+        async with self._session_factory() as session:
+            await session.execute(delete(TenantORM).where(TenantORM.id == tenant_id))
+            await session.commit()

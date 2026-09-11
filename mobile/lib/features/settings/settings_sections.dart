@@ -1,7 +1,22 @@
-// Estructura de la pantalla de Ajustes, portada 1:1 de `config-page.tsx` del web:
-// 13 tabs con filas. Las tabs con contenido funcional (apariencia, caja, salones,
-// negocio, equipo, integraciones, ia) renderizan widgets reales en `ajustes_page`;
-// el resto de las filas son "Próximamente" (igual que en la web).
+import 'package:flutter/widgets.dart';
+
+import '../finance/advisor_settings_page.dart';
+import 'delete_account_page.dart';
+import 'printer_page.dart';
+
+// Estructura de la pantalla de Ajustes.
+//
+// **Una fila se muestra solo si es real.** Antes esta pantalla portaba 1:1 las 83
+// filas del web y las que no tenían backend mostraban un botón "Próximamente" —
+// o, peor, un valor inventado ("Tolerancia de fichaje: 10 min", "Copias: 1") que
+// el dueño podía creerse. Dos problemas a la vez: Apple rechaza UI de relleno
+// (guía 2.1, App Completeness) y el producto entero se apoya en que lo que
+// muestra sea cierto.
+//
+// El filtro vive en `ajustes_page._isReal`: sobrevive la fila que lee estado real
+// de la sesión (`dyn`) o que abre una pantalla que existe (`open`). El resto no
+// se borra de este archivo a propósito — queda como el mapa de lo que falta, y
+// se enciende sola en cuanto se le da un `open` o un `dyn`.
 
 class SettingRow {
   const SettingRow(
@@ -15,6 +30,7 @@ class SettingRow {
     this.toggle = false,
     this.dyn,
     this.danger = false,
+    this.open,
   });
 
   final String es;
@@ -27,6 +43,13 @@ class SettingRow {
   final bool toggle;
   final String? dyn; // name|email|tenant|avatar → valor real de la sesión
   final bool danger;
+
+  /// Pantalla que abre la fila. Es lo que la vuelve real: sin esto (y sin `dyn`)
+  /// la fila no se renderiza.
+  final Widget Function()? open;
+
+  /// Una fila vale la pena mostrarla si lee algo cierto o lleva a algún lado.
+  bool get isReal => open != null || dyn != null;
 
   String label(bool en) => en ? this.en : es;
   String? desc(bool en) => en ? descEn : descEs;
@@ -168,7 +191,10 @@ const settingsTabs = <SettingsTab>[
     SettingRow('Cuenta corriente', 'House account', action: 'configure'),
   ]),
   SettingsTab('comandas', 'Comandas e impresión', 'Orders & printing', [
-    SettingRow('Impresoras por sector', 'Printers by sector', action: 'configure'),
+    SettingRow('Impresora', 'Printer',
+        descEs: 'Conectar la impresora térmica por Bluetooth.',
+        descEn: 'Pair the Bluetooth thermal printer.',
+        action: 'configure', open: PrinterPage.new),
     SettingRow('Ruteo de categoría a impresora', 'Category-to-printer routing',
         action: 'configure'),
     SettingRow('Copias', 'Copies', valueEs: '1', valueEn: '1'),
@@ -189,8 +215,10 @@ const settingsTabs = <SettingsTab>[
         action: 'configure'),
   ]),
   SettingsTab('ia', 'IA Insights', 'AI Insights', [
-    SettingRow('Acceso a datos por módulo', 'Data access by module',
-        action: 'configure'),
+    SettingRow('Costos del Asesor', 'Advisor costs',
+        descEs: 'Personal, costos fijos, IVA, asientos y objetivo de food cost.',
+        descEn: 'Labour, fixed costs, VAT, seats and food-cost target.',
+        action: 'edit', open: AdvisorSettingsPage.new),
     SettingRow('Nivel de autonomía', 'Autonomy level',
         valueEs: 'Sugerencias', valueEn: 'Suggestions'),
     SettingRow('Umbrales de alerta', 'Alert thresholds', action: 'edit'),
@@ -210,8 +238,12 @@ const settingsTabs = <SettingsTab>[
         descEs: 'Tu plan de Wellnod.', descEn: 'Your Wellnod plan.', action: 'view'),
     SettingRow('Facturas de Wellnod', 'Wellnod invoices', action: 'view'),
     SettingRow('Exportar datos', 'Export data', action: 'export'),
-    SettingRow('Zona de riesgo', 'Danger zone',
-        descEs: 'Eliminar cuenta y datos.', descEn: 'Delete account and data.',
-        action: 'delete', danger: true),
+    // App Store 5.1.1(v): quien puede crear la cuenta desde la app tiene que
+    // poder borrarla desde la app. La pantalla avisa qué alcance tiene según
+    // quién sea — un empleado se lleva su acceso; el último dueño, el local.
+    SettingRow('Eliminar cuenta', 'Delete account',
+        descEs: 'Tu cuenta y, si sos el último dueño, el local entero.',
+        descEn: 'Your account and, if you are the last owner, the whole business.',
+        action: 'delete', danger: true, open: DeleteAccountPage.new),
   ]),
 ];

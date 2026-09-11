@@ -193,11 +193,19 @@ class TableCard extends StatelessWidget {
       curve: Curves.easeOut,
       child: Opacity(
         opacity: free ? 0.55 : 1,
-        child: InkWell(
-          onTap: onOpen,
-          onLongPress: onLongPress,
-          borderRadius: BorderRadius.circular(16),
-          child: card,
+        // La tarjeta es un botón dibujado a mano: sin esto VoiceOver la lee como
+        // una pila de textos sueltos y no dice que se puede tocar. El rótulo junta
+        // lo que el mozo ve de un vistazo —mesa, estado y minutos— en una sola
+        // frase, que es como la escucha quien no puede mirarla.
+        child: Semantics(
+          button: true,
+          label: _semanticLabel(context, s, v),
+          child: InkWell(
+            onTap: onOpen,
+            onLongPress: onLongPress,
+            borderRadius: BorderRadius.circular(16),
+            child: card,
+          ),
         ),
       ),
     );
@@ -205,14 +213,33 @@ class TableCard extends StatelessWidget {
 
   /// Color real por estado (antes "en cocina / abierta / libre" eran el mismo
   /// gris): ámbar = atención, esmeralda = servida, primario = a cobrar.
+  /// Lo que VoiceOver dice de la tarjeta, en una frase.
+  ///
+  /// El orden importa: primero qué mesa es, después en qué estado está y recién
+  /// al final el detalle. Quien escucha no puede saltear con la vista, así que lo
+  /// que decide la acción va adelante.
+  String _semanticLabel(BuildContext context, Strings s, FloorView v) {
+    final parts = <String>[
+      // El nombre propio ('Ventana 1') dice más que el número; si no tiene,
+      // se cae al rótulo numerado que ya usa el resto de la app.
+      table.name ?? s.tableLabel(table.number),
+      s.floorState(v.status),
+      if (v.minutes != null) s.minutesLabel(v.minutes!),
+      if (v.totalAmount != null && v.currency != null)
+        formatMoney(v.totalAmount!, v.currency!),
+      if (v.waiterName != null) v.waiterName!,
+    ];
+    return parts.join('. ');
+  }
+
   Color _accent(FloorStatus status, ColorScheme scheme) {
     switch (status) {
       case FloorStatus.toServe:
-        return WellnodPalette.warn;
+        return WellnodPalette.warnOn(scheme.brightness);
       case FloorStatus.toCharge:
-        return WellnodPalette.warn;
+        return WellnodPalette.warnOn(scheme.brightness);
       case FloorStatus.served:
-        return const Color(0xFF10B981);
+        return WellnodPalette.successOn(scheme.brightness);
       case FloorStatus.inKitchen:
         return scheme.primary;
       case FloorStatus.open:

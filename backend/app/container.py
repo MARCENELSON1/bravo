@@ -70,6 +70,7 @@ from app.application.floor.use_cases import GetFloor
 from app.application.identity.accept_invitation import AcceptInvitation
 from app.application.identity.authenticate import Authenticate
 from app.application.identity.change_password import ChangePassword
+from app.application.identity.delete_account import DeleteMyAccount, PreviewAccountDeletion
 from app.application.identity.get_my_profile import GetMyProfile
 from app.application.identity.invite_user import InviteUser
 from app.application.identity.logout import Logout
@@ -698,6 +699,20 @@ class Container(containers.DeclarativeContainer):
         users=user_repository,
         tenants=tenant_repository,
         tenant_context=tenant_context,
+    )
+    preview_account_deletion = providers.Factory(
+        PreviewAccountDeletion,
+        users=user_repository,
+        tenants=tenant_repository,
+        tenant_context=tenant_context,
+    )
+    delete_my_account = providers.Factory(
+        DeleteMyAccount,
+        users=user_repository,
+        tenants=tenant_repository,
+        hasher=password_hasher,
+        tenant_context=tenant_context,
+        preview=preview_account_deletion,
     )
     invite_user = providers.Factory(
         InviteUser,

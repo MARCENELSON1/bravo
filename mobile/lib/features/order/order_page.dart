@@ -54,6 +54,7 @@ class _OrderPageState extends ConsumerState<OrderPage> {
         actions: [
           const SyncIndicator(),
           IconButton(
+            tooltip: s.printerTitle,
             icon: const Icon(Icons.print_outlined),
             onPressed: () => Navigator.of(context)
                 .push(MaterialPageRoute(builder: (_) => const PrinterPage())),
@@ -232,9 +233,12 @@ class _OrderPageState extends ConsumerState<OrderPage> {
     final isNext = order.nextCourse == c;
     final ready = st == CourseState.ready;
     final Color accent = switch (st) {
-      CourseState.ready => WellnodPalette.warn,
+      // Tonos legibles sobre el fondo de la app en los dos temas: en oscuro son
+      // idénticos a los de antes; en claro se oscurecen, porque el esmeralda
+      // daba 2,54:1 sobre blanco — se veía, no se leía.
+      CourseState.ready => WellnodPalette.warnOn(theme.brightness),
       CourseState.inKitchen => theme.colorScheme.primary,
-      CourseState.served => const Color(0xFF10B981),
+      CourseState.served => WellnodPalette.successOn(theme.brightness),
       _ => theme.colorScheme.onSurfaceVariant,
     };
     return Padding(

@@ -122,6 +122,7 @@ class _CaptureGridState extends ConsumerState<CaptureGrid> {
           suffixIcon: _search.text.isEmpty
               ? null
               : IconButton(
+                  tooltip: s.clearSearchTooltip,
                   icon: const Icon(Icons.close),
                   onPressed: () => _search.clear(),
                 ),
@@ -213,6 +214,15 @@ class _ProductTile extends StatelessWidget {
   final VoidCallback onLongPress;
   final VoidCallback onRemove;
 
+  /// Lo que VoiceOver dice del tile: qué plato, cuánto sale y cuántos van.
+  String _semanticLabel(BuildContext context) {
+    final s = context.s;
+    final price = formatMoney(product.priceAmount, product.currency);
+    return count > 0
+        ? '${product.name}. $price. ${s.inOrderCount(count)}'
+        : '${product.name}. $price';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -230,57 +240,79 @@ class _ProductTile extends StatelessWidget {
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
-            onLongPress: onLongPress,
-            child: Ink(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                // Tinte de la categoría; si ya está en la comanda, el primario manda.
-                color: has
-                    ? scheme.primary.withValues(alpha: 0.16)
-                    : accent.withValues(alpha: 0.10),
-                border: Border.all(
+          // El control más tocado de la app. Sin rótulo, VoiceOver lee el nombre
+          // del plato pero no el precio, ni cuántos van cargados, ni que se puede
+          // tocar — que es justo lo que decide el toque siguiente.
+          child: Semantics(
+            button: true,
+            label: _semanticLabel(context),
+            child: InkWell(
+              onTap: onTap,
+              onLongPress: onLongPress,
+              child: Ink(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  // Tinte de la categoría; si ya está en la comanda, el primario manda.
                   color: has
-                      ? scheme.primary.withValues(alpha: 0.65)
-                      : accent.withValues(alpha: 0.28),
+                      ? scheme.primary.withValues(alpha: 0.16)
+                      : accent.withValues(alpha: 0.10),
+                  border: Border.all(
+                    color: has
+                        ? scheme.primary.withValues(alpha: 0.65)
+                        : accent.withValues(alpha: 0.28),
+                  ),
                 ),
-              ),
-              child: hasImage
-                  ? _WithImage(
-                      product: product,
-                      url: url,
-                      accent: accent,
-                      icon: icon,
-                      fallback: _Plain(
+                child: hasImage
+                    ? _WithImage(
                         product: product,
+                        url: url,
                         accent: accent,
                         icon: icon,
-                      ),
-                    )
-                  : _Plain(product: product, accent: accent, icon: icon),
+                        fallback: _Plain(
+                          product: product,
+                          accent: accent,
+                          icon: icon,
+                        ),
+                      )
+                    : _Plain(product: product, accent: accent, icon: icon),
+              ),
             ),
           ),
         ),
         // Quitar uno: solo aparece si ese producto está en la comanda, así la
         // grilla no se llena de controles cuando está vacía.
         if (has)
+          // El círculo se ve de 26, pero se toca en 44 — el mínimo de la guía de
+          // Apple. Medía 26 y es el control que el mozo aprieta con el pulgar en
+          // pleno servicio: el área invisible de más es la diferencia entre
+          // quitar uno y abrir el plato por error. El desplazamiento compensa
+          // el margen para que el círculo quede donde estaba.
           Positioned(
-            top: -8,
-            left: -8,
-            child: Material(
-              color: scheme.surfaceContainerHighest,
-              shape: const CircleBorder(),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: onRemove,
-                child: SizedBox(
-                  width: 26,
-                  height: 26,
-                  child: Icon(
-                    Icons.remove,
-                    size: 16,
-                    color: scheme.onSurfaceVariant,
+            top: -17,
+            left: -17,
+            child: Semantics(
+              button: true,
+              label: context.s.removeOneLabel(product.name),
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: InkWell(
+                  onTap: onRemove,
+                  customBorder: const CircleBorder(),
+                  child: Center(
+                    child: Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: scheme.surfaceContainerHighest,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.remove,
+                        size: 16,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 ),
               ),

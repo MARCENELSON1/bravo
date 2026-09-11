@@ -79,6 +79,7 @@ class _PrinterPageState extends ConsumerState<PrinterPage> {
         actions: [
           IconButton(
             onPressed: _loading ? null : _scan,
+            tooltip: s.rescanTooltip,
             icon: const Icon(Icons.refresh),
           ),
         ],

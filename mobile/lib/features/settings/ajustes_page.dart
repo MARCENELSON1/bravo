@@ -16,6 +16,16 @@ import 'settings_sections.dart';
 
 /// Filas placeholder que se ocultan porque la sección ya las renderiza como
 /// controles reales (para no mostrarlas dos veces).
+/// Tabs que renderizan un widget real (no filas) — deben sobrevivir el filtro
+/// aunque todas sus filas sean de relleno. Espejo de los `if (tab.id == ...)` del
+/// build; si se agrega una sección allá, va acá.
+const _tabsWithSection = <String>{
+  'apariencia', 'caja', 'salones', 'negocio', 'equipo', 'integraciones',
+};
+
+bool _hasSection(String id, bool isAdmin) =>
+    id == 'apariencia' || (isAdmin && _tabsWithSection.contains(id));
+
 const _functionalRows = <String, Set<String>>{
   'caja': {'Apertura de caja obligatoria', 'Arqueo ciego'},
   'salones': {'Sectores'},
@@ -34,8 +44,19 @@ class AjustesPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = context.s;
     final en = Localizations.localeOf(context).languageCode == 'en';
+    // Una tab entra si tiene una sección real o al menos una fila real. Sin esto,
+    // filtrar las filas de relleno dejaba tabs vacías — que se ven tan rotas como
+    // el "Próximamente" que vinimos a sacar. Se enciende sola cuando su contenido
+    // se vuelve real, así que no hay una lista que mantener a mano.
+    final st = ref.watch(sessionProvider);
+    final isAdmin =
+        (st is SessionAuthenticated ? st.session.role.isAdmin : false);
+    final tabs = [
+      for (final t in settingsTabs)
+        if (_hasSection(t.id, isAdmin) || t.rows.any((r) => r.isReal)) t,
+    ];
     return DefaultTabController(
-      length: settingsTabs.length,
+      length: tabs.length,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -44,7 +65,7 @@ class AjustesPage extends ConsumerWidget {
           bottom: TabBar(
             isScrollable: true,
             tabAlignment: TabAlignment.start,
-            tabs: [for (final t in settingsTabs) Tab(text: t.title(en))],
+            tabs: [for (final t in tabs) Tab(text: t.title(en))],
           ),
         ),
         body: Stack(
@@ -53,7 +74,7 @@ class AjustesPage extends ConsumerWidget {
             SafeArea(
               top: false,
               child: TabBarView(
-                children: [for (final t in settingsTabs) _TabView(tab: t)],
+                children: [for (final t in tabs) _TabView(tab: t)],
               ),
             ),
           ],
@@ -74,14 +95,20 @@ class _TabView extends ConsumerWidget {
     final sessionState = ref.watch(sessionProvider);
     final session =
         sessionState is SessionAuthenticated ? sessionState.session : null;
-    // Las secciones funcionales (caja/salones/negocio/equipo/integraciones)
-    // son OWNER/MANAGER — a los operativos les daría 403. Solo se muestran a
-    // admins; para el resto esas tabs quedan como placeholders.
+    // Las secciones funcionales (caja/salones/negocio/equipo/integraciones) son
+    // OWNER/MANAGER — a los operativos les daría 403. Para ellos la tab no
+    // aparece: antes quedaba visible y vacía.
     final isAdmin = session?.role.isAdmin ?? false;
 
+    // Solo sobrevive la fila que lee estado real o abre algo que existe. Antes se
+    // renderizaban las 83 y las que no tenían backend mostraban "Próximamente" o
+    // un valor inventado; `hidden` tapaba apenas 5. Ver `settings_sections.dart`.
     final hidden =
         isAdmin ? (_functionalRows[tab.id] ?? const <String>{}) : const <String>{};
-    final rows = [for (final r in tab.rows) if (!hidden.contains(r.es)) r];
+    final rows = [
+      for (final r in tab.rows)
+        if (r.isReal && !hidden.contains(r.es)) r,
+    ];
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -177,15 +204,14 @@ class _TabView extends ConsumerWidget {
     } else if (value != null) {
       trailing = Text(value,
           style: TextStyle(color: scheme.onSurfaceVariant));
-    } else if (r.action != null) {
+    } else if (r.open != null) {
       trailing = TextButton(
-        onPressed: () => ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(s.editSoon))),
+        onPressed: () => Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => r.open!())),
         style: TextButton.styleFrom(
-          foregroundColor:
-              r.danger ? scheme.error : scheme.onSurfaceVariant,
+          foregroundColor: r.danger ? scheme.error : scheme.primary,
         ),
-        child: Text(settingsActionLabel(r.action!, en)),
+        child: Text(settingsActionLabel(r.action ?? 'view', en)),
       );
     }
 

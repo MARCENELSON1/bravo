@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 
 from app.domain.user.entities import User
 from app.domain.user.repository import UserRepository
@@ -65,3 +65,28 @@ class SqlAlchemyUserRepository(UserRepository):
     async def save(self, user: User) -> None:
         async with self._session_factory() as session:
             await session.merge(user_to_orm(user))
+
+    async def delete(self, tenant_id: str, user_id: str) -> None:
+        async with self._session_factory() as session:
+            await session.execute(
+                delete(UserORM).where(
+                    UserORM.id == user_id, UserORM.tenant_id == tenant_id
+                )
+            )
+            await session.commit()
+
+    async def count_active_owners(self, tenant_id: str) -> int:
+        async with self._session_factory() as session:
+            return int(
+                (
+                    await session.execute(
+                        select(func.count())
+                        .select_from(UserORM)
+                        .where(
+                            UserORM.tenant_id == tenant_id,
+                            UserORM.role == Role.OWNER.value,
+                            UserORM.active.is_(True),
+                        )
+                    )
+                ).scalar_one()
+            )

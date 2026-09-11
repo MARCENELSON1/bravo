@@ -78,6 +78,9 @@ class FakeTenantRepository(TenantRepository):
             tenant.fiscal_state = state
             tenant.fiscal_zip = zip_code
 
+    async def delete(self, tenant_id: str) -> None:
+        self.by_id.pop(tenant_id, None)
+
 
 class FakeUserRepository(UserRepository):
     def __init__(self) -> None:
@@ -112,6 +115,16 @@ class FakeUserRepository(UserRepository):
 
     async def save(self, user: User) -> None:
         self.by_id[user.id] = user
+
+    async def delete(self, tenant_id: str, user_id: str) -> None:
+        self.by_id.pop(user_id, None)
+
+    async def count_active_owners(self, tenant_id: str) -> int:
+        return sum(
+            1
+            for u in self.by_id.values()
+            if u.tenant_id == tenant_id and u.role is Role.OWNER and u.active
+        )
 
 
 class FakeRefreshTokenRepository(RefreshTokenRepository):

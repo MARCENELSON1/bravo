@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Manifiesto de privacidad de Wellnod (obligatorio desde mayo de 2024).
+
+  Los plugins traen el suyo (shared_preferences, secure_storage, connectivity);
+  éste es el del propio target Runner y es el que declara qué recolecta la APP,
+  cosa que ningún plugin puede saber por nosotros.
+
+  Wellnod es una herramienta de trabajo, no un producto de audiencia: no hay
+  seguimiento, ni publicidad, ni venta de datos. Lo único personal que se guarda
+  es lo que hace falta para que alguien entre a su cuenta y el equipo sepa quién
+  atendió qué. Por eso `NSPrivacyTracking` es false y no hay dominios de tracking.
+
+  Al tocar esto, tiene que coincidir con las etiquetas de privacidad cargadas en
+  App Store Connect: si divergen, la revisión lo marca.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array>
+		<!-- Email y nombre: identifican la cuenta y se muestran al equipo (quién
+		     cobró, quién atendió la mesa). Ligados a la persona, sin tracking. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeEmailAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeName</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<!-- Identificador de dispositivo: el token de push. Sirve para avisarle al
+		     mozo que su mesa está lista; no se usa para perfilar a nadie. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeDeviceID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<!-- CA92.1: leer/escribir SOLO los datos de la propia app (preferencias:
+		     tema, idioma, cola de contingencia). No se leen las de nadie más. -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

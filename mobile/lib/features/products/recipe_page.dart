@@ -119,10 +119,12 @@ class _RecipePageState extends ConsumerState<RecipePage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
+            tooltip: s.editQtyTooltip,
             icon: const Icon(Icons.edit_outlined, size: 18),
             onPressed: () => _editQty(s, idx),
           ),
           IconButton(
+            tooltip: s.removeLineTooltip,
             icon: const Icon(Icons.delete_outline, size: 18),
             onPressed: () => setState(() => _lines!.removeAt(idx)),
           ),

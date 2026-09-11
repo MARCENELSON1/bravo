@@ -32,3 +32,15 @@ class UserRepository(ABC):
 
     @abstractmethod
     async def save(self, user: User) -> None: ...
+
+    @abstractmethod
+    async def delete(self, tenant_id: str, user_id: str) -> None:
+        """Borra la cuenta de una persona. Las filas que le pertenecen (fichajes,
+        tokens de dispositivo) caen por CASCADE; las referencias históricas
+        —quién cobró, quién atendió una mesa— quedan con el id huérfano a
+        propósito: la venta ocurrió y el libro no se reescribe."""
+
+    @abstractmethod
+    async def count_active_owners(self, tenant_id: str) -> int:
+        """Cuántos OWNER activos quedan. Si el que se va es el último, borrar solo
+        su usuario dejaría un local sin nadie que pueda administrarlo."""

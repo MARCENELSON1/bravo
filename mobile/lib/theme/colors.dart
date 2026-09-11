@@ -47,8 +47,22 @@ class WellnodPalette {
   final Color sidebar;
 
   /// Ámbar de "atención/demora" (mesa o comanda que se está pasando de tiempo).
-  /// Único token semántico de warning; sirve para claro y oscuro.
+  /// Este es el tono de RELLENO: va de fondo, con texto negro encima (9,77:1 en
+  /// los dos temas). NO usarlo como color de texto sobre el fondo de la app —
+  /// sobre blanco da 2,15:1 y es ilegible. Para eso está [warnOn].
   static const Color warn = Color(0xFFE0A800);
+
+  /// Verde de "listo/servido". Mismo caso que [warn]: tono de relleno.
+  static const Color success = Color(0xFF10B981);
+
+  /// Los mismos dos, en la versión que SÍ se puede usar como texto o ícono sobre
+  /// el fondo de la app. El tono es el mismo; cambia la luminosidad, porque un
+  /// color legible sobre negro no lo es sobre blanco y al revés. Sin esto, el
+  /// verde de "servido" daba 2,54:1 en modo claro — se veía, pero no se leía.
+  static Color warnOn(Brightness b) =>
+      b == Brightness.dark ? warn : const Color(0xFFB45309); // 9,04 / 5,02
+  static Color successOn(Brightness b) =>
+      b == Brightness.dark ? success : const Color(0xFF047857); // 7,66 / 5,48
 
   /// `:root` (index.css:54-87)
   static const WellnodPalette light = WellnodPalette(

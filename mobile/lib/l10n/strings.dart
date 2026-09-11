@@ -983,6 +983,51 @@ class Strings {
       _en ? 'Finance settings' : 'Configuración de finanzas';
   String get financeConfigOpen =>
       _en ? 'Finance settings' : 'Configuración de finanzas';
+  String inOrderCount(int n) =>
+      _en ? '$n in the order' : '$n en la comanda';
+
+  String removeOneLabel(String product) =>
+      _en ? 'Remove one $product' : 'Quitar un $product';
+
+  // --- Etiquetas para lectores de pantalla (VoiceOver / TalkBack) ---
+  // Un botón de solo ícono es mudo sin esto. En Flutter el `tooltip` del
+  // IconButton es además su `semanticLabel`, así que uno cubre las dos cosas.
+  String get clearSearchTooltip => _en ? 'Clear search' : 'Limpiar la búsqueda';
+  String get editQtyTooltip => _en ? 'Edit quantity' : 'Editar la cantidad';
+  String get removeLineTooltip => _en ? 'Remove ingredient' : 'Quitar el insumo';
+  String get rescanTooltip => _en ? 'Search for printers again' : 'Volver a buscar impresoras';
+
+  // --- Borrar cuenta (App Store 5.1.1(v)) ---
+  String get deleteAccountTitle => _en ? 'Delete account' : 'Eliminar cuenta';
+  String get deleteAccountScopeError => _en
+      ? "We couldn't check what would be deleted. Try again."
+      : 'No pudimos verificar qué se borraría. Probá de nuevo.';
+  String get deleteAccountUserTitle =>
+      _en ? 'You will lose access' : 'Vas a perder tu acceso';
+  String get deleteAccountUserBody => _en
+      ? 'Your account is removed and you can no longer sign in. The business and '
+          'its history stay — the sales you registered are not rewritten.'
+      : 'Se elimina tu cuenta y no vas a poder volver a entrar. El local y su '
+          'historial quedan — las ventas que registraste no se reescriben.';
+  String deleteAccountBusinessTitle(String tenant) => _en
+      ? 'This deletes $tenant entirely'
+      : 'Esto elimina $tenant por completo';
+  String get deleteAccountBusinessBody => _en
+      ? 'You are the last owner, so the whole business goes: orders, payments, '
+          'invoices, stock, staff and every other account. It cannot be undone '
+          'and there is no backup on our side.'
+      : 'Sos el último dueño, así que se va el local entero: comandas, cobros, '
+          'comprobantes, stock, personal y todas las demás cuentas. No se puede '
+          'deshacer y no guardamos una copia.';
+  String get deleteAccountPasswordLabel => _en ? 'Your password' : 'Tu contraseña';
+  String get deleteAccountPasswordHelp => _en
+      ? 'We ask again because this cannot be undone.'
+      : 'Te la pedimos de nuevo porque esto no se puede deshacer.';
+  String deleteAccountConfirmLabel(String tenant) =>
+      _en ? 'Type "$tenant" to confirm' : 'Escribí "$tenant" para confirmar';
+  String get deleteAccountConfirmAction =>
+      _en ? 'Delete permanently' : 'Eliminar definitivamente';
+
   String get editSoon => _en ? 'Coming soon' : 'Próximamente';
   String get reduceMotion => _en ? 'Reduce motion' : 'Reducir movimiento';
   String get reduceMotionDesc => _en

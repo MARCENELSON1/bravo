@@ -31,3 +31,9 @@ class TenantRepository(ABC):
         state: str | None,
         zip_code: str | None,
     ) -> None: ...
+
+    @abstractmethod
+    async def delete(self, tenant_id: str) -> None:
+        """Borra el local y TODO lo suyo. Las 44 claves foráneas a ``tenants``
+        tienen ``ON DELETE CASCADE``, así que una sola sentencia se lleva
+        comandas, cobros, insumos, comprobantes y usuarios. Irreversible."""
