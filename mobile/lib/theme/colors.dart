@@ -55,6 +55,19 @@ class WellnodPalette {
   /// Verde de "listo/servido". Mismo caso que [warn]: tono de relleno.
   static const Color success = Color(0xFF10B981);
 
+  /// Los mismos dos como RELLENO, con su color de texto encima — el par que el
+  /// web define como `--success` / `--success-foreground`. Sirven para un chip o
+  /// una insignia, donde el color es el fondo. Para texto sobre el fondo de la
+  /// app están [successOn] / [warnOn], que es otra cosa: confundirlos es
+  /// exactamente cómo el verde de "servido" terminó en 2,54:1.
+  static Color successFill(Brightness b) =>
+      b == Brightness.dark ? const Color(0xFF3DCA8D) : const Color(0xFF009962);
+  static Color onSuccessFill(Brightness b) =>
+      b == Brightness.dark ? const Color(0xFF05100B) : const Color(0xFFFAFAFA);
+  static Color warnFill(Brightness b) =>
+      b == Brightness.dark ? const Color(0xFFF7B83D) : const Color(0xFFCB7F00);
+  static const Color onWarnFill = Color(0xFF090F0C);
+
   /// Los mismos dos, en la versión que SÍ se puede usar como texto o ícono sobre
   /// el fondo de la app. El tono es el mismo; cambia la luminosidad, porque un
   /// color legible sobre negro no lo es sobre blanco y al revés. Sin esto, el
@@ -78,7 +91,7 @@ class WellnodPalette {
     mutedForeground: Color(0xFF596760),
     accent: Color(0xFFDDF5E9),
     accentForeground: Color(0xFF0D1914),
-    destructive: Color(0xFFE40016),
+    destructive: Color(0xFFE7000B), // espejo de index.css
     border: Color(0xFFD8E0DC),
     input: Color(0xFFD8E0DC),
     ring: Color(0xFF00A271),
@@ -99,7 +112,7 @@ class WellnodPalette {
     mutedForeground: Color(0xFF94A39B),
     accent: Color(0xFF1D2A24),
     accentForeground: Color(0xFFF2F6F4),
-    destructive: Color(0xFFFF6568),
+    destructive: Color(0xFFFF6467), // espejo de index.css
     border: Color(0x14FFFFFF), // white @ 8%
     input: Color(0x1FFFFFFF), // white @ 12%
     ring: Color(0xFF00BB83),
