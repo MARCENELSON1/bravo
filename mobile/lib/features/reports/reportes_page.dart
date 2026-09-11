@@ -144,7 +144,7 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
                 style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             twoColGrid([
-              stat(s.repSales, d.sales),
+              stat(s.repSales, d.salesCollected),
               stat(s.repCollectedNet, d.collectedNet),
               stat(s.repExpenses, d.expenses),
               stat(s.repProfit, d.profit, accent: true),

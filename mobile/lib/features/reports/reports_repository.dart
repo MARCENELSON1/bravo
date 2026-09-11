@@ -9,7 +9,7 @@ import '../finance/finance_range.dart';
 class ReportSummary {
   const ReportSummary({
     required this.currency,
-    required this.sales,
+    required this.salesCollected,
     required this.collectedNet,
     required this.expenses,
     required this.avgTicket,
@@ -17,7 +17,8 @@ class ReportSummary {
     required this.profit,
   });
   final String currency;
-  final int sales;
+  /// Lo COBRADO en el período, bruto de comisiones (NO lo vendido).
+  final int salesCollected;
   final int collectedNet;
   final int expenses;
   final int avgTicket;
@@ -30,15 +31,13 @@ class ReportSummary {
   final int profit;
   factory ReportSummary.fromJson(Map<String, dynamic> j) => ReportSummary(
         currency: (j['currency'] as String?) ?? 'ARS',
-        // Nombre nuevo; el viejo (`sales`) queda de respaldo para un backend
-        // anterior al renombre. Los dos traen lo COBRADO, no lo vendido.
-        sales: (j['sales_collected'] as int?) ?? (j['sales'] as int?) ?? 0,
+        // OJO: es lo COBRADO, no lo vendido (el nombre del campo lo dice).
+        salesCollected: (j['sales_collected'] as int?) ?? 0,
         collectedNet: (j['collected_net'] as int?) ?? 0,
         expenses: (j['expenses'] as int?) ?? 0,
         avgTicket: (j['avg_ticket'] as int?) ?? 0,
         paidOrders: (j['paid_orders'] as int?) ?? 0,
-        profit: (j['profit_net_of_fees'] as int?) ??
-            (((j['collected_net'] as int?) ?? 0) - ((j['expenses'] as int?) ?? 0)),
+        profit: (j['profit_net_of_fees'] as int?) ?? 0,
       );
 }
 

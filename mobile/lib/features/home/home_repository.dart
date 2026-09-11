@@ -10,9 +10,8 @@ import '../reports/reports_repository.dart';
 class DashboardSummary {
   const DashboardSummary({
     required this.currency,
-    required this.sales,
+    required this.salesCollected,
     required this.expenses,
-    required this.net,
     required this.activeOrders,
     required this.paidOrders,
     required this.avgTicket,
@@ -23,9 +22,9 @@ class DashboardSummary {
   });
 
   final String currency;
-  final int sales;
+  /// Lo COBRADO en el período, bruto de comisiones (NO lo vendido).
+  final int salesCollected;
   final int expenses;
-  final int net;
   final int activeOrders;
   final int paidOrders;
   final int avgTicket;
@@ -40,18 +39,15 @@ class DashboardSummary {
 
   factory DashboardSummary.fromJson(Map<String, dynamic> j) => DashboardSummary(
         currency: j['currency'] as String,
-        sales: (j['sales_collected'] as int?) ?? (j['sales'] as int?) ?? 0,
+        salesCollected: (j['sales_collected'] as int?) ?? 0,
         expenses: (j['expenses'] as int?) ?? 0,
-        net: (j['profit_gross_of_fees'] as int?) ?? (j['net'] as int?) ?? 0,
         activeOrders: (j['active_orders'] as int?) ?? 0,
         paidOrders: (j['paid_orders'] as int?) ?? 0,
         avgTicket: (j['avg_ticket'] as int?) ?? 0,
         collectedNet: (j['collected_net'] as int?) ?? 0,
         feesTotal: (j['fees_total'] as int?) ?? 0,
         paymentCount: (j['payment_count'] as int?) ?? 0,
-        profit: (j['profit_net_of_fees'] as int?) ??
-            (((j['collected_net'] as int?) ?? (j['sales'] as int?) ?? 0) -
-                ((j['expenses'] as int?) ?? 0)),
+        profit: (j['profit_net_of_fees'] as int?) ?? 0,
       );
 }
 

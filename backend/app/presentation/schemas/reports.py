@@ -6,13 +6,10 @@ from pydantic import BaseModel
 class DashboardSummaryResponse(BaseModel):
     """Resumen del período. Cada importe dice sobre qué base está medido.
 
-    **Sobre ``sales`` y ``net``:** son los nombres VIEJOS de ``sales_collected``
-    y ``profit_gross_of_fees``, y se siguen enviando con el mismo valor. No es
-    indecisión: los lee una app móvil ya publicada, y sacarlos de la respuesta le
-    mostraría $0 a quien todavía no actualizó. Se borran cuando no quede ninguna
-    build en circulación anterior a la que consume los nombres nuevos — el test
-    ``test_dashboard_deprecated_aliases_match_new_names`` es el que garantiza,
-    mientras tanto, que las dos versiones ven exactamente el mismo número.
+    Hubo por un rato un alias ``sales``/``net`` para no romper una build vieja;
+    se sacó a pedido, subiendo una build nueva en su lugar. Queda anotado porque
+    es la decisión que importa: **un nombre que engaña no se deja "por
+    compatibilidad"** — se renombra y se actualiza el cliente.
     """
 
     currency: str
@@ -29,10 +26,6 @@ class DashboardSummaryResponse(BaseModel):
     collected_net: int = 0  # cobrado neto de comisiones
     fees_total: int = 0
     profit_net_of_fees: int = 0  # collected_net − expenses
-
-    # --- Alias deprecados (ver docstring). No usar en código nuevo. ---
-    sales: int = 0
-    net: int = 0
 
 
 class StaffReportRowResponse(BaseModel):

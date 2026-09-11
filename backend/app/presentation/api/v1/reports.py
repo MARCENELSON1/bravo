@@ -54,9 +54,6 @@ async def dashboard(
         collected_net=s.collected_net,
         fees_total=s.fees_total,
         profit_net_of_fees=s.profit_net_of_fees,
-        # Alias deprecados: mismo valor, para las apps ya publicadas.
-        sales=s.sales_collected,
-        net=s.profit_gross_of_fees,
     )
 
 

@@ -55,7 +55,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     final d = summary.valueOrNull;
     final currency = d?.currency ?? 'ARS';
-    final sales = d?.sales ?? 0;
+    final sales = d?.salesCollected ?? 0;
     final expenses = d?.expenses ?? 0;
     final feesTotal = d?.feesTotal ?? 0;
     // Lo calcula el backend (`profit_net_of_fees`). Esta resta estaba acá, en

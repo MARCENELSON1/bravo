@@ -13,7 +13,8 @@ async def test_dashboard_summary(client):
 
     # Empty tenant → all zeros.
     empty = (await http.get("/api/v1/reports/dashboard", headers=h)).json()
-    assert empty["sales"] == 0 and empty["active_orders"] == 0 and empty["paid_orders"] == 0
+    assert empty["sales_collected"] == 0
+    assert empty["active_orders"] == 0 and empty["paid_orders"] == 0
 
     # One order (total 300000) fully paid + one egreso.
     order_id = await _make_order(http, h)
@@ -57,7 +58,7 @@ async def test_dashboard_summary(client):
     past = (
         await http.get("/api/v1/reports/dashboard?from=2000-01-01T00:00:00Z", headers=h)
     ).json()
-    assert past["sales"] == 300000
+    assert past["sales_collected"] == 300000
     assert past["expenses"] == 50000
 
 
@@ -81,36 +82,6 @@ async def test_dashboard_reflects_commission(client):
     )
     assert r.status_code == 201, r.text
     s = (await http.get("/api/v1/reports/dashboard", headers=h)).json()
-    assert s["sales"] == 200000  # bruto (lo que entró)
+    assert s["sales_collected"] == 200000  # bruto (lo que entró)
     assert s["collected_net"] == 194000  # tras 3% → lo que queda
     assert s["fees_total"] == 6000
-
-
-async def test_dashboard_deprecated_aliases_match_new_names(client):
-    """Los nombres viejos siguen valiendo lo mismo que los nuevos.
-
-    ``sales`` y ``net`` se renombraron a ``sales_collected`` y
-    ``profit_gross_of_fees`` porque "ventas" para lo COBRADO hacía que esta
-    pantalla y Analytics mostraran dos cifras distintas bajo la misma palabra.
-    Pero sacarlos de la respuesta le mostraría $0 a las apps ya publicadas, así
-    que viajan los dos.
-
-    Este test es lo que hace que ese alias sea una transición y no un olvido: si
-    alguien toca uno de los dos caminos y se olvida del otro, una versión de la
-    app empieza a ver un número distinto de la otra — y nadie se entera. Se borra
-    junto con los alias, cuando no quede build vieja en circulación.
-    """
-    http, fake_email = client
-    h = _auth(await _onboard_verify_login(http, fake_email, slug="alias", email="o@alias.com"))
-    order_id = await _make_order(http, h)  # total 300000
-    await http.post(
-        f"/api/v1/orders/{order_id}/payments",
-        json={"method": "CASH", "amount": 300000},
-        headers=h,
-    )
-
-    s = (await http.get("/api/v1/reports/dashboard", headers=h)).json()
-
-    assert s["sales"] == s["sales_collected"]
-    assert s["net"] == s["profit_gross_of_fees"]
-    assert s["sales_collected"] > 0, "con todo en cero el test no probaría nada"

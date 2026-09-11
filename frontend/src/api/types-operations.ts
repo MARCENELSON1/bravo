@@ -540,10 +540,6 @@ export interface DashboardSummaryDTO {
   // más de "ganancia" entraba sin pasar por ningún caso de uso.
   profit_net_of_fees: number
   fees_total: number // total de comisiones de pasarela
-  /** @deprecated alias de `sales_collected`; se va cuando no queden apps viejas. */
-  sales?: number
-  /** @deprecated alias de `profit_gross_of_fees`. */
-  net?: number
 }
 
 // Comisiones (slice B): tasa de comisión por método (bps; 300 = 3%).
