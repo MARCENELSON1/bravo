@@ -84,6 +84,82 @@ class ProductMargin {
       );
 }
 
+/// Un punto de la evolución del costo del plato (backend `ProductCostPointResponse`).
+///
+/// Lo agrega el backend por día sobre la ventana ENTERA. No se deriva de `lines`
+/// —que viene acotada— porque en un plato muy vendido eso perdería los días más
+/// viejos sin decirlo.
+class ProductCostPoint {
+  const ProductCostPoint({required this.day, required this.unitCost});
+  final String day; // YYYY-MM-DD
+  final int unitCost;
+  factory ProductCostPoint.fromJson(Map<String, dynamic> j) => ProductCostPoint(
+        day: (j['day'] as String?) ?? '',
+        unitCost: (j['unit_cost'] as int?) ?? 0,
+      );
+}
+
+/// Una venta del plato (backend `ProductSaleLineResponse`).
+class ProductSaleLine {
+  const ProductSaleLine({
+    required this.occurredAt,
+    required this.quantity,
+    required this.lineAmount,
+    required this.marginAmount,
+  });
+  final String occurredAt;
+  final int quantity;
+  final int lineAmount;
+  final int marginAmount;
+  factory ProductSaleLine.fromJson(Map<String, dynamic> j) => ProductSaleLine(
+        occurredAt: (j['occurred_at'] as String?) ?? '',
+        quantity: (j['quantity'] as int?) ?? 0,
+        lineAmount: (j['line_amount'] as int?) ?? 0,
+        marginAmount: (j['margin_amount'] as int?) ?? 0,
+      );
+}
+
+/// El detalle de un plato en el período (backend `ProductDetailResponse`).
+///
+/// `lines` viene ACOTADA a las más recientes; los totales y `costSeries` cubren
+/// la ventana entera. `linesTruncated` avisa que hubo más — sin eso, el listado
+/// parecería ser todo lo vendido.
+class ProductDetail {
+  const ProductDetail({
+    required this.currency,
+    required this.unitsSold,
+    required this.salesAmount,
+    required this.foodCostAmount,
+    required this.marginAmount,
+    required this.lines,
+    required this.costSeries,
+    required this.linesTruncated,
+  });
+  final String currency;
+  final int unitsSold;
+  final int salesAmount;
+  final int foodCostAmount;
+  final int marginAmount;
+  final List<ProductSaleLine> lines;
+  final List<ProductCostPoint> costSeries;
+  final bool linesTruncated;
+
+  factory ProductDetail.fromJson(Map<String, dynamic> j) => ProductDetail(
+        currency: (j['currency'] as String?) ?? 'ARS',
+        unitsSold: (j['units_sold'] as int?) ?? 0,
+        salesAmount: (j['sales_amount'] as int?) ?? 0,
+        foodCostAmount: (j['food_cost_amount'] as int?) ?? 0,
+        marginAmount: (j['margin_amount'] as int?) ?? 0,
+        lines: ((j['lines'] as List?) ?? const [])
+            .map((e) => ProductSaleLine.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList(),
+        costSeries: ((j['cost_series'] as List?) ?? const [])
+            .map((e) => ProductCostPoint.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList(),
+        linesTruncated: (j['lines_truncated'] as bool?) ?? false,
+      );
+}
+
 /// Un diagnóstico/alerta financiera (backend `FinanceDiagnosticResponse`).
 class FinanceDiagnostic {
   const FinanceDiagnostic({
@@ -250,6 +326,16 @@ class FinanceRepository {
       final res = await _dio.get<dynamic>('/finance/expenses/breakdown',
           queryParameters: {'from': w.from, 'to': w.to});
       return ExpenseBreakdown.fromJson(Map<String, dynamic>.from(res.data as Map));
+    } catch (e) {
+      throw toApiError(e);
+    }
+  }
+
+  Future<ProductDetail> productDetail(String productId, RangeWindow w) async {
+    try {
+      final res = await _dio.get<dynamic>('/finance/products/$productId',
+          queryParameters: {'from': w.from, 'to': w.to});
+      return ProductDetail.fromJson(Map<String, dynamic>.from(res.data as Map));
     } catch (e) {
       throw toApiError(e);
     }

@@ -9,6 +9,7 @@ import '../../ui/state_views.dart';
 import '../../util/money.dart';
 import 'finance_range.dart';
 import 'finance_repository.dart';
+import 'product_detail_sheet.dart';
 
 /// Finanzas (paridad con la Pantalla Finanzas del web): hero ganancia neta +
 /// áreas de salud + gastos que cambiaron/distribución + KPIs del rubro +
@@ -266,18 +267,31 @@ class _FinanzasPageState extends ConsumerState<FinanzasPage> {
                   ],
                 ),
                 const Divider(),
+                // Tocar un plato abre su detalle: la pregunta que sigue a "me
+                // deja poco" es "¿por qué?", y la respuesta ya la calcula el
+                // backend (totales del período, evolución del costo, ventas).
                 for (final p in fin.productMargins)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Expanded(child: Text(p.productName)),
-                        Text('${p.unitsSold} · ',
-                            style: TextStyle(color: scheme.onSurfaceVariant)),
-                        Text(formatMoney(p.marginAmount, fin.currency),
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w600)),
-                      ],
+                  InkWell(
+                    onTap: () => ProductDetailSheet.show(
+                      context,
+                      productId: p.productId,
+                      productName: p.productName,
+                      range: _range,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        children: [
+                          Expanded(child: Text(p.productName)),
+                          Text('${p.unitsSold} · ',
+                              style: TextStyle(color: scheme.onSurfaceVariant)),
+                          Text(formatMoney(p.marginAmount, fin.currency),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600)),
+                          Icon(Icons.chevron_right,
+                              size: 18, color: scheme.onSurfaceVariant),
+                        ],
+                      ),
                     ),
                   ),
               ],

@@ -989,6 +989,26 @@ class Strings {
   String removeOneLabel(String product) =>
       _en ? 'Remove one $product' : 'Quitar un $product';
 
+  // --- Detalle de un plato en Finanzas (drill-down) ---
+  String get financeProductDetailError => _en
+      ? "We couldn't load this dish's detail."
+      : 'No pudimos cargar el detalle de este plato.';
+  String get financeCostEvolution =>
+      _en ? 'Cost per unit over time' : 'Evolución del costo por unidad';
+  String get financeRecentSales => _en ? 'Recent sales' : 'Ventas recientes';
+  String get financeNoSalesInPeriod =>
+      _en ? 'No sales in this period.' : 'Sin ventas en el período.';
+  String financeLinesTruncated(int n) => _en
+      ? 'Showing the latest $n sales. The totals above cover the whole period.'
+      : 'Mostrando las últimas $n ventas. Los totales de arriba son del período completo.';
+  String get financeUnits => _en ? 'Units' : 'Unidades';
+  String get financeSalesLabel => _en ? 'Sales' : 'Ventas';
+  String get financeFoodCost => _en ? 'Food cost' : 'Costo de insumos';
+  String get financeLeavesYou => _en ? 'Leaves you' : 'Te deja';
+  String financeCostWentFromTo(String from, String to) => _en
+      ? 'Unit cost went from $from to $to'
+      : 'El costo por unidad pasó de $from a $to';
+
   // --- Etiquetas para lectores de pantalla (VoiceOver / TalkBack) ---
   // Un botón de solo ícono es mudo sin esto. En Flutter el `tooltip` del
   // IconButton es además su `semanticLabel`, así que uno cubre las dos cosas.
