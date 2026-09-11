@@ -17,12 +17,12 @@ class CashSession {
   bool get isOpen => status == 'OPEN';
 
   factory CashSession.fromJson(Map<String, dynamic> j) => CashSession(
-        id: j['id'] as String,
-        status: j['status'] as String,
-        currency: j['currency'] as String,
-        openingFloatAmount: j['opening_float_amount'] as int,
-        openedAt: _date(j['opened_at']),
-      );
+    id: j['id'] as String,
+    status: j['status'] as String,
+    currency: j['currency'] as String,
+    openingFloatAmount: j['opening_float_amount'] as int,
+    openedAt: _date(j['opened_at']),
+  );
 }
 
 /// Línea del arqueo por método (backend `CashReportLineResponse`).
@@ -42,12 +42,12 @@ class CashReportLine {
   final int? difference;
 
   factory CashReportLine.fromJson(Map<String, dynamic> j) => CashReportLine(
-        method: j['method'] as String,
-        expected: (j['expected'] as int?) ?? 0,
-        tips: (j['tips'] as int?) ?? 0,
-        counted: j['counted'] as int?,
-        difference: j['difference'] as int?,
-      );
+    method: j['method'] as String,
+    expected: (j['expected'] as int?) ?? 0,
+    tips: (j['tips'] as int?) ?? 0,
+    counted: j['counted'] as int?,
+    difference: j['difference'] as int?,
+  );
 }
 
 /// Reporte de cierre / arqueo Z (backend `CashReportResponse`).
@@ -71,16 +71,19 @@ class CashReport {
   final int? differenceTotal;
 
   factory CashReport.fromJson(Map<String, dynamic> j) => CashReport(
-        currency: j['currency'] as String,
-        openingFloat: (j['opening_float'] as int?) ?? 0,
-        expectedTotal: (j['expected_total'] as int?) ?? 0,
-        tipsTotal: (j['tips_total'] as int?) ?? 0,
-        countedTotal: j['counted_total'] as int?,
-        differenceTotal: j['difference_total'] as int?,
-        lines: ((j['lines'] as List?) ?? const [])
-            .map((e) => CashReportLine.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-      );
+    currency: j['currency'] as String,
+    openingFloat: (j['opening_float'] as int?) ?? 0,
+    expectedTotal: (j['expected_total'] as int?) ?? 0,
+    tipsTotal: (j['tips_total'] as int?) ?? 0,
+    countedTotal: j['counted_total'] as int?,
+    differenceTotal: j['difference_total'] as int?,
+    lines: ((j['lines'] as List?) ?? const [])
+        .map(
+          (e) => CashReportLine.fromJson(Map<String, dynamic>.from(e as Map)),
+        )
+        .toList(),
+  );
 }
 
-DateTime? _date(Object? v) => v is String ? DateTime.tryParse(v)?.toLocal() : null;
+DateTime? _date(Object? v) =>
+    v is String ? DateTime.tryParse(v)?.toLocal() : null;

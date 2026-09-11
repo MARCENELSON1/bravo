@@ -20,7 +20,7 @@ DailyVerdict dailyVerdict(int net, double? pctVsYesterday) {
   final tone = net < 0
       ? VerdictTone.bad
       : (pctVsYesterday != null && pctVsYesterday < 0
-          ? VerdictTone.ok
-          : VerdictTone.good);
+            ? VerdictTone.ok
+            : VerdictTone.good);
   return DailyVerdict(tone: tone, vs: vs, pct: pct);
 }

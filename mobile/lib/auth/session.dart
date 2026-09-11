@@ -29,13 +29,13 @@ enum Role {
   }
 
   String get api => switch (this) {
-        Role.owner => 'OWNER',
-        Role.manager => 'MANAGER',
-        Role.waiter => 'WAITER',
-        Role.kitchen => 'KITCHEN',
-        Role.bar => 'BAR',
-        Role.cashier => 'CASHIER',
-      };
+    Role.owner => 'OWNER',
+    Role.manager => 'MANAGER',
+    Role.waiter => 'WAITER',
+    Role.kitchen => 'KITCHEN',
+    Role.bar => 'BAR',
+    Role.cashier => 'CASHIER',
+  };
 
   bool get isAdmin => this == Role.owner || this == Role.manager;
 }
@@ -59,15 +59,16 @@ class Session {
   final String? name;
 
   /// Nombre para saludar: el nombre real o, si no hay, la parte local del email.
-  String get displayName =>
-      (name != null && name!.trim().isNotEmpty) ? name!.trim() : email.split('@').first;
+  String get displayName => (name != null && name!.trim().isNotEmpty)
+      ? name!.trim()
+      : email.split('@').first;
 
   factory Session.fromMe(MeResponse me) => Session(
-        userId: me.userId,
-        tenantId: me.tenantId,
-        email: me.email,
-        tenantName: me.tenantName,
-        role: Role.fromApi(me.role),
-        name: me.name,
-      );
+    userId: me.userId,
+    tenantId: me.tenantId,
+    email: me.email,
+    tenantName: me.tenantName,
+    role: Role.fromApi(me.role),
+    name: me.name,
+  );
 }

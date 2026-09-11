@@ -26,15 +26,15 @@ class StaffRow {
   final String currency;
   final int? hourlyRateAmount;
   factory StaffRow.fromJson(Map<String, dynamic> j) => StaffRow(
-        userId: j['user_id'] as String,
-        email: (j['email'] as String?) ?? '',
-        workedMinutes: (j['worked_minutes'] as int?) ?? 0,
-        overtimeMinutes: (j['overtime_minutes'] as int?) ?? 0,
-        tablesServed: (j['tables_served'] as int?) ?? 0,
-        salesAmount: (j['sales_amount'] as int?) ?? 0,
-        currency: (j['currency'] as String?) ?? 'ARS',
-        hourlyRateAmount: j['hourly_rate_amount'] as int?,
-      );
+    userId: j['user_id'] as String,
+    email: (j['email'] as String?) ?? '',
+    workedMinutes: (j['worked_minutes'] as int?) ?? 0,
+    overtimeMinutes: (j['overtime_minutes'] as int?) ?? 0,
+    tablesServed: (j['tables_served'] as int?) ?? 0,
+    salesAmount: (j['sales_amount'] as int?) ?? 0,
+    currency: (j['currency'] as String?) ?? 'ARS',
+    hourlyRateAmount: j['hourly_rate_amount'] as int?,
+  );
 }
 
 class StaffReport {
@@ -42,11 +42,11 @@ class StaffReport {
   final String currency;
   final List<StaffRow> rows;
   factory StaffReport.fromJson(Map<String, dynamic> j) => StaffReport(
-        currency: (j['currency'] as String?) ?? 'ARS',
-        rows: ((j['rows'] as List?) ?? const [])
-            .map((e) => StaffRow.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-      );
+    currency: (j['currency'] as String?) ?? 'ARS',
+    rows: ((j['rows'] as List?) ?? const [])
+        .map((e) => StaffRow.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+  );
 }
 
 /// Un turno (backend `ShiftResponse`).
@@ -68,14 +68,14 @@ class Shift {
   final String? clockOutAt;
   final int? workedMinutes;
   factory Shift.fromJson(Map<String, dynamic> j) => Shift(
-        id: j['id'] as String,
-        userId: (j['user_id'] as String?) ?? '',
-        clockInAt: (j['clock_in_at'] as String?) ?? '',
-        status: (j['status'] as String?) ?? '',
-        source: (j['source'] as String?) ?? '',
-        clockOutAt: j['clock_out_at'] as String?,
-        workedMinutes: j['worked_minutes'] as int?,
-      );
+    id: j['id'] as String,
+    userId: (j['user_id'] as String?) ?? '',
+    clockInAt: (j['clock_in_at'] as String?) ?? '',
+    status: (j['status'] as String?) ?? '',
+    source: (j['source'] as String?) ?? '',
+    clockOutAt: j['clock_out_at'] as String?,
+    workedMinutes: j['worked_minutes'] as int?,
+  );
 }
 
 class StaffRepository {
@@ -86,8 +86,10 @@ class StaffRepository {
 
   Future<StaffReport> report(RangeWindow w) async {
     try {
-      final res =
-          await _dio.get<dynamic>('/reports/staff', queryParameters: _win(w));
+      final res = await _dio.get<dynamic>(
+        '/reports/staff',
+        queryParameters: _win(w),
+      );
       return StaffReport.fromJson(Map<String, dynamic>.from(res.data as Map));
     } catch (e) {
       throw toApiError(e);
@@ -96,8 +98,10 @@ class StaffRepository {
 
   Future<List<Shift>> shifts(RangeWindow w) async {
     try {
-      final res = await _dio.get<dynamic>('/timeclock/shifts',
-          queryParameters: _win(w));
+      final res = await _dio.get<dynamic>(
+        '/timeclock/shifts',
+        queryParameters: _win(w),
+      );
       return ((res.data as List?) ?? const [])
           .map((e) => Shift.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
@@ -106,13 +110,16 @@ class StaffRepository {
     }
   }
 
-  Future<void> adjustShift(String shiftId,
-      {required String clockInAt, String? clockOutAt}) async {
+  Future<void> adjustShift(
+    String shiftId, {
+    required String clockInAt,
+    String? clockOutAt,
+  }) async {
     try {
-      await _dio.patch<dynamic>('/timeclock/shifts/$shiftId', data: {
-        'clock_in_at': clockInAt,
-        'clock_out_at': clockOutAt,
-      });
+      await _dio.patch<dynamic>(
+        '/timeclock/shifts/$shiftId',
+        data: {'clock_in_at': clockInAt, 'clock_out_at': clockOutAt},
+      );
     } catch (e) {
       throw toApiError(e);
     }
@@ -120,8 +127,10 @@ class StaffRepository {
 
   Future<void> setHourlyRate(String userId, int? amount) async {
     try {
-      await _dio.put<dynamic>('/users/$userId/hourly-rate',
-          data: {'hourly_rate_amount': amount});
+      await _dio.put<dynamic>(
+        '/users/$userId/hourly-rate',
+        data: {'hourly_rate_amount': amount},
+      );
     } catch (e) {
       throw toApiError(e);
     }
@@ -132,12 +141,14 @@ final staffRepositoryProvider = Provider<StaffRepository>(
   (ref) => StaffRepository(ref.read(apiDioProvider)),
 );
 
-final staffReportProvider =
-    FutureProvider.autoDispose.family<StaffReport, FinanceRange>(
-  (ref, range) => ref.read(staffRepositoryProvider).report(rangeWindow(range)),
-);
+final staffReportProvider = FutureProvider.autoDispose
+    .family<StaffReport, FinanceRange>(
+      (ref, range) =>
+          ref.read(staffRepositoryProvider).report(rangeWindow(range)),
+    );
 
-final shiftsProvider =
-    FutureProvider.autoDispose.family<List<Shift>, FinanceRange>(
-  (ref, range) => ref.read(staffRepositoryProvider).shifts(rangeWindow(range)),
-);
+final shiftsProvider = FutureProvider.autoDispose
+    .family<List<Shift>, FinanceRange>(
+      (ref, range) =>
+          ref.read(staffRepositoryProvider).shifts(rangeWindow(range)),
+    );

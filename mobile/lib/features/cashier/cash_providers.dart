@@ -20,7 +20,7 @@ final currentCashSessionProvider = FutureProvider.autoDispose<CashSession?>(
 );
 
 /// Pagos de una orden (para el cobro).
-final orderPaymentsProvider =
-    FutureProvider.autoDispose.family<List<Payment>, String>(
-  (ref, orderId) => ref.read(paymentRepositoryProvider).list(orderId),
-);
+final orderPaymentsProvider = FutureProvider.autoDispose
+    .family<List<Payment>, String>(
+      (ref, orderId) => ref.read(paymentRepositoryProvider).list(orderId),
+    );

@@ -23,13 +23,13 @@ class Supplier {
   final String? notes;
 
   factory Supplier.fromJson(Map<String, dynamic> j) => Supplier(
-        id: j['id'] as String,
-        name: j['name'] as String,
-        active: (j['active'] as bool?) ?? true,
-        contact: j['contact'] as String?,
-        phone: j['phone'] as String?,
-        notes: j['notes'] as String?,
-      );
+    id: j['id'] as String,
+    name: j['name'] as String,
+    active: (j['active'] as bool?) ?? true,
+    contact: j['contact'] as String?,
+    phone: j['phone'] as String?,
+    notes: j['notes'] as String?,
+  );
 }
 
 class SupplierRepository {
@@ -55,12 +55,15 @@ class SupplierRepository {
     String? notes,
   }) async {
     try {
-      await _dio.post<dynamic>('/inventory/suppliers', data: {
-        'name': name,
-        'contact': ?contact,
-        'phone': ?phone,
-        'notes': ?notes,
-      });
+      await _dio.post<dynamic>(
+        '/inventory/suppliers',
+        data: {
+          'name': name,
+          'contact': ?contact,
+          'phone': ?phone,
+          'notes': ?notes,
+        },
+      );
     } catch (e) {
       throw toApiError(e);
     }
@@ -75,13 +78,16 @@ class SupplierRepository {
     required bool active,
   }) async {
     try {
-      await _dio.put<dynamic>('/inventory/suppliers/$supplierId', data: {
-        'name': name,
-        'contact': ?contact,
-        'phone': ?phone,
-        'notes': ?notes,
-        'active': active,
-      });
+      await _dio.put<dynamic>(
+        '/inventory/suppliers/$supplierId',
+        data: {
+          'name': name,
+          'contact': ?contact,
+          'phone': ?phone,
+          'notes': ?notes,
+          'active': active,
+        },
+      );
     } catch (e) {
       throw toApiError(e);
     }

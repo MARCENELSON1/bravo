@@ -38,8 +38,9 @@ class _HomePageState extends ConsumerState<HomePage> {
       return const Center(child: CircularProgressIndicator());
     }
     final session = sessionState.session;
-    final firstName =
-        session.name?.trim().isNotEmpty == true ? session.name!.trim().split(' ').first : null;
+    final firstName = session.name?.trim().isNotEmpty == true
+        ? session.name!.trim().split(' ').first
+        : null;
 
     // El dashboard financiero es solo para OWNER/MANAGER (como en el web). Los
     // roles operativos ven un Inicio simple, sin tarjetas vacías.
@@ -86,15 +87,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Text(s.dashGreeting(firstName),
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.w800)),
+                    child: Text(
+                      s.dashGreeting(firstName),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
                   ),
-                  Text(s.dashTodayLabel(DateTime.now()),
-                      style: TextStyle(
-                          color: scheme.onSurfaceVariant, fontSize: 12)),
+                  Text(
+                    s.dashTodayLabel(DateTime.now()),
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -104,37 +109,48 @@ class _HomePageState extends ConsumerState<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(s.dashProfitToday,
-                        style: TextStyle(color: scheme.onSurfaceVariant)),
+                    Text(
+                      s.dashProfitToday,
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
                     const SizedBox(height: 4),
                     Text(
-                      summary.isLoading
-                          ? '—'
-                          : formatMoney(net, currency),
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      summary.isLoading ? '—' : formatMoney(net, currency),
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
                             fontWeight: FontWeight.w800,
                             color: net < 0 ? scheme.error : scheme.onSurface,
                           ),
                     ),
                     const SizedBox(height: 6),
-                    Text(s.dashVerdict(verdict.tone, verdict.vs, verdict.pct),
-                        style: TextStyle(
-                            color: _toneColor(verdict.tone, scheme),
-                            fontWeight: FontWeight.w600)),
+                    Text(
+                      s.dashVerdict(verdict.tone, verdict.vs, verdict.pct),
+                      style: TextStyle(
+                        color: _toneColor(verdict.tone, scheme),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     if (marginTentative)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text(s.dashProfitTentative,
-                            style: TextStyle(
-                                color: WellnodPalette.warn, fontSize: 12)),
+                        child: Text(
+                          s.dashProfitTentative,
+                          style: TextStyle(
+                            color: WellnodPalette.warn,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                     if (feesTotal > 0)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
-                            s.dashFeesDeducted(formatMoney(feesTotal, currency)),
-                            style: TextStyle(
-                                color: scheme.onSurfaceVariant, fontSize: 12)),
+                          s.dashFeesDeducted(formatMoney(feesTotal, currency)),
+                          style: TextStyle(
+                            color: scheme.onSurfaceVariant,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -145,15 +161,21 @@ class _HomePageState extends ConsumerState<HomePage> {
               Row(
                 children: [
                   Expanded(
-                    child: _numberCard(context, s.dashBilledToday,
-                        formatMoney(sales, currency),
-                        sub: s.dashPaymentsCount(d?.paymentCount ?? 0)),
+                    child: _numberCard(
+                      context,
+                      s.dashBilledToday,
+                      formatMoney(sales, currency),
+                      sub: s.dashPaymentsCount(d?.paymentCount ?? 0),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: _numberCard(context, s.dashSpentToday,
-                        formatMoney(expenses, currency),
-                        sub: s.dashExpensesRegistered),
+                    child: _numberCard(
+                      context,
+                      s.dashSpentToday,
+                      formatMoney(expenses, currency),
+                      sub: s.dashExpensesRegistered,
+                    ),
                   ),
                 ],
               ),
@@ -165,8 +187,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                 sub: marginTentative
                     ? s.dashLoadExpensesForMargin
                     : (sales > 0
-                        ? s.dashMarginExplain(marginPer100)
-                        : s.dashNoSalesYet),
+                          ? s.dashMarginExplain(marginPer100)
+                          : s.dashNoSalesYet),
                 subWarn: marginTentative,
               ),
               const SizedBox(height: 12),
@@ -198,7 +220,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                     child: OutlinedButton.icon(
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                            builder: (_) => const CopilotPage()),
+                          builder: (_) => const CopilotPage(),
+                        ),
                       ),
                       icon: const Icon(Icons.auto_awesome, size: 18),
                       label: Text(s.askCopilot),
@@ -223,9 +246,9 @@ class _HomePageState extends ConsumerState<HomePage> {
           child: FloatingActionButton(
             heroTag: 'home-expense',
             tooltip: s.dashRegisterExpense,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const GastosPage()),
-            ),
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute<void>(builder: (_) => const GastosPage())),
             child: const Icon(Icons.add),
           ),
         ),
@@ -236,7 +259,11 @@ class _HomePageState extends ConsumerState<HomePage> {
   /// Inicio simple para roles operativos (mozo, cocina, barra, cajero): sin el
   /// dashboard financiero. Saludo + fichaje + cerrar sesión.
   Widget _simpleHome(
-      BuildContext context, Strings s, Session session, String? firstName) {
+    BuildContext context,
+    Strings s,
+    Session session,
+    String? firstName,
+  ) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return ListView(
@@ -246,24 +273,33 @@ class _HomePageState extends ConsumerState<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Text(s.dashGreeting(firstName),
-                  style: theme.textTheme.headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.w800)),
+              child: Text(
+                s.dashGreeting(firstName),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
-            Text(s.dashTodayLabel(DateTime.now()),
-                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+            Text(
+              s.dashTodayLabel(DateTime.now()),
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+            ),
           ],
         ),
         const SizedBox(height: 6),
-        Text('${session.tenantName} · ${s.role(session.role)}',
-            style: TextStyle(color: scheme.onSurfaceVariant)),
+        Text(
+          '${session.tenantName} · ${s.role(session.role)}',
+          style: TextStyle(color: scheme.onSurfaceVariant),
+        ),
         const SizedBox(height: 16),
         GlassPanel(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(s.homeSimpleHint,
-                  style: TextStyle(color: scheme.onSurfaceVariant)),
+              Text(
+                s.homeSimpleHint,
+                style: TextStyle(color: scheme.onSurfaceVariant),
+              ),
               const SizedBox(height: 12),
               Material(
                 type: MaterialType.transparency,
@@ -274,7 +310,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                        builder: (_) => const FichajePage()),
+                      builder: (_) => const FichajePage(),
+                    ),
                   ),
                 ),
               ),
@@ -295,18 +332,21 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Color _toneColor(VerdictTone tone, ColorScheme scheme) => switch (tone) {
-        VerdictTone.good => scheme.primary,
-        VerdictTone.ok => WellnodPalette.warn,
-        VerdictTone.bad => scheme.error,
-      };
+    VerdictTone.good => scheme.primary,
+    VerdictTone.ok => WellnodPalette.warn,
+    VerdictTone.bad => scheme.error,
+  };
 
   double? _pctVsYesterday(List<RevenueDailyPoint> pts) {
     final byDay = {for (final p in pts) p.day: p.salesAmount};
     String two(int n) => n.toString().padLeft(2, '0');
     String key(int off) {
       final now = DateTime.now();
-      final c = DateTime(now.year, now.month, now.day)
-          .subtract(Duration(days: off));
+      final c = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(Duration(days: off));
       return '${c.year}-${two(c.month)}-${two(c.day)}';
     }
 
@@ -316,8 +356,13 @@ class _HomePageState extends ConsumerState<HomePage> {
     return (today - yest) / yest * 100;
   }
 
-  Widget _numberCard(BuildContext context, String label, String value,
-      {String? sub, bool subWarn = false}) {
+  Widget _numberCard(
+    BuildContext context,
+    String label,
+    String value, {
+    String? sub,
+    bool subWarn = false,
+  }) {
     final scheme = Theme.of(context).colorScheme;
     return GlassPanel(
       padding: const EdgeInsets.all(14),
@@ -325,37 +370,48 @@ class _HomePageState extends ConsumerState<HomePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13)),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+          ),
           const SizedBox(height: 2),
           Align(
             alignment: Alignment.centerLeft,
             child: FittedBox(
               fit: BoxFit.scaleDown,
-              child: Text(value,
-                  maxLines: 1,
-                  style: const TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.w800)),
+              child: Text(
+                value,
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ),
           if (sub != null)
-            Text(sub,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    color: subWarn
-                        ? WellnodPalette.warn
-                        : scheme.onSurfaceVariant,
-                    fontSize: 11)),
+            Text(
+              sub,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: subWarn ? WellnodPalette.warn : scheme.onSurfaceVariant,
+                fontSize: 11,
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _channels(BuildContext context, Strings s,
-      AsyncValue<List<PaymentMixRow>> mix, String currency) {
+  Widget _channels(
+    BuildContext context,
+    Strings s,
+    AsyncValue<List<PaymentMixRow>> mix,
+    String currency,
+  ) {
     final scheme = Theme.of(context).colorScheme;
     final rows = (mix.valueOrNull ?? const <PaymentMixRow>[])
         .where((r) => r.direction == 'INFLOW')
@@ -365,27 +421,37 @@ class _HomePageState extends ConsumerState<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(s.dashChannelsTitle,
-              style: Theme.of(context).textTheme.titleSmall),
+          Text(
+            s.dashChannelsTitle,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
           const SizedBox(height: 2),
-          Text(s.dashChannelsSubtitle,
-              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11)),
+          Text(
+            s.dashChannelsSubtitle,
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11),
+          ),
           const SizedBox(height: 12),
           if (rows.isEmpty)
-            Text(mix.isLoading ? '…' : s.dashNoPaymentsToday,
-                style: TextStyle(color: scheme.onSurfaceVariant))
+            Text(
+              mix.isLoading ? '…' : s.dashNoPaymentsToday,
+              style: TextStyle(color: scheme.onSurfaceVariant),
+            )
           else
             for (final r in rows) ...[
               Row(
                 children: [
                   Expanded(
-                      child: Text(
-                          s.methodLabel(PaymentMethod.fromApi(r.method)),
-                          style: const TextStyle(fontWeight: FontWeight.w500))),
+                    child: Text(
+                      s.methodLabel(PaymentMethod.fromApi(r.method)),
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ),
                   Text(
                     '${formatMoney(r.amount, currency)} · ${total > 0 ? (r.amount / total * 100).round() : 0}%',
                     style: TextStyle(
-                        color: scheme.onSurfaceVariant, fontSize: 13),
+                      color: scheme.onSurfaceVariant,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
@@ -406,12 +472,18 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   List<Widget> _alert(
-      BuildContext context, Strings s, FinanceOverview? overview) {
+    BuildContext context,
+    Strings s,
+    FinanceOverview? overview,
+  ) {
     final diags = overview?.diagnostics ?? const <FinanceDiagnostic>[];
     FinanceDiagnostic? top;
     for (final d in diags) {
       final sev = d.severity.toLowerCase();
-      if (sev == 'alert' || sev == 'critical' || sev == 'warn' || sev == 'warning') {
+      if (sev == 'alert' ||
+          sev == 'critical' ||
+          sev == 'warn' ||
+          sev == 'warning') {
         top = d;
         break;
       }
@@ -430,18 +502,24 @@ class _HomePageState extends ConsumerState<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(s.dashAttentionToday.toUpperCase(),
-                  style: TextStyle(
-                      color: color,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5)),
+              Text(
+                s.dashAttentionToday.toUpperCase(),
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(top.title,
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-              Text(top.body,
-                  style: TextStyle(
-                      color: scheme.onSurfaceVariant, fontSize: 13)),
+              Text(
+                top.title,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              Text(
+                top.body,
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+              ),
             ],
           ),
         ),
@@ -450,8 +528,12 @@ class _HomePageState extends ConsumerState<HomePage> {
     ];
   }
 
-  Widget _revenue7d(BuildContext context, Strings s,
-      List<RevenueDailyPoint>? points, String currency) {
+  Widget _revenue7d(
+    BuildContext context,
+    Strings s,
+    List<RevenueDailyPoint>? points,
+    String currency,
+  ) {
     final scheme = Theme.of(context).colorScheme;
     final days = _last7Days(points ?? const []);
     final maxV = days.fold<int>(1, (m, d) => d.value > m ? d.value : m);
@@ -461,17 +543,24 @@ class _HomePageState extends ConsumerState<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(s.dashRevenue7dTitle,
-              style: Theme.of(context).textTheme.titleSmall),
-          Text(s.dashTotalSuffix(formatMoney(total, currency)),
-              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+          Text(
+            s.dashRevenue7dTitle,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          Text(
+            s.dashTotalSuffix(formatMoney(total, currency)),
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+          ),
           const SizedBox(height: 12),
           if (!hasSales)
             SizedBox(
               height: 120,
               child: Center(
-                  child: Text(s.dashNoSales7d,
-                      style: TextStyle(color: scheme.onSurfaceVariant))),
+                child: Text(
+                  s.dashNoSales7d,
+                  style: TextStyle(color: scheme.onSurfaceVariant),
+                ),
+              ),
             )
           else
             SizedBox(
@@ -490,13 +579,18 @@ class _HomePageState extends ConsumerState<HomePage> {
                             decoration: BoxDecoration(
                               color: scheme.primary,
                               borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(4)),
+                                top: Radius.circular(4),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Text(s.dashWeekdayShort(d.weekday),
-                              style: TextStyle(
-                                  color: scheme.onSurfaceVariant, fontSize: 10)),
+                          Text(
+                            s.dashWeekdayShort(d.weekday),
+                            style: TextStyle(
+                              color: scheme.onSurfaceVariant,
+                              fontSize: 10,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -508,26 +602,35 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _monthClose(BuildContext context, Strings s, FinanceOverview? overview,
-      String currency) {
+  Widget _monthClose(
+    BuildContext context,
+    Strings s,
+    FinanceOverview? overview,
+    String currency,
+  ) {
     final scheme = Theme.of(context).colorScheme;
     final p = overview?.projection;
     return GlassPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(s.dashMonthClose,
-              style: Theme.of(context).textTheme.titleSmall),
+          Text(s.dashMonthClose, style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 6),
           if (p != null) ...[
-            Text.rich(TextSpan(children: [
+            Text.rich(
               TextSpan(
-                  text: '${s.dashOnTrackToClose} ',
-                  style: TextStyle(color: scheme.onSurfaceVariant)),
-              TextSpan(
-                  text: formatMoney(p.salesAmount, currency),
-                  style: const TextStyle(fontWeight: FontWeight.w700)),
-            ])),
+                children: [
+                  TextSpan(
+                    text: '${s.dashOnTrackToClose} ',
+                    style: TextStyle(color: scheme.onSurfaceVariant),
+                  ),
+                  TextSpan(
+                    text: formatMoney(p.salesAmount, currency),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 10),
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
@@ -538,30 +641,42 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ),
             const SizedBox(height: 6),
-            Text(s.dashDayOfMonth(p.elapsedDays, p.monthDays),
-                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+            Text(
+              s.dashDayOfMonth(p.elapsedDays, p.monthDays),
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+            ),
           ] else
-            Text(s.dashNotEnoughData,
-                style: TextStyle(color: scheme.onSurfaceVariant)),
+            Text(
+              s.dashNotEnoughData,
+              style: TextStyle(color: scheme.onSurfaceVariant),
+            ),
         ],
       ),
     );
   }
 
-  Widget _movements(BuildContext context, Strings s,
-      List<Movement>? movements, String currency) {
+  Widget _movements(
+    BuildContext context,
+    Strings s,
+    List<Movement>? movements,
+    String currency,
+  ) {
     final scheme = Theme.of(context).colorScheme;
     final list = (movements ?? const <Movement>[]).take(5).toList();
     return GlassPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(s.financeMovementsTitle,
-              style: Theme.of(context).textTheme.titleSmall),
+          Text(
+            s.financeMovementsTitle,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
           const SizedBox(height: 6),
           if (list.isEmpty)
-            Text(s.dashNoPaymentsToday,
-                style: TextStyle(color: scheme.onSurfaceVariant))
+            Text(
+              s.dashNoPaymentsToday,
+              style: TextStyle(color: scheme.onSurfaceVariant),
+            )
           else
             for (final m in list)
               Padding(
@@ -569,16 +684,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                 child: Row(
                   children: [
                     Icon(
-                        m.kind == 'expense'
-                            ? Icons.south_west
-                            : Icons.north_east,
-                        size: 14,
-                        color:
-                            m.kind == 'expense' ? scheme.error : scheme.primary),
+                      m.kind == 'expense' ? Icons.south_west : Icons.north_east,
+                      size: 14,
+                      color: m.kind == 'expense'
+                          ? scheme.error
+                          : scheme.primary,
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Text(m.description ?? m.category ?? m.method,
-                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      child: Text(
+                        m.description ?? m.category ?? m.method,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     Text(
                       '${m.kind == 'expense' ? '−' : ''}${formatMoney(m.amount, m.currency)}',
@@ -592,13 +710,18 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  List<Widget> _task(BuildContext context, Strings s, FinanceOverview? overview) {
+  List<Widget> _task(
+    BuildContext context,
+    Strings s,
+    FinanceOverview? overview,
+  ) {
     if (_taskDone) return const [];
     final diags = overview?.diagnostics ?? const <FinanceDiagnostic>[];
     String? action;
     for (final d in diags) {
       final sev = d.severity.toLowerCase();
-      final urgent = sev == 'alert' || sev == 'critical' || sev.startsWith('warn');
+      final urgent =
+          sev == 'alert' || sev == 'critical' || sev.startsWith('warn');
       if (urgent && d.action != null && d.action!.isNotEmpty) {
         action = d.action;
         break;
@@ -612,12 +735,15 @@ class _HomePageState extends ConsumerState<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(s.dashTomorrowTaskTitle.toUpperCase(),
-                style: TextStyle(
-                    color: scheme.primary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5)),
+            Text(
+              s.dashTomorrowTaskTitle.toUpperCase(),
+              style: TextStyle(
+                color: scheme.primary,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
             const SizedBox(height: 4),
             Text(action),
             const SizedBox(height: 10),
@@ -647,7 +773,11 @@ List<_DayBar> _last7Days(List<RevenueDailyPoint> points) {
   final now = DateTime.now();
   final out = <_DayBar>[];
   for (var i = 6; i >= 0; i--) {
-    final c = DateTime(now.year, now.month, now.day).subtract(Duration(days: i));
+    final c = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: i));
     final key = '${c.year}-${two(c.month)}-${two(c.day)}';
     out.add(_DayBar(c.weekday, byDay[key] ?? 0));
   }

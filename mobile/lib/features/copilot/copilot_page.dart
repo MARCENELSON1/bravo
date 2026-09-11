@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import 'copilot_repository.dart';
 
@@ -59,8 +58,11 @@ class _CopilotPageState extends ConsumerState<CopilotPage> {
     _scrollToEnd();
     try {
       final answer = await ref.read(copilotRepositoryProvider).ask(q);
-      setState(() =>
-          _messages.add(_Message(isUser: false, text: answer.answer, answer: answer)));
+      setState(
+        () => _messages.add(
+          _Message(isUser: false, text: answer.answer, answer: answer),
+        ),
+      );
     } on ApiError catch (e) {
       setState(() => _messages.add(_Message(isUser: false, text: e.message)));
     } finally {
@@ -74,10 +76,12 @@ class _CopilotPageState extends ConsumerState<CopilotPage> {
     final s = context.s;
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text(s.copilotTitle), backgroundColor: Colors.transparent),
+      appBar: AppBar(
+        title: Text(s.copilotTitle),
+        backgroundColor: Colors.transparent,
+      ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: Column(
               children: [
@@ -86,11 +90,15 @@ class _CopilotPageState extends ConsumerState<CopilotPage> {
                       ? Center(
                           child: Padding(
                             padding: const EdgeInsets.all(24),
-                            child: Text(s.copilotEmpty,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    color:
-                                        Theme.of(context).colorScheme.onSurfaceVariant)),
+                            child: Text(
+                              s.copilotEmpty,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                            ),
                           ),
                         )
                       : ListView.builder(

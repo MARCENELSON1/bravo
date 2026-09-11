@@ -77,7 +77,8 @@ FloorView floorView(FloorTable table, {DateTime? now}) {
   };
 
   final attention =
-      session.state == SessionState.toServe || session.state == SessionState.toCharge;
+      session.state == SessionState.toServe ||
+      session.state == SessionState.toCharge;
 
   final since = session.stateSince ?? table.activeOrder?.createdAt;
   final minutes = since == null ? null : current.difference(since).inMinutes;

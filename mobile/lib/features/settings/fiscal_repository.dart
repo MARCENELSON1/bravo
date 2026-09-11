@@ -29,15 +29,15 @@ class FiscalSettings {
   final String? zip;
 
   factory FiscalSettings.fromJson(Map<String, dynamic> j) => FiscalSettings(
-        country: (j['country'] as String?) ?? '',
-        currency: (j['currency'] as String?) ?? '',
-        taxRegime: (j['tax_regime'] as String?) ?? '',
-        taxEngine: (j['tax_engine'] as String?) ?? '',
-        street: j['street'] as String?,
-        city: j['city'] as String?,
-        state: j['state'] as String?,
-        zip: j['zip'] as String?,
-      );
+    country: (j['country'] as String?) ?? '',
+    currency: (j['currency'] as String?) ?? '',
+    taxRegime: (j['tax_regime'] as String?) ?? '',
+    taxEngine: (j['tax_engine'] as String?) ?? '',
+    street: j['street'] as String?,
+    city: j['city'] as String?,
+    state: j['state'] as String?,
+    zip: j['zip'] as String?,
+  );
 }
 
 class FiscalRepository {
@@ -47,7 +47,9 @@ class FiscalRepository {
   Future<FiscalSettings> get() async {
     try {
       final res = await _dio.get<dynamic>('/tenants/fiscal-settings');
-      return FiscalSettings.fromJson(Map<String, dynamic>.from(res.data as Map));
+      return FiscalSettings.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
     } catch (e) {
       throw toApiError(e);
     }
@@ -60,13 +62,13 @@ class FiscalRepository {
     String? zip,
   }) async {
     try {
-      final res = await _dio.put<dynamic>('/tenants/fiscal-address', data: {
-        'street': street,
-        'city': city,
-        'state': state,
-        'zip': zip,
-      });
-      return FiscalSettings.fromJson(Map<String, dynamic>.from(res.data as Map));
+      final res = await _dio.put<dynamic>(
+        '/tenants/fiscal-address',
+        data: {'street': street, 'city': city, 'state': state, 'zip': zip},
+      );
+      return FiscalSettings.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
     } catch (e) {
       throw toApiError(e);
     }

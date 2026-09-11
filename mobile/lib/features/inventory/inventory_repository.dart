@@ -29,16 +29,16 @@ class Ingredient {
   final bool active;
 
   factory Ingredient.fromJson(Map<String, dynamic> j) => Ingredient(
-        id: j['id'] as String,
-        name: j['name'] as String,
-        unit: j['unit'] as String,
-        stockQty: (j['stock_qty'] as int?) ?? 0,
-        minQty: (j['min_qty'] as int?) ?? 0,
-        unitCostAmount: (j['unit_cost_amount'] as int?) ?? 0,
-        currency: j['currency'] as String,
-        isBelowMin: (j['is_below_min'] as bool?) ?? false,
-        active: (j['active'] as bool?) ?? true,
-      );
+    id: j['id'] as String,
+    name: j['name'] as String,
+    unit: j['unit'] as String,
+    stockQty: (j['stock_qty'] as int?) ?? 0,
+    minQty: (j['min_qty'] as int?) ?? 0,
+    unitCostAmount: (j['unit_cost_amount'] as int?) ?? 0,
+    currency: j['currency'] as String,
+    isBelowMin: (j['is_below_min'] as bool?) ?? false,
+    active: (j['active'] as bool?) ?? true,
+  );
 }
 
 class InventoryRepository {
@@ -74,7 +74,11 @@ class InventoryRepository {
   }
 
   /// Registra una merma: descuenta `qty` del stock.
-  Future<void> waste(String ingredientId, {required int qty, String? note}) async {
+  Future<void> waste(
+    String ingredientId, {
+    required int qty,
+    String? note,
+  }) async {
     try {
       await _dio.post<dynamic>(
         '/inventory/ingredients/$ingredientId/waste',

@@ -16,9 +16,9 @@ class CashSettings {
   final bool blindCashCount;
 
   factory CashSettings.fromJson(Map<String, dynamic> j) => CashSettings(
-        requireOpenCashSession: (j['require_open_cash_session'] as bool?) ?? false,
-        blindCashCount: (j['blind_cash_count'] as bool?) ?? false,
-      );
+    requireOpenCashSession: (j['require_open_cash_session'] as bool?) ?? false,
+    blindCashCount: (j['blind_cash_count'] as bool?) ?? false,
+  );
 
   CashSettings copyWith({bool? requireOpenCashSession, bool? blindCashCount}) =>
       CashSettings(
@@ -35,9 +35,9 @@ class FeeRate {
   final String method;
   final int feeBps;
   factory FeeRate.fromJson(Map<String, dynamic> j) => FeeRate(
-        method: j['method'] as String,
-        feeBps: (j['fee_bps'] as int?) ?? 0,
-      );
+    method: j['method'] as String,
+    feeBps: (j['fee_bps'] as int?) ?? 0,
+  );
   Map<String, dynamic> toJson() => {'method': method, 'fee_bps': feeBps};
 }
 
@@ -56,10 +56,13 @@ class CashSettingsRepository {
 
   Future<CashSettings> updateSettings(CashSettings s) async {
     try {
-      final res = await _dio.put<dynamic>('/cashier/settings', data: {
-        'require_open_cash_session': s.requireOpenCashSession,
-        'blind_cash_count': s.blindCashCount,
-      });
+      final res = await _dio.put<dynamic>(
+        '/cashier/settings',
+        data: {
+          'require_open_cash_session': s.requireOpenCashSession,
+          'blind_cash_count': s.blindCashCount,
+        },
+      );
       return CashSettings.fromJson(Map<String, dynamic>.from(res.data as Map));
     } catch (e) {
       throw toApiError(e);
@@ -81,8 +84,12 @@ class CashSettingsRepository {
 
   Future<void> updateFeeRates(List<FeeRate> rates) async {
     try {
-      await _dio.put<dynamic>('/payments/fee-rates',
-          data: {'rates': [for (final r in rates) r.toJson()]});
+      await _dio.put<dynamic>(
+        '/payments/fee-rates',
+        data: {
+          'rates': [for (final r in rates) r.toJson()],
+        },
+      );
     } catch (e) {
       throw toApiError(e);
     }

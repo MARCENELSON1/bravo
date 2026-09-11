@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../ui/state_views.dart';
 import '../../util/money.dart';
@@ -22,7 +21,9 @@ class GastosPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-          title: Text(s.gastosTitle), backgroundColor: Colors.transparent),
+        title: Text(s.gastosTitle),
+        backgroundColor: Colors.transparent,
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openForm(context, ref),
         icon: const Icon(Icons.add),
@@ -30,12 +31,13 @@ class GastosPage extends ConsumerWidget {
       ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => ErrorView(
-                  error: e, onRetry: () => ref.invalidate(expensesProvider)),
+                error: e,
+                onRetry: () => ref.invalidate(expensesProvider),
+              ),
               data: (items) {
                 Future<void> refresh() async =>
                     ref.invalidate(expensesProvider);
@@ -46,10 +48,12 @@ class GastosPage extends ConsumerWidget {
                       physics: const AlwaysScrollableScrollPhysics(),
                       children: [
                         SizedBox(
-                            height: 280,
-                            child: EmptyView(
-                                message: s.gastosEmpty,
-                                icon: Icons.receipt_long_outlined)),
+                          height: 280,
+                          child: EmptyView(
+                            message: s.gastosEmpty,
+                            icon: Icons.receipt_long_outlined,
+                          ),
+                        ),
                       ],
                     ),
                   );
@@ -103,15 +107,18 @@ class GastosPage extends ConsumerWidget {
               color: scheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(999),
             ),
-            child: Text(s.methodLabel(PaymentMethod.fromApi(e.method)),
-                style: const TextStyle(fontSize: 11)),
+            child: Text(
+              s.methodLabel(PaymentMethod.fromApi(e.method)),
+              style: const TextStyle(fontSize: 11),
+            ),
           ),
         ],
       ),
       subtitle: subParts.isEmpty ? null : Text(subParts.join(' · ')),
-      trailing: Text('−${formatMoney(e.amount, e.currency)}',
-          style: TextStyle(
-              fontWeight: FontWeight.w600, color: scheme.error)),
+      trailing: Text(
+        '−${formatMoney(e.amount, e.currency)}',
+        style: TextStyle(fontWeight: FontWeight.w600, color: scheme.error),
+      ),
     );
   }
 
@@ -165,7 +172,9 @@ class _ExpenseFormState extends ConsumerState<_ExpenseForm> {
     }
     setState(() => _saving = true);
     try {
-      await ref.read(expensesRepositoryProvider).register(
+      await ref
+          .read(expensesRepositoryProvider)
+          .register(
             method: _method.api,
             amount: minor,
             category: _nn(_category.text),
@@ -180,8 +189,9 @@ class _ExpenseFormState extends ConsumerState<_ExpenseForm> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e is ApiError ? e.message : s.gastosError)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiError ? e.message : s.gastosError)),
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -195,10 +205,11 @@ class _ExpenseFormState extends ConsumerState<_ExpenseForm> {
     final s = context.s;
     return Padding(
       padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-          left: 16,
-          right: 16,
-          top: 8),
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        left: 16,
+        right: 16,
+        top: 8,
+      ),
       child: GlassPanel(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -210,8 +221,9 @@ class _ExpenseFormState extends ConsumerState<_ExpenseForm> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                    borderRadius: BorderRadius.circular(2)),
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
             Text(s.gastosNew, style: Theme.of(context).textTheme.titleMedium),
@@ -225,7 +237,9 @@ class _ExpenseFormState extends ConsumerState<_ExpenseForm> {
                     items: [
                       for (final m in _methods)
                         DropdownMenuItem(
-                            value: m, child: Text(s.methodLabel(m))),
+                          value: m,
+                          child: Text(s.methodLabel(m)),
+                        ),
                     ],
                     onChanged: (m) => setState(() => _method = m ?? _method),
                   ),
@@ -235,10 +249,13 @@ class _ExpenseFormState extends ConsumerState<_ExpenseForm> {
                   width: 120,
                   child: TextField(
                     controller: _amount,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: InputDecoration(
-                        labelText: s.gastosAmount, prefixText: r'$ '),
+                      labelText: s.gastosAmount,
+                      prefixText: r'$ ',
+                    ),
                   ),
                 ),
               ],

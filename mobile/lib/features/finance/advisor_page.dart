@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/strings.dart';
 import '../../theme/colors.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../ui/state_views.dart';
 import '../../util/money.dart';
@@ -49,14 +48,14 @@ class _AdvisorPageState extends ConsumerState<AdvisorPage> {
             tooltip: s.advisorConfigTitle,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                  builder: (_) => const AdvisorSettingsPage()),
+                builder: (_) => const AdvisorSettingsPage(),
+              ),
             ),
           ),
         ],
       ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: Column(
               children: [
@@ -86,24 +85,24 @@ class _AdvisorPageState extends ConsumerState<AdvisorPage> {
   }
 
   Widget _rangeBar(Strings s) => Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (final r in FinanceRange.values)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(s.financeRange(r)),
-                    selected: _range == r,
-                    onSelected: (_) => setState(() => _range = r),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
+    padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final r in FinanceRange.values)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: Text(s.financeRange(r)),
+                selected: _range == r,
+                onSelected: (_) => setState(() => _range = r),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
 
   Widget _content(BuildContext context, Strings s, AdvisorReport r) {
     final scheme = Theme.of(context).colorScheme;
@@ -115,8 +114,10 @@ class _AdvisorPageState extends ConsumerState<AdvisorPage> {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
-        Text(s.advisorSubtitle,
-            style: TextStyle(color: scheme.onSurfaceVariant)),
+        Text(
+          s.advisorSubtitle,
+          style: TextStyle(color: scheme.onSurfaceVariant),
+        ),
         const SizedBox(height: 12),
         if (r.summary != null && r.summary!.trim().isNotEmpty) ...[
           GlassPanel(
@@ -132,32 +133,55 @@ class _AdvisorPageState extends ConsumerState<AdvisorPage> {
           const SizedBox(height: 12),
         ],
         twoColGrid([
-          _kpi(context, s.advisorKpiLabel('sales'),
-              formatMoney(k.salesAmount, k.currency)),
-          _kpi(context, s.advisorKpiLabel('gross_margin'),
-              formatMoney(k.grossMarginAmount, k.currency)),
-          _kpi(context, s.advisorKpiLabel('net_margin'),
-              lock(formatMoney(k.netMarginAmount, k.currency)),
-              hint: locked,
-              negative: k.configured && k.netMarginAmount < 0),
-          _kpi(context, s.advisorKpiLabel('food_cost'),
-              _pct(k.foodCostRatioBps)),
-          _kpi(context, s.advisorKpiLabel('prime_cost'),
-              lock(_pct(k.primeCostRatioBps)),
-              hint: locked),
-          _kpi(context, s.advisorKpiLabel('break_even'),
-              lock(formatMoney(k.breakEvenAmount, k.currency)),
-              hint: locked),
+          _kpi(
+            context,
+            s.advisorKpiLabel('sales'),
+            formatMoney(k.salesAmount, k.currency),
+          ),
+          _kpi(
+            context,
+            s.advisorKpiLabel('gross_margin'),
+            formatMoney(k.grossMarginAmount, k.currency),
+          ),
+          _kpi(
+            context,
+            s.advisorKpiLabel('net_margin'),
+            lock(formatMoney(k.netMarginAmount, k.currency)),
+            hint: locked,
+            negative: k.configured && k.netMarginAmount < 0,
+          ),
+          _kpi(
+            context,
+            s.advisorKpiLabel('food_cost'),
+            _pct(k.foodCostRatioBps),
+          ),
+          _kpi(
+            context,
+            s.advisorKpiLabel('prime_cost'),
+            lock(_pct(k.primeCostRatioBps)),
+            hint: locked,
+          ),
+          _kpi(
+            context,
+            s.advisorKpiLabel('break_even'),
+            lock(formatMoney(k.breakEvenAmount, k.currency)),
+            hint: locked,
+          ),
           _kpi(context, s.advisorKpiLabel('orders'), '${k.ordersCount}'),
-          _kpi(context, s.advisorKpiLabel('avg_ticket'),
-              formatMoney(k.averageTicketAmount, k.currency)),
+          _kpi(
+            context,
+            s.advisorKpiLabel('avg_ticket'),
+            formatMoney(k.averageTicketAmount, k.currency),
+          ),
           _kpi(context, s.advisorKpiLabel('no_show'), _pct(k.noShowRateBps)),
         ]),
         const SizedBox(height: 16),
         for (final bucket in _buckets) ...[
           if (r.insights.any((i) => i.bucket == bucket)) ...[
-            Text(s.advisorBucketLabel(bucket),
-                style: Theme.of(context).textTheme.titleSmall),
+            Text(
+              s.advisorBucketLabel(bucket),
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
             const SizedBox(height: 8),
             for (final i in r.insights.where((i) => i.bucket == bucket))
               Padding(
@@ -170,17 +194,24 @@ class _AdvisorPageState extends ConsumerState<AdvisorPage> {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(i.title,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600)),
+                            child: Text(
+                              i.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                           _severityBadge(context, i.severity),
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(i.body,
-                          style: TextStyle(
-                              color: scheme.onSurfaceVariant, fontSize: 13)),
+                      Text(
+                        i.body,
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant,
+                          fontSize: 13,
+                        ),
+                      ),
                       if (i.action.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Text('→ ${i.action}'),
@@ -196,8 +227,13 @@ class _AdvisorPageState extends ConsumerState<AdvisorPage> {
     );
   }
 
-  Widget _kpi(BuildContext context, String label, String value,
-      {String? hint, bool negative = false}) {
+  Widget _kpi(
+    BuildContext context,
+    String label,
+    String value, {
+    String? hint,
+    bool negative = false,
+  }) {
     final scheme = Theme.of(context).colorScheme;
     return GlassPanel(
       padding: const EdgeInsets.all(14),
@@ -205,28 +241,35 @@ class _AdvisorPageState extends ConsumerState<AdvisorPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+          ),
           const SizedBox(height: 2),
           Align(
             alignment: Alignment.centerLeft,
             child: FittedBox(
               fit: BoxFit.scaleDown,
-              child: Text(value,
-                  maxLines: 1,
-                  style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w700,
-                      color: negative ? scheme.error : scheme.onSurface)),
+              child: Text(
+                value,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w700,
+                  color: negative ? scheme.error : scheme.onSurface,
+                ),
+              ),
             ),
           ),
           if (hint != null)
-            Text(hint,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11)),
+            Text(
+              hint,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11),
+            ),
         ],
       ),
     );
@@ -245,9 +288,14 @@ class _AdvisorPageState extends ConsumerState<AdvisorPage> {
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(severity,
-          style: TextStyle(
-              color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+      child: Text(
+        severity,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }

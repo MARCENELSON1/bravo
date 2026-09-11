@@ -20,13 +20,13 @@ class CopilotAnswer {
   final bool llmEnabled;
 
   factory CopilotAnswer.fromJson(Map<String, dynamic> j) => CopilotAnswer(
-        answer: (j['answer'] as String?) ?? '',
-        columns: ((j['columns'] as List?) ?? const []).map((e) => '$e').toList(),
-        rows: ((j['rows'] as List?) ?? const [])
-            .map((r) => (r as List).toList())
-            .toList(),
-        llmEnabled: (j['llm_enabled'] as bool?) ?? false,
-      );
+    answer: (j['answer'] as String?) ?? '',
+    columns: ((j['columns'] as List?) ?? const []).map((e) => '$e').toList(),
+    rows: ((j['rows'] as List?) ?? const [])
+        .map((r) => (r as List).toList())
+        .toList(),
+    llmEnabled: (j['llm_enabled'] as bool?) ?? false,
+  );
 }
 
 class CopilotRepository {

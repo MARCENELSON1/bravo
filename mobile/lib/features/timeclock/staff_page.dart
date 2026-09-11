@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../ui/state_views.dart';
 import '../../util/money.dart';
@@ -34,10 +33,11 @@ class _StaffPageState extends ConsumerState<StaffPage> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-          title: Text(s.staffTitle), backgroundColor: Colors.transparent),
+        title: Text(s.staffTitle),
+        backgroundColor: Colors.transparent,
+      ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: Column(
               children: [
@@ -52,13 +52,17 @@ class _StaffPageState extends ConsumerState<StaffPage> {
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(16),
                       children: [
-                        Text(s.staffReportTitle,
-                            style: Theme.of(context).textTheme.titleSmall),
+                        Text(
+                          s.staffReportTitle,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
                         const SizedBox(height: 8),
                         _report(context, s, report),
                         const SizedBox(height: 20),
-                        Text(s.staffShiftsTitle,
-                            style: Theme.of(context).textTheme.titleSmall),
+                        Text(
+                          s.staffShiftsTitle,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
                         const SizedBox(height: 8),
                         _shifts(context, s, report, shifts),
                       ],
@@ -74,31 +78,36 @@ class _StaffPageState extends ConsumerState<StaffPage> {
   }
 
   Widget _rangeBar(Strings s) => Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (final r in FinanceRange.values)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(s.financeRange(r)),
-                    selected: _range == r,
-                    onSelected: (_) => setState(() => _range = r),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
+    padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final r in FinanceRange.values)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: Text(s.financeRange(r)),
+                selected: _range == r,
+                onSelected: (_) => setState(() => _range = r),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
 
   Widget _report(
-      BuildContext context, Strings s, AsyncValue<StaffReport> report) {
+    BuildContext context,
+    Strings s,
+    AsyncValue<StaffReport> report,
+  ) {
     return report.when(
       loading: () => const _Loading(),
       error: (e, _) => ErrorView(
-          error: e, onRetry: () => ref.invalidate(staffReportProvider(_range))),
+        error: e,
+        onRetry: () => ref.invalidate(staffReportProvider(_range)),
+      ),
       data: (rep) {
         if (rep.rows.isEmpty) return GlassPanel(child: Text(s.staffNoReport));
         final scheme = Theme.of(context).colorScheme;
@@ -111,22 +120,29 @@ class _StaffPageState extends ConsumerState<StaffPage> {
                 for (var i = 0; i < rep.rows.length; i++) ...[
                   if (i > 0) const Divider(height: 1),
                   ListTile(
-                    title: Text(rep.rows[i].email,
-                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                    title: Text(
+                      rep.rows[i].email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     subtitle: Text(
                       '${s.staffHours} ${s.formatMinutes(rep.rows[i].workedMinutes)}'
                       '${rep.rows[i].overtimeMinutes > 0 ? ' · ${s.staffOvertime} ${s.formatMinutes(rep.rows[i].overtimeMinutes)}' : ''}'
                       ' · ${s.staffTables} ${rep.rows[i].tablesServed}'
                       ' · ${formatMoney(rep.rows[i].salesAmount, rep.rows[i].currency)}',
                       style: TextStyle(
-                          color: scheme.onSurfaceVariant, fontSize: 12),
+                        color: scheme.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
                     ),
                     trailing: TextButton(
                       onPressed: () => _editRate(context, s, rep.rows[i]),
                       child: Text(
                         rep.rows[i].hourlyRateAmount != null
-                            ? formatMoney(rep.rows[i].hourlyRateAmount!,
-                                rep.rows[i].currency)
+                            ? formatMoney(
+                                rep.rows[i].hourlyRateAmount!,
+                                rep.rows[i].currency,
+                              )
                             : s.staffRateNone,
                       ),
                     ),
@@ -140,8 +156,12 @@ class _StaffPageState extends ConsumerState<StaffPage> {
     );
   }
 
-  Widget _shifts(BuildContext context, Strings s,
-      AsyncValue<StaffReport> report, AsyncValue<List<Shift>> shifts) {
+  Widget _shifts(
+    BuildContext context,
+    Strings s,
+    AsyncValue<StaffReport> report,
+    AsyncValue<List<Shift>> shifts,
+  ) {
     final emailByUser = <String, String>{
       for (final r in report.valueOrNull?.rows ?? const <StaffRow>[])
         r.userId: r.email,
@@ -153,7 +173,9 @@ class _StaffPageState extends ConsumerState<StaffPage> {
     return shifts.when(
       loading: () => const _Loading(),
       error: (e, _) => ErrorView(
-          error: e, onRetry: () => ref.invalidate(shiftsProvider(_range))),
+        error: e,
+        onRetry: () => ref.invalidate(shiftsProvider(_range)),
+      ),
       data: (list) {
         if (list.isEmpty) return GlassPanel(child: Text(s.staffNoShifts));
         final scheme = Theme.of(context).colorScheme;
@@ -165,7 +187,13 @@ class _StaffPageState extends ConsumerState<StaffPage> {
               children: [
                 for (var i = 0; i < list.length; i++) ...[
                   if (i > 0) const Divider(height: 1),
-                  _shiftTile(context, s, list[i], label(list[i].userId), scheme),
+                  _shiftTile(
+                    context,
+                    s,
+                    list[i],
+                    label(list[i].userId),
+                    scheme,
+                  ),
                 ],
               ],
             ),
@@ -175,8 +203,13 @@ class _StaffPageState extends ConsumerState<StaffPage> {
     );
   }
 
-  Widget _shiftTile(BuildContext context, Strings s, Shift sh, String who,
-      ColorScheme scheme) {
+  Widget _shiftTile(
+    BuildContext context,
+    Strings s,
+    Shift sh,
+    String who,
+    ColorScheme scheme,
+  ) {
     final inAt = DateTime.tryParse(sh.clockInAt)?.toLocal();
     final outAt = sh.clockOutAt == null
         ? null
@@ -184,26 +217,31 @@ class _StaffPageState extends ConsumerState<StaffPage> {
     final timeStr = inAt == null
         ? '—'
         : '${_dateFmt.format(inAt)} · ${_timeFmt.format(inAt)}'
-            '→${outAt != null ? _timeFmt.format(outAt) : '—'}';
+              '→${outAt != null ? _timeFmt.format(outAt) : '—'}';
     return ListTile(
       title: Row(
         children: [
           Expanded(
-              child: Text(who,
-                  maxLines: 1, overflow: TextOverflow.ellipsis)),
+            child: Text(who, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-                color: scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(999)),
-            child: Text(s.shiftSourceLabel(sh.source),
-                style: const TextStyle(fontSize: 11)),
+              color: scheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              s.shiftSourceLabel(sh.source),
+              style: const TextStyle(fontSize: 11),
+            ),
           ),
         ],
       ),
-      subtitle: Text(timeStr,
-          style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+      subtitle: Text(
+        timeStr,
+        style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -212,10 +250,11 @@ class _StaffPageState extends ConsumerState<StaffPage> {
                 ? s.formatMinutes(sh.workedMinutes!)
                 : s.staffInProgress,
             style: TextStyle(
-                fontSize: 12,
-                color: sh.workedMinutes != null
-                    ? scheme.onSurface
-                    : scheme.primary),
+              fontSize: 12,
+              color: sh.workedMinutes != null
+                  ? scheme.onSurface
+                  : scheme.primary,
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.edit_calendar_outlined, size: 18),
@@ -229,9 +268,10 @@ class _StaffPageState extends ConsumerState<StaffPage> {
 
   Future<void> _editRate(BuildContext context, Strings s, StaffRow row) async {
     final controller = TextEditingController(
-        text: row.hourlyRateAmount != null
-            ? (row.hourlyRateAmount! / 100).toStringAsFixed(2)
-            : '');
+      text: row.hourlyRateAmount != null
+          ? (row.hourlyRateAmount! / 100).toStringAsFixed(2)
+          : '',
+    );
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -240,15 +280,20 @@ class _StaffPageState extends ConsumerState<StaffPage> {
           controller: controller,
           autofocus: true,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration:
-              InputDecoration(labelText: s.staffHourlyRate, prefixText: r'$ '),
+          decoration: InputDecoration(
+            labelText: s.staffHourlyRate,
+            prefixText: r'$ ',
+          ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: Text(s.cancel)),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(s.cancel),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-              child: Text(s.setSave)),
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: Text(s.setSave),
+          ),
         ],
       ),
     );
@@ -270,8 +315,9 @@ class _StaffPageState extends ConsumerState<StaffPage> {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e is ApiError ? e.message : s.staffRateError)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiError ? e.message : s.staffRateError)),
+        );
       }
     }
   }
@@ -293,7 +339,9 @@ class _StaffPageState extends ConsumerState<StaffPage> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(s.staffClockIn),
-                subtitle: Text('${_dateFmt.format(inAt)} ${_timeFmt.format(inAt)}'),
+                subtitle: Text(
+                  '${_dateFmt.format(inAt)} ${_timeFmt.format(inAt)}',
+                ),
                 trailing: const Icon(Icons.edit),
                 onTap: () async {
                   final picked = await _pickDateTime(ctx, inAt);
@@ -303,9 +351,11 @@ class _StaffPageState extends ConsumerState<StaffPage> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(s.staffClockOut),
-                subtitle: Text(outAt != null
-                    ? '${_dateFmt.format(outAt!)} ${_timeFmt.format(outAt!)}'
-                    : '—'),
+                subtitle: Text(
+                  outAt != null
+                      ? '${_dateFmt.format(outAt!)} ${_timeFmt.format(outAt!)}'
+                      : '—',
+                ),
                 trailing: const Icon(Icons.edit),
                 onTap: () async {
                   final picked = await _pickDateTime(ctx, outAt ?? inAt);
@@ -316,18 +366,22 @@ class _StaffPageState extends ConsumerState<StaffPage> {
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: Text(s.cancel)),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(s.cancel),
+            ),
             FilledButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: Text(s.setSave)),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(s.setSave),
+            ),
           ],
         ),
       ),
     );
     if (saved != true) return;
     try {
-      await ref.read(staffRepositoryProvider).adjustShift(
+      await ref
+          .read(staffRepositoryProvider)
+          .adjustShift(
             sh.id,
             clockInAt: inAt.toUtc().toIso8601String(),
             clockOutAt: outAt?.toUtc().toIso8601String(),
@@ -340,13 +394,19 @@ class _StaffPageState extends ConsumerState<StaffPage> {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e is ApiError ? e.message : s.staffAdjustError)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiError ? e.message : s.staffAdjustError),
+          ),
+        );
       }
     }
   }
 
-  Future<DateTime?> _pickDateTime(BuildContext context, DateTime initial) async {
+  Future<DateTime?> _pickDateTime(
+    BuildContext context,
+    DateTime initial,
+  ) async {
     final date = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -367,7 +427,7 @@ class _Loading extends StatelessWidget {
   const _Loading();
   @override
   Widget build(BuildContext context) => const Padding(
-        padding: EdgeInsets.all(16),
-        child: Center(child: CircularProgressIndicator()),
-      );
+    padding: EdgeInsets.all(16),
+    child: Center(child: CircularProgressIndicator()),
+  );
 }

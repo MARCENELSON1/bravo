@@ -23,13 +23,13 @@ class Customer {
   final String? notes;
 
   factory Customer.fromJson(Map<String, dynamic> j) => Customer(
-        id: j['id'] as String,
-        name: j['name'] as String,
-        noContactar: (j['no_contactar'] as bool?) ?? false,
-        phone: j['phone'] as String?,
-        email: j['email'] as String?,
-        notes: j['notes'] as String?,
-      );
+    id: j['id'] as String,
+    name: j['name'] as String,
+    noContactar: (j['no_contactar'] as bool?) ?? false,
+    phone: j['phone'] as String?,
+    email: j['email'] as String?,
+    notes: j['notes'] as String?,
+  );
 }
 
 class CustomerRepository {
@@ -54,14 +54,13 @@ class CustomerRepository {
     String? email,
     String? notes,
     required bool noContactar,
-  }) =>
-      {
-        'name': name,
-        'phone': ?phone,
-        'email': ?email,
-        'notes': ?notes,
-        'no_contactar': noContactar,
-      };
+  }) => {
+    'name': name,
+    'phone': ?phone,
+    'email': ?email,
+    'notes': ?notes,
+    'no_contactar': noContactar,
+  };
 
   Future<void> create({
     required String name,
@@ -71,13 +70,16 @@ class CustomerRepository {
     bool noContactar = false,
   }) async {
     try {
-      await _dio.post<dynamic>('/customers',
-          data: _body(
-              name: name,
-              phone: phone,
-              email: email,
-              notes: notes,
-              noContactar: noContactar));
+      await _dio.post<dynamic>(
+        '/customers',
+        data: _body(
+          name: name,
+          phone: phone,
+          email: email,
+          notes: notes,
+          noContactar: noContactar,
+        ),
+      );
     } catch (e) {
       throw toApiError(e);
     }
@@ -92,13 +94,16 @@ class CustomerRepository {
     required bool noContactar,
   }) async {
     try {
-      await _dio.put<dynamic>('/customers/$customerId',
-          data: _body(
-              name: name,
-              phone: phone,
-              email: email,
-              notes: notes,
-              noContactar: noContactar));
+      await _dio.put<dynamic>(
+        '/customers/$customerId',
+        data: _body(
+          name: name,
+          phone: phone,
+          email: email,
+          notes: notes,
+          noContactar: noContactar,
+        ),
+      );
     } catch (e) {
       throw toApiError(e);
     }

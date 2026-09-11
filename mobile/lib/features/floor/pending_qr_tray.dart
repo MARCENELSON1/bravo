@@ -30,15 +30,23 @@ class PendingQrTray extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              Icon(Icons.qr_code_2,
-                  size: 18, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 8),
-              Text(s.pendingQrTitle(orders.length),
-                  style: Theme.of(context).textTheme.titleSmall),
-            ]),
+            Row(
+              children: [
+                Icon(
+                  Icons.qr_code_2,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  s.pendingQrTitle(orders.length),
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
-            for (final o in orders) _row(context, ref, s, o, numbers[o.tableId]),
+            for (final o in orders)
+              _row(context, ref, s, o, numbers[o.tableId]),
           ],
         ),
       ),
@@ -46,8 +54,15 @@ class PendingQrTray extends ConsumerWidget {
   }
 
   Widget _row(
-      BuildContext context, WidgetRef ref, Strings s, Order o, int? number) {
-    final label = number != null ? '${s.pendingQrTable} $number' : s.pendingQrTable;
+    BuildContext context,
+    WidgetRef ref,
+    Strings s,
+    Order o,
+    int? number,
+  ) {
+    final label = number != null
+        ? '${s.pendingQrTable} $number'
+        : s.pendingQrTable;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -56,12 +71,17 @@ class PendingQrTray extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                Text(s.pendingQrItems(o.liveItems.length),
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontSize: 12)),
+                Text(
+                  label,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  s.pendingQrItems(o.liveItems.length),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
@@ -75,7 +95,11 @@ class PendingQrTray extends ConsumerWidget {
   }
 
   Future<void> _confirm(
-      BuildContext context, WidgetRef ref, Strings s, String orderId) async {
+    BuildContext context,
+    WidgetRef ref,
+    Strings s,
+    String orderId,
+  ) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
       await ref.read(orderRepositoryProvider).send(orderId);

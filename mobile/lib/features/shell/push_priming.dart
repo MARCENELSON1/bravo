@@ -25,7 +25,8 @@ class PushPriming {
     if (prefs.containsKey(_key)) return false; // dijo "ahora no"
     if (!context.mounted) return false;
 
-    final accepted = await showModalBottomSheet<bool>(
+    final accepted =
+        await showModalBottomSheet<bool>(
           context: context,
           isScrollControlled: true,
           showDragHandle: true,
@@ -52,28 +53,40 @@ class _PrimingSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.notifications_active_outlined,
-                size: 36, color: scheme.primary),
+            Icon(
+              Icons.notifications_active_outlined,
+              size: 36,
+              color: scheme.primary,
+            ),
             const SizedBox(height: 14),
             Semantics(
               header: true,
-              child: Text(s.pushPrimingTitle,
-                  style: theme.textTheme.titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w700)),
+              child: Text(
+                s.pushPrimingTitle,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
             const SizedBox(height: 10),
-            Text(s.pushPrimingBody,
-                style: TextStyle(color: scheme.onSurfaceVariant, height: 1.4)),
+            Text(
+              s.pushPrimingBody,
+              style: TextStyle(color: scheme.onSurfaceVariant, height: 1.4),
+            ),
             const SizedBox(height: 24),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+              ),
               child: Text(s.pushPrimingAccept),
             ),
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              style: TextButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+              style: TextButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
               child: Text(s.pushPrimingLater),
             ),
           ],

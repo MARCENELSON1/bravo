@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../ui/state_views.dart';
 import 'supplier_repository.dart';
@@ -33,7 +32,6 @@ class _ProveedoresPageState extends ConsumerState<ProveedoresPage> {
       ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -51,8 +49,9 @@ class _ProveedoresPageState extends ConsumerState<ProveedoresPage> {
                       physics: const AlwaysScrollableScrollPhysics(),
                       children: [
                         SizedBox(
-                            height: 280,
-                            child: EmptyView(message: s.proveedoresEmpty)),
+                          height: 280,
+                          child: EmptyView(message: s.proveedoresEmpty),
+                        ),
                       ],
                     ),
                   );
@@ -98,7 +97,11 @@ class _ProveedoresPageState extends ConsumerState<ProveedoresPage> {
       subtitle: sub.isEmpty ? null : Text(sub),
       trailing: sup.active
           ? null
-          : Icon(Icons.block, size: 18, color: Theme.of(context).colorScheme.error),
+          : Icon(
+              Icons.block,
+              size: 18,
+              color: Theme.of(context).colorScheme.error,
+            ),
       onTap: () => _form(s, sup),
     );
   }
@@ -125,8 +128,10 @@ class _ProveedoresPageState extends ConsumerState<ProveedoresPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(existing == null ? s.provNew : existing.name,
-                  style: Theme.of(ctx).textTheme.titleMedium),
+              Text(
+                existing == null ? s.provNew : existing.name,
+                style: Theme.of(ctx).textTheme.titleMedium,
+              ),
               const SizedBox(height: 12),
               TextField(
                 controller: name,
@@ -173,14 +178,20 @@ class _ProveedoresPageState extends ConsumerState<ProveedoresPage> {
       final repo = ref.read(supplierRepositoryProvider);
       if (existing == null) {
         await repo.create(
-            name: nm, contact: _n(contact), phone: _n(phone), notes: _n(notes));
+          name: nm,
+          contact: _n(contact),
+          phone: _n(phone),
+          notes: _n(notes),
+        );
       } else {
-        await repo.update(existing.id,
-            name: nm,
-            contact: _n(contact),
-            phone: _n(phone),
-            notes: _n(notes),
-            active: active);
+        await repo.update(
+          existing.id,
+          name: nm,
+          contact: _n(contact),
+          phone: _n(phone),
+          notes: _n(notes),
+          active: active,
+        );
       }
       ref.invalidate(suppliersProvider);
     } on ApiError catch (e) {

@@ -19,11 +19,11 @@ class Sector {
   final int sortOrder;
 
   factory Sector.fromJson(Map<String, dynamic> j) => Sector(
-        id: j['id'] as String,
-        name: j['name'] as String,
-        color: j['color'] as String?,
-        sortOrder: (j['sort_order'] as int?) ?? 0,
-      );
+    id: j['id'] as String,
+    name: j['name'] as String,
+    color: j['color'] as String?,
+    sortOrder: (j['sort_order'] as int?) ?? 0,
+  );
 }
 
 class SectorsRepository {
@@ -44,18 +44,26 @@ class SectorsRepository {
 
   Future<void> create(String name, {String? color, int sortOrder = 0}) async {
     try {
-      await _dio.post<dynamic>('/sectors',
-          data: {'name': name, 'color': color, 'sort_order': sortOrder});
+      await _dio.post<dynamic>(
+        '/sectors',
+        data: {'name': name, 'color': color, 'sort_order': sortOrder},
+      );
     } catch (e) {
       throw toApiError(e);
     }
   }
 
-  Future<void> update(String id, String name,
-      {String? color, int sortOrder = 0}) async {
+  Future<void> update(
+    String id,
+    String name, {
+    String? color,
+    int sortOrder = 0,
+  }) async {
     try {
-      await _dio.put<dynamic>('/sectors/$id',
-          data: {'name': name, 'color': color, 'sort_order': sortOrder});
+      await _dio.put<dynamic>(
+        '/sectors/$id',
+        data: {'name': name, 'color': color, 'sort_order': sortOrder},
+      );
     } catch (e) {
       throw toApiError(e);
     }

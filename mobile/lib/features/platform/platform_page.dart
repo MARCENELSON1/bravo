@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../ui/state_views.dart';
 import '../../util/money.dart';
@@ -23,7 +22,9 @@ class PlatformPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-          title: Text(s.platformTitle), backgroundColor: Colors.transparent),
+        title: Text(s.platformTitle),
+        backgroundColor: Colors.transparent,
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openForm(context, ref, null),
         icon: const Icon(Icons.add),
@@ -31,12 +32,13 @@ class PlatformPage extends ConsumerWidget {
       ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: plans.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => ErrorView(
-                  error: e, onRetry: () => ref.invalidate(platformPlansProvider)),
+                error: e,
+                onRetry: () => ref.invalidate(platformPlansProvider),
+              ),
               data: (list) {
                 Future<void> refresh() async =>
                     ref.invalidate(platformPlansProvider);
@@ -47,10 +49,12 @@ class PlatformPage extends ConsumerWidget {
                       physics: const AlwaysScrollableScrollPhysics(),
                       children: [
                         SizedBox(
-                            height: 280,
-                            child: EmptyView(
-                                message: s.platformEmpty,
-                                icon: Icons.workspace_premium_outlined)),
+                          height: 280,
+                          child: EmptyView(
+                            message: s.platformEmpty,
+                            icon: Icons.workspace_premium_outlined,
+                          ),
+                        ),
                       ],
                     ),
                   );
@@ -61,8 +65,10 @@ class PlatformPage extends ConsumerWidget {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
                     children: [
-                      Text(s.platformCatalog,
-                          style: Theme.of(context).textTheme.titleSmall),
+                      Text(
+                        s.platformCatalog,
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
                       const SizedBox(height: 8),
                       for (final p in list) _planTile(context, ref, s, p),
                     ],
@@ -77,7 +83,11 @@ class PlatformPage extends ConsumerWidget {
   }
 
   Widget _planTile(
-      BuildContext context, WidgetRef ref, Strings s, PlatformPlan p) {
+    BuildContext context,
+    WidgetRef ref,
+    Strings s,
+    PlatformPlan p,
+  ) {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -90,29 +100,38 @@ class PlatformPage extends ConsumerWidget {
             Row(
               children: [
                 Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                        color: p.active
-                            ? scheme.primary
-                            : scheme.onSurfaceVariant.withValues(alpha: 0.4),
-                        shape: BoxShape.circle)),
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: p.active
+                        ? scheme.primary
+                        : scheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    shape: BoxShape.circle,
+                  ),
+                ),
                 const SizedBox(width: 8),
-                Text('${p.tier} · ${s.platformRegionLabel(p.region)}',
-                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(
+                  '${p.tier} · ${s.platformRegionLabel(p.region)}',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 const Spacer(),
                 Text(
-                    '${formatMoney(p.amount, p.currency)} / ${s.billingInterval(p.interval)}',
-                    style: TextStyle(color: scheme.onSurfaceVariant)),
+                  '${formatMoney(p.amount, p.currency)} / ${s.billingInterval(p.interval)}',
+                  style: TextStyle(color: scheme.onSurfaceVariant),
+                ),
               ],
             ),
             const SizedBox(height: 2),
             Row(
               children: [
                 Expanded(
-                  child: Text('${p.features.length} ${s.platformIncludes.toLowerCase()}',
-                      style: TextStyle(
-                          color: scheme.onSurfaceVariant, fontSize: 12)),
+                  child: Text(
+                    '${p.features.length} ${s.platformIncludes.toLowerCase()}',
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
                 TextButton(
                   onPressed: () => _openForm(context, ref, p),
@@ -132,9 +151,16 @@ class PlatformPage extends ConsumerWidget {
   }
 
   Future<void> _delete(
-      BuildContext context, WidgetRef ref, Strings s, PlatformPlan p) async {
-    final ok = await confirmDialog(context,
-        title: s.platformDeleteConfirm, confirmLabel: s.setDelete);
+    BuildContext context,
+    WidgetRef ref,
+    Strings s,
+    PlatformPlan p,
+  ) async {
+    final ok = await confirmDialog(
+      context,
+      title: s.platformDeleteConfirm,
+      confirmLabel: s.setDelete,
+    );
     if (!ok) return;
     try {
       await ref.read(platformRepositoryProvider).deletePlan(p.id);
@@ -145,8 +171,11 @@ class PlatformPage extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e is ApiError ? e.message : s.platformDeleteError)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiError ? e.message : s.platformDeleteError),
+          ),
+        );
       }
     }
   }
@@ -173,9 +202,10 @@ class _PlanFormState extends ConsumerState<_PlanForm> {
   late String _region = widget.plan?.region ?? 'INTL';
   late String _interval = widget.plan?.interval ?? 'MONTH';
   late final _amount = TextEditingController(
-      text: widget.plan != null
-          ? (widget.plan!.amount / 100).toStringAsFixed(2)
-          : '');
+    text: widget.plan != null
+        ? (widget.plan!.amount / 100).toStringAsFixed(2)
+        : '',
+  );
   late bool _active = widget.plan?.active ?? true;
   late final Set<String> _selected = {...?widget.plan?.features};
   bool _saving = false;
@@ -195,7 +225,9 @@ class _PlanFormState extends ConsumerState<_PlanForm> {
     }
     setState(() => _saving = true);
     try {
-      await ref.read(platformRepositoryProvider).savePlan(
+      await ref
+          .read(platformRepositoryProvider)
+          .savePlan(
             id: widget.plan?.id,
             tier: _tier,
             region: _region,
@@ -227,10 +259,11 @@ class _PlanFormState extends ConsumerState<_PlanForm> {
     final currency = _currencyByRegion[_region] ?? 'USD';
     return Padding(
       padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-          left: 16,
-          right: 16,
-          top: 8),
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        left: 16,
+        right: 16,
+        top: 8,
+      ),
       child: GlassPanel(
         child: SingleChildScrollView(
           child: Column(
@@ -243,12 +276,15 @@ class _PlanFormState extends ConsumerState<_PlanForm> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.outlineVariant,
-                      borderRadius: BorderRadius.circular(2)),
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-              Text(widget.plan == null ? s.platformNewPlan : s.platformEditPlan,
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                widget.plan == null ? s.platformNewPlan : s.platformEditPlan,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -260,7 +296,9 @@ class _PlanFormState extends ConsumerState<_PlanForm> {
                         DropdownMenuItem(value: 'BASIC', child: Text('BASIC')),
                         DropdownMenuItem(value: 'PRO', child: Text('PRO')),
                         DropdownMenuItem(
-                            value: 'ENTERPRISE', child: Text('ENTERPRISE')),
+                          value: 'ENTERPRISE',
+                          child: Text('ENTERPRISE'),
+                        ),
                       ],
                       onChanged: (v) => setState(() => _tier = v ?? _tier),
                     ),
@@ -273,7 +311,9 @@ class _PlanFormState extends ConsumerState<_PlanForm> {
                       items: [
                         for (final r in ['AR', 'INTL'])
                           DropdownMenuItem(
-                              value: r, child: Text(s.platformRegionLabel(r))),
+                            value: r,
+                            child: Text(s.platformRegionLabel(r)),
+                          ),
                       ],
                       onChanged: (v) => setState(() => _region = v ?? _region),
                     ),
@@ -286,31 +326,39 @@ class _PlanFormState extends ConsumerState<_PlanForm> {
                   Expanded(
                     child: TextField(
                       controller: _amount,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      decoration:
-                          InputDecoration(labelText: s.platformPrice(currency)),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: s.platformPrice(currency),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       initialValue: _interval,
-                      decoration:
-                          InputDecoration(labelText: s.platformIntervalLabel),
+                      decoration: InputDecoration(
+                        labelText: s.platformIntervalLabel,
+                      ),
                       items: [
                         for (final i in ['MONTH', 'YEAR'])
                           DropdownMenuItem(
-                              value: i, child: Text(s.billingInterval(i))),
+                            value: i,
+                            child: Text(s.billingInterval(i)),
+                          ),
                       ],
-                      onChanged: (v) => setState(() => _interval = v ?? _interval),
+                      onChanged: (v) =>
+                          setState(() => _interval = v ?? _interval),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              Text(s.platformIncludes,
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              Text(
+                s.platformIncludes,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
               features.maybeWhen(
                 data: (list) => Column(
                   children: [
@@ -345,9 +393,11 @@ class _PlanFormState extends ConsumerState<_PlanForm> {
               FilledButton.icon(
                 onPressed: _saving ? null : _submit,
                 icon: const Icon(Icons.check),
-                label: Text(widget.plan == null
-                    ? s.platformCreate
-                    : s.platformSaveChanges),
+                label: Text(
+                  widget.plan == null
+                      ? s.platformCreate
+                      : s.platformSaveChanges,
+                ),
               ),
             ],
           ),

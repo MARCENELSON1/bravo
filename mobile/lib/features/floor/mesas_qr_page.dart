@@ -4,7 +4,6 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../ui/state_views.dart';
 import 'table_qr_repository.dart';
@@ -21,10 +20,11 @@ class MesasQrPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-          title: Text(s.mesasQrTitle), backgroundColor: Colors.transparent),
+        title: Text(s.mesasQrTitle),
+        backgroundColor: Colors.transparent,
+      ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: RefreshIndicator(
               onRefresh: () async {
@@ -46,23 +46,25 @@ class MesasQrPage extends ConsumerWidget {
                       child: Center(child: CircularProgressIndicator()),
                     ),
                     error: (e, _) => ErrorView(
-                        error: e, onRetry: () => ref.invalidate(tablesProvider)),
+                      error: e,
+                      onRetry: () => ref.invalidate(tablesProvider),
+                    ),
                     data: (tables) {
                       final active = tables.where((t) => t.active).toList();
                       if (active.isEmpty) {
                         return SizedBox(
-                            height: 160,
-                            child: EmptyView(
-                                message: s.mesasQrEmpty,
-                                icon: Icons.qr_code_2_outlined));
+                          height: 160,
+                          child: EmptyView(
+                            message: s.mesasQrEmpty,
+                            icon: Icons.qr_code_2_outlined,
+                          ),
+                        );
                       }
                       return Wrap(
                         spacing: 12,
                         runSpacing: 12,
                         alignment: WrapAlignment.center,
-                        children: [
-                          for (final t in active) _QrCard(table: t),
-                        ],
+                        children: [for (final t in active) _QrCard(table: t)],
                       );
                     },
                   ),
@@ -94,19 +96,24 @@ class _QrCard extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(s.mesasQrTableLabel(table.number),
-                style: const TextStyle(fontWeight: FontWeight.w700)),
+            Text(
+              s.mesasQrTableLabel(table.number),
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: 8),
             async.when(
               loading: () => const SizedBox(
-                  height: 148,
-                  child: Center(child: CircularProgressIndicator())),
+                height: 148,
+                child: Center(child: CircularProgressIndicator()),
+              ),
               error: (e, _) => SizedBox(
                 height: 148,
                 child: Center(
-                  child: Text(s.mesasQrLoadError,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: scheme.error, fontSize: 12)),
+                  child: Text(
+                    s.mesasQrLoadError,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: scheme.error, fontSize: 12),
+                  ),
                 ),
               ),
               data: (url) => Container(
@@ -124,9 +131,11 @@ class _QrCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 6),
-            Text(s.mesasQrScanHint,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11)),
+            Text(
+              s.mesasQrScanHint,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11),
+            ),
           ],
         ),
       ),
@@ -151,8 +160,14 @@ class _SelfOrderCardState extends ConsumerState<_SelfOrderCard> {
       if (mode == 'SELF_SERVICE') {
         final pay = ref.read(selfPaySettingsProvider).valueOrNull;
         if (pay == null || !pay.enabled) {
-          await ref.read(tableQrRepositoryProvider).updateSelfPay(
-                (pay ?? const SelfPaySettings(enabled: false, tipsEnabled: true))
+          await ref
+              .read(tableQrRepositoryProvider)
+              .updateSelfPay(
+                (pay ??
+                        const SelfPaySettings(
+                          enabled: false,
+                          tipsEnabled: true,
+                        ))
                     .copyWith(enabled: true),
               );
           ref.invalidate(selfPaySettingsProvider);
@@ -162,8 +177,11 @@ class _SelfOrderCardState extends ConsumerState<_SelfOrderCard> {
     } catch (e) {
       if (mounted) {
         final s = context.s;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e is ApiError ? e.message : s.settingsSaveError)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiError ? e.message : s.settingsSaveError),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -179,15 +197,20 @@ class _SelfOrderCardState extends ConsumerState<_SelfOrderCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(s.selfOrderTitle, style: Theme.of(context).textTheme.titleSmall),
-          Text(s.selfOrderSubtitle,
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 13)),
+          Text(
+            s.selfOrderSubtitle,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 13,
+            ),
+          ),
           async.when(
             loading: () => const Padding(
-                padding: EdgeInsets.all(8),
-                child: Center(child: CircularProgressIndicator())),
-            error: (e, _) => Text(e is ApiError ? e.message : s.settingsSaveError),
+              padding: EdgeInsets.all(8),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, _) =>
+                Text(e is ApiError ? e.message : s.settingsSaveError),
             data: (v) => Column(
               children: [
                 for (final mode in const ['READ_ONLY', 'SALON', 'SELF_SERVICE'])
@@ -203,8 +226,9 @@ class _SelfOrderCardState extends ConsumerState<_SelfOrderCard> {
                     ),
                     title: Text(s.selfOrderMode(mode)),
                     subtitle: Text(s.selfOrderModeHint(mode)),
-                    onTap:
-                        (_saving || v.mode == mode) ? null : () => _saveMode(mode),
+                    onTap: (_saving || v.mode == mode)
+                        ? null
+                        : () => _saveMode(mode),
                   ),
               ],
             ),
@@ -232,8 +256,11 @@ class _SelfPayCardState extends ConsumerState<_SelfPayCard> {
     } catch (e) {
       if (mounted) {
         final s = context.s;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e is ApiError ? e.message : s.settingsSaveError)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiError ? e.message : s.settingsSaveError),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -249,22 +276,28 @@ class _SelfPayCardState extends ConsumerState<_SelfPayCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(s.selfPayTitle, style: Theme.of(context).textTheme.titleSmall),
-          Text(s.selfPaySubtitle,
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 13)),
+          Text(
+            s.selfPaySubtitle,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 13,
+            ),
+          ),
           async.when(
             loading: () => const Padding(
-                padding: EdgeInsets.all(8),
-                child: Center(child: CircularProgressIndicator())),
-            error: (e, _) => Text(e is ApiError ? e.message : s.settingsSaveError),
+              padding: EdgeInsets.all(8),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, _) =>
+                Text(e is ApiError ? e.message : s.settingsSaveError),
             data: (v) => Column(
               children: [
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: v.enabled,
-                  onChanged:
-                      _saving ? null : (x) => _save(v.copyWith(enabled: x)),
+                  onChanged: _saving
+                      ? null
+                      : (x) => _save(v.copyWith(enabled: x)),
                   title: Text(s.selfPayEnable),
                   subtitle: Text(s.selfPayEnableHint),
                 ),

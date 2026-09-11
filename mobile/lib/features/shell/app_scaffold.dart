@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/session.dart';
 import '../../auth/session_notifier.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../cashier/cashier_page.dart';
 import '../crm/clientes_page.dart';
 import '../finance/advisor_page.dart';
@@ -36,9 +35,7 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
     final session = ref.watch(sessionProvider);
     if (session is! SessionAuthenticated) {
       return const Scaffold(
-        body: Stack(
-          children: [AppBackground(), Center(child: CircularProgressIndicator())],
-        ),
+        body: Stack(children: [Center(child: CircularProgressIndicator())]),
       );
     }
 
@@ -52,27 +49,29 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
     return PushHandler(
       child: ReadyAlert(
         child: Scaffold(
-        body: Stack(
-          children: [
-            const AppBackground(),
-            // IndexedStack mantiene vivas todas las tabs → conservan scroll,
-            // formularios y conexiones en vivo al cambiar de una a otra.
-            SafeArea(
-              child: IndexedStack(
-                index: safeIndex,
-                children: [for (final t in tabs) t.page],
+          // Transparente: el fondo escénico lo pinta el `builder` de MaterialApp,
+          // una vez para toda la app. Un Scaffold opaco acá lo taparía.
+          backgroundColor: Colors.transparent,
+          body: Stack(
+            children: [
+              // IndexedStack mantiene vivas todas las tabs → conservan scroll,
+              // formularios y conexiones en vivo al cambiar de una a otra.
+              SafeArea(
+                child: IndexedStack(
+                  index: safeIndex,
+                  children: [for (final t in tabs) t.page],
+                ),
               ),
-            ),
-          ],
-        ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: safeIndex,
-          onDestinationSelected: (i) => setState(() => _index = i),
-          destinations: [
-            for (final t in tabs)
-              NavigationDestination(icon: Icon(t.icon), label: t.label),
-          ],
-        ),
+            ],
+          ),
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: safeIndex,
+            onDestinationSelected: (i) => setState(() => _index = i),
+            destinations: [
+              for (final t in tabs)
+                NavigationDestination(icon: Icon(t.icon), label: t.label),
+            ],
+          ),
         ),
       ),
     );
@@ -89,10 +88,16 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
       case Role.waiter:
         return [
           floor,
-          _TabDef(Icons.event_available_outlined, s.reservasTitle,
-              const ReservasPage()),
-          _TabDef(Icons.people_alt_outlined, s.clientesTitle,
-              const ClientesPage()),
+          _TabDef(
+            Icons.event_available_outlined,
+            s.reservasTitle,
+            const ReservasPage(),
+          ),
+          _TabDef(
+            Icons.people_alt_outlined,
+            s.clientesTitle,
+            const ClientesPage(),
+          ),
           more,
         ];
       case Role.kitchen:
@@ -100,7 +105,9 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
         final station = role == Role.bar ? Station.bar : Station.kitchen;
         return [
           _TabDef(
-            role == Role.bar ? Icons.local_bar_outlined : Icons.restaurant_outlined,
+            role == Role.bar
+                ? Icons.local_bar_outlined
+                : Icons.restaurant_outlined,
             role == Role.bar ? s.kdsBar : s.kdsKitchen,
             KdsPage(station: station),
           ),
@@ -109,10 +116,16 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
       case Role.cashier:
         return [
           floor,
-          _TabDef(Icons.point_of_sale_outlined, s.cashierTitle,
-              const CashierPage()),
-          _TabDef(Icons.volunteer_activism_outlined, s.tipsTitle,
-              const TipsPage()),
+          _TabDef(
+            Icons.point_of_sale_outlined,
+            s.cashierTitle,
+            const CashierPage(),
+          ),
+          _TabDef(
+            Icons.volunteer_activism_outlined,
+            s.tipsTitle,
+            const TipsPage(),
+          ),
           more,
         ];
       case Role.owner:
@@ -121,8 +134,11 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
           home,
           floor,
           _TabDef(Icons.insights_outlined, s.navFinance, const FinanzasPage()),
-          _TabDef(Icons.auto_awesome_outlined, s.advisorTitle,
-              const AdvisorPage()),
+          _TabDef(
+            Icons.auto_awesome_outlined,
+            s.advisorTitle,
+            const AdvisorPage(),
+          ),
           more,
         ];
     }
@@ -135,4 +151,3 @@ class _TabDef {
   final String label;
   final Widget page;
 }
-

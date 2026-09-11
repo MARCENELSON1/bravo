@@ -58,11 +58,17 @@ class MorePage extends ConsumerWidget {
         (Icons.badge_outlined, s.staffTitle, const StaffPage()),
         (Icons.inventory_2_outlined, s.productosTitle, const ProductosPage()),
         (Icons.egg_alt_outlined, s.insumosTitle, const InsumosPage()),
-        (Icons.local_shipping_outlined, s.proveedoresTitle,
-            const ProveedoresPage()),
+        (
+          Icons.local_shipping_outlined,
+          s.proveedoresTitle,
+          const ProveedoresPage(),
+        ),
         (Icons.shopping_cart_outlined, s.gastosTitle, const GastosPage()),
-        (Icons.receipt_long_outlined, s.comprobantesTitle,
-            const ComprobantesPage()),
+        (
+          Icons.receipt_long_outlined,
+          s.comprobantesTitle,
+          const ComprobantesPage(),
+        ),
         (Icons.bar_chart_outlined, s.reportesTitle, const ReportesPage()),
         (Icons.query_stats_outlined, s.analyticsTitle, const AnalyticsPage()),
         (Icons.people_alt_outlined, s.clientesTitle, const ClientesPage()),
@@ -72,11 +78,17 @@ class MorePage extends ConsumerWidget {
       // Ajustes: para todos (Apariencia/perfil son universales).
       (Icons.settings_outlined, s.ajustesTitle, const AjustesPage()),
       if (isOwner)
-        (Icons.card_membership_outlined, s.billingTitle,
-            const SuscripcionPage()),
+        (
+          Icons.card_membership_outlined,
+          s.billingTitle,
+          const SuscripcionPage(),
+        ),
       if (isPlatformAdmin)
-        (Icons.workspace_premium_outlined, s.platformTitle,
-            const PlatformPage()),
+        (
+          Icons.workspace_premium_outlined,
+          s.platformTitle,
+          const PlatformPage(),
+        ),
     ];
 
     return ListView(
@@ -105,8 +117,8 @@ class MorePage extends ConsumerWidget {
       leading: Icon(icon),
       title: Text(title),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () => Navigator.of(context)
-          .push(MaterialPageRoute(builder: (_) => page)),
+      onTap: () =>
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => page)),
     );
   }
 }

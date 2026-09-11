@@ -19,11 +19,11 @@ class MpConnection {
   final bool liveMode;
 
   factory MpConnection.fromJson(Map<String, dynamic> j) => MpConnection(
-        connected: (j['connected'] as bool?) ?? false,
-        nickname: j['nickname'] as String?,
-        externalAccountId: j['external_account_id'] as String?,
-        liveMode: (j['live_mode'] as bool?) ?? false,
-      );
+    connected: (j['connected'] as bool?) ?? false,
+    nickname: j['nickname'] as String?,
+    externalAccountId: j['external_account_id'] as String?,
+    liveMode: (j['live_mode'] as bool?) ?? false,
+  );
 }
 
 class IntegrationsRepository {
@@ -62,7 +62,6 @@ final integrationsRepositoryProvider = Provider<IntegrationsRepository>(
   (ref) => IntegrationsRepository(ref.read(apiDioProvider)),
 );
 
-final mercadoPagoConnectionProvider =
-    FutureProvider.autoDispose<MpConnection>(
+final mercadoPagoConnectionProvider = FutureProvider.autoDispose<MpConnection>(
   (ref) => ref.read(integrationsRepositoryProvider).getMercadoPago(),
 );

@@ -2,11 +2,7 @@
 /// `code` es un string estable en inglés (ej. `invalid_credentials`) y
 /// `message` es el texto en español (listo para mostrar) que devuelve el backend.
 class ApiError implements Exception {
-  const ApiError({
-    required this.code,
-    required this.message,
-    this.status,
-  });
+  const ApiError({required this.code, required this.message, this.status});
 
   final String code;
   final String message;

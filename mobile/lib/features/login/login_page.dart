@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../../auth/session_notifier.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -44,7 +43,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       _error = null;
     });
     try {
-      await ref.read(sessionProvider.notifier).login(
+      await ref
+          .read(sessionProvider.notifier)
+          .login(
             slug: _slug.text.trim(),
             email: _email.text.trim(),
             password: _password.text,
@@ -65,9 +66,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -82,8 +83,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       children: [
                         Text(
                           s.loginTitle,
-                          style: theme.textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.w700),
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -116,14 +118,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           decoration: InputDecoration(
                             labelText: s.loginPassword,
                             suffixIcon: IconButton(
-                              icon: Icon(_showPassword
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined),
+                              icon: Icon(
+                                _showPassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                              ),
                               tooltip: _showPassword
                                   ? s.passwordHide
                                   : s.passwordShow,
                               onPressed: () => setState(
-                                  () => _showPassword = !_showPassword),
+                                () => _showPassword = !_showPassword,
+                              ),
                             ),
                           ),
                         ),
@@ -141,7 +146,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : Text(s.loginSubmit),
                         ),

@@ -30,15 +30,15 @@ class FinanceKpi {
   final int? healthyHigh;
 
   factory FinanceKpi.fromJson(Map<String, dynamic> j) => FinanceKpi(
-        key: j['key'] as String,
-        kind: (j['kind'] as String?) ?? 'money',
-        value: (j['value'] as int?) ?? 0,
-        previous: (j['previous'] as int?) ?? 0,
-        delta: (j['delta'] as int?) ?? 0,
-        status: (j['status'] as String?) ?? 'neutral',
-        healthyLow: j['healthy_low'] as int?,
-        healthyHigh: j['healthy_high'] as int?,
-      );
+    key: j['key'] as String,
+    kind: (j['kind'] as String?) ?? 'money',
+    value: (j['value'] as int?) ?? 0,
+    previous: (j['previous'] as int?) ?? 0,
+    delta: (j['delta'] as int?) ?? 0,
+    status: (j['status'] as String?) ?? 'neutral',
+    healthyLow: j['healthy_low'] as int?,
+    healthyHigh: j['healthy_high'] as int?,
+  );
 }
 
 /// Proyección de fin de mes (backend `FinanceProjectionResponse`).
@@ -53,7 +53,8 @@ class FinanceProjection {
   final int netMarginAmount;
   final int monthDays;
   final int elapsedDays;
-  factory FinanceProjection.fromJson(Map<String, dynamic> j) => FinanceProjection(
+  factory FinanceProjection.fromJson(Map<String, dynamic> j) =>
+      FinanceProjection(
         salesAmount: (j['sales_amount'] as int?) ?? 0,
         netMarginAmount: (j['net_margin_amount'] as int?) ?? 0,
         monthDays: (j['month_days'] as int?) ?? 0,
@@ -76,12 +77,12 @@ class ProductMargin {
   final int salesAmount;
   final int marginAmount;
   factory ProductMargin.fromJson(Map<String, dynamic> j) => ProductMargin(
-        productId: j['product_id'] as String,
-        productName: (j['product_name'] as String?) ?? '',
-        unitsSold: (j['units_sold'] as int?) ?? 0,
-        salesAmount: (j['sales_amount'] as int?) ?? 0,
-        marginAmount: (j['margin_amount'] as int?) ?? 0,
-      );
+    productId: j['product_id'] as String,
+    productName: (j['product_name'] as String?) ?? '',
+    unitsSold: (j['units_sold'] as int?) ?? 0,
+    salesAmount: (j['sales_amount'] as int?) ?? 0,
+    marginAmount: (j['margin_amount'] as int?) ?? 0,
+  );
 }
 
 /// Un punto de la evolución del costo del plato (backend `ProductCostPointResponse`).
@@ -94,9 +95,9 @@ class ProductCostPoint {
   final String day; // YYYY-MM-DD
   final int unitCost;
   factory ProductCostPoint.fromJson(Map<String, dynamic> j) => ProductCostPoint(
-        day: (j['day'] as String?) ?? '',
-        unitCost: (j['unit_cost'] as int?) ?? 0,
-      );
+    day: (j['day'] as String?) ?? '',
+    unitCost: (j['unit_cost'] as int?) ?? 0,
+  );
 }
 
 /// Una venta del plato (backend `ProductSaleLineResponse`).
@@ -112,11 +113,11 @@ class ProductSaleLine {
   final int lineAmount;
   final int marginAmount;
   factory ProductSaleLine.fromJson(Map<String, dynamic> j) => ProductSaleLine(
-        occurredAt: (j['occurred_at'] as String?) ?? '',
-        quantity: (j['quantity'] as int?) ?? 0,
-        lineAmount: (j['line_amount'] as int?) ?? 0,
-        marginAmount: (j['margin_amount'] as int?) ?? 0,
-      );
+    occurredAt: (j['occurred_at'] as String?) ?? '',
+    quantity: (j['quantity'] as int?) ?? 0,
+    lineAmount: (j['line_amount'] as int?) ?? 0,
+    marginAmount: (j['margin_amount'] as int?) ?? 0,
+  );
 }
 
 /// El detalle de un plato en el período (backend `ProductDetailResponse`).
@@ -145,19 +146,23 @@ class ProductDetail {
   final bool linesTruncated;
 
   factory ProductDetail.fromJson(Map<String, dynamic> j) => ProductDetail(
-        currency: (j['currency'] as String?) ?? 'ARS',
-        unitsSold: (j['units_sold'] as int?) ?? 0,
-        salesAmount: (j['sales_amount'] as int?) ?? 0,
-        foodCostAmount: (j['food_cost_amount'] as int?) ?? 0,
-        marginAmount: (j['margin_amount'] as int?) ?? 0,
-        lines: ((j['lines'] as List?) ?? const [])
-            .map((e) => ProductSaleLine.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-        costSeries: ((j['cost_series'] as List?) ?? const [])
-            .map((e) => ProductCostPoint.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-        linesTruncated: (j['lines_truncated'] as bool?) ?? false,
-      );
+    currency: (j['currency'] as String?) ?? 'ARS',
+    unitsSold: (j['units_sold'] as int?) ?? 0,
+    salesAmount: (j['sales_amount'] as int?) ?? 0,
+    foodCostAmount: (j['food_cost_amount'] as int?) ?? 0,
+    marginAmount: (j['margin_amount'] as int?) ?? 0,
+    lines: ((j['lines'] as List?) ?? const [])
+        .map(
+          (e) => ProductSaleLine.fromJson(Map<String, dynamic>.from(e as Map)),
+        )
+        .toList(),
+    costSeries: ((j['cost_series'] as List?) ?? const [])
+        .map(
+          (e) => ProductCostPoint.fromJson(Map<String, dynamic>.from(e as Map)),
+        )
+        .toList(),
+    linesTruncated: (j['lines_truncated'] as bool?) ?? false,
+  );
 }
 
 /// Un diagnóstico/alerta financiera (backend `FinanceDiagnosticResponse`).
@@ -235,7 +240,8 @@ class FinanceOverview {
       projection: j['projection'] == null
           ? null
           : FinanceProjection.fromJson(
-              Map<String, dynamic>.from(j['projection'] as Map)),
+              Map<String, dynamic>.from(j['projection'] as Map),
+            ),
       kpis: list('kpis', FinanceKpi.fromJson),
       diagnostics: list('diagnostics', FinanceDiagnostic.fromJson),
       productMargins: list('product_margins', ProductMargin.fromJson),
@@ -256,26 +262,29 @@ class ExpenseRow {
   final int previous;
   final int delta;
   factory ExpenseRow.fromJson(Map<String, dynamic> j) => ExpenseRow(
-        category: (j['category'] as String?) ?? '',
-        amount: (j['amount'] as int?) ?? 0,
-        previous: (j['previous'] as int?) ?? 0,
-        delta: (j['delta'] as int?) ?? 0,
-      );
+    category: (j['category'] as String?) ?? '',
+    amount: (j['amount'] as int?) ?? 0,
+    previous: (j['previous'] as int?) ?? 0,
+    delta: (j['delta'] as int?) ?? 0,
+  );
 }
 
 class ExpenseBreakdown {
-  const ExpenseBreakdown(
-      {required this.currency, required this.total, required this.rows});
+  const ExpenseBreakdown({
+    required this.currency,
+    required this.total,
+    required this.rows,
+  });
   final String currency;
   final int total;
   final List<ExpenseRow> rows;
   factory ExpenseBreakdown.fromJson(Map<String, dynamic> j) => ExpenseBreakdown(
-        currency: (j['currency'] as String?) ?? 'ARS',
-        total: (j['total'] as int?) ?? 0,
-        rows: ((j['rows'] as List?) ?? const [])
-            .map((e) => ExpenseRow.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-      );
+    currency: (j['currency'] as String?) ?? 'ARS',
+    total: (j['total'] as int?) ?? 0,
+    rows: ((j['rows'] as List?) ?? const [])
+        .map((e) => ExpenseRow.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+  );
 }
 
 /// Un movimiento (backend `MovementResponse`).
@@ -297,14 +306,14 @@ class Movement {
   final String? category;
   final String? description;
   factory Movement.fromJson(Map<String, dynamic> j) => Movement(
-        occurredAt: (j['occurred_at'] as String?) ?? '',
-        kind: (j['kind'] as String?) ?? '',
-        amount: (j['amount'] as int?) ?? 0,
-        method: (j['method'] as String?) ?? '',
-        currency: (j['currency'] as String?) ?? 'ARS',
-        category: j['category'] as String?,
-        description: j['description'] as String?,
-      );
+    occurredAt: (j['occurred_at'] as String?) ?? '',
+    kind: (j['kind'] as String?) ?? '',
+    amount: (j['amount'] as int?) ?? 0,
+    method: (j['method'] as String?) ?? '',
+    currency: (j['currency'] as String?) ?? 'ARS',
+    category: j['category'] as String?,
+    description: j['description'] as String?,
+  );
 }
 
 class FinanceRepository {
@@ -313,9 +322,13 @@ class FinanceRepository {
 
   Future<FinanceOverview> overview(RangeWindow w) async {
     try {
-      final res = await _dio.get<dynamic>('/finance/overview',
-          queryParameters: {'from': w.from, 'to': w.to});
-      return FinanceOverview.fromJson(Map<String, dynamic>.from(res.data as Map));
+      final res = await _dio.get<dynamic>(
+        '/finance/overview',
+        queryParameters: {'from': w.from, 'to': w.to},
+      );
+      return FinanceOverview.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
     } catch (e) {
       throw toApiError(e);
     }
@@ -323,9 +336,13 @@ class FinanceRepository {
 
   Future<ExpenseBreakdown> expenseBreakdown(RangeWindow w) async {
     try {
-      final res = await _dio.get<dynamic>('/finance/expenses/breakdown',
-          queryParameters: {'from': w.from, 'to': w.to});
-      return ExpenseBreakdown.fromJson(Map<String, dynamic>.from(res.data as Map));
+      final res = await _dio.get<dynamic>(
+        '/finance/expenses/breakdown',
+        queryParameters: {'from': w.from, 'to': w.to},
+      );
+      return ExpenseBreakdown.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
     } catch (e) {
       throw toApiError(e);
     }
@@ -333,8 +350,10 @@ class FinanceRepository {
 
   Future<ProductDetail> productDetail(String productId, RangeWindow w) async {
     try {
-      final res = await _dio.get<dynamic>('/finance/products/$productId',
-          queryParameters: {'from': w.from, 'to': w.to});
+      final res = await _dio.get<dynamic>(
+        '/finance/products/$productId',
+        queryParameters: {'from': w.from, 'to': w.to},
+      );
       return ProductDetail.fromJson(Map<String, dynamic>.from(res.data as Map));
     } catch (e) {
       throw toApiError(e);
@@ -343,8 +362,10 @@ class FinanceRepository {
 
   Future<List<Movement>> movements(RangeWindow w, {int limit = 30}) async {
     try {
-      final res = await _dio.get<dynamic>('/finance/movements',
-          queryParameters: {'from': w.from, 'to': w.to, 'limit': limit});
+      final res = await _dio.get<dynamic>(
+        '/finance/movements',
+        queryParameters: {'from': w.from, 'to': w.to, 'limit': limit},
+      );
       return ((res.data as List?) ?? const [])
           .map((e) => Movement.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
@@ -358,18 +379,21 @@ final financeRepositoryProvider = Provider<FinanceRepository>(
   (ref) => FinanceRepository(ref.read(apiDioProvider)),
 );
 
-final financeOverviewProvider =
-    FutureProvider.autoDispose.family<FinanceOverview, FinanceRange>(
-  (ref, range) => ref.read(financeRepositoryProvider).overview(rangeWindow(range)),
-);
+final financeOverviewProvider = FutureProvider.autoDispose
+    .family<FinanceOverview, FinanceRange>(
+      (ref, range) =>
+          ref.read(financeRepositoryProvider).overview(rangeWindow(range)),
+    );
 
-final expenseBreakdownProvider =
-    FutureProvider.autoDispose.family<ExpenseBreakdown, FinanceRange>(
-  (ref, range) =>
-      ref.read(financeRepositoryProvider).expenseBreakdown(rangeWindow(range)),
-);
+final expenseBreakdownProvider = FutureProvider.autoDispose
+    .family<ExpenseBreakdown, FinanceRange>(
+      (ref, range) => ref
+          .read(financeRepositoryProvider)
+          .expenseBreakdown(rangeWindow(range)),
+    );
 
-final movementsProvider =
-    FutureProvider.autoDispose.family<List<Movement>, FinanceRange>(
-  (ref, range) => ref.read(financeRepositoryProvider).movements(rangeWindow(range)),
-);
+final movementsProvider = FutureProvider.autoDispose
+    .family<List<Movement>, FinanceRange>(
+      (ref, range) =>
+          ref.read(financeRepositoryProvider).movements(rangeWindow(range)),
+    );

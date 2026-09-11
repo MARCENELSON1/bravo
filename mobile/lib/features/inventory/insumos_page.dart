@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../ui/state_views.dart';
 import '../../util/money.dart';
@@ -24,10 +23,12 @@ class _InsumosPageState extends ConsumerState<InsumosPage> {
     final async = ref.watch(ingredientsProvider);
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text(s.insumosTitle), backgroundColor: Colors.transparent),
+      appBar: AppBar(
+        title: Text(s.insumosTitle),
+        backgroundColor: Colors.transparent,
+      ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -45,13 +46,15 @@ class _InsumosPageState extends ConsumerState<InsumosPage> {
                       physics: const AlwaysScrollableScrollPhysics(),
                       children: [
                         SizedBox(
-                            height: 280,
-                            child: EmptyView(message: s.insumosEmpty)),
+                          height: 280,
+                          child: EmptyView(message: s.insumosEmpty),
+                        ),
                       ],
                     ),
                   );
                 }
-                final sorted = [...items]..sort((a, b) {
+                final sorted = [...items]
+                  ..sort((a, b) {
                     if (a.isBelowMin == b.isBelowMin) return 0;
                     return a.isBelowMin ? -1 : 1;
                   });
@@ -62,20 +65,20 @@ class _InsumosPageState extends ConsumerState<InsumosPage> {
                     padding: const EdgeInsets.all(16),
                     children: [
                       GlassPanel(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Material(
-                        type: MaterialType.transparency,
-                        child: Column(
-                          children: [
-                            for (var i = 0; i < sorted.length; i++) ...[
-                              if (i > 0) const Divider(height: 1),
-                              _row(s, sorted[i]),
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: Column(
+                            children: [
+                              for (var i = 0; i < sorted.length; i++) ...[
+                                if (i > 0) const Divider(height: 1),
+                                _row(s, sorted[i]),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
                   ),
                 );
               },
@@ -101,13 +104,17 @@ class _InsumosPageState extends ConsumerState<InsumosPage> {
                 color: scheme.error.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(999),
               ),
-              child: Text(s.insumosBelowMin,
-                  style: TextStyle(color: scheme.error, fontSize: 11)),
+              child: Text(
+                s.insumosBelowMin,
+                style: TextStyle(color: scheme.error, fontSize: 11),
+              ),
             ),
           ],
         ],
       ),
-      subtitle: Text('${s.insumosStock}: ${ing.stockQty} ${ing.unit} · mín ${ing.minQty}'),
+      subtitle: Text(
+        '${s.insumosStock}: ${ing.stockQty} ${ing.unit} · mín ${ing.minQty}',
+      ),
       trailing: Text(formatMoney(ing.unitCostAmount, ing.currency)),
     );
   }
@@ -149,7 +156,8 @@ class _InsumosPageState extends ConsumerState<InsumosPage> {
   Future<void> _purchase(Strings s, Ingredient ing) async {
     final qtyCtrl = TextEditingController();
     final costCtrl = TextEditingController(
-        text: (ing.unitCostAmount / 100).toStringAsFixed(2));
+      text: (ing.unitCostAmount / 100).toStringAsFixed(2),
+    );
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -161,12 +169,16 @@ class _InsumosPageState extends ConsumerState<InsumosPage> {
               controller: qtyCtrl,
               autofocus: true,
               keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: '${s.qtyLabel} (${ing.unit})'),
+              decoration: InputDecoration(
+                labelText: '${s.qtyLabel} (${ing.unit})',
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: costCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: InputDecoration(labelText: s.unitCostLabel),
             ),
           ],
@@ -215,19 +227,20 @@ class _InsumosPageState extends ConsumerState<InsumosPage> {
   }
 
   List<Widget> _dialogActions(BuildContext ctx) => [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(false),
-          child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(ctx).pop(true),
-          child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
-        ),
-      ];
+    TextButton(
+      onPressed: () => Navigator.of(ctx).pop(false),
+      child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
+    ),
+    FilledButton(
+      onPressed: () => Navigator.of(ctx).pop(true),
+      child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
+    ),
+  ];
 
   void _toast(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     }
   }
 }

@@ -16,16 +16,16 @@ class RecipeItem {
   bool get isPreparation => preparationId != null;
 
   Map<String, dynamic> toJson() => {
-        'ingredient_id': ?ingredientId,
-        'preparation_id': ?preparationId,
-        'qty': qty,
-      };
+    'ingredient_id': ?ingredientId,
+    'preparation_id': ?preparationId,
+    'qty': qty,
+  };
 
   factory RecipeItem.fromJson(Map<String, dynamic> j) => RecipeItem(
-        qty: (j['qty'] as int?) ?? 0,
-        ingredientId: j['ingredient_id'] as String?,
-        preparationId: j['preparation_id'] as String?,
-      );
+    qty: (j['qty'] as int?) ?? 0,
+    ingredientId: j['ingredient_id'] as String?,
+    preparationId: j['preparation_id'] as String?,
+  );
 }
 
 /// Receta de un producto (backend `RecipeResponse`).
@@ -41,12 +41,12 @@ class Recipe {
   final List<RecipeItem> items;
 
   factory Recipe.fromJson(Map<String, dynamic> j) => Recipe(
-        productId: j['product_id'] as String,
-        hasRecipe: (j['has_recipe'] as bool?) ?? false,
-        items: ((j['items'] as List?) ?? const [])
-            .map((e) => RecipeItem.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-      );
+    productId: j['product_id'] as String,
+    hasRecipe: (j['has_recipe'] as bool?) ?? false,
+    items: ((j['items'] as List?) ?? const [])
+        .map((e) => RecipeItem.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+  );
 }
 
 class RecipeRepository {
@@ -80,7 +80,6 @@ final recipeRepositoryProvider = Provider<RecipeRepository>(
   (ref) => RecipeRepository(ref.read(apiDioProvider)),
 );
 
-final recipeProvider =
-    FutureProvider.autoDispose.family<Recipe, String>(
+final recipeProvider = FutureProvider.autoDispose.family<Recipe, String>(
   (ref, productId) => ref.read(recipeRepositoryProvider).get(productId),
 );

@@ -17,11 +17,11 @@ class TableItem {
   final bool active;
   final String? name;
   factory TableItem.fromJson(Map<String, dynamic> j) => TableItem(
-        id: j['id'] as String,
-        number: (j['number'] as int?) ?? 0,
-        active: (j['active'] as bool?) ?? true,
-        name: j['name'] as String?,
-      );
+    id: j['id'] as String,
+    number: (j['number'] as int?) ?? 0,
+    active: (j['active'] as bool?) ?? true,
+    name: j['name'] as String?,
+  );
 }
 
 /// Config del autopedido (backend `SelfOrderSettingsResponse`).
@@ -49,13 +49,12 @@ class SelfOrderSettings {
     bool? requiresConfirmation,
     bool? prepayRequired,
     String? mode,
-  }) =>
-      SelfOrderSettings(
-        enabled: enabled ?? this.enabled,
-        requiresConfirmation: requiresConfirmation ?? this.requiresConfirmation,
-        prepayRequired: prepayRequired ?? this.prepayRequired,
-        mode: mode ?? this.mode,
-      );
+  }) => SelfOrderSettings(
+    enabled: enabled ?? this.enabled,
+    requiresConfirmation: requiresConfirmation ?? this.requiresConfirmation,
+    prepayRequired: prepayRequired ?? this.prepayRequired,
+    mode: mode ?? this.mode,
+  );
 }
 
 /// Config del pago en mesa (backend `SelfPaySettingsResponse`).
@@ -64,9 +63,9 @@ class SelfPaySettings {
   final bool enabled;
   final bool tipsEnabled;
   factory SelfPaySettings.fromJson(Map<String, dynamic> j) => SelfPaySettings(
-        enabled: (j['enabled'] as bool?) ?? false,
-        tipsEnabled: (j['tips_enabled'] as bool?) ?? true,
-      );
+    enabled: (j['enabled'] as bool?) ?? false,
+    tipsEnabled: (j['tips_enabled'] as bool?) ?? true,
+  );
   SelfPaySettings copyWith({bool? enabled, bool? tipsEnabled}) =>
       SelfPaySettings(
         enabled: enabled ?? this.enabled,
@@ -102,7 +101,9 @@ class TableQrRepository {
   Future<SelfOrderSettings> selfOrder() async {
     try {
       final res = await _dio.get<dynamic>('/self-order/settings');
-      return SelfOrderSettings.fromJson(Map<String, dynamic>.from(res.data as Map));
+      return SelfOrderSettings.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
     } catch (e) {
       throw toApiError(e);
     }
@@ -110,11 +111,16 @@ class TableQrRepository {
 
   Future<SelfOrderSettings> updateSelfOrder(SelfOrderSettings v) async {
     try {
-      final res = await _dio.put<dynamic>('/self-order/settings', data: {
-        'enabled': v.enabled,
-        'requires_confirmation': v.requiresConfirmation,
-      });
-      return SelfOrderSettings.fromJson(Map<String, dynamic>.from(res.data as Map));
+      final res = await _dio.put<dynamic>(
+        '/self-order/settings',
+        data: {
+          'enabled': v.enabled,
+          'requires_confirmation': v.requiresConfirmation,
+        },
+      );
+      return SelfOrderSettings.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
     } catch (e) {
       throw toApiError(e);
     }
@@ -124,9 +130,13 @@ class TableQrRepository {
   /// backend deriva los flags. Autoservicio necesita además el pago en mesa.
   Future<SelfOrderSettings> updateSelfOrderMode(String mode) async {
     try {
-      final res =
-          await _dio.put<dynamic>('/self-order/settings', data: {'mode': mode});
-      return SelfOrderSettings.fromJson(Map<String, dynamic>.from(res.data as Map));
+      final res = await _dio.put<dynamic>(
+        '/self-order/settings',
+        data: {'mode': mode},
+      );
+      return SelfOrderSettings.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
     } catch (e) {
       throw toApiError(e);
     }
@@ -135,7 +145,9 @@ class TableQrRepository {
   Future<SelfPaySettings> selfPay() async {
     try {
       final res = await _dio.get<dynamic>('/self-pay/settings');
-      return SelfPaySettings.fromJson(Map<String, dynamic>.from(res.data as Map));
+      return SelfPaySettings.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
     } catch (e) {
       throw toApiError(e);
     }
@@ -143,9 +155,13 @@ class TableQrRepository {
 
   Future<SelfPaySettings> updateSelfPay(SelfPaySettings v) async {
     try {
-      final res = await _dio.put<dynamic>('/self-pay/settings',
-          data: {'enabled': v.enabled, 'tips_enabled': v.tipsEnabled});
-      return SelfPaySettings.fromJson(Map<String, dynamic>.from(res.data as Map));
+      final res = await _dio.put<dynamic>(
+        '/self-pay/settings',
+        data: {'enabled': v.enabled, 'tips_enabled': v.tipsEnabled},
+      );
+      return SelfPaySettings.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
     } catch (e) {
       throw toApiError(e);
     }
@@ -160,8 +176,7 @@ final tablesProvider = FutureProvider.autoDispose<List<TableItem>>(
   (ref) => ref.read(tableQrRepositoryProvider).tables(),
 );
 
-final tableQrUrlProvider =
-    FutureProvider.autoDispose.family<String, String>(
+final tableQrUrlProvider = FutureProvider.autoDispose.family<String, String>(
   (ref, tableId) => ref.read(tableQrRepositoryProvider).qrUrl(tableId),
 );
 

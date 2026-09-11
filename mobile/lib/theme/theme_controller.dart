@@ -29,8 +29,9 @@ class ThemeModeController extends Notifier<ThemeMode> {
   }
 }
 
-final themeModeProvider =
-    NotifierProvider<ThemeModeController, ThemeMode>(ThemeModeController.new);
+final themeModeProvider = NotifierProvider<ThemeModeController, ThemeMode>(
+  ThemeModeController.new,
+);
 
 /// Idioma: `null` = sistema; si no, `es`/`en`. Fallback a español (paridad AR).
 class LocaleController extends Notifier<Locale?> {
@@ -53,8 +54,9 @@ class LocaleController extends Notifier<Locale?> {
   }
 }
 
-final localeProvider =
-    NotifierProvider<LocaleController, Locale?>(LocaleController.new);
+final localeProvider = NotifierProvider<LocaleController, Locale?>(
+  LocaleController.new,
+);
 
 const String _reduceMotionKey = 'wellnod:reduce-motion'; // misma key que la web
 
@@ -70,5 +72,6 @@ class ReduceMotionController extends Notifier<bool> {
   }
 }
 
-final reduceMotionProvider =
-    NotifierProvider<ReduceMotionController, bool>(ReduceMotionController.new);
+final reduceMotionProvider = NotifierProvider<ReduceMotionController, bool>(
+  ReduceMotionController.new,
+);

@@ -8,7 +8,6 @@ import '../../data/printing/escpos_ticket.dart';
 import '../../data/printing/printer_providers.dart';
 import '../../l10n/strings.dart';
 import '../../theme/colors.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../util/money.dart';
 import '../cashier/cobro_sheet.dart';
@@ -85,7 +84,6 @@ class _OrderPageState extends ConsumerState<OrderPage> {
       ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/offline/sync_service_provider.dart';
 import 'router/router.dart';
+import 'ui/app_background.dart';
 import 'theme/theme.dart';
 import 'theme/theme_controller.dart';
 
@@ -72,11 +73,19 @@ class _WellnodAppState extends ConsumerState<WellnodApp> {
       // "Reducir movimiento": Flutter respeta `disableAnimations` en las
       // transiciones de ruta y en las animaciones implícitas.
       builder: (context, child) {
-        if (!reduceMotion || child == null) return child ?? const SizedBox();
+        // El fondo escénico va acá, UNA vez, detrás de toda la app — barras
+        // superiores incluidas. Antes vivía dentro del `body` de cada pantalla,
+        // y como `AppBackground` es un `Positioned.fill` solo cubría esa caja:
+        // el AppBar transparente quedaba sin nada detrás. En oscuro no se notaba;
+        // en claro era una barra negra con el título ilegible.
+        Widget app = Stack(
+          children: [const AppBackground(), child ?? const SizedBox()],
+        );
+        if (!reduceMotion) return app;
         final mq = MediaQuery.of(context);
         return MediaQuery(
           data: mq.copyWith(disableAnimations: true),
-          child: child,
+          child: app,
         );
       },
       routerConfig: router,

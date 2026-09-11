@@ -9,10 +9,10 @@ import 'finance_range.dart';
 
 final _detailProvider = FutureProvider.autoDispose
     .family<ProductDetail, ({String productId, FinanceRange range})>(
-  (ref, args) => ref
-      .read(financeRepositoryProvider)
-      .productDetail(args.productId, rangeWindow(args.range)),
-);
+      (ref, args) => ref
+          .read(financeRepositoryProvider)
+          .productDetail(args.productId, rangeWindow(args.range)),
+    );
 
 /// Drill-down de un plato: en qué se fue el margen del período.
 ///
@@ -38,36 +38,44 @@ class ProductDetailSheet extends ConsumerWidget {
     required String productId,
     required String productName,
     required FinanceRange range,
-  }) =>
-      showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        showDragHandle: true,
-        builder: (_) => ProductDetailSheet(
-          productId: productId,
-          productName: productName,
-          range: range,
-        ),
-      );
+  }) => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => ProductDetailSheet(
+      productId: productId,
+      productName: productName,
+      range: range,
+    ),
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = context.s;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final async = ref.watch(_detailProvider((productId: productId, range: range)));
+    final async = ref.watch(
+      _detailProvider((productId: productId, range: range)),
+    );
 
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.7,
       maxChildSize: 0.92,
       builder: (context, controller) => async.when(
-        loading: () => const Center(child: Padding(
-          padding: EdgeInsets.all(48), child: CircularProgressIndicator())),
+        loading: () => const Center(
+          child: Padding(
+            padding: EdgeInsets.all(48),
+            child: CircularProgressIndicator(),
+          ),
+        ),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
-            child: Text(s.financeProductDetailError, textAlign: TextAlign.center),
+            child: Text(
+              s.financeProductDetailError,
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
         data: (d) => ListView(
@@ -92,8 +100,10 @@ class ProductDetailSheet extends ConsumerWidget {
             if (d.lines.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text(s.financeNoSalesInPeriod,
-                    style: TextStyle(color: scheme.onSurfaceVariant)),
+                child: Text(
+                  s.financeNoSalesInPeriod,
+                  style: TextStyle(color: scheme.onSurfaceVariant),
+                ),
               )
             else ...[
               for (final l in d.lines.take(30))
@@ -102,10 +112,14 @@ class ProductDetailSheet extends ConsumerWidget {
                   child: Row(
                     children: [
                       Expanded(child: Text(_day(l.occurredAt))),
-                      Text('${l.quantity}× ',
-                          style: TextStyle(color: scheme.onSurfaceVariant)),
-                      Text(formatMoney(l.marginAmount, d.currency),
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(
+                        '${l.quantity}× ',
+                        style: TextStyle(color: scheme.onSurfaceVariant),
+                      ),
+                      Text(
+                        formatMoney(l.marginAmount, d.currency),
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
                     ],
                   ),
                 ),
@@ -117,9 +131,10 @@ class ProductDetailSheet extends ConsumerWidget {
                   child: Text(
                     s.financeLinesTruncated(d.lines.length),
                     style: TextStyle(
-                        color: scheme.onSurfaceVariant,
-                        fontStyle: FontStyle.italic,
-                        fontSize: 12),
+                      color: scheme.onSurfaceVariant,
+                      fontStyle: FontStyle.italic,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
             ],
@@ -142,35 +157,47 @@ class _Totals extends StatelessWidget {
     final s = context.s;
     final scheme = Theme.of(context).colorScheme;
     Widget cell(String label, String value, {Color? color}) => Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                  style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
-              const SizedBox(height: 2),
-              Text(value,
-                  style: TextStyle(fontWeight: FontWeight.w700, color: color)),
-            ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
           ),
-        );
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: TextStyle(fontWeight: FontWeight.w700, color: color),
+          ),
+        ],
+      ),
+    );
     final negative = detail.marginAmount < 0;
     return Column(
       children: [
-        Row(children: [
-          cell(s.financeUnits, '${detail.unitsSold}'),
-          cell(s.financeSalesLabel,
-              formatMoney(detail.salesAmount, detail.currency)),
-        ]),
+        Row(
+          children: [
+            cell(s.financeUnits, '${detail.unitsSold}'),
+            cell(
+              s.financeSalesLabel,
+              formatMoney(detail.salesAmount, detail.currency),
+            ),
+          ],
+        ),
         const SizedBox(height: 14),
-        Row(children: [
-          cell(s.financeFoodCost,
-              formatMoney(detail.foodCostAmount, detail.currency)),
-          cell(
-            s.financeLeavesYou,
-            formatMoney(detail.marginAmount, detail.currency),
-            color: negative ? scheme.error : null,
-          ),
-        ]),
+        Row(
+          children: [
+            cell(
+              s.financeFoodCost,
+              formatMoney(detail.foodCostAmount, detail.currency),
+            ),
+            cell(
+              s.financeLeavesYou,
+              formatMoney(detail.marginAmount, detail.currency),
+              color: negative ? scheme.error : null,
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -191,7 +218,9 @@ class _CostSparkline extends StatelessWidget {
     final worse = last > first;
     return Semantics(
       label: context.s.financeCostWentFromTo(
-          formatMoney(first, currency), formatMoney(last, currency)),
+        formatMoney(first, currency),
+        formatMoney(last, currency),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -211,10 +240,17 @@ class _CostSparkline extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(formatMoney(first, currency),
-                  style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
-              Text(formatMoney(last, currency),
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+              Text(
+                formatMoney(first, currency),
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+              ),
+              Text(
+                formatMoney(last, currency),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
             ],
           ),
         ],

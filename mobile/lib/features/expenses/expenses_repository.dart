@@ -25,14 +25,14 @@ class Expense {
   final String? description;
 
   factory Expense.fromJson(Map<String, dynamic> j) => Expense(
-        id: j['id'] as String,
-        method: (j['method'] as String?) ?? '',
-        amount: (j['amount'] as int?) ?? 0,
-        currency: (j['currency'] as String?) ?? 'ARS',
-        category: j['category'] as String?,
-        counterparty: j['counterparty'] as String?,
-        description: j['description'] as String?,
-      );
+    id: j['id'] as String,
+    method: (j['method'] as String?) ?? '',
+    amount: (j['amount'] as int?) ?? 0,
+    currency: (j['currency'] as String?) ?? 'ARS',
+    category: j['category'] as String?,
+    counterparty: j['counterparty'] as String?,
+    description: j['description'] as String?,
+  );
 }
 
 class ExpensesRepository {
@@ -58,13 +58,16 @@ class ExpensesRepository {
     String? description,
   }) async {
     try {
-      await _dio.post<dynamic>('/expenses', data: {
-        'method': method,
-        'amount': amount,
-        'category': category,
-        'counterparty': counterparty,
-        'description': description,
-      });
+      await _dio.post<dynamic>(
+        '/expenses',
+        data: {
+          'method': method,
+          'amount': amount,
+          'category': category,
+          'counterparty': counterparty,
+          'description': description,
+        },
+      );
     } catch (e) {
       throw toApiError(e);
     }

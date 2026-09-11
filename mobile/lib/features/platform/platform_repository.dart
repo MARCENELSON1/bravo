@@ -10,9 +10,9 @@ class PlatformFeature {
   final String key;
   final String label;
   factory PlatformFeature.fromJson(Map<String, dynamic> j) => PlatformFeature(
-        key: (j['key'] as String?) ?? '',
-        label: (j['label'] as String?) ?? '',
-      );
+    key: (j['key'] as String?) ?? '',
+    label: (j['label'] as String?) ?? '',
+  );
 }
 
 /// Plan del catálogo global (backend `PlatformPlanResponse`).
@@ -36,17 +36,17 @@ class PlatformPlan {
   final List<String> features;
   final bool active;
   factory PlatformPlan.fromJson(Map<String, dynamic> j) => PlatformPlan(
-        id: (j['id'] as String?) ?? '',
-        tier: (j['tier'] as String?) ?? '',
-        region: (j['region'] as String?) ?? '',
-        amount: (j['amount'] as int?) ?? 0,
-        currency: (j['currency'] as String?) ?? 'USD',
-        interval: (j['interval'] as String?) ?? 'MONTH',
-        features: ((j['features'] as List?) ?? const [])
-            .map((e) => e.toString())
-            .toList(),
-        active: (j['active'] as bool?) ?? true,
-      );
+    id: (j['id'] as String?) ?? '',
+    tier: (j['tier'] as String?) ?? '',
+    region: (j['region'] as String?) ?? '',
+    amount: (j['amount'] as int?) ?? 0,
+    currency: (j['currency'] as String?) ?? 'USD',
+    interval: (j['interval'] as String?) ?? 'MONTH',
+    features: ((j['features'] as List?) ?? const [])
+        .map((e) => e.toString())
+        .toList(),
+    active: (j['active'] as bool?) ?? true,
+  );
 }
 
 class PlatformRepository {
@@ -67,7 +67,10 @@ class PlatformRepository {
     try {
       final res = await _dio.get<dynamic>('/platform/features');
       return ((res.data as List?) ?? const [])
-          .map((e) => PlatformFeature.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) =>
+                PlatformFeature.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
           .toList();
     } catch (e) {
       throw toApiError(e);
@@ -78,7 +81,9 @@ class PlatformRepository {
     try {
       final res = await _dio.get<dynamic>('/platform/plans');
       return ((res.data as List?) ?? const [])
-          .map((e) => PlatformPlan.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) => PlatformPlan.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
           .toList();
     } catch (e) {
       throw toApiError(e);
@@ -96,16 +101,19 @@ class PlatformRepository {
     required bool active,
   }) async {
     try {
-      await _dio.post<dynamic>('/platform/plans', data: {
-        'id': id,
-        'tier': tier,
-        'region': region,
-        'amount': amount,
-        'currency': currency,
-        'interval': interval,
-        'features': features,
-        'active': active,
-      });
+      await _dio.post<dynamic>(
+        '/platform/plans',
+        data: {
+          'id': id,
+          'tier': tier,
+          'region': region,
+          'amount': amount,
+          'currency': currency,
+          'interval': interval,
+          'features': features,
+          'active': active,
+        },
+      );
     } catch (e) {
       throw toApiError(e);
     }
@@ -130,8 +138,8 @@ final platformAccessProvider = FutureProvider.autoDispose<bool>(
 
 final platformFeaturesProvider =
     FutureProvider.autoDispose<List<PlatformFeature>>(
-  (ref) => ref.read(platformRepositoryProvider).features(),
-);
+      (ref) => ref.read(platformRepositoryProvider).features(),
+    );
 
 final platformPlansProvider = FutureProvider.autoDispose<List<PlatformPlan>>(
   (ref) => ref.read(platformRepositoryProvider).plans(),

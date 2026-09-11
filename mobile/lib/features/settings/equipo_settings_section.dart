@@ -48,16 +48,20 @@ class _EquipoSettingsSectionState extends ConsumerState<EquipoSettingsSection> {
     }
     setState(() => _sending = true);
     try {
-      final msg = await ref.read(teamRepositoryProvider).invite(email, _role.api);
+      final msg = await ref
+          .read(teamRepositoryProvider)
+          .invite(email, _role.api);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(msg.isNotEmpty ? msg : s.inviteSent)));
+          SnackBar(content: Text(msg.isNotEmpty ? msg : s.inviteSent)),
+        );
         _email.clear();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e is ApiError ? e.message : s.inviteError)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiError ? e.message : s.inviteError)),
+        );
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -73,10 +77,13 @@ class _EquipoSettingsSectionState extends ConsumerState<EquipoSettingsSection> {
         children: [
           Text(s.inviteTitle, style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 4),
-          Text(s.inviteDesc,
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 13)),
+          Text(
+            s.inviteDesc,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 13,
+            ),
+          ),
           const SizedBox(height: 12),
           TextField(
             controller: _email,

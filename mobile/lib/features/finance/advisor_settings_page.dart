@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../util/money.dart';
 import 'advisor_settings_repository.dart';
@@ -15,7 +14,8 @@ class AdvisorSettingsPage extends ConsumerStatefulWidget {
   const AdvisorSettingsPage({super.key});
 
   @override
-  ConsumerState<AdvisorSettingsPage> createState() => _AdvisorSettingsPageState();
+  ConsumerState<AdvisorSettingsPage> createState() =>
+      _AdvisorSettingsPageState();
 }
 
 class _AdvisorSettingsPageState extends ConsumerState<AdvisorSettingsPage> {
@@ -30,7 +30,15 @@ class _AdvisorSettingsPageState extends ConsumerState<AdvisorSettingsPage> {
 
   @override
   void dispose() {
-    for (final c in [_labor, _other, _foodCost, _vat, _inflation, _seats, _minutes]) {
+    for (final c in [
+      _labor,
+      _other,
+      _foodCost,
+      _vat,
+      _inflation,
+      _seats,
+      _minutes,
+    ]) {
       c.dispose();
     }
     super.dispose();
@@ -54,11 +62,11 @@ class _AdvisorSettingsPageState extends ConsumerState<AdvisorSettingsPage> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-          title: Text(s.advisorConfigTitle),
-          backgroundColor: Colors.transparent),
+        title: Text(s.advisorConfigTitle),
+        backgroundColor: Colors.transparent,
+      ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -108,24 +116,24 @@ class _AdvisorSettingsPageState extends ConsumerState<AdvisorSettingsPage> {
   }
 
   Widget _money(TextEditingController c, String label) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: TextField(
-          controller: c,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(labelText: label),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 10),
+    child: TextField(
+      controller: c,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: InputDecoration(labelText: label),
+    ),
+  );
 
   Widget _num(TextEditingController c, String label) => _money(c, label);
 
   Widget _int(TextEditingController c, String label) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: TextField(
-          controller: c,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(labelText: label),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 10),
+    child: TextField(
+      controller: c,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(labelText: label),
+    ),
+  );
 
   int _pctToBps(TextEditingController c) {
     final v = double.tryParse(c.text.trim().replaceAll(',', '.')) ?? 0;
@@ -135,7 +143,9 @@ class _AdvisorSettingsPageState extends ConsumerState<AdvisorSettingsPage> {
   Future<void> _save() async {
     final s = context.s;
     try {
-      await ref.read(advisorSettingsRepositoryProvider).update(
+      await ref
+          .read(advisorSettingsRepositoryProvider)
+          .update(
             monthlyLaborCost: pesosToMinor(_labor.text) ?? 0,
             monthlyOtherFixedCosts: pesosToMinor(_other.text) ?? 0,
             targetFoodCostBps: _pctToBps(_foodCost),

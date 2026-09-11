@@ -11,8 +11,11 @@ import 'sectors_repository.dart';
 class SalonesSettingsSection extends ConsumerWidget {
   const SalonesSettingsSection({super.key});
 
-  Future<void> _editDialog(BuildContext context, WidgetRef ref,
-      {Sector? sector}) async {
+  Future<void> _editDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    Sector? sector,
+  }) async {
     final s = context.s;
     final controller = TextEditingController(text: sector?.name ?? '');
     final name = await showDialog<String>(
@@ -27,7 +30,9 @@ class SalonesSettingsSection extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: Text(s.cancel)),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(s.cancel),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
             child: Text(s.setSave),
@@ -41,8 +46,12 @@ class SalonesSettingsSection extends ConsumerWidget {
       if (sector == null) {
         await repo.create(name);
       } else {
-        await repo.update(sector.id, name, color: sector.color,
-            sortOrder: sector.sortOrder);
+        await repo.update(
+          sector.id,
+          name,
+          color: sector.color,
+          sortOrder: sector.sortOrder,
+        );
       }
       ref.invalidate(sectorsProvider);
       if (context.mounted) {
@@ -51,14 +60,20 @@ class SalonesSettingsSection extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e is ApiError ? e.message : s.sectorSaveError)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiError ? e.message : s.sectorSaveError),
+          ),
+        );
       }
     }
   }
 
   Future<void> _delete(
-      BuildContext context, WidgetRef ref, Sector sector) async {
+    BuildContext context,
+    WidgetRef ref,
+    Sector sector,
+  ) async {
     final s = context.s;
     final ok = await showDialog<bool>(
       context: context,
@@ -66,10 +81,13 @@ class SalonesSettingsSection extends ConsumerWidget {
         title: Text(s.sectorDeleteConfirm(sector.name)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false), child: Text(s.cancel)),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(s.cancel),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(ctx).colorScheme.error),
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(s.setDelete),
           ),
@@ -86,8 +104,11 @@ class SalonesSettingsSection extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e is ApiError ? e.message : s.sectorSaveError)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiError ? e.message : s.sectorSaveError),
+          ),
+        );
       }
     }
   }
@@ -102,10 +123,13 @@ class SalonesSettingsSection extends ConsumerWidget {
         children: [
           Text(s.sectorsTitle, style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 4),
-          Text(s.sectorsDesc,
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 13)),
+          Text(
+            s.sectorsDesc,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 13,
+            ),
+          ),
           const SizedBox(height: 8),
           async.when(
             loading: () => const Padding(
@@ -119,10 +143,12 @@ class SalonesSettingsSection extends ConsumerWidget {
                 if (sectors.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Text(s.sectorsEmpty,
-                        style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant)),
+                    child: Text(
+                      s.sectorsEmpty,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 for (final sector in sectors)
                   Material(

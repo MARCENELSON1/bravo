@@ -22,7 +22,11 @@ class SyncIndicator extends ConsumerWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.cloud_off_outlined, size: 16, color: scheme.onSurfaceVariant),
+              Icon(
+                Icons.cloud_off_outlined,
+                size: 16,
+                color: scheme.onSurfaceVariant,
+              ),
               const SizedBox(width: 4),
               Text(
                 context.s.pendingSync(count),

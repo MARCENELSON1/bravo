@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../util/money.dart';
 import '../cashier/payment_dtos.dart';
@@ -26,10 +25,12 @@ class _TipsPageState extends ConsumerState<TipsPage> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text(s.tipsTitle), backgroundColor: Colors.transparent),
+      appBar: AppBar(
+        title: Text(s.tipsTitle),
+        backgroundColor: Colors.transparent,
+      ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -54,9 +55,15 @@ class _TipsPageState extends ConsumerState<TipsPage> {
         GlassPanel(
           child: Column(
             children: [
-              _row(s.tipsEarned, formatMoney(report.earnedTotal, report.currency)),
+              _row(
+                s.tipsEarned,
+                formatMoney(report.earnedTotal, report.currency),
+              ),
               _row(s.tipsPaid, formatMoney(report.paidTotal, report.currency)),
-              _row(s.tipsPending, formatMoney(report.pendingTotal, report.currency)),
+              _row(
+                s.tipsPending,
+                formatMoney(report.pendingTotal, report.currency),
+              ),
             ],
           ),
         ),
@@ -74,7 +81,8 @@ class _TipsPageState extends ConsumerState<TipsPage> {
                     ListTile(
                       title: Text(row.waiterName),
                       subtitle: Text(
-                          '${s.tipsPending}: ${formatMoney(row.pending, report.currency)}'),
+                        '${s.tipsPending}: ${formatMoney(row.pending, report.currency)}',
+                      ),
                       trailing: row.pending > 0
                           ? TextButton(
                               onPressed: () => _payout(s, row, report.currency),
@@ -91,13 +99,14 @@ class _TipsPageState extends ConsumerState<TipsPage> {
   }
 
   Widget _row(String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(children: [Text(label), const Spacer(), Text(value)]),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(children: [Text(label), const Spacer(), Text(value)]),
+  );
 
   Future<void> _payout(Strings s, TipRow row, String currency) async {
-    final amountCtrl =
-        TextEditingController(text: (row.pending / 100).toStringAsFixed(2));
+    final amountCtrl = TextEditingController(
+      text: (row.pending / 100).toStringAsFixed(2),
+    );
     var method = PaymentMethod.cash;
 
     final ok = await showDialog<bool>(
@@ -110,7 +119,9 @@ class _TipsPageState extends ConsumerState<TipsPage> {
             children: [
               TextField(
                 controller: amountCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(labelText: s.cobroAmount),
               ),
               const SizedBox(height: 12),

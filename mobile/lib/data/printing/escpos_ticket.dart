@@ -25,7 +25,10 @@ Future<List<int>> buildKitchenTicket(
     ),
   );
   if (tableLabel != null) {
-    bytes += g.text(tableLabel, styles: const PosStyles(align: PosAlign.center));
+    bytes += g.text(
+      tableLabel,
+      styles: const PosStyles(align: PosAlign.center),
+    );
   }
   bytes += g.hr();
 
@@ -45,7 +48,9 @@ Future<List<int>> buildKitchenTicket(
         styles: const PosStyles(bold: true),
       );
       if (item.selectedOptions.isNotEmpty) {
-        bytes += g.text('  ${item.selectedOptions.map((o) => o.name).join(', ')}');
+        bytes += g.text(
+          '  ${item.selectedOptions.map((o) => o.name).join(', ')}',
+        );
       }
       if (item.note != null && item.note!.isNotEmpty) {
         bytes += g.text('  > ${item.note}');
@@ -73,7 +78,10 @@ Future<List<int>> buildTestTicket({PaperSize paper = PaperSize.mm58}) async {
       width: PosTextSize.size2,
     ),
   );
-  bytes += g.text('Prueba de impresora', styles: const PosStyles(align: PosAlign.center));
+  bytes += g.text(
+    'Prueba de impresora',
+    styles: const PosStyles(align: PosAlign.center),
+  );
   bytes += g.hr();
   bytes += g.feed(1);
   bytes += g.cut();

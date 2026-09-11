@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../ui/state_views.dart';
 import 'customer_repository.dart';
@@ -39,14 +38,16 @@ class _ClientesPageState extends ConsumerState<ClientesPage> {
     final async = ref.watch(customersProvider);
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text(s.clientesTitle), backgroundColor: Colors.transparent),
+      appBar: AppBar(
+        title: Text(s.clientesTitle),
+        backgroundColor: Colors.transparent,
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _form(s, null),
         child: const Icon(Icons.add),
       ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -67,42 +68,44 @@ class _ClientesPageState extends ConsumerState<ClientesPage> {
     final filtered = q.isEmpty
         ? list
         : list
-            .where((c) =>
-                c.name.toLowerCase().contains(q) ||
-                (c.phone?.contains(q) ?? false))
-            .toList();
+              .where(
+                (c) =>
+                    c.name.toLowerCase().contains(q) ||
+                    (c.phone?.contains(q) ?? false),
+              )
+              .toList();
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(customersProvider),
       child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
-      children: [
-        TextField(
-          controller: _search,
-          decoration: InputDecoration(
-            hintText: s.clientesSearch,
-            prefixIcon: const Icon(Icons.search),
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (filtered.isEmpty)
-          GlassPanel(child: Text(s.clientesEmpty))
-        else
-          GlassPanel(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Material(
-              type: MaterialType.transparency,
-              child: Column(
-                children: [
-                  for (var i = 0; i < filtered.length; i++) ...[
-                    if (i > 0) const Divider(height: 1),
-                    _tile(s, filtered[i]),
-                  ],
-                ],
-              ),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: [
+          TextField(
+            controller: _search,
+            decoration: InputDecoration(
+              hintText: s.clientesSearch,
+              prefixIcon: const Icon(Icons.search),
             ),
           ),
-      ],
+          const SizedBox(height: 12),
+          if (filtered.isEmpty)
+            GlassPanel(child: Text(s.clientesEmpty))
+          else
+            GlassPanel(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Material(
+                type: MaterialType.transparency,
+                child: Column(
+                  children: [
+                    for (var i = 0; i < filtered.length; i++) ...[
+                      if (i > 0) const Divider(height: 1),
+                      _tile(s, filtered[i]),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -116,8 +119,11 @@ class _ClientesPageState extends ConsumerState<ClientesPage> {
       title: Text(c.name),
       subtitle: sub.isEmpty ? null : Text(sub),
       trailing: c.noContactar
-          ? Icon(Icons.do_not_disturb_on_outlined,
-              size: 18, color: Theme.of(context).colorScheme.error)
+          ? Icon(
+              Icons.do_not_disturb_on_outlined,
+              size: 18,
+              color: Theme.of(context).colorScheme.error,
+            )
           : null,
       onTap: () => _form(s, c),
     );
@@ -145,8 +151,10 @@ class _ClientesPageState extends ConsumerState<ClientesPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(existing == null ? s.clienteNew : existing.name,
-                  style: Theme.of(ctx).textTheme.titleMedium),
+              Text(
+                existing == null ? s.clienteNew : existing.name,
+                style: Theme.of(ctx).textTheme.titleMedium,
+              ),
               const SizedBox(height: 12),
               TextField(
                 controller: name,
@@ -193,18 +201,21 @@ class _ClientesPageState extends ConsumerState<ClientesPage> {
       final repo = ref.read(customerRepositoryProvider);
       if (existing == null) {
         await repo.create(
-            name: nm,
-            phone: _n(phone),
-            email: _n(email),
-            notes: _n(notes),
-            noContactar: noContact);
+          name: nm,
+          phone: _n(phone),
+          email: _n(email),
+          notes: _n(notes),
+          noContactar: noContact,
+        );
       } else {
-        await repo.update(existing.id,
-            name: nm,
-            phone: _n(phone),
-            email: _n(email),
-            notes: _n(notes),
-            noContactar: noContact);
+        await repo.update(
+          existing.id,
+          name: nm,
+          phone: _n(phone),
+          email: _n(email),
+          notes: _n(notes),
+          noContactar: noContact,
+        );
       }
       ref.invalidate(customersProvider);
     } on ApiError catch (e) {

@@ -17,6 +17,7 @@ class ReportSummary {
     required this.profit,
   });
   final String currency;
+
   /// Lo COBRADO en el período, bruto de comisiones (NO lo vendido).
   final int salesCollected;
   final int collectedNet;
@@ -30,25 +31,29 @@ class ReportSummary {
   /// El `??` cubre a un backend viejo, no a una versión nueva del cálculo.
   final int profit;
   factory ReportSummary.fromJson(Map<String, dynamic> j) => ReportSummary(
-        currency: (j['currency'] as String?) ?? 'ARS',
-        // OJO: es lo COBRADO, no lo vendido (el nombre del campo lo dice).
-        salesCollected: (j['sales_collected'] as int?) ?? 0,
-        collectedNet: (j['collected_net'] as int?) ?? 0,
-        expenses: (j['expenses'] as int?) ?? 0,
-        avgTicket: (j['avg_ticket'] as int?) ?? 0,
-        paidOrders: (j['paid_orders'] as int?) ?? 0,
-        profit: (j['profit_net_of_fees'] as int?) ?? 0,
-      );
+    currency: (j['currency'] as String?) ?? 'ARS',
+    // OJO: es lo COBRADO, no lo vendido (el nombre del campo lo dice).
+    salesCollected: (j['sales_collected'] as int?) ?? 0,
+    collectedNet: (j['collected_net'] as int?) ?? 0,
+    expenses: (j['expenses'] as int?) ?? 0,
+    avgTicket: (j['avg_ticket'] as int?) ?? 0,
+    paidOrders: (j['paid_orders'] as int?) ?? 0,
+    profit: (j['profit_net_of_fees'] as int?) ?? 0,
+  );
 }
 
 /// Un día de ventas (backend `RevenueDailyPointResponse`).
 class RevenueDailyPoint {
-  const RevenueDailyPoint(
-      {required this.day, required this.salesAmount, required this.ordersCount});
+  const RevenueDailyPoint({
+    required this.day,
+    required this.salesAmount,
+    required this.ordersCount,
+  });
   final String day;
   final int salesAmount;
   final int ordersCount;
-  factory RevenueDailyPoint.fromJson(Map<String, dynamic> j) => RevenueDailyPoint(
+  factory RevenueDailyPoint.fromJson(Map<String, dynamic> j) =>
+      RevenueDailyPoint(
         day: (j['day'] as String?) ?? '',
         salesAmount: (j['sales_amount'] as int?) ?? 0,
         ordersCount: (j['orders_count'] as int?) ?? 0,
@@ -77,15 +82,15 @@ class RevenueSummary {
   final int ordersCount;
   final int averageTicketAmount;
   factory RevenueSummary.fromJson(Map<String, dynamic> j) => RevenueSummary(
-        currency: (j['currency'] as String?) ?? 'ARS',
-        salesAmount: (j['sales_amount'] as int?) ?? 0,
-        collectedAmount: (j['collected_amount'] as int?) ?? 0,
-        expenseAmount: (j['expense_amount'] as int?) ?? 0,
-        foodCostAmount: (j['food_cost_amount'] as int?) ?? 0,
-        grossMarginAmount: (j['gross_margin_amount'] as int?) ?? 0,
-        ordersCount: (j['orders_count'] as int?) ?? 0,
-        averageTicketAmount: (j['average_ticket_amount'] as int?) ?? 0,
-      );
+    currency: (j['currency'] as String?) ?? 'ARS',
+    salesAmount: (j['sales_amount'] as int?) ?? 0,
+    collectedAmount: (j['collected_amount'] as int?) ?? 0,
+    expenseAmount: (j['expense_amount'] as int?) ?? 0,
+    foodCostAmount: (j['food_cost_amount'] as int?) ?? 0,
+    grossMarginAmount: (j['gross_margin_amount'] as int?) ?? 0,
+    ordersCount: (j['orders_count'] as int?) ?? 0,
+    averageTicketAmount: (j['average_ticket_amount'] as int?) ?? 0,
+  );
 }
 
 class ProductPerf {
@@ -106,13 +111,13 @@ class ProductPerf {
   final String currency;
 
   factory ProductPerf.fromJson(Map<String, dynamic> j) => ProductPerf(
-        productName: (j['product_name'] as String?) ?? '',
-        unitsSold: (j['units_sold'] as int?) ?? 0,
-        salesAmount: (j['sales_amount'] as int?) ?? 0,
-        foodCostAmount: (j['food_cost_amount'] as int?) ?? 0,
-        marginAmount: (j['margin_amount'] as int?) ?? 0,
-        currency: (j['currency'] as String?) ?? 'ARS',
-      );
+    productName: (j['product_name'] as String?) ?? '',
+    unitsSold: (j['units_sold'] as int?) ?? 0,
+    salesAmount: (j['sales_amount'] as int?) ?? 0,
+    foodCostAmount: (j['food_cost_amount'] as int?) ?? 0,
+    marginAmount: (j['margin_amount'] as int?) ?? 0,
+    currency: (j['currency'] as String?) ?? 'ARS',
+  );
 }
 
 class PaymentMixRow {
@@ -129,11 +134,11 @@ class PaymentMixRow {
   final int count;
 
   factory PaymentMixRow.fromJson(Map<String, dynamic> j) => PaymentMixRow(
-        method: (j['method'] as String?) ?? '',
-        direction: (j['direction'] as String?) ?? '',
-        amount: (j['amount'] as int?) ?? 0,
-        count: (j['count'] as int?) ?? 0,
-      );
+    method: (j['method'] as String?) ?? '',
+    direction: (j['direction'] as String?) ?? '',
+    amount: (j['amount'] as int?) ?? 0,
+    count: (j['count'] as int?) ?? 0,
+  );
 }
 
 class ReportsRepository {
@@ -144,8 +149,10 @@ class ReportsRepository {
 
   Future<ReportSummary> summary(RangeWindow w) async {
     try {
-      final res =
-          await _dio.get<dynamic>('/reports/dashboard', queryParameters: _win(w));
+      final res = await _dio.get<dynamic>(
+        '/reports/dashboard',
+        queryParameters: _win(w),
+      );
       return ReportSummary.fromJson(Map<String, dynamic>.from(res.data as Map));
     } catch (e) {
       throw toApiError(e);
@@ -154,10 +161,15 @@ class ReportsRepository {
 
   Future<List<RevenueDailyPoint>> revenueDaily(RangeWindow w) async {
     try {
-      final res = await _dio.get<dynamic>('/analytics/revenue/daily',
-          queryParameters: _win(w));
+      final res = await _dio.get<dynamic>(
+        '/analytics/revenue/daily',
+        queryParameters: _win(w),
+      );
       return ((res.data as List?) ?? const [])
-          .map((e) => RevenueDailyPoint.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) =>
+                RevenueDailyPoint.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
           .toList();
     } catch (e) {
       throw toApiError(e);
@@ -166,9 +178,13 @@ class ReportsRepository {
 
   Future<RevenueSummary> revenue(RangeWindow w) async {
     try {
-      final res =
-          await _dio.get<dynamic>('/analytics/revenue', queryParameters: _win(w));
-      return RevenueSummary.fromJson(Map<String, dynamic>.from(res.data as Map));
+      final res = await _dio.get<dynamic>(
+        '/analytics/revenue',
+        queryParameters: _win(w),
+      );
+      return RevenueSummary.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
     } catch (e) {
       throw toApiError(e);
     }
@@ -176,8 +192,10 @@ class ReportsRepository {
 
   Future<List<ProductPerf>> products(RangeWindow w) async {
     try {
-      final res = await _dio.get<dynamic>('/analytics/products',
-          queryParameters: {..._win(w), 'limit': 10});
+      final res = await _dio.get<dynamic>(
+        '/analytics/products',
+        queryParameters: {..._win(w), 'limit': 10},
+      );
       return ((res.data as List?) ?? const [])
           .map((e) => ProductPerf.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
@@ -188,10 +206,14 @@ class ReportsRepository {
 
   Future<List<PaymentMixRow>> paymentMix(RangeWindow w) async {
     try {
-      final res = await _dio.get<dynamic>('/analytics/payment-mix',
-          queryParameters: _win(w));
+      final res = await _dio.get<dynamic>(
+        '/analytics/payment-mix',
+        queryParameters: _win(w),
+      );
       return ((res.data as List?) ?? const [])
-          .map((e) => PaymentMixRow.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) => PaymentMixRow.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
           .toList();
     } catch (e) {
       throw toApiError(e);
@@ -203,28 +225,32 @@ final reportsRepositoryProvider = Provider<ReportsRepository>(
   (ref) => ReportsRepository(ref.read(apiDioProvider)),
 );
 
-final revenueProvider =
-    FutureProvider.autoDispose.family<RevenueSummary, FinanceRange>(
-  (ref, range) => ref.read(reportsRepositoryProvider).revenue(rangeWindow(range)),
-);
+final revenueProvider = FutureProvider.autoDispose
+    .family<RevenueSummary, FinanceRange>(
+      (ref, range) =>
+          ref.read(reportsRepositoryProvider).revenue(rangeWindow(range)),
+    );
 
-final reportSummaryProvider =
-    FutureProvider.autoDispose.family<ReportSummary, FinanceRange>(
-  (ref, range) => ref.read(reportsRepositoryProvider).summary(rangeWindow(range)),
-);
+final reportSummaryProvider = FutureProvider.autoDispose
+    .family<ReportSummary, FinanceRange>(
+      (ref, range) =>
+          ref.read(reportsRepositoryProvider).summary(rangeWindow(range)),
+    );
 
-final revenueDailyProvider =
-    FutureProvider.autoDispose.family<List<RevenueDailyPoint>, FinanceRange>(
-  (ref, range) =>
-      ref.read(reportsRepositoryProvider).revenueDaily(rangeWindow(range)),
-);
+final revenueDailyProvider = FutureProvider.autoDispose
+    .family<List<RevenueDailyPoint>, FinanceRange>(
+      (ref, range) =>
+          ref.read(reportsRepositoryProvider).revenueDaily(rangeWindow(range)),
+    );
 
-final productPerfProvider =
-    FutureProvider.autoDispose.family<List<ProductPerf>, FinanceRange>(
-  (ref, range) => ref.read(reportsRepositoryProvider).products(rangeWindow(range)),
-);
+final productPerfProvider = FutureProvider.autoDispose
+    .family<List<ProductPerf>, FinanceRange>(
+      (ref, range) =>
+          ref.read(reportsRepositoryProvider).products(rangeWindow(range)),
+    );
 
-final paymentMixProvider =
-    FutureProvider.autoDispose.family<List<PaymentMixRow>, FinanceRange>(
-  (ref, range) => ref.read(reportsRepositoryProvider).paymentMix(rangeWindow(range)),
-);
+final paymentMixProvider = FutureProvider.autoDispose
+    .family<List<PaymentMixRow>, FinanceRange>(
+      (ref, range) =>
+          ref.read(reportsRepositoryProvider).paymentMix(rangeWindow(range)),
+    );

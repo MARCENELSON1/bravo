@@ -5,7 +5,6 @@ import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import '../../data/printing/escpos_ticket.dart';
 import '../../data/printing/printer_providers.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 
 /// Settings de la impresora ESC/POS: elegir una impresora vinculada por Bluetooth
@@ -61,7 +60,8 @@ class _PrinterPageState extends ConsumerState<PrinterPage> {
 
   void _toast(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -86,7 +86,6 @@ class _PrinterPageState extends ConsumerState<PrinterPage> {
       ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: ListView(
               padding: const EdgeInsets.all(16),

@@ -9,7 +9,8 @@ import 'radii.dart';
 /// bundling de **Geist** (sans/heading) e **Inter** (display) queda como follow-up
 /// chico de F0: dropear los `.ttf` variables en `assets/fonts/`, declararlos en
 /// `pubspec.yaml` y setear `fontFamily` acá.
-const String? _fontFamily = null; // TODO(F0): 'Geist' cuando se bundleen los .ttf
+const String? _fontFamily =
+    null; // TODO(F0): 'Geist' cuando se bundleen los .ttf
 
 ThemeData buildLightTheme() => _build(WellnodPalette.light, Brightness.light);
 ThemeData buildDarkTheme() => _build(WellnodPalette.dark, Brightness.dark);

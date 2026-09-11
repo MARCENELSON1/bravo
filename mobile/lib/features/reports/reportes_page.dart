@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../ui/state_views.dart';
 import '../../util/money.dart';
@@ -30,10 +29,11 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-          title: Text(s.reportesTitle), backgroundColor: Colors.transparent),
+        title: Text(s.reportesTitle),
+        backgroundColor: Colors.transparent,
+      ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: Column(
               children: [
@@ -57,13 +57,17 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
                         const SizedBox(height: 16),
                         _expensesByCategory(context, s),
                         const SizedBox(height: 16),
-                        Text(s.repTopProducts,
-                            style: Theme.of(context).textTheme.titleSmall),
+                        Text(
+                          s.repTopProducts,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
                         const SizedBox(height: 8),
                         _topProducts(context, s),
                         const SizedBox(height: 16),
-                        Text(s.repPaymentMix,
-                            style: Theme.of(context).textTheme.titleSmall),
+                        Text(
+                          s.repPaymentMix,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
                         const SizedBox(height: 8),
                         _paymentMix(context, s),
                       ],
@@ -79,31 +83,33 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
   }
 
   Widget _rangeBar(Strings s) => Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (final r in FinanceRange.values)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(s.financeRange(r)),
-                    selected: _range == r,
-                    onSelected: (_) => setState(() => _range = r),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
+    padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final r in FinanceRange.values)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: Text(s.financeRange(r)),
+                selected: _range == r,
+                onSelected: (_) => setState(() => _range = r),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
 
   Widget _summary(BuildContext context, Strings s) {
     final async = ref.watch(reportSummaryProvider(_range));
     return async.when(
       loading: () => const _Loading(),
       error: (e, _) => ErrorView(
-          error: e, onRetry: () => ref.invalidate(reportSummaryProvider(_range))),
+        error: e,
+        onRetry: () => ref.invalidate(reportSummaryProvider(_range)),
+      ),
       data: (d) {
         Widget stat(String label, int v, {bool accent = false}) {
           final scheme = Theme.of(context).colorScheme;
@@ -113,22 +119,29 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style:
-                        TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text(formatMoney(v, d.currency),
-                        maxLines: 1,
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: accent ? scheme.primary : scheme.onSurface)),
+                    child: Text(
+                      formatMoney(v, d.currency),
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: accent ? scheme.primary : scheme.onSurface,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -140,8 +153,10 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(s.repSummaryTitle,
-                style: Theme.of(context).textTheme.titleSmall),
+            Text(
+              s.repSummaryTitle,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
             const SizedBox(height: 8),
             twoColGrid([
               stat(s.repSales, d.salesCollected),
@@ -155,13 +170,21 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(s.repOrders,
-                        style: TextStyle(
-                            color: scheme.onSurfaceVariant, fontSize: 12)),
+                    Text(
+                      s.repOrders,
+                      style: TextStyle(
+                        color: scheme.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text('${d.paidOrders}',
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w700)),
+                    Text(
+                      '${d.paidOrders}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -184,15 +207,20 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
           async.when(
             loading: () => const _Loading(),
             error: (e, _) => ErrorView(
-                error: e,
-                onRetry: () => ref.invalidate(revenueDailyProvider(_range))),
+              error: e,
+              onRetry: () => ref.invalidate(revenueDailyProvider(_range)),
+            ),
             data: (rows) {
               if (rows.isEmpty) {
-                return Text(s.repSalesByDayEmpty,
-                    style: TextStyle(color: scheme.onSurfaceVariant));
+                return Text(
+                  s.repSalesByDayEmpty,
+                  style: TextStyle(color: scheme.onSurfaceVariant),
+                );
               }
               final max = rows.fold<int>(
-                  0, (m, r) => r.salesAmount > m ? r.salesAmount : m);
+                0,
+                (m, r) => r.salesAmount > m ? r.salesAmount : m,
+              );
               return Column(
                 children: [
                   for (final r in rows)
@@ -202,10 +230,13 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
                         children: [
                           SizedBox(
                             width: 74,
-                            child: Text(_dayLabel(r.day),
-                                style: TextStyle(
-                                    color: scheme.onSurfaceVariant,
-                                    fontSize: 12)),
+                            child: Text(
+                              _dayLabel(r.day),
+                              style: TextStyle(
+                                color: scheme.onSurfaceVariant,
+                                fontSize: 12,
+                              ),
+                            ),
                           ),
                           Expanded(
                             child: ClipRRect(
@@ -218,8 +249,10 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text(formatMoney(r.salesAmount, 'ARS'),
-                              style: const TextStyle(fontSize: 12)),
+                          Text(
+                            formatMoney(r.salesAmount, 'ARS'),
+                            style: const TextStyle(fontSize: 12),
+                          ),
                         ],
                       ),
                     ),
@@ -246,18 +279,23 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(s.repExpensesByCategory,
-              style: Theme.of(context).textTheme.titleSmall),
+          Text(
+            s.repExpensesByCategory,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
           const SizedBox(height: 8),
           async.when(
             loading: () => const _Loading(),
             error: (e, _) => ErrorView(
-                error: e,
-                onRetry: () => ref.invalidate(expenseBreakdownProvider(_range))),
+              error: e,
+              onRetry: () => ref.invalidate(expenseBreakdownProvider(_range)),
+            ),
             data: (b) {
               if (b.rows.isEmpty) {
-                return Text(s.repExpensesEmpty,
-                    style: TextStyle(color: scheme.onSurfaceVariant));
+                return Text(
+                  s.repExpensesEmpty,
+                  style: TextStyle(color: scheme.onSurfaceVariant),
+                );
               }
               return Column(
                 children: [
@@ -271,16 +309,18 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
                             Text(
                               '${r.delta > 0 ? '▲' : '▼'} ${formatMoney(r.delta.abs(), b.currency)}',
                               style: TextStyle(
-                                  fontSize: 11,
-                                  color: r.delta > 0
-                                      ? scheme.error
-                                      : scheme.primary),
+                                fontSize: 11,
+                                color: r.delta > 0
+                                    ? scheme.error
+                                    : scheme.primary,
+                              ),
                             ),
                             const SizedBox(width: 8),
                           ],
-                          Text(formatMoney(r.amount, b.currency),
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600)),
+                          Text(
+                            formatMoney(r.amount, b.currency),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
                         ],
                       ),
                     ),
@@ -288,11 +328,15 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
                   Row(
                     children: [
                       Expanded(
-                          child: Text(s.repTotal,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w600))),
-                      Text(formatMoney(b.total, b.currency),
-                          style: const TextStyle(fontWeight: FontWeight.w700)),
+                        child: Text(
+                          s.repTotal,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      Text(
+                        formatMoney(b.total, b.currency),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     ],
                   ),
                 ],
@@ -309,7 +353,9 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
     return async.when(
       loading: () => const _Loading(),
       error: (e, _) => ErrorView(
-          error: e, onRetry: () => ref.invalidate(productPerfProvider(_range))),
+        error: e,
+        onRetry: () => ref.invalidate(productPerfProvider(_range)),
+      ),
       data: (list) => list.isEmpty
           ? GlassPanel(child: Text(s.productosEmpty))
           : GlassPanel(
@@ -324,7 +370,8 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
                         title: Text(list[i].productName),
                         subtitle: Text(s.repUnits(list[i].unitsSold)),
                         trailing: Text(
-                            formatMoney(list[i].marginAmount, list[i].currency)),
+                          formatMoney(list[i].marginAmount, list[i].currency),
+                        ),
                       ),
                     ],
                   ],
@@ -339,7 +386,9 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
     return async.when(
       loading: () => const _Loading(),
       error: (e, _) => ErrorView(
-          error: e, onRetry: () => ref.invalidate(paymentMixProvider(_range))),
+        error: e,
+        onRetry: () => ref.invalidate(paymentMixProvider(_range)),
+      ),
       data: (rows) {
         final inflow = rows.where((r) => r.direction == 'INFLOW').toList();
         if (inflow.isEmpty) {
@@ -354,7 +403,8 @@ class _ReportesPageState extends ConsumerState<ReportesPage> {
                   child: Row(
                     children: [
                       Text(
-                          '${s.methodLabel(PaymentMethod.fromApi(r.method))} (${r.count})'),
+                        '${s.methodLabel(PaymentMethod.fromApi(r.method))} (${r.count})',
+                      ),
                       const Spacer(),
                       Text(formatMoney(r.amount, 'ARS')),
                     ],
@@ -372,7 +422,7 @@ class _Loading extends StatelessWidget {
   const _Loading();
   @override
   Widget build(BuildContext context) => const Padding(
-        padding: EdgeInsets.all(16),
-        child: Center(child: CircularProgressIndicator()),
-      );
+    padding: EdgeInsets.all(16),
+    child: Center(child: CircularProgressIndicator()),
+  );
 }

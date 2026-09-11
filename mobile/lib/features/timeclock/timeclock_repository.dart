@@ -21,7 +21,10 @@ class TimeclockRepository {
 
   Future<Shift> clockIn({String? note}) async {
     try {
-      final res = await _dio.post<dynamic>('/timeclock/clock-in', data: {'note': ?note});
+      final res = await _dio.post<dynamic>(
+        '/timeclock/clock-in',
+        data: {'note': ?note},
+      );
       return Shift.fromJson(Map<String, dynamic>.from(res.data as Map));
     } catch (e) {
       throw toApiError(e);

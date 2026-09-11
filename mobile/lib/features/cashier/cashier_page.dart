@@ -32,9 +32,8 @@ class _CashierPageState extends ConsumerState<CashierPage> {
           child: Text(e is ApiError ? e.message : '$e'),
         ),
       ),
-      data: (session) => session == null
-          ? _openForm(s)
-          : _sessionView(s, session),
+      data: (session) =>
+          session == null ? _openForm(s) : _sessionView(s, session),
     );
   }
 
@@ -47,11 +46,16 @@ class _CashierPageState extends ConsumerState<CashierPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(s.cashierClosed, style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                s.cashierClosed,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 12),
               TextField(
                 controller: controller,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(labelText: s.cashierOpeningFloat),
               ),
               const SizedBox(height: 16),
@@ -75,13 +79,18 @@ class _CashierPageState extends ConsumerState<CashierPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(s.cashierTitle, style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                s.cashierTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               Row(
                 children: [
                   Text(s.cashierOpeningFloat),
                   const Spacer(),
-                  Text(formatMoney(session.openingFloatAmount, session.currency)),
+                  Text(
+                    formatMoney(session.openingFloatAmount, session.currency),
+                  ),
                 ],
               ),
             ],
@@ -131,13 +140,20 @@ class _CashierPageState extends ConsumerState<CashierPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(s.cashierCountPrompt, style: Theme.of(ctx).textTheme.titleMedium),
+            Text(
+              s.cashierCountPrompt,
+              style: Theme.of(ctx).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             for (final entry in controllers.entries) ...[
               TextField(
                 controller: entry.value,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: s.methodLabel(entry.key)),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: s.methodLabel(entry.key),
+                ),
               ),
               const SizedBox(height: 8),
             ],
@@ -160,7 +176,9 @@ class _CashierPageState extends ConsumerState<CashierPage> {
     }
 
     try {
-      final report = await ref.read(cashRepositoryProvider).close(session.id, counted);
+      final report = await ref
+          .read(cashRepositoryProvider)
+          .close(session.id, counted);
       ref.invalidate(currentCashSessionProvider);
       if (mounted) _showReport(s, report);
     } on ApiError catch (e) {
@@ -176,19 +194,26 @@ class _CashierPageState extends ConsumerState<CashierPage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _reportRow(s.cashierExpected,
-                formatMoney(report.expectedTotal, report.currency)),
             _reportRow(
-                s.cashierCounted,
-                report.countedTotal == null
-                    ? '—'
-                    : formatMoney(report.countedTotal!, report.currency)),
+              s.cashierExpected,
+              formatMoney(report.expectedTotal, report.currency),
+            ),
             _reportRow(
-                s.cashierDifference,
-                report.differenceTotal == null
-                    ? '—'
-                    : formatMoney(report.differenceTotal!, report.currency)),
-            _reportRow(s.cashierTips, formatMoney(report.tipsTotal, report.currency)),
+              s.cashierCounted,
+              report.countedTotal == null
+                  ? '—'
+                  : formatMoney(report.countedTotal!, report.currency),
+            ),
+            _reportRow(
+              s.cashierDifference,
+              report.differenceTotal == null
+                  ? '—'
+                  : formatMoney(report.differenceTotal!, report.currency),
+            ),
+            _reportRow(
+              s.cashierTips,
+              formatMoney(report.tipsTotal, report.currency),
+            ),
           ],
         ),
         actions: [
@@ -202,15 +227,14 @@ class _CashierPageState extends ConsumerState<CashierPage> {
   }
 
   Widget _reportRow(String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          children: [Text(label), const Spacer(), Text(value)],
-        ),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(children: [Text(label), const Spacer(), Text(value)]),
+  );
 
   void _toast(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     }
   }
 }

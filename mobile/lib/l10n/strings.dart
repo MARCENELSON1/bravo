@@ -983,22 +983,22 @@ class Strings {
       _en ? 'Finance settings' : 'Configuración de finanzas';
   String get financeConfigOpen =>
       _en ? 'Finance settings' : 'Configuración de finanzas';
-  String inOrderCount(int n) =>
-      _en ? '$n in the order' : '$n en la comanda';
+  String inOrderCount(int n) => _en ? '$n in the order' : '$n en la comanda';
 
   String removeOneLabel(String product) =>
       _en ? 'Remove one $product' : 'Quitar un $product';
 
   // --- Antes de pedir el permiso de notificaciones ---
-  String get pushPrimingTitle =>
-      _en ? 'Know the moment a table is ready' : 'Enterate apenas una mesa está lista';
+  String get pushPrimingTitle => _en
+      ? 'Know the moment a table is ready'
+      : 'Enterate apenas una mesa está lista';
   String get pushPrimingBody => _en
       ? "The kitchen marks a course ready and your phone tells you — even with the "
-          "app closed, so you don't have to keep checking. Only order alerts: no "
-          "ads, nothing else."
+            "app closed, so you don't have to keep checking. Only order alerts: no "
+            "ads, nothing else."
       : 'La cocina marca un tiempo listo y el celular te avisa — con la app '
-          'cerrada también, así no tenés que estar mirando. Solo avisos de '
-          'comandas: nada de publicidad ni nada más.';
+            'cerrada también, así no tenés que estar mirando. Solo avisos de '
+            'comandas: nada de publicidad ni nada más.';
   String get pushPrimingAccept => _en ? 'Turn on alerts' : 'Activar los avisos';
   String get pushPrimingLater => _en ? 'Not now' : 'Ahora no';
 
@@ -1027,8 +1027,10 @@ class Strings {
   // IconButton es además su `semanticLabel`, así que uno cubre las dos cosas.
   String get clearSearchTooltip => _en ? 'Clear search' : 'Limpiar la búsqueda';
   String get editQtyTooltip => _en ? 'Edit quantity' : 'Editar la cantidad';
-  String get removeLineTooltip => _en ? 'Remove ingredient' : 'Quitar el insumo';
-  String get rescanTooltip => _en ? 'Search for printers again' : 'Volver a buscar impresoras';
+  String get removeLineTooltip =>
+      _en ? 'Remove ingredient' : 'Quitar el insumo';
+  String get rescanTooltip =>
+      _en ? 'Search for printers again' : 'Volver a buscar impresoras';
 
   // --- Borrar cuenta (App Store 5.1.1(v)) ---
   String get deleteAccountTitle => _en ? 'Delete account' : 'Eliminar cuenta';
@@ -1039,20 +1041,21 @@ class Strings {
       _en ? 'You will lose access' : 'Vas a perder tu acceso';
   String get deleteAccountUserBody => _en
       ? 'Your account is removed and you can no longer sign in. The business and '
-          'its history stay — the sales you registered are not rewritten.'
+            'its history stay — the sales you registered are not rewritten.'
       : 'Se elimina tu cuenta y no vas a poder volver a entrar. El local y su '
-          'historial quedan — las ventas que registraste no se reescriben.';
+            'historial quedan — las ventas que registraste no se reescriben.';
   String deleteAccountBusinessTitle(String tenant) => _en
       ? 'This deletes $tenant entirely'
       : 'Esto elimina $tenant por completo';
   String get deleteAccountBusinessBody => _en
       ? 'You are the last owner, so the whole business goes: orders, payments, '
-          'invoices, stock, staff and every other account. It cannot be undone '
-          'and there is no backup on our side.'
+            'invoices, stock, staff and every other account. It cannot be undone '
+            'and there is no backup on our side.'
       : 'Sos el último dueño, así que se va el local entero: comandas, cobros, '
-          'comprobantes, stock, personal y todas las demás cuentas. No se puede '
-          'deshacer y no guardamos una copia.';
-  String get deleteAccountPasswordLabel => _en ? 'Your password' : 'Tu contraseña';
+            'comprobantes, stock, personal y todas las demás cuentas. No se puede '
+            'deshacer y no guardamos una copia.';
+  String get deleteAccountPasswordLabel =>
+      _en ? 'Your password' : 'Tu contraseña';
   String get deleteAccountPasswordHelp => _en
       ? 'We ask again because this cannot be undone.'
       : 'Te la pedimos de nuevo porque esto no se puede deshacer.';

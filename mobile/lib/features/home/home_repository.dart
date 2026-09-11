@@ -22,6 +22,7 @@ class DashboardSummary {
   });
 
   final String currency;
+
   /// Lo COBRADO en el período, bruto de comisiones (NO lo vendido).
   final int salesCollected;
   final int expenses;
@@ -38,17 +39,17 @@ class DashboardSummary {
   final int profit;
 
   factory DashboardSummary.fromJson(Map<String, dynamic> j) => DashboardSummary(
-        currency: j['currency'] as String,
-        salesCollected: (j['sales_collected'] as int?) ?? 0,
-        expenses: (j['expenses'] as int?) ?? 0,
-        activeOrders: (j['active_orders'] as int?) ?? 0,
-        paidOrders: (j['paid_orders'] as int?) ?? 0,
-        avgTicket: (j['avg_ticket'] as int?) ?? 0,
-        collectedNet: (j['collected_net'] as int?) ?? 0,
-        feesTotal: (j['fees_total'] as int?) ?? 0,
-        paymentCount: (j['payment_count'] as int?) ?? 0,
-        profit: (j['profit_net_of_fees'] as int?) ?? 0,
-      );
+    currency: j['currency'] as String,
+    salesCollected: (j['sales_collected'] as int?) ?? 0,
+    expenses: (j['expenses'] as int?) ?? 0,
+    activeOrders: (j['active_orders'] as int?) ?? 0,
+    paidOrders: (j['paid_orders'] as int?) ?? 0,
+    avgTicket: (j['avg_ticket'] as int?) ?? 0,
+    collectedNet: (j['collected_net'] as int?) ?? 0,
+    feesTotal: (j['fees_total'] as int?) ?? 0,
+    paymentCount: (j['payment_count'] as int?) ?? 0,
+    profit: (j['profit_net_of_fees'] as int?) ?? 0,
+  );
 }
 
 /// Ventana "hoy" (desde el comienzo del día local, en UTC).
@@ -60,10 +61,15 @@ String _startOfTodayIso() {
 /// Ventana de los últimos 7 días (incluye hoy).
 RangeWindow _last7DaysWindow() {
   final now = DateTime.now();
-  final from = DateTime(now.year, now.month, now.day)
-      .subtract(const Duration(days: 6));
+  final from = DateTime(
+    now.year,
+    now.month,
+    now.day,
+  ).subtract(const Duration(days: 6));
   return RangeWindow(
-      from.toUtc().toIso8601String(), now.toUtc().toIso8601String());
+    from.toUtc().toIso8601String(),
+    now.toUtc().toIso8601String(),
+  );
 }
 
 class HomeRepository {
@@ -73,9 +79,13 @@ class HomeRepository {
 
   Future<DashboardSummary> dashboard({String? from}) async {
     try {
-      final res = await _dio.get<dynamic>('/reports/dashboard',
-          queryParameters: from == null ? null : {'from': from});
-      return DashboardSummary.fromJson(Map<String, dynamic>.from(res.data as Map));
+      final res = await _dio.get<dynamic>(
+        '/reports/dashboard',
+        queryParameters: from == null ? null : {'from': from},
+      );
+      return DashboardSummary.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
     } catch (e) {
       throw toApiError(e);
     }

@@ -7,21 +7,21 @@ enum PaymentMethod {
   qr;
 
   String get api => switch (this) {
-        PaymentMethod.cash => 'CASH',
-        PaymentMethod.card => 'CARD',
-        PaymentMethod.transfer => 'TRANSFER',
-        PaymentMethod.mercadopago => 'MERCADOPAGO',
-        PaymentMethod.qr => 'QR',
-      };
+    PaymentMethod.cash => 'CASH',
+    PaymentMethod.card => 'CARD',
+    PaymentMethod.transfer => 'TRANSFER',
+    PaymentMethod.mercadopago => 'MERCADOPAGO',
+    PaymentMethod.qr => 'QR',
+  };
 
   static PaymentMethod fromApi(String v) => switch (v) {
-        'CASH' => PaymentMethod.cash,
-        'CARD' => PaymentMethod.card,
-        'TRANSFER' => PaymentMethod.transfer,
-        'MERCADOPAGO' => PaymentMethod.mercadopago,
-        'QR' => PaymentMethod.qr,
-        _ => PaymentMethod.cash,
-      };
+    'CASH' => PaymentMethod.cash,
+    'CARD' => PaymentMethod.card,
+    'TRANSFER' => PaymentMethod.transfer,
+    'MERCADOPAGO' => PaymentMethod.mercadopago,
+    'QR' => PaymentMethod.qr,
+    _ => PaymentMethod.cash,
+  };
 }
 
 /// Un pago registrado (backend `PaymentResponse`).
@@ -50,13 +50,13 @@ class Payment {
   bool get isRefundable => status == 'CONFIRMED' && direction == 'INFLOW';
 
   factory Payment.fromJson(Map<String, dynamic> j) => Payment(
-        id: j['id'] as String,
-        method: PaymentMethod.fromApi(j['method'] as String),
-        amount: j['amount'] as int,
-        tipAmount: (j['tip_amount'] as int?) ?? 0,
-        status: j['status'] as String,
-        direction: j['direction'] as String,
-        currency: j['currency'] as String,
-        checkoutUrl: j['checkout_url'] as String?,
-      );
+    id: j['id'] as String,
+    method: PaymentMethod.fromApi(j['method'] as String),
+    amount: j['amount'] as int,
+    tipAmount: (j['tip_amount'] as int?) ?? 0,
+    status: j['status'] as String,
+    direction: j['direction'] as String,
+    currency: j['currency'] as String,
+    checkoutUrl: j['checkout_url'] as String?,
+  );
 }

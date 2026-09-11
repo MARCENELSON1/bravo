@@ -28,5 +28,8 @@ RangeWindow rangeWindow(FinanceRange range, [DateTime? nowArg]) {
     FinanceRange.quarter => _startOfQuarter(now),
     FinanceRange.month => DateTime(now.year, now.month, 1),
   };
-  return RangeWindow(from.toUtc().toIso8601String(), now.toUtc().toIso8601String());
+  return RangeWindow(
+    from.toUtc().toIso8601String(),
+    now.toUtc().toIso8601String(),
+  );
 }

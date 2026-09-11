@@ -15,10 +15,14 @@ const _currencyFormats = <String, ({String locale, String symbol})>{
 /// Los montos vienen en unidades menores (centavos). Formatea según la moneda
 /// del tenant (default AR). Antes ignoraba `currency` y siempre usaba es-AR.
 String formatMoney(int amount, String currency) {
-  final fmt = _currencyFormats[currency.toUpperCase()] ??
+  final fmt =
+      _currencyFormats[currency.toUpperCase()] ??
       (locale: 'es_AR', symbol: '${currency.toUpperCase()} ');
   final f = NumberFormat.currency(
-      locale: fmt.locale, symbol: fmt.symbol, decimalDigits: 2);
+    locale: fmt.locale,
+    symbol: fmt.symbol,
+    decimalDigits: 2,
+  );
   return f.format(amount / 100);
 }
 

@@ -15,12 +15,12 @@ class TipRow {
   final int pending;
 
   factory TipRow.fromJson(Map<String, dynamic> j) => TipRow(
-        waiterId: j['waiter_id'] as String,
-        waiterName: j['waiter_name'] as String,
-        earned: (j['earned'] as int?) ?? 0,
-        paid: (j['paid'] as int?) ?? 0,
-        pending: (j['pending'] as int?) ?? 0,
-      );
+    waiterId: j['waiter_id'] as String,
+    waiterName: j['waiter_name'] as String,
+    earned: (j['earned'] as int?) ?? 0,
+    paid: (j['paid'] as int?) ?? 0,
+    pending: (j['pending'] as int?) ?? 0,
+  );
 }
 
 /// Reporte de propinas (backend `TipsReportResponse`).
@@ -40,12 +40,12 @@ class TipsReport {
   final int pendingTotal;
 
   factory TipsReport.fromJson(Map<String, dynamic> j) => TipsReport(
-        currency: j['currency'] as String,
-        earnedTotal: (j['earned_total'] as int?) ?? 0,
-        paidTotal: (j['paid_total'] as int?) ?? 0,
-        pendingTotal: (j['pending_total'] as int?) ?? 0,
-        rows: ((j['rows'] as List?) ?? const [])
-            .map((e) => TipRow.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-      );
+    currency: j['currency'] as String,
+    earnedTotal: (j['earned_total'] as int?) ?? 0,
+    paidTotal: (j['paid_total'] as int?) ?? 0,
+    pendingTotal: (j['pending_total'] as int?) ?? 0,
+    rows: ((j['rows'] as List?) ?? const [])
+        .map((e) => TipRow.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+  );
 }

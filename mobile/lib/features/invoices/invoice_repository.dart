@@ -37,20 +37,20 @@ class Invoice {
   final String? rejection;
 
   factory Invoice.fromJson(Map<String, dynamic> j) => Invoice(
-        id: j['id'] as String,
-        type: j['type'] as String,
-        docType: j['doc_type'] as String,
-        status: j['status'] as String,
-        net: (j['net'] as int?) ?? 0,
-        vat: (j['vat'] as int?) ?? 0,
-        total: (j['total'] as int?) ?? 0,
-        currency: j['currency'] as String,
-        number: j['number'] as int?,
-        pointOfSale: j['point_of_sale'] as int?,
-        cae: j['cae'] as String?,
-        caeExpiration: j['cae_expiration'] as String?,
-        rejection: j['rejection'] as String?,
-      );
+    id: j['id'] as String,
+    type: j['type'] as String,
+    docType: j['doc_type'] as String,
+    status: j['status'] as String,
+    net: (j['net'] as int?) ?? 0,
+    vat: (j['vat'] as int?) ?? 0,
+    total: (j['total'] as int?) ?? 0,
+    currency: j['currency'] as String,
+    number: j['number'] as int?,
+    pointOfSale: j['point_of_sale'] as int?,
+    cae: j['cae'] as String?,
+    caeExpiration: j['cae_expiration'] as String?,
+    rejection: j['rejection'] as String?,
+  );
 }
 
 enum DocType {
@@ -60,11 +60,11 @@ enum DocType {
   consumidorFinal;
 
   String get api => switch (this) {
-        DocType.cuit => 'CUIT',
-        DocType.cuil => 'CUIL',
-        DocType.dni => 'DNI',
-        DocType.consumidorFinal => 'CONSUMIDOR_FINAL',
-      };
+    DocType.cuit => 'CUIT',
+    DocType.cuil => 'CUIL',
+    DocType.dni => 'DNI',
+    DocType.consumidorFinal => 'CONSUMIDOR_FINAL',
+  };
 }
 
 class InvoiceRepository {
@@ -124,7 +124,7 @@ final invoicesProvider = FutureProvider.autoDispose<List<Invoice>>(
   (ref) => ref.read(invoiceRepositoryProvider).list(),
 );
 
-final orderInvoiceProvider =
-    FutureProvider.autoDispose.family<Invoice?, String>(
-  (ref, orderId) => ref.read(invoiceRepositoryProvider).forOrder(orderId),
-);
+final orderInvoiceProvider = FutureProvider.autoDispose
+    .family<Invoice?, String>(
+      (ref, orderId) => ref.read(invoiceRepositoryProvider).forOrder(orderId),
+    );

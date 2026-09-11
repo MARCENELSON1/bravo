@@ -5,7 +5,6 @@ import '../../auth/session.dart';
 import '../../auth/session_notifier.dart';
 import '../../l10n/strings.dart';
 import '../../theme/theme_controller.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import 'caja_settings_section.dart';
 import 'equipo_settings_section.dart';
@@ -20,7 +19,12 @@ import 'settings_sections.dart';
 /// aunque todas sus filas sean de relleno. Espejo de los `if (tab.id == ...)` del
 /// build; si se agrega una sección allá, va acá.
 const _tabsWithSection = <String>{
-  'apariencia', 'caja', 'salones', 'negocio', 'equipo', 'integraciones',
+  'apariencia',
+  'caja',
+  'salones',
+  'negocio',
+  'equipo',
+  'integraciones',
 };
 
 bool _hasSection(String id, bool isAdmin) =>
@@ -49,8 +53,9 @@ class AjustesPage extends ConsumerWidget {
     // el "Próximamente" que vinimos a sacar. Se enciende sola cuando su contenido
     // se vuelve real, así que no hay una lista que mantener a mano.
     final st = ref.watch(sessionProvider);
-    final isAdmin =
-        (st is SessionAuthenticated ? st.session.role.isAdmin : false);
+    final isAdmin = (st is SessionAuthenticated
+        ? st.session.role.isAdmin
+        : false);
     final tabs = [
       for (final t in settingsTabs)
         if (_hasSection(t.id, isAdmin) || t.rows.any((r) => r.isReal)) t,
@@ -70,7 +75,6 @@ class AjustesPage extends ConsumerWidget {
         ),
         body: Stack(
           children: [
-            const AppBackground(),
             SafeArea(
               top: false,
               child: TabBarView(
@@ -93,8 +97,9 @@ class _TabView extends ConsumerWidget {
     final s = context.s;
     final en = Localizations.localeOf(context).languageCode == 'en';
     final sessionState = ref.watch(sessionProvider);
-    final session =
-        sessionState is SessionAuthenticated ? sessionState.session : null;
+    final session = sessionState is SessionAuthenticated
+        ? sessionState.session
+        : null;
     // Las secciones funcionales (caja/salones/negocio/equipo/integraciones) son
     // OWNER/MANAGER — a los operativos les daría 403. Para ellos la tab no
     // aparece: antes quedaba visible y vacía.
@@ -103,8 +108,9 @@ class _TabView extends ConsumerWidget {
     // Solo sobrevive la fila que lee estado real o abre algo que existe. Antes se
     // renderizaban las 83 y las que no tenían backend mostraban "Próximamente" o
     // un valor inventado; `hidden` tapaba apenas 5. Ver `settings_sections.dart`.
-    final hidden =
-        isAdmin ? (_functionalRows[tab.id] ?? const <String>{}) : const <String>{};
+    final hidden = isAdmin
+        ? (_functionalRows[tab.id] ?? const <String>{})
+        : const <String>{};
     final rows = [
       for (final r in tab.rows)
         if (r.isReal && !hidden.contains(r.es)) r,
@@ -169,7 +175,10 @@ class _TabView extends ConsumerWidget {
             segments: [
               ButtonSegment(value: ThemeMode.light, label: Text(s.themeLight)),
               ButtonSegment(value: ThemeMode.dark, label: Text(s.themeDark)),
-              ButtonSegment(value: ThemeMode.system, label: Text(s.themeSystem)),
+              ButtonSegment(
+                value: ThemeMode.system,
+                label: Text(s.themeSystem),
+              ),
             ],
             selected: {mode},
             onSelectionChanged: (sel) =>
@@ -202,12 +211,12 @@ class _TabView extends ConsumerWidget {
     if (r.toggle) {
       trailing = const Switch(value: false, onChanged: null); // deshabilitado
     } else if (value != null) {
-      trailing = Text(value,
-          style: TextStyle(color: scheme.onSurfaceVariant));
+      trailing = Text(value, style: TextStyle(color: scheme.onSurfaceVariant));
     } else if (r.open != null) {
       trailing = TextButton(
-        onPressed: () => Navigator.of(context)
-            .push(MaterialPageRoute(builder: (_) => r.open!())),
+        onPressed: () =>
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => r.open!())),
         style: TextButton.styleFrom(
           foregroundColor: r.danger ? scheme.error : scheme.primary,
         ),
@@ -219,13 +228,19 @@ class _TabView extends ConsumerWidget {
       leading: r.dyn == 'avatar'
           ? CircleAvatar(
               backgroundColor: scheme.primary,
-              child: Text(_initials(session),
-                  style: TextStyle(
-                      color: scheme.onPrimary, fontWeight: FontWeight.w600)),
+              child: Text(
+                _initials(session),
+                style: TextStyle(
+                  color: scheme.onPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             )
           : null,
-      title: Text(r.label(en),
-          style: r.danger ? TextStyle(color: scheme.error) : null),
+      title: Text(
+        r.label(en),
+        style: r.danger ? TextStyle(color: scheme.error) : null,
+      ),
       subtitle: r.desc(en) == null ? null : Text(r.desc(en)!),
       trailing: trailing,
     );
@@ -245,7 +260,10 @@ class _TabView extends ConsumerWidget {
     final base = session?.name?.trim().isNotEmpty == true
         ? session!.name!.trim()
         : (session?.email ?? '?');
-    final parts = base.split(RegExp(r'[ @.]')).where((p) => p.isNotEmpty).toList();
+    final parts = base
+        .split(RegExp(r'[ @.]'))
+        .where((p) => p.isNotEmpty)
+        .toList();
     if (parts.isEmpty) return '?';
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
     return (parts[0].substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();

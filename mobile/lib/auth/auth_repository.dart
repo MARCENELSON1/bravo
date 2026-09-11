@@ -35,8 +35,9 @@ class AuthRepository {
         data: {'username': email, 'password': password, 'client_id': slug},
         options: Options(contentType: Headers.formUrlEncodedContentType),
       );
-      final tokens =
-          AccessTokenResponse.fromJson(Map<String, dynamic>.from(res.data as Map));
+      final tokens = AccessTokenResponse.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
       _tokenStore.setAccessToken(tokens.accessToken);
       final refresh = extractRefreshCookie(res.headers.map['set-cookie']);
       if (refresh != null) await _tokenStore.writeRefresh(refresh);
@@ -67,8 +68,9 @@ class AuthRepository {
         '/auth/refresh',
         data: {'refresh_token': stored},
       );
-      final tokens =
-          AccessTokenResponse.fromJson(Map<String, dynamic>.from(res.data as Map));
+      final tokens = AccessTokenResponse.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
       _tokenStore.setAccessToken(tokens.accessToken);
       final rotated = extractRefreshCookie(res.headers.map['set-cookie']);
       if (rotated != null) await _tokenStore.writeRefresh(rotated);
@@ -85,7 +87,10 @@ class AuthRepository {
     final stored = await _tokenStore.readRefresh();
     try {
       if (stored != null) {
-        await _rawDio.post<dynamic>('/auth/logout', data: {'refresh_token': stored});
+        await _rawDio.post<dynamic>(
+          '/auth/logout',
+          data: {'refresh_token': stored},
+        );
       }
     } on DioException {
       // best-effort; igual limpiamos local

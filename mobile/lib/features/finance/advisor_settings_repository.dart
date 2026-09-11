@@ -30,16 +30,16 @@ class AdvisorSettings {
   final bool configured;
 
   factory AdvisorSettings.fromJson(Map<String, dynamic> j) => AdvisorSettings(
-        monthlyLaborCost: (j['monthly_labor_cost'] as int?) ?? 0,
-        monthlyOtherFixedCosts: (j['monthly_other_fixed_costs'] as int?) ?? 0,
-        targetFoodCostBps: (j['target_food_cost_bps'] as int?) ?? 0,
-        seats: (j['seats'] as int?) ?? 0,
-        dailyOpenMinutes: (j['daily_open_minutes'] as int?) ?? 0,
-        monthlyInflationBps: (j['monthly_inflation_bps'] as int?) ?? 0,
-        defaultVatBps: (j['default_vat_bps'] as int?) ?? 0,
-        currency: (j['currency'] as String?) ?? 'ARS',
-        configured: (j['configured'] as bool?) ?? false,
-      );
+    monthlyLaborCost: (j['monthly_labor_cost'] as int?) ?? 0,
+    monthlyOtherFixedCosts: (j['monthly_other_fixed_costs'] as int?) ?? 0,
+    targetFoodCostBps: (j['target_food_cost_bps'] as int?) ?? 0,
+    seats: (j['seats'] as int?) ?? 0,
+    dailyOpenMinutes: (j['daily_open_minutes'] as int?) ?? 0,
+    monthlyInflationBps: (j['monthly_inflation_bps'] as int?) ?? 0,
+    defaultVatBps: (j['default_vat_bps'] as int?) ?? 0,
+    currency: (j['currency'] as String?) ?? 'ARS',
+    configured: (j['configured'] as bool?) ?? false,
+  );
 }
 
 class AdvisorSettingsRepository {
@@ -50,7 +50,9 @@ class AdvisorSettingsRepository {
   Future<AdvisorSettings> get() async {
     try {
       final res = await _dio.get<dynamic>('/advisor/settings');
-      return AdvisorSettings.fromJson(Map<String, dynamic>.from(res.data as Map));
+      return AdvisorSettings.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
     } catch (e) {
       throw toApiError(e);
     }
@@ -66,15 +68,18 @@ class AdvisorSettingsRepository {
     required int defaultVatBps,
   }) async {
     try {
-      await _dio.put<dynamic>('/advisor/settings', data: {
-        'monthly_labor_cost': monthlyLaborCost,
-        'monthly_other_fixed_costs': monthlyOtherFixedCosts,
-        'target_food_cost_bps': targetFoodCostBps,
-        'seats': seats,
-        'daily_open_minutes': dailyOpenMinutes,
-        'monthly_inflation_bps': monthlyInflationBps,
-        'default_vat_bps': defaultVatBps,
-      });
+      await _dio.put<dynamic>(
+        '/advisor/settings',
+        data: {
+          'monthly_labor_cost': monthlyLaborCost,
+          'monthly_other_fixed_costs': monthlyOtherFixedCosts,
+          'target_food_cost_bps': targetFoodCostBps,
+          'seats': seats,
+          'daily_open_minutes': dailyOpenMinutes,
+          'monthly_inflation_bps': monthlyInflationBps,
+          'default_vat_bps': defaultVatBps,
+        },
+      );
     } catch (e) {
       throw toApiError(e);
     }

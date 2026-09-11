@@ -21,15 +21,15 @@ class BillingPlan {
   final String interval; // MONTH | YEAR
   final List<String> features;
   factory BillingPlan.fromJson(Map<String, dynamic> j) => BillingPlan(
-        id: j['id'] as String,
-        tier: (j['tier'] as String?) ?? '',
-        amount: (j['amount'] as int?) ?? 0,
-        currency: (j['currency'] as String?) ?? 'ARS',
-        interval: (j['interval'] as String?) ?? 'MONTH',
-        features: ((j['features'] as List?) ?? const [])
-            .map((e) => e.toString())
-            .toList(),
-      );
+    id: j['id'] as String,
+    tier: (j['tier'] as String?) ?? '',
+    amount: (j['amount'] as int?) ?? 0,
+    currency: (j['currency'] as String?) ?? 'ARS',
+    interval: (j['interval'] as String?) ?? 'MONTH',
+    features: ((j['features'] as List?) ?? const [])
+        .map((e) => e.toString())
+        .toList(),
+  );
 }
 
 /// Suscripción actual (backend `SubscriptionResponse`).
@@ -43,10 +43,10 @@ class Subscription {
   final bool grantsAccess;
   final String? currentPeriodEnd;
   factory Subscription.fromJson(Map<String, dynamic> j) => Subscription(
-        status: (j['status'] as String?) ?? '',
-        grantsAccess: (j['grants_access'] as bool?) ?? false,
-        currentPeriodEnd: j['current_period_end'] as String?,
-      );
+    status: (j['status'] as String?) ?? '',
+    grantsAccess: (j['grants_access'] as bool?) ?? false,
+    currentPeriodEnd: j['current_period_end'] as String?,
+  );
 }
 
 class BillingRepository {
@@ -55,8 +55,10 @@ class BillingRepository {
 
   Future<List<BillingPlan>> plans(String region) async {
     try {
-      final res = await _dio.get<dynamic>('/billing/plans',
-          queryParameters: {'region': region});
+      final res = await _dio.get<dynamic>(
+        '/billing/plans',
+        queryParameters: {'region': region},
+      );
       return ((res.data as List?) ?? const [])
           .map((e) => BillingPlan.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
@@ -77,8 +79,10 @@ class BillingRepository {
 
   Future<String> checkout(String planId) async {
     try {
-      final res = await _dio
-          .post<dynamic>('/billing/checkout', data: {'plan_id': planId});
+      final res = await _dio.post<dynamic>(
+        '/billing/checkout',
+        data: {'plan_id': planId},
+      );
       final map = Map<String, dynamic>.from(res.data as Map);
       return (map['url'] as String?) ?? '';
     } catch (e) {
@@ -103,7 +107,7 @@ final subscriptionProvider = FutureProvider.autoDispose<Subscription?>(
   (ref) => ref.read(billingRepositoryProvider).subscription(),
 );
 
-final billingPlansProvider =
-    FutureProvider.autoDispose.family<List<BillingPlan>, String>(
-  (ref, region) => ref.read(billingRepositoryProvider).plans(region),
-);
+final billingPlansProvider = FutureProvider.autoDispose
+    .family<List<BillingPlan>, String>(
+      (ref, region) => ref.read(billingRepositoryProvider).plans(region),
+    );

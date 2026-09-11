@@ -17,11 +17,11 @@ final tokenStoreProvider = Provider<TokenStore>(
 );
 
 BaseOptions _baseOptions() => BaseOptions(
-      baseUrl: Env.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 20),
-      responseType: ResponseType.json,
-    );
+  baseUrl: Env.apiBaseUrl,
+  connectTimeout: const Duration(seconds: 15),
+  receiveTimeout: const Duration(seconds: 20),
+  responseType: ResponseType.json,
+);
 
 /// Dio "crudo" (sin interceptor de auth): login, refresh, logout.
 final rawDioProvider = Provider<Dio>((_) => Dio(_baseOptions()));
@@ -40,10 +40,11 @@ final Provider<Dio> apiDioProvider = Provider<Dio>((ref) {
   return dio;
 });
 
-final Provider<AuthRepository> authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => AuthRepository(
-    ref.read(rawDioProvider),
-    ref.read(apiDioProvider),
-    ref.read(tokenStoreProvider),
-  ),
-);
+final Provider<AuthRepository> authRepositoryProvider =
+    Provider<AuthRepository>(
+      (ref) => AuthRepository(
+        ref.read(rawDioProvider),
+        ref.read(apiDioProvider),
+        ref.read(tokenStoreProvider),
+      ),
+    );

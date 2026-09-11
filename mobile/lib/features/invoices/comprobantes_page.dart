@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../ui/state_views.dart';
 import '../../util/money.dart';
@@ -24,7 +23,6 @@ class ComprobantesPage extends ConsumerWidget {
       ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -42,8 +40,9 @@ class ComprobantesPage extends ConsumerWidget {
                       physics: const AlwaysScrollableScrollPhysics(),
                       children: [
                         SizedBox(
-                            height: 280,
-                            child: EmptyView(message: s.comprobantesEmpty)),
+                          height: 280,
+                          child: EmptyView(message: s.comprobantesEmpty),
+                        ),
                       ],
                     ),
                   );
@@ -102,16 +101,24 @@ class ComprobantesPage extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (sub.isNotEmpty)
-                  Text(sub,
-                      style: TextStyle(
-                          fontSize: 12, color: scheme.onSurfaceVariant)),
+                  Text(
+                    sub,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
                 if (inv.rejection != null)
-                  Text(inv.rejection!,
-                      style: TextStyle(fontSize: 12, color: scheme.error)),
+                  Text(
+                    inv.rejection!,
+                    style: TextStyle(fontSize: 12, color: scheme.error),
+                  ),
               ],
             ),
-      trailing: Text(formatMoney(inv.total, inv.currency),
-          style: const TextStyle(fontWeight: FontWeight.w600)),
+      trailing: Text(
+        formatMoney(inv.total, inv.currency),
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
     );
   }
 
@@ -128,9 +135,14 @@ class ComprobantesPage extends ConsumerWidget {
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(s.invoiceStatusLabel(status),
-          style: TextStyle(
-              color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+      child: Text(
+        s.invoiceStatusLabel(status),
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }

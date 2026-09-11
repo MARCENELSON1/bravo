@@ -6,23 +6,27 @@ import '../../api/api_client.dart';
 import '../../api/dio_errors.dart';
 import '../../auth/session_notifier.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 
 /// Alcance del borrado: si esta persona es el último dueño, se va el local
 /// entero y no solo su acceso. Lo decide el backend, no la app.
 class DeletionScope {
-  const DeletionScope({required this.deletesBusiness, required this.tenantName});
+  const DeletionScope({
+    required this.deletesBusiness,
+    required this.tenantName,
+  });
   final bool deletesBusiness;
   final String tenantName;
 
   factory DeletionScope.fromJson(Map<String, dynamic> j) => DeletionScope(
-        deletesBusiness: (j['deletes_business'] as bool?) ?? false,
-        tenantName: (j['tenant_name'] as String?) ?? '',
-      );
+    deletesBusiness: (j['deletes_business'] as bool?) ?? false,
+    tenantName: (j['tenant_name'] as String?) ?? '',
+  );
 }
 
-final deletionScopeProvider = FutureProvider.autoDispose<DeletionScope>((ref) async {
+final deletionScopeProvider = FutureProvider.autoDispose<DeletionScope>((
+  ref,
+) async {
   final dio = ref.watch(apiDioProvider);
   try {
     final res = await dio.get<dynamic>('/me/deletion-scope');
@@ -67,10 +71,9 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage> {
       _error = null;
     });
     try {
-      await ref.read(apiDioProvider).delete<dynamic>(
-            '/me',
-            data: {'password': _password.text},
-          );
+      await ref
+          .read(apiDioProvider)
+          .delete<dynamic>('/me', data: {'password': _password.text});
       if (!mounted) return;
       // La sesión ya no existe del otro lado; cerrarla acá evita quedar con un
       // token que solo produce errores.
@@ -97,15 +100,16 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage> {
       ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text(s.deleteAccountScopeError)),
               data: (scope) {
                 final needsName = scope.deletesBusiness;
-                final ready = _password.text.length >= 8 &&
-                    (!needsName || _confirm.text.trim() == scope.tenantName.trim());
+                final ready =
+                    _password.text.length >= 8 &&
+                    (!needsName ||
+                        _confirm.text.trim() == scope.tenantName.trim());
                 return ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
@@ -118,9 +122,12 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage> {
                             header: true,
                             child: Text(
                               needsName
-                                  ? s.deleteAccountBusinessTitle(scope.tenantName)
+                                  ? s.deleteAccountBusinessTitle(
+                                      scope.tenantName,
+                                    )
                                   : s.deleteAccountUserTitle,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: scheme.error,
                                   ),
@@ -152,7 +159,9 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage> {
                       TextField(
                         controller: _confirm,
                         decoration: InputDecoration(
-                          labelText: s.deleteAccountConfirmLabel(scope.tenantName),
+                          labelText: s.deleteAccountConfirmLabel(
+                            scope.tenantName,
+                          ),
                         ),
                         onChanged: (_) => setState(() {}),
                       ),

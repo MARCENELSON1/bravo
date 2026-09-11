@@ -66,7 +66,9 @@ class _FiscalFormState extends ConsumerState<_FiscalForm> {
     final s = context.s;
     setState(() => _saving = true);
     try {
-      await ref.read(fiscalRepositoryProvider).updateAddress(
+      await ref
+          .read(fiscalRepositoryProvider)
+          .updateAddress(
             street: _nn(_street.text),
             city: _nn(_city.text),
             state: _nn(_state.text),
@@ -79,8 +81,9 @@ class _FiscalFormState extends ConsumerState<_FiscalForm> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e is ApiError ? e.message : s.fiscalError)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiError ? e.message : s.fiscalError)),
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -149,8 +152,10 @@ class _FiscalFormState extends ConsumerState<_FiscalForm> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(color: scheme.onSurfaceVariant)),
-          Text(value.isEmpty ? '—' : value,
-              style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(
+            value.isEmpty ? '—' : value,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
         ],
       ),
     );

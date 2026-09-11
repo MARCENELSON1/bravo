@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../ui/state_views.dart';
 import '../../util/money.dart';
@@ -35,7 +34,6 @@ class _ProductosPageState extends ConsumerState<ProductosPage> {
       ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -53,8 +51,9 @@ class _ProductosPageState extends ConsumerState<ProductosPage> {
                       physics: const AlwaysScrollableScrollPhysics(),
                       children: [
                         SizedBox(
-                            height: 280,
-                            child: EmptyView(message: s.productosEmpty)),
+                          height: 280,
+                          child: EmptyView(message: s.productosEmpty),
+                        ),
                       ],
                     ),
                   );
@@ -122,8 +121,9 @@ class _ProductosPageState extends ConsumerState<ProductosPage> {
   }
 
   Future<void> _editPrice(Strings s, Product p) async {
-    final ctrl =
-        TextEditingController(text: (p.priceAmount / 100).toStringAsFixed(2));
+    final ctrl = TextEditingController(
+      text: (p.priceAmount / 100).toStringAsFixed(2),
+    );
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(

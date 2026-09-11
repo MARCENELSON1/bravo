@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import 'timeclock_dtos.dart';
 import 'timeclock_repository.dart';
@@ -22,10 +21,12 @@ class FichajePage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: Text(s.fichajeTitle), backgroundColor: Colors.transparent),
+      appBar: AppBar(
+        title: Text(s.fichajeTitle),
+        backgroundColor: Colors.transparent,
+      ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -43,7 +44,12 @@ class FichajePage extends ConsumerWidget {
     );
   }
 
-  Widget _content(BuildContext context, WidgetRef ref, Strings s, MyTimeclock tc) {
+  Widget _content(
+    BuildContext context,
+    WidgetRef ref,
+    Strings s,
+    MyTimeclock tc,
+  ) {
     final open = tc.openShift;
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -53,11 +59,14 @@ class FichajePage extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (open != null) ...[
-                Text(s.clockedInSince(_fmt.format(open.clockInAt)),
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  s.clockedInSince(_fmt.format(open.clockInAt)),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 4),
                 Text(
-                    '${s.workedTime}: ${s.durationLabel(DateTime.now().difference(open.clockInAt).inMinutes)}'),
+                  '${s.workedTime}: ${s.durationLabel(DateTime.now().difference(open.clockInAt).inMinutes)}',
+                ),
                 const SizedBox(height: 16),
                 FilledButton.icon(
                   onPressed: () => _clockOut(context, ref),
@@ -65,7 +74,10 @@ class FichajePage extends ConsumerWidget {
                   label: Text(s.clockOut),
                 ),
               ] else ...[
-                Text(s.notClockedIn, style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  s.notClockedIn,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 16),
                 FilledButton.icon(
                   onPressed: () => _clockIn(context, ref),
@@ -89,9 +101,11 @@ class FichajePage extends ConsumerWidget {
                   for (final shift in tc.recent)
                     ListTile(
                       title: Text(_fmt.format(shift.clockInAt)),
-                      subtitle: Text(shift.clockOutAt == null
-                          ? '—'
-                          : _fmt.format(shift.clockOutAt!)),
+                      subtitle: Text(
+                        shift.clockOutAt == null
+                            ? '—'
+                            : _fmt.format(shift.clockOutAt!),
+                      ),
                       trailing: shift.workedMinutes == null
                           ? null
                           : Text(s.durationLabel(shift.workedMinutes!)),
@@ -124,6 +138,7 @@ class FichajePage extends ConsumerWidget {
   }
 
   void _toast(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }

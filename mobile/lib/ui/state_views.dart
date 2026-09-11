@@ -10,19 +10,21 @@ Widget twoColGrid(List<Widget> cards) {
   final rows = <Widget>[];
   for (var i = 0; i < cards.length; i += 2) {
     final right = i + 1 < cards.length ? cards[i + 1] : null;
-    rows.add(Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: cards[i]),
-            const SizedBox(width: 10),
-            Expanded(child: right ?? const SizedBox.shrink()),
-          ],
+    rows.add(
+      Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: cards[i]),
+              const SizedBox(width: 10),
+              Expanded(child: right ?? const SizedBox.shrink()),
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
   return Column(children: rows);
 }
@@ -50,7 +52,8 @@ Future<bool> confirmDialog(
         FilledButton(
           style: destructive
               ? FilledButton.styleFrom(
-                  backgroundColor: Theme.of(ctx).colorScheme.error)
+                  backgroundColor: Theme.of(ctx).colorScheme.error,
+                )
               : null,
           onPressed: () {
             HapticFeedback.mediumImpact();
@@ -123,9 +126,11 @@ class EmptyView extends StatelessWidget {
           children: [
             Icon(icon, size: 40, color: scheme.onSurfaceVariant),
             const SizedBox(height: 12),
-            Text(message,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: scheme.onSurfaceVariant)),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: scheme.onSurfaceVariant),
+            ),
           ],
         ),
       ),

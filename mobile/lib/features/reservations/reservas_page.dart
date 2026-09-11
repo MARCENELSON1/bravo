@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../../ui/state_views.dart';
 import '../floor/table_qr_repository.dart';
@@ -35,7 +34,9 @@ class _ReservasPageState extends ConsumerState<ReservasPage> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-          title: Text(s.reservasTitle), backgroundColor: Colors.transparent),
+        title: Text(s.reservasTitle),
+        backgroundColor: Colors.transparent,
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openForm(context),
         icon: const Icon(Icons.add),
@@ -43,7 +44,6 @@ class _ReservasPageState extends ConsumerState<ReservasPage> {
       ),
       body: Stack(
         children: [
-          const AppBackground(),
           SafeArea(
             child: Column(
               children: [
@@ -53,9 +53,10 @@ class _ReservasPageState extends ConsumerState<ReservasPage> {
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
                     error: (e, _) => ErrorView(
-                        error: e,
-                        onRetry: () =>
-                            ref.invalidate(reservationsProvider(_query))),
+                      error: e,
+                      onRetry: () =>
+                          ref.invalidate(reservationsProvider(_query)),
+                    ),
                     data: (list) {
                       Future<void> refresh() async =>
                           ref.invalidate(reservationsProvider(_query));
@@ -66,10 +67,12 @@ class _ReservasPageState extends ConsumerState<ReservasPage> {
                             physics: const AlwaysScrollableScrollPhysics(),
                             children: [
                               SizedBox(
-                                  height: 280,
-                                  child: EmptyView(
-                                      message: s.reservasEmpty,
-                                      icon: Icons.event_available_outlined)),
+                                height: 280,
+                                child: EmptyView(
+                                  message: s.reservasEmpty,
+                                  icon: Icons.event_available_outlined,
+                                ),
+                              ),
                             ],
                           ),
                         );
@@ -163,13 +166,20 @@ class _ReservasPageState extends ConsumerState<ReservasPage> {
           children: [
             Row(
               children: [
-                Text(at != null ? _timeFmt.format(at) : '—',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 16)),
+                Text(
+                  at != null ? _timeFmt.format(at) : '—',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(r.customerName,
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                  child: Text(
+                    r.customerName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 _statusBadge(context, s, r.status),
               ],
@@ -181,9 +191,10 @@ class _ReservasPageState extends ConsumerState<ReservasPage> {
               style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
             ),
             if (r.note != null && r.note!.isNotEmpty)
-              Text(r.note!,
-                  style:
-                      TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+              Text(
+                r.note!,
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
+              ),
             _actions(context, s, r),
           ],
         ),
@@ -194,14 +205,17 @@ class _ReservasPageState extends ConsumerState<ReservasPage> {
   Widget _actions(BuildContext context, Strings s, Reservation r) {
     final buttons = <Widget>[];
     void add(String label, String action, {bool danger = false}) {
-      buttons.add(TextButton(
-        onPressed: () => _transition(context, s, r.id, action),
-        style: danger
-            ? TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error)
-            : null,
-        child: Text(label),
-      ));
+      buttons.add(
+        TextButton(
+          onPressed: () => _transition(context, s, r.id, action),
+          style: danger
+              ? TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                )
+              : null,
+          child: Text(label),
+        ),
+      );
     }
 
     switch (r.status) {
@@ -238,22 +252,33 @@ class _ReservasPageState extends ConsumerState<ReservasPage> {
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(s.reservaStatusLabel(status),
-          style: TextStyle(
-              color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+      child: Text(
+        s.reservaStatusLabel(status),
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 
   Future<void> _transition(
-      BuildContext context, Strings s, String id, String action) async {
+    BuildContext context,
+    Strings s,
+    String id,
+    String action,
+  ) async {
     try {
       await ref.read(reservationsRepositoryProvider).transition(id, action);
       ref.invalidate(reservationsProvider(_query));
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content:
-                Text(e is ApiError ? e.message : s.reservaTransitionError)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiError ? e.message : s.reservaTransitionError),
+          ),
+        );
       }
     }
   }
@@ -263,9 +288,12 @@ class _ReservasPageState extends ConsumerState<ReservasPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ReservationForm(day: _day, onCreated: () {
-        ref.invalidate(reservationsProvider(_query));
-      }),
+      builder: (_) => _ReservationForm(
+        day: _day,
+        onCreated: () {
+          ref.invalidate(reservationsProvider(_query));
+        },
+      ),
     );
   }
 }
@@ -310,13 +338,18 @@ class _ReservationFormState extends ConsumerState<_ReservationForm> {
       _snack(s.reservaGuestsInvalid);
       return;
     }
-    final reservedAt = DateTime(_date.year, _date.month, _date.day, _time.hour,
-            _time.minute)
-        .toUtc()
-        .toIso8601String();
+    final reservedAt = DateTime(
+      _date.year,
+      _date.month,
+      _date.day,
+      _time.hour,
+      _time.minute,
+    ).toUtc().toIso8601String();
     setState(() => _saving = true);
     try {
-      await ref.read(reservationsRepositoryProvider).create(
+      await ref
+          .read(reservationsRepositoryProvider)
+          .create(
             customerName: name,
             partySize: size,
             reservedAtIso: reservedAt,
@@ -337,8 +370,8 @@ class _ReservationFormState extends ConsumerState<_ReservationForm> {
     }
   }
 
-  void _snack(String m) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
   String? _nn(String v) => v.trim().isEmpty ? null : v.trim();
 
   @override
@@ -347,10 +380,11 @@ class _ReservationFormState extends ConsumerState<_ReservationForm> {
     final tables = ref.watch(tablesProvider).valueOrNull ?? const <TableItem>[];
     return Padding(
       padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-          left: 16,
-          right: 16,
-          top: 8),
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        left: 16,
+        right: 16,
+        top: 8,
+      ),
       child: GlassPanel(
         child: SingleChildScrollView(
           child: Column(
@@ -363,29 +397,36 @@ class _ReservationFormState extends ConsumerState<_ReservationForm> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.outlineVariant,
-                      borderRadius: BorderRadius.circular(2)),
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-              Text(s.reservaNew, style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                s.reservaNew,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 12),
               TextField(
-                  controller: _name,
-                  decoration: InputDecoration(labelText: s.reservaCustomer)),
+                controller: _name,
+                decoration: InputDecoration(labelText: s.reservaCustomer),
+              ),
               const SizedBox(height: 12),
               TextField(
-                  controller: _phone,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(labelText: s.reservaPhone)),
+                controller: _phone,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(labelText: s.reservaPhone),
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
                   SizedBox(
                     width: 110,
                     child: TextField(
-                        controller: _guests,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(labelText: s.reservaGuests)),
+                      controller: _guests,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: s.reservaGuests),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -395,7 +436,9 @@ class _ReservationFormState extends ConsumerState<_ReservationForm> {
                       items: [
                         for (final tv in ['LUNCH', 'DINNER'])
                           DropdownMenuItem(
-                              value: tv, child: Text(s.turnLabel(tv))),
+                            value: tv,
+                            child: Text(s.turnLabel(tv)),
+                          ),
                       ],
                       onChanged: (v) => setState(() => _turn = v ?? _turn),
                     ),
@@ -411,10 +454,12 @@ class _ReservationFormState extends ConsumerState<_ReservationForm> {
                         final picked = await showDatePicker(
                           context: context,
                           initialDate: _date,
-                          firstDate: DateTime.now()
-                              .subtract(const Duration(days: 1)),
-                          lastDate:
-                              DateTime.now().add(const Duration(days: 365)),
+                          firstDate: DateTime.now().subtract(
+                            const Duration(days: 1),
+                          ),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 365),
+                          ),
                         );
                         if (picked != null) setState(() => _date = picked);
                       },
@@ -427,7 +472,9 @@ class _ReservationFormState extends ConsumerState<_ReservationForm> {
                     child: OutlinedButton.icon(
                       onPressed: () async {
                         final picked = await showTimePicker(
-                            context: context, initialTime: _time);
+                          context: context,
+                          initialTime: _time,
+                        );
                         if (picked != null) setState(() => _time = picked);
                       },
                       icon: const Icon(Icons.schedule, size: 16),
@@ -444,15 +491,17 @@ class _ReservationFormState extends ConsumerState<_ReservationForm> {
                   DropdownMenuItem(value: null, child: Text(s.reservaNoTable)),
                   for (final t in tables)
                     DropdownMenuItem(
-                        value: t.id,
-                        child: Text(s.reservaTableOption(t.number))),
+                      value: t.id,
+                      child: Text(s.reservaTableOption(t.number)),
+                    ),
                 ],
                 onChanged: (v) => setState(() => _tableId = v),
               ),
               const SizedBox(height: 12),
               TextField(
-                  controller: _note,
-                  decoration: InputDecoration(labelText: s.reservaNote)),
+                controller: _note,
+                decoration: InputDecoration(labelText: s.reservaNote),
+              ),
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: _saving ? null : _submit,

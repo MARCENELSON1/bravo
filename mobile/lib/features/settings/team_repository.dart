@@ -12,8 +12,10 @@ class TeamRepository {
 
   Future<String> invite(String email, String role) async {
     try {
-      final res = await _dio.post<dynamic>('/users/invite',
-          data: {'email': email, 'role': role});
+      final res = await _dio.post<dynamic>(
+        '/users/invite',
+        data: {'email': email, 'role': role},
+      );
       final map = Map<String, dynamic>.from(res.data as Map);
       return (map['message'] as String?) ?? '';
     } catch (e) {

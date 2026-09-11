@@ -18,7 +18,8 @@ class IntegracionesSettingsSection extends ConsumerWidget {
     try {
       final url = await ref.read(integrationsRepositoryProvider).connectUrl();
       final uri = Uri.tryParse(url);
-      final ok = uri != null &&
+      final ok =
+          uri != null &&
           await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!ok && context.mounted) {
         ScaffoldMessenger.of(context)
@@ -26,8 +27,9 @@ class IntegracionesSettingsSection extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e is ApiError ? e.message : s.mpOpenError)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiError ? e.message : s.mpOpenError)),
+        );
       }
     }
   }
@@ -43,8 +45,9 @@ class IntegracionesSettingsSection extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e is ApiError ? e.message : s.mpError)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiError ? e.message : s.mpError)),
+        );
       }
     }
   }
@@ -61,8 +64,10 @@ class IntegracionesSettingsSection extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text(s.mpTitle,
-                    style: Theme.of(context).textTheme.titleSmall),
+                child: Text(
+                  s.mpTitle,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
               ),
               async.maybeWhen(
                 data: (c) => _StatusChip(connected: c.connected),
@@ -71,8 +76,10 @@ class IntegracionesSettingsSection extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 4),
-          Text(s.mpDesc,
-              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13)),
+          Text(
+            s.mpDesc,
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+          ),
           const SizedBox(height: 12),
           async.when(
             loading: () => const Padding(
@@ -86,11 +93,17 @@ class IntegracionesSettingsSection extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (c.nickname != null)
-                      Text(c.nickname!,
-                          style: const TextStyle(fontWeight: FontWeight.w500)),
-                    Text(c.liveMode ? s.mpLiveMode : s.mpTestMode,
-                        style: TextStyle(
-                            color: scheme.onSurfaceVariant, fontSize: 13)),
+                      Text(
+                        c.nickname!,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    Text(
+                      c.liveMode ? s.mpLiveMode : s.mpTestMode,
+                      style: TextStyle(
+                        color: scheme.onSurfaceVariant,
+                        fontSize: 13,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     OutlinedButton(
                       onPressed: () => _disconnect(context, ref),
@@ -131,11 +144,16 @@ class _StatusChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(connected ? Icons.check_circle : Icons.circle_outlined,
-              size: 14, color: color),
+          Icon(
+            connected ? Icons.check_circle : Icons.circle_outlined,
+            size: 14,
+            color: color,
+          ),
           const SizedBox(width: 4),
-          Text(connected ? s.mpConnected : s.mpNotConnected,
-              style: TextStyle(color: color, fontSize: 12)),
+          Text(
+            connected ? s.mpConnected : s.mpNotConnected,
+            style: TextStyle(color: color, fontSize: 12),
+          ),
         ],
       ),
     );

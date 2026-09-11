@@ -5,7 +5,10 @@
 /// Respuesta de `POST /auth/login` y `POST /auth/refresh` (body).
 /// Ver `backend/app/presentation/schemas/auth.py` (`AccessTokenResponse`).
 class AccessTokenResponse {
-  const AccessTokenResponse({required this.accessToken, required this.tokenType});
+  const AccessTokenResponse({
+    required this.accessToken,
+    required this.tokenType,
+  });
 
   final String accessToken;
   final String tokenType;

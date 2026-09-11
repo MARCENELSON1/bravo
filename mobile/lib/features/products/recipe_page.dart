@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../l10n/strings.dart';
-import '../../ui/app_background.dart';
 import '../../ui/glass_panel.dart';
 import '../inventory/inventory_repository.dart';
 import 'recipe_repository.dart';
@@ -11,7 +10,11 @@ import 'recipe_repository.dart';
 /// Editor de receta de un producto (Fase 6): edita las líneas de insumo y
 /// preserva las de preparación. El food cost lo recalcula el backend.
 class RecipePage extends ConsumerStatefulWidget {
-  const RecipePage({super.key, required this.productId, required this.productName});
+  const RecipePage({
+    super.key,
+    required this.productId,
+    required this.productName,
+  });
 
   final String productId;
   final String productName;
@@ -35,12 +38,7 @@ class _RecipePageState extends ConsumerState<RecipePage> {
         title: Text('${s.recetaTitle} · ${widget.productName}'),
         backgroundColor: Colors.transparent,
       ),
-      body: Stack(
-        children: [
-          const AppBackground(),
-          SafeArea(child: _body(s, recipe, ingredients)),
-        ],
-      ),
+      body: Stack(children: [SafeArea(child: _body(s, recipe, ingredients))]),
     );
   }
 
@@ -75,7 +73,10 @@ class _RecipePageState extends ConsumerState<RecipePage> {
           child: Material(
             type: MaterialType.transparency,
             child: _lines!.isEmpty
-                ? Padding(padding: const EdgeInsets.all(16), child: Text(s.recetaEmpty))
+                ? Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(s.recetaEmpty),
+                  )
                 : Column(
                     children: [
                       for (var i = 0; i < _lines!.length; i++) ...[
@@ -137,11 +138,13 @@ class _RecipePageState extends ConsumerState<RecipePage> {
     final line = _lines![idx];
     final qty = await _askQty(s, initial: line.qty);
     if (qty == null) return;
-    setState(() => _lines![idx] = RecipeItem(
-          qty: qty,
-          ingredientId: line.ingredientId,
-          preparationId: line.preparationId,
-        ));
+    setState(
+      () => _lines![idx] = RecipeItem(
+        qty: qty,
+        ingredientId: line.ingredientId,
+        preparationId: line.preparationId,
+      ),
+    );
   }
 
   Future<void> _addLine(Strings s, List<Ingredient> ings) async {

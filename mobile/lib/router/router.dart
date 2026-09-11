@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../auth/session_notifier.dart';
 import '../features/login/login_page.dart';
 import '../features/shell/app_scaffold.dart';
-import '../ui/app_background.dart';
 
 /// Router con guards espejando `require-auth.tsx`: mientras bootea → splash;
 /// anónimo → /login; autenticado → /app. `refreshListenable` re-evalúa el
@@ -49,12 +48,7 @@ class _SplashPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: const [
-          AppBackground(),
-          Center(child: CircularProgressIndicator()),
-        ],
-      ),
+      body: Stack(children: const [Center(child: CircularProgressIndicator())]),
     );
   }
 }

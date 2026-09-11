@@ -32,73 +32,81 @@ class OrderOp {
     required int quantity,
     String? note,
     List<String>? optionIds,
-  }) =>
-      OrderOp(
-        type: OrderOpType.addItem,
-        orderId: orderId,
-        itemId: itemId,
-        productId: productId,
-        quantity: quantity,
-        note: note,
-        optionIds: optionIds,
-      );
+  }) => OrderOp(
+    type: OrderOpType.addItem,
+    orderId: orderId,
+    itemId: itemId,
+    productId: productId,
+    quantity: quantity,
+    note: note,
+    optionIds: optionIds,
+  );
 
   factory OrderOp.setNote({
     required String orderId,
     required String itemId,
     String? note,
-  }) =>
-      OrderOp(
-          type: OrderOpType.setNote, orderId: orderId, itemId: itemId, note: note);
+  }) => OrderOp(
+    type: OrderOpType.setNote,
+    orderId: orderId,
+    itemId: itemId,
+    note: note,
+  );
 
   factory OrderOp.setQty({
     required String orderId,
     required String itemId,
     required int quantity,
-  }) =>
-      OrderOp(
-          type: OrderOpType.setQty,
-          orderId: orderId,
-          itemId: itemId,
-          quantity: quantity);
+  }) => OrderOp(
+    type: OrderOpType.setQty,
+    orderId: orderId,
+    itemId: itemId,
+    quantity: quantity,
+  );
 
-  factory OrderOp.removeItem({required String orderId, required String itemId}) =>
-      OrderOp(type: OrderOpType.removeItem, orderId: orderId, itemId: itemId);
+  factory OrderOp.removeItem({
+    required String orderId,
+    required String itemId,
+  }) => OrderOp(type: OrderOpType.removeItem, orderId: orderId, itemId: itemId);
 
   factory OrderOp.send({required String orderId}) =>
       OrderOp(type: OrderOpType.send, orderId: orderId);
 
-  factory OrderOp.transfer({required String orderId, required String tableId}) =>
-      OrderOp(type: OrderOpType.transfer, orderId: orderId, tableId: tableId);
+  factory OrderOp.transfer({
+    required String orderId,
+    required String tableId,
+  }) => OrderOp(type: OrderOpType.transfer, orderId: orderId, tableId: tableId);
 
-  factory OrderOp.merge(
-          {required String orderId, required String sourceOrderId}) =>
-      OrderOp(
-          type: OrderOpType.merge,
-          orderId: orderId,
-          sourceOrderId: sourceOrderId);
+  factory OrderOp.merge({
+    required String orderId,
+    required String sourceOrderId,
+  }) => OrderOp(
+    type: OrderOpType.merge,
+    orderId: orderId,
+    sourceOrderId: sourceOrderId,
+  );
 
   Map<String, dynamic> toJson() => {
-        'type': type.name,
-        'orderId': orderId,
-        if (itemId != null) 'itemId': itemId,
-        if (productId != null) 'productId': productId,
-        if (quantity != null) 'quantity': quantity,
-        if (note != null) 'note': note,
-        if (optionIds != null) 'optionIds': optionIds,
-        if (tableId != null) 'tableId': tableId,
-        if (sourceOrderId != null) 'sourceOrderId': sourceOrderId,
-      };
+    'type': type.name,
+    'orderId': orderId,
+    if (itemId != null) 'itemId': itemId,
+    if (productId != null) 'productId': productId,
+    if (quantity != null) 'quantity': quantity,
+    if (note != null) 'note': note,
+    if (optionIds != null) 'optionIds': optionIds,
+    if (tableId != null) 'tableId': tableId,
+    if (sourceOrderId != null) 'sourceOrderId': sourceOrderId,
+  };
 
   factory OrderOp.fromJson(Map<String, dynamic> j) => OrderOp(
-        type: OrderOpType.values.byName(j['type'] as String),
-        orderId: j['orderId'] as String,
-        itemId: j['itemId'] as String?,
-        productId: j['productId'] as String?,
-        quantity: j['quantity'] as int?,
-        note: j['note'] as String?,
-        optionIds: (j['optionIds'] as List?)?.cast<String>(),
-        tableId: j['tableId'] as String?,
-        sourceOrderId: j['sourceOrderId'] as String?,
-      );
+    type: OrderOpType.values.byName(j['type'] as String),
+    orderId: j['orderId'] as String,
+    itemId: j['itemId'] as String?,
+    productId: j['productId'] as String?,
+    quantity: j['quantity'] as int?,
+    note: j['note'] as String?,
+    optionIds: (j['optionIds'] as List?)?.cast<String>(),
+    tableId: j['tableId'] as String?,
+    sourceOrderId: j['sourceOrderId'] as String?,
+  );
 }
