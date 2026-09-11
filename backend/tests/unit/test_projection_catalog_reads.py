@@ -20,6 +20,8 @@ from app.domain.inventory.repository import (
 from app.domain.order.entities import Order, OrderItem
 from app.domain.order.repository import OrderRepository
 from app.domain.order.value_objects import OrderStatus
+from app.domain.payment.entities import Payment
+from app.domain.payment.value_objects import PaymentDirection, PaymentMethod, PaymentStatus
 from app.domain.product.entities import Product
 from app.domain.product.repository import ProductRepository
 from app.domain.shared.money import Money
@@ -234,3 +236,52 @@ async def test_no_recipes_means_no_catalog_reads_at_all() -> None:
     # Sin recetas no se costea nada: insumos y preparaciones ni se tocan.
     assert ingredients.calls == []
     assert preparations.calls == []
+
+
+class _PaidInFull:
+    """Cobro confirmado que cubre el total de la comanda del fake (1 × 1000)."""
+
+    async def list_by_order(self, tenant_id: str, order_id: str) -> list:
+        return [
+            Payment(
+                id="pay-1",
+                tenant_id=_TENANT,
+                direction=PaymentDirection.INFLOW,
+                amount=Money(1000, "ARS"),
+                method=PaymentMethod.CASH,
+                status=PaymentStatus.CONFIRMED,
+                order_id=order_id,
+            )
+        ]
+
+
+async def test_una_comanda_anulada_no_es_venta_aunque_esté_cobrada() -> None:
+    """La venta se registra si la PLATA está, no si la mesa se liberó (H1).
+
+    Ese criterio nuevo destapó un caso que el filtro viejo (``status is PAID``)
+    excluía sin querer: una comanda ANULADA con un cobro confirmado encima. Sin
+    esta guarda, el criterio por plata convertiría una anulación en venta — y con
+    su costo de mercadería — inflando los ingresos justo donde no hubo ninguno.
+
+    ``mark_paid`` rechaza desde CANCELLED, así que ``_settle_order`` no llega acá:
+    la guarda es deliberadamente defensiva y este test es lo que la sostiene.
+    """
+    order = _order()
+    order.status = OrderStatus.CANCELLED
+    facts = _SaleFacts()
+    projector = ProjectOrderSales(
+        orders=_OrderRepo(order),
+        products=_SpyProductRepository(_catalog(5)),
+        recipes=_NoRecipes(),
+        ingredients=_Ingredients(),
+        preparations=_Preparations(),
+        sale_facts=facts,  # type: ignore[arg-type]
+        snapshots=_Snapshots(),  # type: ignore[arg-type]
+        advisor_settings=_NoSettings(),
+        payments=_PaidInFull(),  # type: ignore[arg-type]
+        tenant_context=FakeTenantContext(),
+    )
+
+    await projector.project_order(_TENANT, "o1")
+
+    assert facts.added == [], "una anulación no puede figurar como venta"
