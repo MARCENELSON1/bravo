@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -64,13 +66,20 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
               ),
             ],
           ),
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: safeIndex,
-            onDestinationSelected: (i) => setState(() => _index = i),
-            destinations: [
-              for (final t in tabs)
-                NavigationDestination(icon: Icon(t.icon), label: t.label),
-            ],
+          bottomNavigationBar: _GlassNavBar(
+            child: NavigationBar(
+              // El material lo pinta `_GlassNavBar`; la barra va transparente
+              // para no taparlo con su propio fondo.
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              selectedIndex: safeIndex,
+              onDestinationSelected: (i) => setState(() => _index = i),
+              destinations: [
+                for (final t in tabs)
+                  NavigationDestination(icon: Icon(t.icon), label: t.label),
+              ],
+            ),
           ),
         ),
       ),
@@ -142,6 +151,54 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
           more,
         ];
     }
+  }
+}
+
+/// La barra de navegación como vidrio esmerilado **opaco**.
+///
+/// Difumina lo que queda atrás —el fondo escénico que pinta `AppBackground`: el
+/// degradado, el grano y las manchas que se mueven despacio— y lo cubre con un
+/// tinte denso. Denso a propósito: no es una barra a través de la cual se ve,
+/// es una superficie sólida que respira con lo que tiene detrás. El grano es lo
+/// que más se nota, porque es lo único de alta frecuencia ahí abajo: el
+/// desenfoque lo alisa y deja una banda más limpia que el resto de la pantalla.
+///
+/// El `NavigationBar` ya se reserva el área segura de abajo por su cuenta, así
+/// que el tinte llega hasta el borde inferior del teléfono sin cortarse.
+class _GlassNavBar extends StatelessWidget {
+  const _GlassNavBar({required this.child});
+
+  final Widget child;
+
+  /// Cuánto del fondo pasa. Por encima de esto la barra deja de leerse como una
+  /// superficie; por debajo, el desenfoque no se nota y es un rectángulo de
+  /// color. El sistema llama a esto un material "grueso".
+  static const double _fill = 0.82;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final scheme = Theme.of(context).colorScheme;
+    return ClipRect(
+      child: BackdropFilter(
+        // Más que el de `GlassPanel` (18): esta superficie es ancha y baja, y
+        // con menos desenfoque se le ven las vetas del grano en diagonal.
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: scheme.surface.withValues(alpha: _fill),
+            border: Border(
+              top: BorderSide(
+                color: dark
+                    ? Colors.white.withValues(alpha: 0.10)
+                    : Colors.black.withValues(alpha: 0.08),
+              ),
+            ),
+          ),
+          child: child,
+        ),
+      ),
+    );
   }
 }
 

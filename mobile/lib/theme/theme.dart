@@ -77,7 +77,9 @@ ThemeData _build(WellnodPalette p, Brightness brightness) {
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: p.card,
+      // Sin fondo propio: el shell la envuelve en vidrio esmerilado y lo pinta
+      // él (`app_scaffold._GlassNavBar`). Dos fondos serían uno tapando al otro.
+      backgroundColor: Colors.transparent,
       indicatorColor: p.accent,
       elevation: 0,
     ),
