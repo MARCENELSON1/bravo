@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -163,8 +164,8 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
 /// que más se nota, porque es lo único de alta frecuencia ahí abajo: el
 /// desenfoque lo alisa y deja una banda más limpia que el resto de la pantalla.
 ///
-/// El `NavigationBar` ya se reserva el área segura de abajo por su cuenta, así
-/// que el tinte llega hasta el borde inferior del teléfono sin cortarse.
+/// El `NavigationBar` se reserva el área segura de abajo por su cuenta, así que
+/// el tinte llega hasta el borde inferior del teléfono sin cortarse.
 class _GlassNavBar extends StatelessWidget {
   const _GlassNavBar({required this.child});
 
@@ -175,10 +176,20 @@ class _GlassNavBar extends StatelessWidget {
   /// color. El sistema llama a esto un material "grueso".
   static const double _fill = 0.82;
 
+  /// Cuánto aire dejar bajo los textos, en un teléfono con barra de inicio.
+  ///
+  /// El sistema reserva 34 ahí, pensados para que nada quede debajo del dedo
+  /// que desliza para salir de la app. Nuestro contenido más bajo son los
+  /// textos, que no se tocan —lo que se toca es la fila entera, bien más
+  /// arriba—, así que con 22 la barra de inicio sigue teniendo su lugar y la
+  /// barra deja de tener un tercio de sí misma en blanco.
+  static const double _bottomInset = 22;
+
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final scheme = Theme.of(context).colorScheme;
+    final mq = MediaQuery.of(context);
     return ClipRect(
       child: BackdropFilter(
         // Más que el de `GlassPanel` (18): esta superficie es ancha y baja, y
@@ -195,7 +206,16 @@ class _GlassNavBar extends StatelessWidget {
               ),
             ),
           ),
-          child: child,
+          child: MediaQuery(
+            // En un teléfono sin barra de inicio el inset ya es 0 o casi: el
+            // mínimo se respeta, no se inventa aire donde no hacía falta.
+            data: mq.copyWith(
+              padding: mq.padding.copyWith(
+                bottom: math.min(mq.padding.bottom, _bottomInset),
+              ),
+            ),
+            child: child,
+          ),
         ),
       ),
     );

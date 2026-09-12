@@ -82,6 +82,31 @@ ThemeData _build(WellnodPalette p, Brightness brightness) {
       backgroundColor: Colors.transparent,
       indicatorColor: p.accent,
       elevation: 0,
+      // La barra mide 114 en un iPhone con gesto: 80 de contenido y 34 que el
+      // sistema reserva para la barra de inicio. Con el ícono y el texto en su
+      // tamaño mínimo, más de un tercio de la barra quedaba vacío. Se sube el
+      // contenido y se baja el alto: el bloque ocupa lo que antes era aire.
+      height: 64,
+      iconTheme: WidgetStateProperty.resolveWith(
+        (states) => IconThemeData(
+          size: 27,
+          color: states.contains(WidgetState.selected)
+              ? p.accentForeground
+              : p.mutedForeground,
+        ),
+      ),
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (states) => TextStyle(
+          fontSize: 13,
+          // El seleccionado pesa más: es el que dice dónde estás parado.
+          fontWeight: states.contains(WidgetState.selected)
+              ? FontWeight.w600
+              : FontWeight.w500,
+          color: states.contains(WidgetState.selected)
+              ? p.foreground
+              : p.mutedForeground,
+        ),
+      ),
     ),
   );
 }
