@@ -8,6 +8,7 @@ import '../../util/money.dart';
 import '../cashier/payment_dtos.dart';
 import 'tips_dtos.dart';
 import 'tips_repository.dart';
+import '../../ui/nav_bar_inset.dart';
 
 /// Propinas (Fase 4): reporte por mozo (ganado/pagado/pendiente) + liquidación.
 class TipsPage extends ConsumerStatefulWidget {
@@ -50,7 +51,7 @@ class _TipsPageState extends ConsumerState<TipsPage> {
 
   Widget _content(Strings s, TipsReport report) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + navBarInset(context)),
       children: [
         GlassPanel(
           child: Column(

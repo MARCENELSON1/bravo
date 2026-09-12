@@ -8,6 +8,7 @@ import '../../util/money.dart';
 import 'cash_dtos.dart';
 import 'cash_providers.dart';
 import 'payment_dtos.dart';
+import '../../ui/nav_bar_inset.dart';
 
 /// Pantalla de Caja (Fase 3): abrir la caja con un fondo, verla, y cerrarla con
 /// el arqueo Z (contado por método). Tab body (sin Scaffold), como Piso/KDS.
@@ -40,7 +41,7 @@ class _CashierPageState extends ConsumerState<CashierPage> {
   Widget _openForm(Strings s) {
     final controller = TextEditingController();
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + navBarInset(context)),
       children: [
         GlassPanel(
           child: Column(
@@ -73,7 +74,7 @@ class _CashierPageState extends ConsumerState<CashierPage> {
 
   Widget _sessionView(Strings s, CashSession session) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + navBarInset(context)),
       children: [
         GlassPanel(
           child: Column(

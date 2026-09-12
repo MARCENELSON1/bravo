@@ -82,11 +82,10 @@ ThemeData _build(WellnodPalette p, Brightness brightness) {
       backgroundColor: Colors.transparent,
       indicatorColor: p.accent,
       elevation: 0,
-      // La barra mide 114 en un iPhone con gesto: 80 de contenido y 34 que el
-      // sistema reserva para la barra de inicio. Con el ícono y el texto en su
-      // tamaño mínimo, más de un tercio de la barra quedaba vacío. Se sube el
-      // contenido y se baja el alto: el bloque ocupa lo que antes era aire.
-      height: 64,
+      // El alto de la pastilla. El ícono y su pastilla de seleccionado miden 32,
+      // el texto 18: 78 los centra con aire parejo arriba y abajo, sin que el
+      // bloque toque los bordes redondeados.
+      height: 78,
       iconTheme: WidgetStateProperty.resolveWith(
         (states) => IconThemeData(
           size: 27,

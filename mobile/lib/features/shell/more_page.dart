@@ -23,6 +23,7 @@ import '../settings/ajustes_page.dart';
 import '../settings/printer_page.dart';
 import '../timeclock/fichaje_page.dart';
 import '../tips/tips_page.dart';
+import '../../ui/nav_bar_inset.dart';
 
 /// Hub de la tab "Más": calca las capacidades del rol (guards `RequireRole` del
 /// web). Cada rol ve solo lo que puede tocar y que no está ya en su barra de
@@ -92,7 +93,7 @@ class MorePage extends ConsumerWidget {
     ];
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + navBarInset(context)),
       children: [
         GlassPanel(
           padding: const EdgeInsets.symmetric(vertical: 4),

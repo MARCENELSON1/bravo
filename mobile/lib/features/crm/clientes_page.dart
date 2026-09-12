@@ -6,6 +6,7 @@ import '../../l10n/strings.dart';
 import '../../ui/glass_panel.dart';
 import '../../ui/state_views.dart';
 import 'customer_repository.dart';
+import '../../ui/nav_bar_inset.dart';
 
 /// Clientes / CRM (Fase 6): búsqueda, alta y edición.
 class ClientesPage extends ConsumerStatefulWidget {
@@ -42,9 +43,13 @@ class _ClientesPageState extends ConsumerState<ClientesPage> {
         title: Text(s.clientesTitle),
         backgroundColor: Colors.transparent,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _form(s, null),
-        child: const Icon(Icons.add),
+      floatingActionButton: Padding(
+        // De tab, la barra flota sobre esta pantalla; empujada, no hay barra.
+        padding: EdgeInsets.only(bottom: navBarOverlap(context)),
+        child: FloatingActionButton(
+          onPressed: () => _form(s, null),
+          child: const Icon(Icons.add),
+        ),
       ),
       body: Stack(
         children: [
@@ -78,7 +83,7 @@ class _ClientesPageState extends ConsumerState<ClientesPage> {
       onRefresh: () async => ref.invalidate(customersProvider),
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + navBarInset(context)),
         children: [
           TextField(
             controller: _search,

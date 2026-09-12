@@ -55,11 +55,19 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
           // Transparente: el fondo escénico lo pinta el `builder` de MaterialApp,
           // una vez para toda la app. Un Scaffold opaco acá lo taparía.
           backgroundColor: Colors.transparent,
+          // El cuerpo llega hasta el pie de la pantalla y la barra flota encima.
+          // Es lo que le da al vidrio algo que difuminar —la lista que le pasa
+          // por debajo— y a cambio obliga a que cada pantalla deje aire al final
+          // para que su último ítem pueda subir: eso es `navBarInset`.
+          extendBody: true,
           body: Stack(
             children: [
               // IndexedStack mantiene vivas todas las tabs → conservan scroll,
               // formularios y conexiones en vivo al cambiar de una a otra.
               SafeArea(
+                // Abajo no: ahí el `Scaffold` publica el alto de la barra y las
+                // pantallas lo consumen ellas. Recortarlo acá lo escondería.
+                bottom: false,
                 child: IndexedStack(
                   index: safeIndex,
                   children: [for (final t in tabs) t.page],
@@ -155,66 +163,96 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
   }
 }
 
-/// La barra de navegación como vidrio esmerilado **opaco**.
+/// La barra de navegación como una pastilla de vidrio que flota.
 ///
-/// Difumina lo que queda atrás —el fondo escénico que pinta `AppBackground`: el
-/// degradado, el grano y las manchas que se mueven despacio— y lo cubre con un
-/// tinte denso. Denso a propósito: no es una barra a través de la cual se ve,
-/// es una superficie sólida que respira con lo que tiene detrás. El grano es lo
-/// que más se nota, porque es lo único de alta frecuencia ahí abajo: el
-/// desenfoque lo alisa y deja una banda más limpia que el resto de la pantalla.
+/// Antes iba pegada de borde a borde y con las esquinas en punto: ocupaba el
+/// pie de la pantalla como un zócalo, que es justo lo contrario de lo que hacen
+/// los paneles de arriba. Ahora se despega de los tres bordes, alineada con el
+/// margen de las tarjetas, y lleva su borde de un pelo y su desenfoque para que
+/// se lea como una más de la familia y no como parte del teléfono. El gris es
+/// el de las superficies de la app, no el velo fino de las tarjetas: la barra
+/// tiene texto chico encima y tiene que sostenerlo.
 ///
-/// El `NavigationBar` se reserva el área segura de abajo por su cuenta, así que
-/// el tinte llega hasta el borde inferior del teléfono sin cortarse.
+/// Lo que difumina es el fondo escénico que pinta `AppBackground`: el degradado,
+/// el grano y las manchas que se mueven despacio. El grano es lo que más se
+/// nota, porque es lo único de alta frecuencia ahí abajo.
 class _GlassNavBar extends StatelessWidget {
   const _GlassNavBar({required this.child});
 
   final Widget child;
 
-  /// Cuánto del fondo pasa. Por encima de esto la barra deja de leerse como una
-  /// superficie; por debajo, el desenfoque no se nota y es un rectángulo de
-  /// color. El sistema llama a esto un material "grueso".
-  static const double _fill = 0.82;
+  /// Casi una cápsula. La barra mide 78 de alto, así que 32 la redondea hasta
+  /// el límite de lo que todavía se lee como un rectángulo blando y no como un
+  /// óvalo, que a lo ancho de la pantalla quedaría raro.
+  static const double _radius = 32;
 
-  /// Cuánto aire dejar bajo los textos, en un teléfono con barra de inicio.
+  /// El mismo margen que usa el contenido de las pantallas, para que la barra
+  /// caiga en la misma columna que las tarjetas que tiene encima.
+  static const double _sideMargin = 16;
+
+  /// Cuánto del velo tapa al desenfoque.
   ///
-  /// El sistema reserva 34 ahí, pensados para que nada quede debajo del dedo
-  /// que desliza para salir de la app. Nuestro contenido más bajo son los
-  /// textos, que no se tocan —lo que se toca es la fila entera, bien más
-  /// arriba—, así que con 22 la barra de inicio sigue teniendo su lugar y la
-  /// barra deja de tener un tercio de sí misma en blanco.
-  static const double _bottomInset = 22;
+  /// Bastante: la barra es del gris de las superficies, no un vidrio fino como
+  /// el de las tarjetas. Lleva texto de 13 encima y no puede depender de qué
+  /// mancha del fondo le toque pasar por detrás. Lo que pasa —ese 18%— alcanza
+  /// para que la lista que corre por abajo se adivine desenfocada y la barra
+  /// cambie sola, sin que nada se lea a través.
+  static const double _fill = 0.82;
 
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final scheme = Theme.of(context).colorScheme;
     final mq = MediaQuery.of(context);
-    return ClipRect(
-      child: BackdropFilter(
-        // Más que el de `GlassPanel` (18): esta superficie es ancha y baja, y
-        // con menos desenfoque se le ven las vetas del grano en diagonal.
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: scheme.surface.withValues(alpha: _fill),
-            border: Border(
-              top: BorderSide(
-                color: dark
-                    ? Colors.white.withValues(alpha: 0.10)
-                    : Colors.black.withValues(alpha: 0.08),
+    final radius = BorderRadius.circular(_radius);
+    // La barra de inicio del iPhone reserva 34 abajo. La pastilla no los
+    // necesita adentro —no hay nada que proteger ahí— pero sí hay que dejar
+    // aire debajo de ella: la mitad alcanza para que no se toquen, y en un
+    // teléfono sin barra de inicio el mínimo sigue siendo un margen normal.
+    final bottomMargin = math.max(mq.padding.bottom / 2, 12.0);
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: _sideMargin,
+        right: _sideMargin,
+        bottom: bottomMargin,
+      ),
+      child: DecoratedBox(
+        // La sombra va afuera del recorte: adentro quedaría tapada por el
+        // propio panel y la pastilla no se despegaría de nada.
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: dark ? 0.34 : 0.10),
+              blurRadius: 28,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: BackdropFilter(
+            // Más que el de `GlassPanel` (18): esta superficie es ancha y baja,
+            // y con menos desenfoque se le ven las vetas del grano en diagonal.
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: scheme.surface.withValues(alpha: _fill),
+                borderRadius: radius,
+                border: Border.all(
+                  color: dark
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : Colors.black.withValues(alpha: 0.08),
+                ),
+              ),
+              child: MediaQuery(
+                // El área segura la resuelve el margen de afuera; adentro sería
+                // un colchón de 34 dentro de una pastilla de 64.
+                data: mq.copyWith(padding: mq.padding.copyWith(bottom: 0)),
+                child: child,
               ),
             ),
-          ),
-          child: MediaQuery(
-            // En un teléfono sin barra de inicio el inset ya es 0 o casi: el
-            // mínimo se respeta, no se inventa aire donde no hacía falta.
-            data: mq.copyWith(
-              padding: mq.padding.copyWith(
-                bottom: math.min(mq.padding.bottom, _bottomInset),
-              ),
-            ),
-            child: child,
           ),
         ),
       ),

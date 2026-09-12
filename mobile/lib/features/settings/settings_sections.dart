@@ -106,9 +106,7 @@ List<SettingRow> visibleRows(SettingsTab tab) => [
 /// Las entradas del listado: una sección aparece solo si tiene algo adentro.
 List<SettingsTab> visibleSettingsTabs({required bool isAdmin}) => [
   for (final t in settingsTabs)
-    if (tabHasSection(t.id, isAdmin: isAdmin) ||
-        visibleRows(t).isNotEmpty)
-      t,
+    if (tabHasSection(t.id, isAdmin: isAdmin) || visibleRows(t).isNotEmpty) t,
 ];
 
 String settingsActionLabel(String action, bool en) => switch (action) {

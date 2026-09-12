@@ -16,6 +16,7 @@ import '../finance/finance_repository.dart';
 import '../reports/reports_repository.dart';
 import 'daily_verdict.dart';
 import 'home_repository.dart';
+import '../../ui/nav_bar_inset.dart';
 
 /// Home v2 (paridad con el Inicio del web, solo OWNER/MANAGER): jerarquía de 7
 /// niveles — arrancás viendo la ganancia del día.
@@ -80,7 +81,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + navBarInset(context)),
             children: [
               // Encabezado
               // Las dos líneas se leen como una sola: el saludo y la fecha se
@@ -247,7 +248,8 @@ class _HomePageState extends ConsumerState<HomePage> {
         // FAB — registrar egreso
         Positioned(
           right: 16,
-          bottom: 16,
+          // La barra flota encima: el botón se apoya sobre ella, no debajo.
+          bottom: 16 + navBarInset(context),
           child: FloatingActionButton(
             heroTag: 'home-expense',
             tooltip: s.dashRegisterExpense,
@@ -272,7 +274,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + navBarInset(context)),
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.baseline,

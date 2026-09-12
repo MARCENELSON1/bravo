@@ -8,6 +8,7 @@ import '../../ui/glass_panel.dart';
 import '../../ui/state_views.dart';
 import '../floor/table_qr_repository.dart';
 import 'reservations_repository.dart';
+import '../../ui/nav_bar_inset.dart';
 
 /// Reservas (paridad con `/app/reservations` del web): filtro por día/turno +
 /// alta + acciones por estado (confirmar/sentar/completar/no-show/cancelar).
@@ -37,10 +38,14 @@ class _ReservasPageState extends ConsumerState<ReservasPage> {
         title: Text(s.reservasTitle),
         backgroundColor: Colors.transparent,
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(context),
-        icon: const Icon(Icons.add),
-        label: Text(s.reservaNew),
+      floatingActionButton: Padding(
+        // De tab, la barra flota sobre esta pantalla; empujada, no hay barra.
+        padding: EdgeInsets.only(bottom: navBarOverlap(context)),
+        child: FloatingActionButton.extended(
+          onPressed: () => _openForm(context),
+          icon: const Icon(Icons.add),
+          label: Text(s.reservaNew),
+        ),
       ),
       body: Stack(
         children: [
@@ -81,7 +86,12 @@ class _ReservasPageState extends ConsumerState<ReservasPage> {
                         onRefresh: refresh,
                         child: ListView(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            8,
+                            16,
+                            96 + navBarInset(context),
+                          ),
                           children: [
                             for (final r in list) _card(context, s, r),
                           ],

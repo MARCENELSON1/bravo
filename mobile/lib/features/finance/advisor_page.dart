@@ -9,6 +9,7 @@ import '../../util/money.dart';
 import 'advisor_report_repository.dart';
 import 'advisor_settings_page.dart';
 import 'finance_range.dart';
+import '../../ui/nav_bar_inset.dart';
 
 /// Asesor (Fase 9) — reporte de insights + KPIs del negocio, paridad con la
 /// pantalla `/app/advisor` del web. La config de costos se abre desde acá.
@@ -112,7 +113,7 @@ class _AdvisorPageState extends ConsumerState<AdvisorPage> {
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + navBarInset(context)),
       children: [
         Text(
           s.advisorSubtitle,

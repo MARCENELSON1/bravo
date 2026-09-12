@@ -9,6 +9,7 @@ import '../../util/money.dart';
 import 'finance_range.dart';
 import 'finance_repository.dart';
 import 'product_detail_sheet.dart';
+import '../../ui/nav_bar_inset.dart';
 
 /// Finanzas (paridad con la Pantalla Finanzas del web): hero ganancia neta +
 /// áreas de salud + gastos que cambiaron/distribución + KPIs del rubro +
@@ -120,7 +121,7 @@ class _FinanzasPageState extends ConsumerState<FinanzasPage> {
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + navBarInset(context)),
       children: [
         // HERO — ganancia neta del período
         GlassPanel(

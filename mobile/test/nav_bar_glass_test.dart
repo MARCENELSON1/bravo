@@ -1,4 +1,5 @@
-// La barra de navegación es vidrio: el material lo pinta el shell, no la barra.
+// La barra de navegación es una pastilla de vidrio: el material lo pinta el
+// shell, no la barra.
 //
 // Es un acoplamiento que se rompe en silencio: si alguien le devuelve un fondo
 // propio al `NavigationBar`, el vidrio sigue estando ahí abajo pero tapado, y
@@ -37,12 +38,6 @@ void main() {
       expect(tema.navigationBarTheme.elevation, 0);
     });
 
-    test('en modo $nombre el tinte del vidrio sale de la superficie', () {
-      // El vidrio se tiñe con `colorScheme.surface`: tiene que ser opaco, o al
-      // aplicarle el 82% quedaría translúcido dos veces y se vería el fondo.
-      expect(tema.colorScheme.surface.a, 1.0, reason: nombre);
-    });
-
     test('en modo $nombre el ícono elegido se lee sobre su pastilla', () {
       // Al pintar los íconos a mano se perdió el pariente que Material elegía
       // solo. Si la paleta cambia el verde de la pastilla y nadie mira esto, la
@@ -64,7 +59,10 @@ void main() {
       final resto = texto.resolve(<WidgetState>{})!;
       expect(elegido.color, isNot(resto.color));
       expect(elegido.fontWeight!.value, greaterThan(resto.fontWeight!.value));
-      // Y el que no está elegido igual tiene que leerse.
+      // Y el que no está elegido igual tiene que leerse. Se mide contra
+      // `surface` porque es lo más parecido al velo de la pastilla que hay en
+      // el tema: el velo es blanco translúcido sobre el fondo escénico, y cae
+      // a pocos puntos de ahí en los dos modos.
       expect(
         _contrast(resto.color!, tema.colorScheme.surface),
         greaterThanOrEqualTo(3.0),

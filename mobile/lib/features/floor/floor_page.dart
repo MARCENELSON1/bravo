@@ -21,6 +21,7 @@ import 'floor_quick_actions.dart';
 import 'floor_view.dart';
 import 'pending_qr_tray.dart';
 import 'table_card.dart';
+import '../../ui/nav_bar_inset.dart';
 
 /// Plano de salón en vivo. Espeja `frontend/src/features/floor/floor-page.tsx`
 /// (grilla por sector, chips de filtro, tira de "requieren atención") y suma
@@ -131,7 +132,7 @@ class _FloorPageState extends ConsumerState<FloorPage> {
     return RefreshIndicator(
       onRefresh: () => ref.read(floorProvider.notifier).refresh(),
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 24 + navBarInset(context)),
         children: [
           TextField(
             controller: _search,

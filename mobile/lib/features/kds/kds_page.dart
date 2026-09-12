@@ -11,6 +11,7 @@ import '../../ui/glass_panel.dart';
 import '../order/order_dtos.dart';
 import 'kds_providers.dart';
 import 'kds_ticket.dart';
+import '../../ui/nav_bar_inset.dart';
 
 /// Pantalla de cocina (Fase 2): tickets por ítem, más viejo primero, bump 1×1
 /// (SENT→preparando→listo). En vivo por SSE `kds.changed` + poll 20s. Grilla
@@ -76,7 +77,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
               final width = (c.maxWidth - 16 - (cols - 1) * 12) / cols;
               return SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.fromLTRB(8, 8, 8, 8 + navBarInset(ctx)),
                 child: Wrap(
                   spacing: 12,
                   runSpacing: 12,
