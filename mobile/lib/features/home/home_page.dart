@@ -83,8 +83,13 @@ class _HomePageState extends ConsumerState<HomePage> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
             children: [
               // Encabezado
+              // Las dos líneas se leen como una sola: el saludo y la fecha se
+              // alinean por la base de la letra, no por el borde de arriba de
+              // su caja —la fecha es menos de la mitad de alta y quedaba
+              // colgada del techo del saludo.
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
                 children: [
                   Expanded(
                     child: Text(
@@ -270,7 +275,8 @@ class _HomePageState extends ConsumerState<HomePage> {
       padding: const EdgeInsets.all(16),
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
           children: [
             Expanded(
               child: Text(
