@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
 
-/// Fondo escénico de la app — la misma escena que la landing y el web.
+/// Fondo escénico de la app, en dos escenas — espejo de
+/// `frontend/src/components/shell/app-background.tsx`.
 ///
-/// Portado de `frontend/src/components/shell/app-background.tsx` y de las clases
-/// `.aurora` / `.vignette` / `.bg-grain` de `index.css`, con los hex exactos.
+/// El gradiente de base es el mismo en las dos. Lo que las separa es el cierre:
+///
+///  * **consola** — lleva la textura del mockup del hero de la landing (los
+///    mismos valores, para que lo que se promete en la web sea lo que se ve al
+///    entrar) y va SIN viñeta: la viñeta oscurece justo los bordes, que es donde
+///    se apoyan los paneles de vidrio.
+///  * **identidad** — el login y sus hermanas. Sin textura y CON viñeta: ahí el
+///    fondo se ve directo, sin paneles que lo filtren, así que el mismo
+///    tratamiento pesaría mucho más.
+///
+/// La textura va desaturada y en modo `softLight`: la foto es verde, y a color
+/// le devolvería a la base el tinte que justamente no tiene que tener.
 ///
 /// **Por qué es neutro y no verde.** El fondo anterior era un gradiente verde con
 /// una textura fotográfica de 2,4 MB. Cuando el fondo también es verde, el verde
@@ -20,8 +31,12 @@ import 'package:flutter/material.dart';
 ///
 /// Es un `Positioned.fill`: va dentro de un `Stack`. Lo pinta el `builder` de
 /// `MaterialApp` una sola vez para toda la app.
+enum BackgroundScene { console, identity }
+
 class AppBackground extends StatefulWidget {
-  const AppBackground({super.key});
+  const AppBackground({super.key, this.scene = BackgroundScene.console});
+
+  final BackgroundScene scene;
 
   @override
   State<AppBackground> createState() => _AppBackgroundState();
@@ -46,6 +61,7 @@ class _AppBackgroundState extends State<AppBackground>
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final identity = widget.scene == BackgroundScene.identity;
     // "Reducir movimiento" (Ajustes) y el ajuste del sistema: las manchas quedan
     // quietas. El fondo sigue estando; lo que se apaga es la deriva.
     final still = MediaQuery.of(context).disableAnimations;
@@ -92,12 +108,13 @@ class _AppBackgroundState extends State<AppBackground>
                   ),
                   child: const SizedBox.expand(),
                 ),
-                // 2 · Grano. Teselado, sutil, debajo de las manchas.
+                // 2 · Grano. Teselado, debajo de las manchas. Más marcado en la
+                // consola, donde los paneles de vidrio lo suavizan.
                 // Va como `DecorationImage` y no como `Image`: dentro de un Stack
                 // una Image toma su tamaño intrínseco (220×220) y el teselado se
                 // queda en ese cuadrado, con un borde duro arriba a la izquierda.
                 Opacity(
-                  opacity: 0.12,
+                  opacity: identity ? 0.12 : 0.18,
                   child: DecoratedBox(
                     decoration: const BoxDecoration(
                       image: DecorationImage(
@@ -109,6 +126,24 @@ class _AppBackgroundState extends State<AppBackground>
                     child: const SizedBox.expand(),
                   ),
                 ),
+                // 3 · Textura, solo en la consola. Desaturada y en `softLight`:
+                // modula el valor en vez de taparlo, y no le devuelve el verde.
+                if (!identity)
+                  Opacity(
+                    opacity: 0.5,
+                    child: ColorFiltered(
+                      colorFilter: const ColorFilter.matrix(_grayscale),
+                      child: DecoratedBox(
+                        decoration: const BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('assets/img/app-bg-texture.webp'),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        child: const SizedBox.expand(),
+                      ),
+                    ),
+                  ),
                 // 3 · Las tres manchas.
                 AnimatedBuilder(
                   animation: _drift,
@@ -150,18 +185,21 @@ class _AppBackgroundState extends State<AppBackground>
                     );
                   },
                 ),
-                // 4 · Viñeta: centro limpio, bordes cerrados.
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      center: const Alignment(0, -0.24), // at 50% 38%
-                      radius: 0.95,
-                      colors: [Colors.transparent, vignette],
-                      stops: const [0.0, 1.0],
+                // 5 · Viñeta: solo en identidad, donde no hay panel que ocupe
+                // todo. En la consola oscurecería los bordes, que es donde se
+                // apoyan los paneles.
+                if (identity)
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        center: const Alignment(0, -0.24), // at 50% 38%
+                        radius: 0.95,
+                        colors: [Colors.transparent, vignette],
+                        stops: const [0.0, 1.0],
+                      ),
                     ),
+                    child: const SizedBox.expand(),
                   ),
-                  child: const SizedBox.expand(),
-                ),
               ],
             );
           },
@@ -170,6 +208,30 @@ class _AppBackgroundState extends State<AppBackground>
     );
   }
 }
+
+/// Desaturación total (luma Rec. 709) — el equivalente de `grayscale` en CSS.
+const _grayscale = <double>[
+  0.2126,
+  0.7152,
+  0.0722,
+  0,
+  0,
+  0.2126,
+  0.7152,
+  0.0722,
+  0,
+  0,
+  0.2126,
+  0.7152,
+  0.0722,
+  0,
+  0,
+  0,
+  0,
+  0,
+  1,
+  0,
+];
 
 /// Una mancha de luz: círculo con degradado radial que se desvanece al 72%,
 /// igual que `.aurora-*` en el web.

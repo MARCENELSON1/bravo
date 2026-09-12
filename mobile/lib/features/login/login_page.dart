@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../ui/app_background.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
@@ -69,6 +72,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
+          // El login lleva la escena de IDENTIDAD: sin textura y con viñeta.
+          // Acá el fondo se ve directo —no hay paneles de vidrio ocupando la
+          // pantalla que lo filtren— así que el tratamiento de la consola
+          // pesaría demasiado. Tapa al de la raíz, que es opaco igual.
+          const AppBackground(scene: BackgroundScene.identity),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
