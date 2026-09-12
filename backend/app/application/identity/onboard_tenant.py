@@ -77,7 +77,7 @@ class OnboardTenant:
             email=email,
             role=Role.OWNER,
             name=data.owner_name.strip() if data.owner_name else None,
-            password_hash=self._hasher.hash(data.owner_password),
+            password_hash=await self._hasher.hash(data.owner_password),
             email_verified=False,
             active=True,
         )

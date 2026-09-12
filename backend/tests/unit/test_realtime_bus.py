@@ -41,3 +41,23 @@ async def test_close_unsubscribes_and_publish_stays_a_noop() -> None:
     sub.close()
     # No subscribers left → publish must not raise.
     await bus.publish(DomainEvent(type="kds.changed", tenant_id="t1"))
+
+
+async def test_a_stalled_subscriber_cannot_grow_memory_without_end() -> None:
+    # A phone that lost signal mid-service keeps its SSE queue open and stops
+    # draining it. Publishing must stay non-blocking and the queue bounded, or
+    # one dead client would both stall waiters' requests and leak memory.
+    bus = InMemoryEventBus(max_queued_events=3)
+    sub = bus.subscribe("t1")
+
+    for index in range(10):
+        await asyncio.wait_for(
+            bus.publish(
+                DomainEvent(type="kds.changed", tenant_id="t1", payload={"n": str(index)})
+            ),
+            timeout=0.5,  # publish must never wait on the subscriber
+        )
+
+    seen = [(await asyncio.wait_for(sub.get(), timeout=1)).payload["n"] for _ in range(3)]
+    assert seen == ["7", "8", "9"]  # oldest dropped, freshest state kept
+    sub.close()

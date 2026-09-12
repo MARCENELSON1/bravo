@@ -32,28 +32,48 @@ const NO_SUB = "__nosub__"
 function ProductCard({
   product,
   onAdd,
+  onCustomize,
   big,
 }: {
   product: ProductDTO
   onAdd: (product: ProductDTO) => void
+  // Abre el panel de opciones/nota. Va aparte del tap para no robarle el
+  // gesto rápido: tocar la tarjeta sigue agregando.
+  onCustomize?: (product: ProductDTO) => void
   big?: boolean
 }) {
+  const { t } = useTranslation()
   return (
-    <button
-      type="button"
-      onClick={() => onAdd(product)}
-      className={cn(
-        "flex flex-col items-start justify-between gap-1 rounded-lg border bg-card p-3 text-left transition hover:border-primary hover:bg-accent active:scale-[0.98]",
-        big ? "min-h-20 border-primary/30 bg-primary/5" : "min-h-16"
-      )}
-    >
-      <span className={cn("font-medium leading-tight", big ? "text-base" : "text-sm")}>
-        {product.name}
-      </span>
-      <span className="text-xs text-muted-foreground">
-        {formatMoney(product.price_amount, product.currency)}
-      </span>
-    </button>
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => onAdd(product)}
+        className={cn(
+          "flex w-full flex-col items-start justify-between gap-1 rounded-lg border bg-card p-3 text-left transition hover:border-primary hover:bg-accent active:scale-[0.98]",
+          big ? "min-h-20 border-primary/30 bg-primary/5" : "min-h-16"
+        )}
+      >
+        <span
+          className={cn("pr-6 font-medium leading-tight", big ? "text-base" : "text-sm")}
+        >
+          {product.name}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {formatMoney(product.price_amount, product.currency)}
+        </span>
+      </button>
+      {onCustomize ? (
+        <button
+          type="button"
+          onClick={() => onCustomize(product)}
+          aria-label={t("orders.options.customize")}
+          title={t("orders.options.customize")}
+          className="absolute right-1 top-1 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
+        >
+          ✎
+        </button>
+      ) : null}
+    </div>
   )
 }
 
@@ -127,9 +147,16 @@ function ChipRow({
 export function ProductGrid({
   products,
   onAdd,
+  onCustomize,
+  needsChoice,
 }: {
   products: ProductDTO[]
   onAdd: (product: ProductDTO, quantity: number) => void
+  // Abre el panel de opciones/nota (el ✎ de la tarjeta).
+  onCustomize?: (product: ProductDTO) => void
+  // El producto tiene un grupo OBLIGATORIO (punto del bife): al tocarlo hay
+  // que elegir antes de agregar.
+  needsChoice?: (product: ProductDTO) => boolean
 }) {
   const { t } = useTranslation()
   const [search, setSearch] = useState("")
@@ -211,6 +238,10 @@ export function ProductGrid({
   ])
 
   const add = (product: ProductDTO) => {
+    if (needsChoice?.(product) && onCustomize) {
+      onCustomize(product) // primero se elige (obligatorio), después se agrega
+      return
+    }
     onAdd(product, qty)
     setQty(1) // reset to the common case after each add
   }
@@ -238,7 +269,7 @@ export function ProductGrid({
     list.length > 0 ? (
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {list.map((p) => (
-          <ProductCard key={p.id} product={p} onAdd={add} />
+          <ProductCard key={p.id} product={p} onAdd={add} onCustomize={onCustomize} />
         ))}
       </div>
     ) : (
@@ -301,7 +332,13 @@ export function ProductGrid({
               </span>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {frequent.map((p) => (
-                  <ProductCard key={p.id} product={p} onAdd={add} big />
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    onAdd={add}
+                    onCustomize={onCustomize}
+                    big
+                  />
                 ))}
               </div>
             </section>

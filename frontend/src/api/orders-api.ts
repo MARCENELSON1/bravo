@@ -1,6 +1,7 @@
 import type { HttpClient } from "@/api/http-client"
 import type {
   BatchOrderItemInput,
+  Course,
   CreateOrderResponse,
   OrderDTO,
   Station,
@@ -10,16 +11,14 @@ import type { TaxQuoteDTO } from "@/api/types-tenant"
 export type OrderAction = "preparing" | "ready" | "served" | "cancel"
 // Per-item bump/recall along the kitchen lifecycle.
 export type ItemAction = "preparing" | "ready" | "served" | "recall"
+// Un CURSO entero de una vez: el "Listo" del KDS por tiempo (no plato por plato).
+export type CourseAction = "preparing" | "ready" | "served"
 
 export class OrdersApi {
   private http: HttpClient
 
   constructor(http: HttpClient) {
     this.http = http
-  }
-
-  list(): Promise<OrderDTO[]> {
-    return this.http.request<OrderDTO[]>("GET", "/orders", { auth: true })
   }
 
   get(id: string): Promise<OrderDTO> {
@@ -46,15 +45,25 @@ export class OrdersApi {
     })
   }
 
+  // `optionIds` = modificadores elegidos. Se manda SIEMPRE la lista cuando el
+  // cliente conoce los grupos (aunque vacía): así el server valida los
+  // obligatorios (422 si falta uno) y pliega los deltas en el precio unitario.
   addItem(
     orderId: string,
     itemId: string,
     productId: string,
     quantity: number,
-    note: string | null
+    note: string | null,
+    optionIds?: string[]
   ): Promise<OrderDTO> {
     return this.http.request<OrderDTO>("POST", `/orders/${orderId}/items`, {
-      body: { id: itemId, product_id: productId, quantity, note },
+      body: {
+        id: itemId,
+        product_id: productId,
+        quantity,
+        note,
+        ...(optionIds ? { option_ids: optionIds } : {}),
+      },
       auth: true,
     })
   }
@@ -121,6 +130,41 @@ export class OrdersApi {
     return this.http.request<OrderDTO>("POST", `/orders/${orderId}/items/${itemId}/${action}`, {
       auth: true,
     })
+  }
+
+  // "Marchar principal": manda al fuego el curso en espera más bajo. El mozo lo
+  // dispara cuando ve que la mesa terminó el tiempo anterior.
+  fireNext(id: string): Promise<OrderDTO> {
+    return this.http.request<OrderDTO>("POST", `/orders/${id}/fire-next`, { auth: true })
+  }
+
+  // "Marchar todo": pendientes y en espera al fuego (la mesa quiere todo junto).
+  fireAll(id: string): Promise<OrderDTO> {
+    return this.http.request<OrderDTO>("POST", `/orders/${id}/fire-all`, { auth: true })
+  }
+
+  // Bumpea un curso entero. `station` acota al tablero que lo pide.
+  advanceCourse(
+    orderId: string,
+    course: Course,
+    action: CourseAction,
+    station?: Station
+  ): Promise<OrderDTO> {
+    const qs = station ? `?station=${station}` : ""
+    return this.http.request<OrderDTO>(
+      "POST",
+      `/orders/${orderId}/courses/${course}/${action}${qs}`,
+      { auth: true }
+    )
+  }
+
+  // Override del tiempo de una línea ("la provoleta como principal").
+  setItemCourse(orderId: string, itemId: string, course: Course): Promise<OrderDTO> {
+    return this.http.request<OrderDTO>(
+      "PATCH",
+      `/orders/${orderId}/items/${itemId}/course`,
+      { auth: true, body: { course } }
+    )
   }
 
   kds(station?: Station): Promise<OrderDTO[]> {

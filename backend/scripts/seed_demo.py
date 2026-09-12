@@ -49,6 +49,12 @@ DAYS = 120
 # constantes de este archivo están en unidades legibles (400 = 400 g) y se
 # convierten al escribir. Sin esto la merma se lee como 0 y el stock como polvo.
 MIL = 1000
+# El rendimiento (merma) NO va en la misma escala: la columna `ingredients.yield_pct`
+# es en **puntos básicos** (10000 = 100%, ver su `server_default` en la migración
+# 0022 y `FULL_YIELD_BPS`), mientras la tabla de abajo lo escribe legible (88 = 88%).
+# Sin esta conversión el dominio lee 88 como 0,88% y divide el costo del insumo por
+# eso: cada plato termina costando ~100× de más, con un food cost de cuatro cifras.
+PCT_TO_BPS = 100
 random.seed(7)
 
 # Se fija una sola vez por corrida: todo el dataset cuelga de acá.
@@ -623,12 +629,17 @@ async def main() -> None:
                     prod[name][0], tenant, name, prod[name][1], CUR, cat, station)
 
             for name, unit, cost, stock, minq, yld, incl_tax, runit in INGREDIENTS:
+                # La simulación de arriba divide por `yld / 100`; la columna es en
+                # bps. Escribir el número crudo hacía que ambas cosas fueran ciertas
+                # a la vez —el script imprimía food costs sanos y sembraba costos
+                # ~100× inflados— así que el contrato se afirma acá, en la escritura.
+                assert 1 <= yld <= 100, f"{name}: el rendimiento va en % (1-100), no en bps"
                 await conn.execute(
                     "insert into ingredients(id,tenant_id,name,unit,stock_qty,min_qty,"
                     "unit_cost_amount,unit_cost_currency,active,yield_pct,cost_includes_tax,recipe_unit)"
                     " values($1,$2,$3,$4,$5,$6,$7,$8,true,$9,$10,$11)",
                     ing[name][0], tenant, name, unit, stock * MIL, minq * MIL, cost, CUR,
-                    yld, incl_tax, runit)
+                    yld * PCT_TO_BPS, incl_tax, runit)
 
             for pname, (yield_qty, items) in PREPARATIONS.items():
                 await conn.execute(

@@ -9,11 +9,20 @@ export const kds = {
     subtitle: "Bar items (coffee, drinks) in preparation, live.",
   },
   tableLabel: "Table {{number}}",
+  // Service courses: the kitchen bumps the whole course, not dish by dish.
+  onHold: "On hold",
+  courses: {
+    IMMEDIATE: "Drinks",
+    STARTER: "Starter",
+    MAIN: "Main",
+    DESSERT: "Dessert",
+  },
   delayed: "delayed",
   startPreparing: "Start preparing",
   markReady: "Mark ready",
   empty: "No items in {{station}}.",
   errors: {
     itemUpdateFailed: "The item could not be updated.",
+    courseUpdateFailed: "Couldn't update the course.",
   },
 } as const

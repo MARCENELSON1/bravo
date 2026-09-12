@@ -62,18 +62,31 @@ from app.domain.order.exceptions import (
     InvalidOrderTransition,
     ItemNotFound,
     ItemNotPending,
+    NoCourseToFire,
     OrderHasAuthorizedInvoice,
     OrderNotFound,
+    OrderNotFullyPaid,
+    SelfOrderDisabled,
 )
 from app.domain.payment.exceptions import (
     InvalidOAuthState,
     InvalidPaymentAmount,
     InvalidWebhookSignature,
+    NothingToPay,
     PaymentGatewayNotConnected,
+    PaymentInProgress,
     PaymentNotFound,
     PaymentNotRefundable,
+    SelfPayDisabled,
 )
-from app.domain.product.exceptions import InactiveProduct, ProductNotFound
+from app.domain.product.exceptions import (
+    InactiveProduct,
+    InvalidModifierGroup,
+    InvalidModifierSelection,
+    ProductNotFound,
+    ProductUnavailable,
+)
+from app.domain.public_menu.exceptions import InvalidTableQrToken
 from app.domain.reservation.exceptions import (
     InvalidPartySize,
     InvalidReservationTransition,
@@ -82,10 +95,17 @@ from app.domain.reservation.exceptions import (
 from app.domain.shared.exceptions import (
     CurrencyMismatch,
     InvalidMoneyAmount,
+    RateLimited,
     UnsupportedCurrency,
 )
 from app.domain.table.exceptions import TableNotFound
-from app.domain.table_session.exceptions import SectorNotFound, SessionNotFound
+from app.domain.table_session.exceptions import (
+    NothingToCharge,
+    SectorNotFound,
+    SessionHasActiveOrders,
+    SessionNotFound,
+    TableAlreadyAssigned,
+)
 from app.domain.tax.exceptions import (
     InvalidTaxProviderCredential,
     TaxProviderUnavailable,
@@ -133,15 +153,22 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     # Fase 2 — comandas/productos/mesas + Money
     (TableNotFound, 404),
     (SessionNotFound, 404),
+    (TableAlreadyAssigned, 409),
+    (SessionHasActiveOrders, 409),
+    (NothingToCharge, 409),
     (SectorNotFound, 404),
     (CustomerNotFound, 404),
     (ProductNotFound, 404),
     (OrderNotFound, 404),
     (InactiveProduct, 409),
+    (InvalidModifierGroup, 422),
+    (InvalidModifierSelection, 422),
     (InvalidOrderTransition, 409),
+    (OrderNotFullyPaid, 409),
     (EmptyOrder, 422),
     (ItemNotFound, 404),
     (ItemNotPending, 409),
+    (NoCourseToFire, 409),
     (InvalidItemTransition, 409),
     (OrderHasAuthorizedInvoice, 409),
     (InvalidItemQuantity, 422),
@@ -155,6 +182,9 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (InvalidWebhookSignature, 401),
     (PaymentGatewayNotConnected, 409),
     (InvalidOAuthState, 400),
+    (SelfPayDisabled, 409),
+    (NothingToPay, 409),
+    (PaymentInProgress, 409),
     # Fase 4 — facturación AFIP
     (InvoiceNotFound, 404),
     (OrderNotInvoiceable, 409),
@@ -203,6 +233,11 @@ _STATUS_BY_TYPE: list[tuple[type[DomainError], int]] = [
     (CashSessionAlreadyOpen, 409),
     (NoOpenCashSession, 409),
     (CashSessionAlreadyClosed, 409),
+    # Carta QR (autopedido F1/F2) — token de carta pública + autopedido
+    (InvalidTableQrToken, 401),
+    (ProductUnavailable, 409),
+    (SelfOrderDisabled, 409),
+    (RateLimited, 429),
     # Fase 11 — copiloto IA
     (CopilotDisabled, 409),
     (UnsafeQuery, 422),

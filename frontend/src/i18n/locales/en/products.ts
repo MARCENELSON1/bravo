@@ -98,6 +98,30 @@ export const products = {
     saveError: "We couldn't save the recipe.",
   },
 
+  // Modifiers (Carta QR F2): choices the diner picks per dish.
+  modifiers: {
+    button: "Options",
+    sheetTitle: "Options for {{name}}",
+    sheetDescription:
+      "Optional. What the diner picks for the dish (e.g. doneness, add-ons).",
+    empty: "No options yet. Add a group.",
+    addGroup: "Add group",
+    groupNamePlaceholder: "Group name (e.g. Doneness)",
+    min: "Min",
+    max: "Max",
+    requiredHint: "With min 1 the group is required.",
+    options: "Options",
+    addOption: "Add option",
+    optionNamePlaceholder: "Option (e.g. Add bacon)",
+    optionPricePlaceholder: "Extra",
+    removeGroup: "Remove group",
+    removeOption: "Remove option",
+    save: "Save options",
+    saving: "Saving…",
+    saved: "Options saved.",
+    saveError: "We couldn't save. Check the groups and options.",
+  },
+
   // Ficha del producto (product-ficha.tsx).
   ficha: {
     button: "Details",

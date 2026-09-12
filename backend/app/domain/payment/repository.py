@@ -31,6 +31,13 @@ class PaymentRepository(ABC):
     async def get_by_external_ref(self, tenant_id: str, external_ref: str) -> Payment | None: ...
 
     @abstractmethod
+    async def get_by_idempotency_key(
+        self, tenant_id: str, idempotency_key: str
+    ) -> Payment | None:
+        """The payment created under this client idempotency key, if any (Carta QR
+        F3: replay a double-tapped cobro instead of charging twice)."""
+
+    @abstractmethod
     async def list_by_order(self, tenant_id: str, order_id: str) -> list[Payment]: ...
 
     @abstractmethod

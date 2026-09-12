@@ -19,6 +19,22 @@ class LogoutRequest(BaseModel):
     refresh_token: str | None = None
 
 
+class DeleteAccountRequest(BaseModel):
+    """Se re-pide la contraseña aunque el token sea válido: es una acción
+    irreversible y un teléfono desbloqueado sobre la barra no debería poder dar
+    de baja el local de un descuido."""
+
+    password: str = Field(min_length=8, max_length=128)
+
+
+class AccountDeletionScopeResponse(BaseModel):
+    """Qué se borraría. ``deletes_business`` True = esta persona es el último
+    dueño, así que se va el local entero y no solo su acceso."""
+
+    deletes_business: bool
+    tenant_name: str
+
+
 class ChangePasswordRequest(BaseModel):
     current_password: str = Field(min_length=8, max_length=128)
     new_password: str = Field(min_length=8, max_length=128)

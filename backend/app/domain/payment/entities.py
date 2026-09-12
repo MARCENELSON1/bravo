@@ -43,12 +43,20 @@ class Payment:
     counterparty: str | None = None
     description: str | None = None
     external_ref: str | None = None
+    # Idempotency (Carta QR F3): clave que el cliente manda por intento de cobro,
+    # para que un doble-tap del comensal no cree dos charges. None → sin idempotencia
+    # (paridad: el cobro del cajero no la usa).
+    idempotency_key: str | None = None
     created_at: datetime | None = None
     # Transient gateway artifacts (NOT persisted): online gateways set these so
     # the caller can redirect the payer to a checkout link / render a QR. They
     # stay None for already-collected payments (cash/card/transfer).
     checkout_url: str | None = None
     qr_data: str | None = None
+    # Transient INPUT to the gateway (NOT persisted): where the online provider
+    # should send the payer back after paying (MercadoPago ``back_urls``). Set by
+    # the caller before ``charge``; None → the provider uses no return URL.
+    return_url: str | None = None
 
     def confirm(self) -> None:
         self.status = PaymentStatus.CONFIRMED

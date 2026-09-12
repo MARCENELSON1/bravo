@@ -10,14 +10,22 @@ export type OrderStatus =
   | "CANCELLED"
 
 // Per-item kitchen lifecycle (Fase 14) + the station that prepares it.
+// HELD = marched but waiting for its course to be fired: the kitchen SEES it
+// (mise en place) and does not cook it until the waiter fires that course.
 export type ItemStatus =
   | "PENDING"
+  | "HELD"
   | "SENT"
   | "PREPARING"
   | "READY"
   | "SERVED"
   | "CANCELLED"
 export type Station = "KITCHEN" | "BAR"
+
+// Tiempo de servicio del plato. Es del PRODUCTO (se define una vez en la carta)
+// y se copia a cada línea; el mozo puede cambiarlo por línea antes del fuego.
+// IMMEDIATE = sin tiempos (barra, lo que sale ya).
+export type Course = "IMMEDIATE" | "STARTER" | "MAIN" | "DESSERT"
 
 export interface ProductDTO {
   id: string
@@ -31,6 +39,55 @@ export interface ProductDTO {
 
 export interface CreateProductResponse {
   product_id: string
+}
+
+// --- Carta QR F2 D/E: modificadores de producto -----------------------------
+
+export interface ModifierOptionDTO {
+  id: string
+  name: string
+  price_delta: number // minor units, ≥ 0
+}
+
+export interface ModifierGroupDTO {
+  id: string
+  name: string
+  min_select: number
+  max_select: number
+  required: boolean
+  options: ModifierOptionDTO[]
+}
+
+export interface ProductModifiersDTO {
+  product_id: string
+  groups: ModifierGroupDTO[]
+}
+
+// Lo que el dueño envía (sin ids — se mintean en el server).
+export interface ModifierOptionInput {
+  name: string
+  price_delta: number
+}
+
+export interface ModifierGroupInput {
+  name: string
+  min_select: number
+  max_select: number
+  options: ModifierOptionInput[]
+}
+
+// --- Carta QR F2 B/E: config del autopedido ---------------------------------
+
+export interface SelfOrderSettingsDTO {
+  enabled: boolean
+  requires_confirmation: boolean
+}
+
+// --- Carta QR F3: config del pago desde la mesa ------------------------------
+
+export interface SelfPaySettingsDTO {
+  enabled: boolean
+  tips_enabled: boolean
 }
 
 // --- Productos v2 Tanda B: precios vs inflación + histórico + rotación --------
@@ -97,6 +154,12 @@ export interface CreateTableResponse {
   table_id: string
 }
 
+export interface SelectedOptionDTO {
+  option_id: string
+  name: string
+  price_delta: number
+}
+
 export interface OrderItemDTO {
   id: string
   product_id: string
@@ -106,14 +169,30 @@ export interface OrderItemDTO {
   note: string | null
   status: ItemStatus
   station: Station
+  // Tiempo de servicio de la línea. Opcional para no romper fixtures viejos:
+  // leelo siempre con `courseOf()`, que cae a MAIN (el default del backend).
+  course?: Course
   sent_at: string | null // ISO-8601; how long the item has waited on the KDS
+  // Modificadores elegidos (Carta QR F2). Vacío en la mayoría de las comandas.
+  selected_options?: SelectedOptionDTO[]
 }
 
-// One item flattened with its order context — the unit the KDS board renders.
+// Origen de la comanda (Carta QR F2): la cargó el mozo o el comensal por QR.
+export type OrderSource = "WAITER" | "CUSTOMER_QR"
+
+// Un CURSO de una comanda en una estación — la unidad que renderiza el KDS.
+// La cocina lo bumpea entero: "Empezar" cuando lo pone al fuego y "Listo"
+// cuando terminó todos los platos del tiempo (no plato por plato).
 export interface KdsTicket {
   orderId: string
   tableId: string
-  item: OrderItemDTO
+  course: Course
+  items: OrderItemDTO[]
+  // Todo el curso está en espera: se ve para el mise en place, no se cocina.
+  held: boolean
+  // Hay platos sin empezar → la acción es "Empezar"; si no, "Listo".
+  canStart: boolean
+  sentAt: string | null // el más viejo del curso, para el timer
 }
 
 export interface OrderDTO {
@@ -124,6 +203,11 @@ export interface OrderDTO {
   currency: string
   items: OrderItemDTO[]
   total_amount: number
+  source: OrderSource // Carta QR F2: WAITER | CUSTOMER_QR
+  // Cursos derivados por el server: el que está al fuego y el próximo en
+  // espera ("Marchar principal"). null / ausente = no aplica.
+  active_course?: Course | null
+  next_course?: Course | null
   created_at: string | null // ISO-8601; used by the KDS waiting timer
   customer_id: string | null // CRM: cliente atribuido a la comanda
 }
@@ -416,6 +500,11 @@ export interface ProductSaleLineDTO {
   margin_amount: number
 }
 
+export interface ProductCostPointDTO {
+  day: string // YYYY-MM-DD (UTC)
+  unit_cost: number
+}
+
 export interface ProductDetailDTO {
   product_id: string
   currency: string
@@ -423,21 +512,33 @@ export interface ProductDetailDTO {
   sales_amount: number
   food_cost_amount: number
   margin_amount: number
+  // Acotada a las más recientes (`lines_truncated` avisa si hubo más). Los
+  // totales y `cost_series` los calcula el backend sobre la ventana ENTERA, así
+  // que NO derivar agregados de acá: darían de menos sin decirlo.
   lines: ProductSaleLineDTO[]
+  cost_series: ProductCostPointDTO[]
+  lines_truncated: boolean
 }
 
 // --- Reporting ---
 
 export interface DashboardSummaryDTO {
   currency: string
-  sales: number // minor units
+  // Lo COBRADO (Σ cobros confirmados), bruto de comisiones. Lo VENDIDO es otro
+  // libro y vive en `/analytics/revenue` como `sales_amount` — llamar "ventas" a
+  // este campo era lo que hacía que dos pantallas se contradijeran.
+  sales_collected: number // minor units
   expenses: number
-  net: number
+  profit_gross_of_fees: number // sales_collected − expenses
   active_orders: number
   paid_orders: number
   avg_ticket: number
   payment_count: number
-  collected_net: number // neto financiero tras comisiones (== sales si no hay tasas)
+  collected_net: number // cobrado neto de comisiones
+  // `collected_net - expenses`, ya calculado por el backend. NO volver a restarlo
+  // acá: esa resta vivía en el componente y era la vía por la que una definición
+  // más de "ganancia" entraba sin pasar por ningún caso de uso.
+  profit_net_of_fees: number
   fees_total: number // total de comisiones de pasarela
 }
 

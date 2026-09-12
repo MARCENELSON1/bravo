@@ -22,6 +22,7 @@ export const shell = {
     supplies: "Supplies",
     suppliers: "Suppliers",
     staff: "Staff",
+    tableQr: "Table QR codes",
     subscription: "Subscription",
   },
   groups: {

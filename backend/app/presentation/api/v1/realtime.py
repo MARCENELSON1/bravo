@@ -18,7 +18,9 @@ from app.presentation.rbac import require_roles
 
 router = APIRouter(prefix="/realtime", tags=["realtime"])
 
-_STREAM_ROLES = (Role.KITCHEN, Role.MANAGER, Role.OWNER)
+# WAITER incluido: el mozo abre el stream para recibir el aviso `order.ready`
+# de su mesa (además de KDS/gestión).
+_STREAM_ROLES = (Role.WAITER, Role.KITCHEN, Role.MANAGER, Role.OWNER)
 
 
 @router.post("/token")

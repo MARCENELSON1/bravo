@@ -4,7 +4,7 @@ lenguaje natural y el margen de contribución por producto."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -88,6 +88,19 @@ class ProductSaleLine:
 
 
 @dataclass(frozen=True)
+class ProductCostPoint:
+    """Costo unitario del plato en un día (evolución del food cost en la ficha).
+
+    Se arma en SQL y no desde ``lines`` justamente porque ``lines`` viene acotada:
+    derivarlo del listado haría que un plato muy vendido perdiera los días más
+    viejos —los que están debajo del tope— y el gráfico mintiera en silencio.
+    """
+
+    day: str  # YYYY-MM-DD (UTC)
+    unit_cost: int
+
+
+@dataclass(frozen=True)
 class ProductDetail:
     product_id: str
     currency: str
@@ -95,7 +108,14 @@ class ProductDetail:
     sales_amount: int
     food_cost_amount: int
     margin_amount: int
+    # Acotada (ver ``PRODUCT_DETAIL_LINE_LIMIT``): son las más recientes. Los
+    # totales de arriba y ``cost_series`` se calculan sobre la ventana ENTERA,
+    # así que no dependen de este tope.
     lines: list[ProductSaleLine]
+    cost_series: list[ProductCostPoint] = field(default_factory=list)
+    # True cuando hubo más ventas que el tope, para que la UI lo diga en vez de
+    # aparentar que ese listado es todo.
+    lines_truncated: bool = False
 
 
 @dataclass(frozen=True)

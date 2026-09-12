@@ -34,6 +34,39 @@ export const floor = {
   },
   toast: {
     added: "Mesa agregada.",
+    // Aviso del comensal desde la carta QR (evento realtime floor.call).
+    callWaiter: "Mesa {{number}} te llama 🙋",
+    bill: "Mesa {{number}} pide la cuenta 🧾",
+  },
+  // Gestión/impresión de los QR de mesa (carta pública).
+  qr: {
+    title: "QR de las mesas",
+    subtitle: "Imprimí un código por mesa. El cliente lo escanea y ve la carta.",
+    print: "Imprimir",
+    back: "Volver",
+    tableLabel: "Mesa {{number}}",
+    scanHint: "Escaneá para ver la carta",
+    loadError: "No pudimos generar el QR.",
+    empty: "No hay mesas todavía. Agregá mesas en el salón.",
+    selfOrder: {
+      title: "Autopedido",
+      subtitle: "Dejá que el comensal cargue su pedido desde el QR.",
+      enable: "Habilitar autopedido por QR",
+      requireConfirmation: "Requiere que el mozo confirme el pedido",
+      requireConfirmationHint:
+        "Recomendado: el pedido llega a la comanda y el mozo lo confirma (marcha a cocina).",
+      saved: "Config guardada",
+      saveFailed: "No pudimos guardar. Probá de nuevo.",
+    },
+    selfPay: {
+      title: "Pago desde la mesa",
+      subtitle: "Dejá que el comensal pague su cuenta desde el QR.",
+      enable: "Habilitar cobro desde la mesa",
+      enableHint: "Necesitás MercadoPago conectado (Integraciones) para cobrar online.",
+      offerTip: "Ofrecer propina en la pantalla de pago",
+      saved: "Config guardada",
+      saveFailed: "No pudimos guardar. Probá de nuevo.",
+    },
   },
   errors: {
     openOrder: "No pudimos abrir la comanda.",

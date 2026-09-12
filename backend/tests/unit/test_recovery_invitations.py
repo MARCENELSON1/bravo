@@ -73,7 +73,7 @@ async def test_reset_password_happy():
     user = h.seed_user(tenant, password="old")
     raw = await _add_reset_token(h, tenant, user)
     await h.reset_password().execute(token=raw, new_password="new")
-    assert h.users.by_id[user.id].password_hash == h.hasher.hash("new")
+    assert h.users.by_id[user.id].password_hash == h.hasher.hash_value("new")
     rec = await h.reset_tokens.get_by_hash(h.tokens.hash_token(raw))
     assert rec is not None and rec.used
     assert "password_reset" in h.audit.events()
@@ -227,7 +227,7 @@ async def test_accept_invitation_happy_activates_and_verifies():
     assert invited is not None
     assert invited.active is True
     assert invited.email_verified is True
-    assert invited.password_hash == h.hasher.hash("newpw")
+    assert invited.password_hash == h.hasher.hash_value("newpw")
     invitation = next(iter(h.invitations.items.values()))
     assert invitation.used is True
     assert "invitation_accepted" in h.audit.events()

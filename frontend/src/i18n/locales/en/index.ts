@@ -22,6 +22,7 @@ import { login } from "./login"
 import { orders } from "./orders"
 import { platform } from "./platform"
 import { products } from "./products"
+import { publicMenu } from "./public-menu"
 import { reports } from "./reports"
 import { reservations } from "./reservations"
 import { settings } from "./settings"
@@ -44,6 +45,7 @@ export const en = {
   reservations,
   finance,
   products,
+  publicMenu,
   inventory,
   expenses,
   invoices,

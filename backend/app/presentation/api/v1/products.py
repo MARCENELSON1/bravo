@@ -6,17 +6,29 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query, status
 
 from app.application.inventory.use_cases import GetRecipe, SetRecipe
+from app.application.product.modifiers import (
+    GetProductModifiers,
+    ListMenuModifiers,
+    ModifierGroupSpec,
+    ModifierOptionSpec,
+    SetProductModifiers,
+)
 from app.application.product.use_cases import (
     CreateProduct,
     GetPricingInsights,
     GetProductPriceHistory,
     GetProductRotation,
     ListProducts,
+    SetProductAvailability,
+    SetProductCourse,
     UpdateProductPrice,
 )
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
 from app.domain.inventory.recipe import RecipeItem
+from app.domain.order.value_objects import Course
+from app.domain.product.entities import Product
+from app.domain.product.modifiers import ModifierGroup
 from app.domain.user.value_objects import Role
 from app.presentation.deps import current_identity
 from app.presentation.rbac import require_roles
@@ -24,6 +36,12 @@ from app.presentation.schemas.inventory import (
     RecipeItemSchema,
     RecipeResponse,
     SetRecipeRequest,
+)
+from app.presentation.schemas.modifiers import (
+    ModifierGroupResponse,
+    ModifierOptionResponse,
+    ProductModifiersResponse,
+    SetModifiersRequest,
 )
 from app.presentation.schemas.products import (
     CreateProductRequest,
@@ -34,11 +52,29 @@ from app.presentation.schemas.products import (
     ProductPriceHistoryResponse,
     ProductResponse,
     ProductRotationResponse,
+    SetAvailabilityRequest,
+    SetCourseRequest,
     UpdateProductPriceRequest,
     WeekdayRotationResponse,
 )
 
 router = APIRouter(prefix="/products", tags=["products"])
+
+
+def _product_response(p: Product) -> ProductResponse:
+    return ProductResponse(
+        id=p.id,
+        name=p.name,
+        price_amount=p.price.amount,
+        currency=p.price.currency,
+        category=p.category,
+        station=p.station.value,
+        active=p.active,
+        image_url=p.image_url,
+        description=p.description,
+        available_today=p.available_today,
+        course=p.effective_course.value,
+    )
 
 
 @router.post("", response_model=CreateProductResponse, status_code=status.HTTP_201_CREATED)
@@ -54,6 +90,8 @@ async def create_product(
         price_amount=body.price_amount,
         category=body.category,
         station=body.station,
+        image_url=body.image_url,
+        description=body.description,
     )
     return CreateProductResponse(product_id=result.product_id)
 
@@ -65,18 +103,39 @@ async def list_products(
     use_case: ListProducts = Depends(Provide[Container.list_products]),
 ) -> list[ProductResponse]:
     products = await use_case.execute(tenant_id=identity.tenant_id)
-    return [
-        ProductResponse(
-            id=p.id,
-            name=p.name,
-            price_amount=p.price.amount,
-            currency=p.price.currency,
-            category=p.category,
-            station=p.station.value,
-            active=p.active,
-        )
-        for p in products
-    ]
+    return [_product_response(p) for p in products]
+
+
+@router.put("/{product_id}/availability", response_model=ProductResponse)
+@inject
+async def set_product_availability(
+    product_id: str,
+    body: SetAvailabilityRequest,
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: SetProductAvailability = Depends(Provide[Container.set_product_availability]),
+) -> ProductResponse:
+    # "86'd" toggle: agotado hoy (no toca `active`).
+    product = await use_case.execute(
+        tenant_id=identity.tenant_id,
+        product_id=product_id,
+        available_today=body.available_today,
+    )
+    return _product_response(product)
+
+
+@router.put("/{product_id}/course", response_model=ProductResponse)
+@inject
+async def set_product_course(
+    product_id: str,
+    body: SetCourseRequest,
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: SetProductCourse = Depends(Provide[Container.set_product_course]),
+) -> ProductResponse:
+    """Tiempo de servicio del plato (entrada / principal / postre / inmediato)."""
+    product = await use_case.execute(
+        tenant_id=identity.tenant_id, product_id=product_id, course=Course(body.course)
+    )
+    return _product_response(product)
 
 
 # --- Productos v2 Tanda B: precios vs inflación + histórico + rotación --------
@@ -147,15 +206,19 @@ async def update_product_price(
         product_id=product_id,
         new_price_amount=body.price_amount,
     )
-    return ProductResponse(
-        id=product.id,
-        name=product.name,
-        price_amount=product.price.amount,
-        currency=product.price.currency,
-        category=product.category,
-        station=product.station.value,
-        active=product.active,
-    )
+    return _product_response(product)
+
+
+@router.get("/modifiers", response_model=list[ProductModifiersResponse])
+@inject
+async def list_menu_modifiers(
+    identity: AccessClaims = Depends(current_identity),
+    use_case: ListMenuModifiers = Depends(Provide[Container.list_menu_modifiers]),
+) -> list[ProductModifiersResponse]:
+    """Modifier groups of every active product, in one batch — the waiter's
+    capture grid preloads this with the catalog so the chips show up on tap."""
+    by_product = await use_case.execute(tenant_id=identity.tenant_id)
+    return [_modifiers_response(pid, groups) for pid, groups in by_product.items()]
 
 
 @router.get("/{product_id}/price-history", response_model=ProductPriceHistoryResponse)
@@ -180,6 +243,67 @@ async def get_product_price_history(
             for c in history.changes
         ],
     )
+
+
+# --- Modifiers (opt-in, Carta QR F2 D): choices the diner picks per item -----
+
+
+def _modifiers_response(product_id: str, groups: list[ModifierGroup]) -> ProductModifiersResponse:
+    return ProductModifiersResponse(
+        product_id=product_id,
+        groups=[
+            ModifierGroupResponse(
+                id=g.id,
+                name=g.name,
+                min_select=g.min_select,
+                max_select=g.max_select,
+                required=g.required,
+                options=[
+                    ModifierOptionResponse(id=o.id, name=o.name, price_delta=o.price_delta)
+                    for o in g.options
+                ],
+            )
+            for g in groups
+        ],
+    )
+
+
+@router.get("/{product_id}/modifiers", response_model=ProductModifiersResponse)
+@inject
+async def get_product_modifiers(
+    product_id: str,
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: GetProductModifiers = Depends(Provide[Container.get_product_modifiers]),
+) -> ProductModifiersResponse:
+    groups = await use_case.execute(tenant_id=identity.tenant_id, product_id=product_id)
+    return _modifiers_response(product_id, groups)
+
+
+@router.put("/{product_id}/modifiers", response_model=ProductModifiersResponse)
+@inject
+async def set_product_modifiers(
+    product_id: str,
+    body: SetModifiersRequest,
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: SetProductModifiers = Depends(Provide[Container.set_product_modifiers]),
+) -> ProductModifiersResponse:
+    groups = await use_case.execute(
+        tenant_id=identity.tenant_id,
+        product_id=product_id,
+        groups=[
+            ModifierGroupSpec(
+                name=g.name,
+                min_select=g.min_select,
+                max_select=g.max_select,
+                options=[
+                    ModifierOptionSpec(name=o.name, price_delta=o.price_delta)
+                    for o in g.options
+                ],
+            )
+            for g in body.groups
+        ],
+    )
+    return _modifiers_response(product_id, groups)
 
 
 # --- Recipe (opt-in, Fase 6): a product may or may not have one ----------

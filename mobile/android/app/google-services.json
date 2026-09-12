@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "280244275663",
+    "project_id": "wellnod-eccfd",
+    "storage_bucket": "wellnod-eccfd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:280244275663:android:c5d9543d68e64371e92aba",
+        "android_client_info": {
+          "package_name": "com.wellnod.wellnod_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjnCbi1SK92oeA9mKcY2HvDrgoQi8eCFk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

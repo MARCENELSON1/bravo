@@ -48,6 +48,8 @@ export const finance = {
     product: "Producto",
     unitsMargin: "Unidades · Margen",
     noLines: "Sin líneas en el período.",
+    // El listado viene acotado; los totales de arriba SÍ son del período entero.
+    linesTruncated: "Mostrando las últimas {{count}} ventas. Los totales son del período completo.",
   },
   exports: {
     title: "Exportar para el contador",

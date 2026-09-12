@@ -3,12 +3,14 @@ from __future__ import annotations
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, status
 
+from app.application.public_menu.use_cases import IssueTableQr
 from app.application.table.use_cases import CreateTable, ListTables, UpdateTable
 from app.container import Container
 from app.domain.identity.tokens import AccessClaims
 from app.domain.user.value_objects import Role
 from app.presentation.deps import current_identity
 from app.presentation.rbac import require_roles
+from app.presentation.schemas.public_menu import IssueTableQrResponse
 from app.presentation.schemas.tables import (
     CreateTableRequest,
     CreateTableResponse,
@@ -73,3 +75,16 @@ async def update_table(
         tenant_id=identity.tenant_id, table_id=table_id, **patch
     )
     return _table_response(table)
+
+
+@router.get("/{table_id}/qr", response_model=IssueTableQrResponse)
+@inject
+async def issue_table_qr(
+    table_id: str,
+    identity: AccessClaims = Depends(require_roles(Role.OWNER, Role.MANAGER)),
+    use_case: IssueTableQr = Depends(Provide[Container.issue_table_qr]),
+) -> IssueTableQrResponse:
+    # Idempotent (the token is deterministic, stateless) → GET. Returns the signed
+    # token + the deep link the printed QR encodes.
+    result = await use_case.execute(tenant_id=identity.tenant_id, table_id=table_id)
+    return IssueTableQrResponse(token=result.token, url=result.url)

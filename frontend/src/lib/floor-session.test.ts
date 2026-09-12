@@ -16,6 +16,7 @@ const order = (status: OrderDTO["status"], createdAt: string | null = null): Ord
   currency: "ARS",
   items: [],
   total_amount: 0,
+  source: "WAITER",
   created_at: createdAt,
   customer_id: null,
 })

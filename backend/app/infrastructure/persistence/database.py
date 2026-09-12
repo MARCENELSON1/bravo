@@ -26,10 +26,34 @@ SessionFactory = Callable[[], AbstractAsyncContextManager[AsyncSession]]
 
 
 class Database:
-    """Owns the async engine and produces tenant-scoped sessions."""
+    """Owns the async engine and produces tenant-scoped sessions.
 
-    def __init__(self, url: str) -> None:
-        self._engine = create_async_engine(url, pool_pre_ping=True, future=True)
+    The pool is sized explicitly by the caller (wired from settings) instead of
+    inheriting the driver default of 5 + 10: a process can hold at most
+    ``pool_size + max_overflow`` connections, so that figure times the number of
+    workers and replicas has to stay under the server's ``max_connections``.
+    ``pool_timeout`` is kept short on purpose — a request that cannot get a
+    connection should fail fast and visibly rather than hang.
+    """
+
+    def __init__(
+        self,
+        url: str,
+        *,
+        pool_size: int = 10,
+        max_overflow: int = 20,
+        pool_timeout: int = 10,
+        pool_recycle: int = 1800,
+    ) -> None:
+        self._engine = create_async_engine(
+            url,
+            pool_pre_ping=True,
+            future=True,
+            pool_size=pool_size,
+            max_overflow=max_overflow,
+            pool_timeout=pool_timeout,
+            pool_recycle=pool_recycle,
+        )
         self._sessionmaker = async_sessionmaker(self._engine, expire_on_commit=False)
 
     @asynccontextmanager

@@ -173,7 +173,11 @@ function KpiRow({
   const { t } = useTranslation()
   const money = (amount: number) => formatMoney(amount, currency)
   const cells = [
-    { label: t("analytics.kpis.sales"), value: money(data.sales_amount) },
+    {
+      label: t("analytics.kpis.sales"),
+      value: money(data.sales_amount),
+      hint: t("analytics.kpis.salesHint"),
+    },
     { label: t("analytics.kpis.collected"), value: money(data.collected_amount) },
     { label: t("analytics.kpis.expenses"), value: money(data.expense_amount) },
     {

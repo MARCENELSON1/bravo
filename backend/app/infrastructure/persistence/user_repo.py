@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 
 from app.domain.user.entities import User
 from app.domain.user.repository import UserRepository
+from app.domain.user.value_objects import Role
 from app.infrastructure.persistence.database import SessionFactory
 from app.infrastructure.persistence.mappers import user_to_domain, user_to_orm
 from app.infrastructure.persistence.models import UserORM
@@ -42,6 +43,21 @@ class SqlAlchemyUserRepository(UserRepository):
             ).all()
             return {uid: (name or email) for uid, name, email in rows}
 
+    async def roles_by_ids(self, tenant_id: str, ids: set[str]) -> dict[str, Role]:
+        if not ids:
+            return {}
+        async with self._session_factory() as session:
+            rows = (
+                await session.execute(
+                    select(UserORM.id, UserORM.role).where(
+                        UserORM.tenant_id == tenant_id,
+                        UserORM.id.in_(ids),
+                        UserORM.active.is_(True),
+                    )
+                )
+            ).all()
+            return {uid: Role(role) for uid, role in rows}
+
     async def add(self, user: User) -> None:
         async with self._session_factory() as session:
             session.add(user_to_orm(user))
@@ -49,3 +65,28 @@ class SqlAlchemyUserRepository(UserRepository):
     async def save(self, user: User) -> None:
         async with self._session_factory() as session:
             await session.merge(user_to_orm(user))
+
+    async def delete(self, tenant_id: str, user_id: str) -> None:
+        async with self._session_factory() as session:
+            await session.execute(
+                delete(UserORM).where(
+                    UserORM.id == user_id, UserORM.tenant_id == tenant_id
+                )
+            )
+            await session.commit()
+
+    async def count_active_owners(self, tenant_id: str) -> int:
+        async with self._session_factory() as session:
+            return int(
+                (
+                    await session.execute(
+                        select(func.count())
+                        .select_from(UserORM)
+                        .where(
+                            UserORM.tenant_id == tenant_id,
+                            UserORM.role == Role.OWNER.value,
+                            UserORM.active.is_(True),
+                        )
+                    )
+                ).scalar_one()
+            )

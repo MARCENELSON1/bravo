@@ -82,12 +82,12 @@ function Summary({ window }: { window: Win }) {
         <Spinner />
       ) : d ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          <Stat label={t("reports.summary.sales")} value={money(d.sales)} />
+          <Stat label={t("reports.summary.sales")} value={money(d.sales_collected)} />
           <Stat label={t("reports.summary.collectedNet")} value={money(d.collected_net)} />
           <Stat label={t("reports.summary.expenses")} value={money(d.expenses)} />
           <Stat
             label={t("reports.summary.profit")}
-            value={money(d.collected_net - d.expenses)}
+            value={money(d.profit_net_of_fees)}
             accent
           />
           <Stat label={t("reports.summary.avgTicket")} value={money(d.avg_ticket)} />

@@ -7,6 +7,16 @@ export function useTables() {
   return useQuery({ queryKey: ["tables"], queryFn: () => tablesApi.list() })
 }
 
+// QR de una mesa (token determinístico → no vence, se cachea indefinidamente).
+export function useTableQr(tableId: string) {
+  const { tablesApi } = useServices()
+  return useQuery({
+    queryKey: ["table-qr", tableId],
+    queryFn: () => tablesApi.qr(tableId),
+    staleTime: Infinity,
+  })
+}
+
 interface CreateTableVars {
   number: number
   name: string | null

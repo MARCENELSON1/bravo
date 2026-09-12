@@ -79,9 +79,13 @@
     --vignette: oklch(0.20 0 0 / 0.10);
     /* Estados. Verde de éxito y ámbar de alerta: antes vivían sueltos como
        emerald-600/amber-600 y su variante dark escrita a mano en cada uso. */
-    --success: oklch(0.6 0.14 160);
+    /* Se usan como COLOR DE TEXTO (`text-success`, `text-warning`), no como
+       relleno: sobre el fondo blanco el valor anterior daba 3,66:1 y 3,19:1 —
+       se veían, no se leían. Estos mantienen el tono y llegan a 5,48:1 y 5,02:1.
+       El modo oscuro no cambió: ahí los originales ya pasaban holgados. */
+    --success: oklch(0.508 0.105 165.6);
     --success-foreground: oklch(0.985 0 0);
-    --warning: oklch(0.66 0.15 70);
+    --warning: oklch(0.555 0.146 49.0);
     --warning-foreground: oklch(0.16 0.01 165);
     --border: oklch(0.9 0.01 165);
     --input: oklch(0.9 0.01 165);

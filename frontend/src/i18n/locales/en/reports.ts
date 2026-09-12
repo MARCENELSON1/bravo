@@ -11,7 +11,7 @@ export const reports = {
   },
   summary: {
     title: "Period summary",
-    sales: "Sales",
+    sales: "Collected",
     collectedNet: "Net collected",
     expenses: "Expenses",
     profit: "Profit",

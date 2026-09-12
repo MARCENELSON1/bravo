@@ -31,11 +31,17 @@ class TenantContext(ABC):
 
 
 class PasswordHasher(ABC):
-    @abstractmethod
-    def hash(self, password: str) -> str: ...
+    """Password hashing. Async because a memory-hard KDF (Argon2) is CPU-bound:
+    running it inline would block the event loop and stall every other request
+    in the process (SSE streams, the KDS board, a charge in flight). Adapters
+    are expected to hand the work off to a thread.
+    """
 
     @abstractmethod
-    def verify(self, password: str, password_hash: str) -> bool: ...
+    async def hash(self, password: str) -> str: ...
+
+    @abstractmethod
+    async def verify(self, password: str, password_hash: str) -> bool: ...
 
 
 class TokenService(ABC):

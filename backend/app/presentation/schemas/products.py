@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 from app.domain.order.value_objects import Station
@@ -11,6 +13,9 @@ class CreateProductRequest(BaseModel):
     category: str | None = Field(default=None, max_length=60)
     # Where it's prepared — defaults to the kitchen; set BAR for drinks/coffee.
     station: Station = Station.KITCHEN
+    # QR menu enrichment (Carta QR F2). Optional; a photo URL + a short description.
+    image_url: str | None = Field(default=None, max_length=2048)
+    description: str | None = Field(default=None, max_length=2000)
 
     @field_validator("name")
     @classmethod
@@ -34,6 +39,19 @@ class ProductResponse(BaseModel):
     category: str | None
     station: str
     active: bool
+    image_url: str | None = None
+    description: str | None = None
+    available_today: bool = True
+    # Tiempo de servicio: IMMEDIATE | STARTER | MAIN | DESSERT.
+    course: str = "MAIN"
+
+
+class SetAvailabilityRequest(BaseModel):
+    available_today: bool
+
+
+class SetCourseRequest(BaseModel):
+    course: Literal["IMMEDIATE", "STARTER", "MAIN", "DESSERT"]
 
 
 # --- Productos v2 Tanda B: precios vs inflación + histórico + rotación --------

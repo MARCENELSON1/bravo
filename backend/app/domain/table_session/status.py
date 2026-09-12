@@ -52,7 +52,10 @@ def derive_session_state(
         readies = [it.ready_at for it in ready if it.ready_at is not None]
         return DerivedSessionState(SessionStatus.TO_SERVE, min(readies) if readies else opened)
 
-    if session.bill_requested_at is not None:
+    # "A cobrar" solo tiene sentido si hay algo que cobrar: una mesa sin ítems
+    # (se pidió la cuenta por error, o se anuló/pagó todo) vuelve a "abierta"
+    # en vez de quedar trabada pidiendo un cobro de $0.
+    if session.bill_requested_at is not None and items:
         return DerivedSessionState(SessionStatus.TO_CHARGE, session.bill_requested_at)
 
     in_kitchen = [

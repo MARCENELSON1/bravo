@@ -8,6 +8,7 @@ from app.application.finance.dtos import (
     ExpenseBreakdown,
     ExpenseCategoryRow,
     MovementRow,
+    ProductCostPoint,
     ProductDetail,
     ProductSaleLine,
 )
@@ -144,10 +145,33 @@ class SqlAlchemyInventoryValueReadModel(InventoryValueReadModel):
 
 class SqlAlchemyFinanceProductDetailReadModel(FinanceProductDetailReadModel):
     """Líneas de `sale_facts` de un producto en la ventana, con sus agregados.
-    Tenant-scoped (RLS + filtro explícito); solo lectura."""
+    Tenant-scoped (RLS + filtro explícito); solo lectura.
+
+    **Los totales se suman en SQL, no en Python.** Antes esto traía a memoria una
+    fila por venta para calcular cuatro sumas y devolvía todas al navegador: un
+    plato con 50.000 ventas costaba 50.000 filas. Ahora son tres consultas
+    acotadas —totales, evolución por día, y las últimas ``_LINE_LIMIT`` líneas—
+    y el costo deja de crecer con el historial.
+    """
+
+    # Tope del listado de movimientos. Los totales y la serie NO dependen de él,
+    # así que subirlo o bajarlo solo cambia cuántas líneas se listan.
+    _LINE_LIMIT = 500
 
     def __init__(self, session_factory: SessionFactory) -> None:
         self._session_factory = session_factory
+
+    @staticmethod
+    def _scope(stmt, tenant_id: str, product_id: str, since, until):
+        stmt = stmt.where(
+            SaleFactORM.tenant_id == tenant_id,
+            SaleFactORM.product_id == product_id,
+        )
+        if since is not None:
+            stmt = stmt.where(SaleFactORM.occurred_at >= since)
+        if until is not None:
+            stmt = stmt.where(SaleFactORM.occurred_at <= until)
+        return stmt
 
     async def detail(
         self,
@@ -157,43 +181,88 @@ class SqlAlchemyFinanceProductDetailReadModel(FinanceProductDetailReadModel):
         since: datetime | None = None,
         until: datetime | None = None,
     ) -> ProductDetail:
-        async with self._session_factory() as session:
-            stmt = (
-                select(SaleFactORM)
-                .where(
-                    SaleFactORM.tenant_id == tenant_id,
-                    SaleFactORM.product_id == product_id,
-                )
-                .order_by(SaleFactORM.occurred_at.desc())
-            )
-            if since is not None:
-                stmt = stmt.where(SaleFactORM.occurred_at >= since)
-            if until is not None:
-                stmt = stmt.where(SaleFactORM.occurred_at <= until)
-            rows = (await session.execute(stmt)).scalars().all()
-
-        currency = rows[0].currency if rows else "ARS"
         # Margen neto congelado (Solución 1): ventas netas − food neto per-insumo.
-        # ``line_amount``/``food_cost_amount`` se muestran brutos. Paridad con VAT 0.
-        lines = [
-            ProductSaleLine(
-                order_id=r.order_id,
-                occurred_at=r.occurred_at.isoformat(),
-                quantity=r.quantity,
-                line_amount=r.line_amount,
-                food_cost_amount=r.food_cost_amount,
-                margin_amount=_net_line(r) - _net_food(r),
-            )
-            for r in rows
-        ]
+        # Los COALESCE son los mismos ``_net_line``/``_net_food``, en SQL.
+        net_line = func.coalesce(SaleFactORM.line_net_amount, SaleFactORM.line_amount)
+        net_food = func.coalesce(
+            SaleFactORM.food_cost_net_amount, SaleFactORM.food_cost_amount, 0
+        )
+        gross_food = func.coalesce(SaleFactORM.food_cost_amount, 0)
+
+        async with self._session_factory() as session:
+            totals = (
+                await session.execute(
+                    self._scope(
+                        select(
+                            func.coalesce(func.sum(SaleFactORM.quantity), 0),
+                            func.coalesce(func.sum(SaleFactORM.line_amount), 0),
+                            func.coalesce(func.sum(gross_food), 0),
+                            func.coalesce(func.sum(net_line - net_food), 0),
+                            func.count(),
+                        ),
+                        tenant_id, product_id, since, until,
+                    )
+                )
+            ).one()
+            units_sold, sales_amount, food_cost_amount, margin_amount, total_lines = totals
+
+            # Evolución del costo unitario por día. Se agrupa por la fecha **UTC**
+            # para no mover ningún punto respecto de cuando esto se derivaba del
+            # ISO de cada fila en el navegador; y se descartan las filas sin food
+            # cost o sin cantidad, que allá tampoco entraban al promedio.
+            day = func.date(func.timezone("UTC", SaleFactORM.occurred_at))
+            series_rows = (
+                await session.execute(
+                    self._scope(
+                        select(day, func.sum(SaleFactORM.food_cost_amount),
+                               func.sum(SaleFactORM.quantity)),
+                        tenant_id, product_id, since, until,
+                    )
+                    .where(
+                        SaleFactORM.food_cost_amount.is_not(None),
+                        SaleFactORM.quantity > 0,
+                    )
+                    .group_by(day)
+                    .order_by(day)
+                )
+            ).all()
+
+            rows = (
+                await session.execute(
+                    self._scope(
+                        select(SaleFactORM), tenant_id, product_id, since, until
+                    )
+                    .order_by(SaleFactORM.occurred_at.desc())
+                    .limit(self._LINE_LIMIT)
+                )
+            ).scalars().all()
+
+        # Igual que antes: la moneda sale de la venta más reciente (``rows`` sigue
+        # ordenada desc), con ARS de respaldo cuando no hubo ninguna.
+        currency = rows[0].currency if rows else "ARS"
         return ProductDetail(
             product_id=product_id,
             currency=currency,
-            units_sold=sum(r.quantity for r in rows),
-            sales_amount=sum(r.line_amount for r in rows),
-            food_cost_amount=sum(r.food_cost_amount or 0 for r in rows),
-            margin_amount=sum(_net_line(r) - _net_food(r) for r in rows),
-            lines=lines,
+            units_sold=int(units_sold),
+            sales_amount=int(sales_amount),
+            food_cost_amount=int(food_cost_amount),
+            margin_amount=int(margin_amount),
+            lines=[
+                ProductSaleLine(
+                    order_id=r.order_id,
+                    occurred_at=r.occurred_at.isoformat(),
+                    quantity=r.quantity,
+                    line_amount=r.line_amount,
+                    food_cost_amount=r.food_cost_amount,
+                    margin_amount=_net_line(r) - _net_food(r),
+                )
+                for r in rows
+            ],
+            cost_series=[
+                ProductCostPoint(day=d.isoformat(), unit_cost=round(int(cost) / int(qty)))
+                for d, cost, qty in series_rows
+            ],
+            lines_truncated=int(total_lines) > len(rows),
         )
 
 

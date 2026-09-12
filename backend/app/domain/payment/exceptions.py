@@ -31,3 +31,24 @@ class PaymentGatewayNotConnected(DomainError):
 class InvalidOAuthState(DomainError):
     code = "invalid_oauth_state"
     message = "El pedido de conexión no es válido o expiró."
+
+
+class SelfPayDisabled(DomainError):
+    code = "self_pay_disabled"
+    message = "El local no habilitó el pago desde la mesa."
+
+
+class NothingToPay(DomainError):
+    code = "nothing_to_pay"
+    message = "No hay nada para pagar en esta mesa."
+
+
+class PaymentInProgress(DomainError):
+    """Lo que falta cobrar está tomado por un pago en curso (cuenta dividida).
+
+    Aparte de ``NothingToPay`` a propósito: decirle "no hay nada para pagar" a
+    alguien cuya parte está siendo pagada por otro lo manda a irse sin pagar.
+    """
+
+    code = "payment_in_progress"
+    message = "Alguien está pagando esta cuenta ahora. Esperá un momento y volvé a intentar."

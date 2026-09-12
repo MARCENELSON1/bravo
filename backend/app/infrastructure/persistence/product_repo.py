@@ -32,6 +32,21 @@ class SqlAlchemyProductRepository(ProductRepository):
             rows = (await session.execute(stmt)).scalars().all()
             return [product_to_domain(row) for row in rows]
 
+    async def list_for_ids(self, tenant_id: str, product_ids: list[str]) -> list[Product]:
+        if not product_ids:
+            return []  # an empty IN () is invalid SQL
+        async with self._session_factory() as session:
+            stmt = (
+                select(ProductORM)
+                .where(
+                    ProductORM.tenant_id == tenant_id,
+                    ProductORM.id.in_(set(product_ids)),
+                )
+                .order_by(ProductORM.name)
+            )
+            rows = (await session.execute(stmt)).scalars().all()
+            return [product_to_domain(row) for row in rows]
+
     async def add(self, product: Product) -> None:
         async with self._session_factory() as session:
             session.add(product_to_orm(product))

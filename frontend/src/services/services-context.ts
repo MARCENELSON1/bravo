@@ -16,10 +16,13 @@ import type { OrdersApi } from "@/api/orders-api"
 import type { PaymentsApi } from "@/api/payments-api"
 import type { PlatformApi } from "@/api/platform-api"
 import type { ProductsApi } from "@/api/products-api"
+import type { PublicMenuApi } from "@/api/public-menu-api"
 import type { RealtimeApi } from "@/api/realtime-api"
 import type { ReportsApi } from "@/api/reports-api"
 import type { ReservationsApi } from "@/api/reservations-api"
 import type { SectorsApi } from "@/api/sectors-api"
+import type { SelfOrderApi } from "@/api/self-order-api"
+import type { SelfPayApi } from "@/api/self-pay-api"
 import type { TablesApi } from "@/api/tables-api"
 import type { TenantsApi } from "@/api/tenants-api"
 import type { TimeClockApi } from "@/api/timeclock-api"
@@ -44,10 +47,13 @@ export interface Services {
   paymentsApi: PaymentsApi
   platformApi: PlatformApi
   productsApi: ProductsApi
+  publicMenuApi: PublicMenuApi
   realtimeApi: RealtimeApi
   reportsApi: ReportsApi
   reservationsApi: ReservationsApi
   sectorsApi: SectorsApi
+  selfOrderApi: SelfOrderApi
+  selfPayApi: SelfPayApi
   tablesApi: TablesApi
   tenantsApi: TenantsApi
   timeClockApi: TimeClockApi

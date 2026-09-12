@@ -7,7 +7,8 @@ export const analytics = {
   dateFrom: "Desde",
   dateTo: "Hasta",
   kpis: {
-    sales: "Ventas",
+    sales: "Facturado",
+    salesHint: "Lo vendido en el período, esté cobrado o no",
     collected: "Cobrado",
     expenses: "Egresos",
     grossMargin: "Margen bruto",

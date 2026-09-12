@@ -22,7 +22,8 @@ from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from cryptography.hazmat.primitives.serialization import pkcs7
-from zeep import Client
+
+from app.infrastructure.invoicing.zeep_clients import soap_client
 
 # WSAA endpoints (homologación vs producción).
 _WSAA_WSDL = {
@@ -128,7 +129,7 @@ class AfipWsaa:
 
     def _login(self, certificate: str, private_key: str, production: bool) -> AccessTicket:
         cms = _sign_cms(_login_ticket_request(datetime.now(UTC)), certificate, private_key)
-        client = Client(_WSAA_WSDL[production])
+        client = soap_client(_WSAA_WSDL[production])
         try:
             response = client.service.loginCms(in0=cms)
         except Exception as exc:  # zeep faults / transport errors

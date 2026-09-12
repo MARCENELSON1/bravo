@@ -12,7 +12,7 @@ export const reports = {
   },
   summary: {
     title: "Resumen del período",
-    sales: "Ventas",
+    sales: "Cobrado",
     collectedNet: "Cobrado neto",
     expenses: "Gastos",
     profit: "Ganancia",

@@ -324,14 +324,25 @@ function ProductRow({
           {detail.isLoading ? (
             <span>{t("finance.loading")}</span>
           ) : detail.data && detail.data.lines.length > 0 ? (
-            detail.data.lines.map((line) => (
-              <div key={line.order_id} className="flex items-center justify-between py-0.5">
-                <span>{new Date(line.occurred_at).toLocaleDateString(dateLocale())}</span>
-                <span className="tabular-nums">
-                  {line.quantity}× · {formatMoney(line.margin_amount, currency)}
-                </span>
-              </div>
-            ))
+            <>
+              {detail.data.lines.map((line) => (
+                <div key={line.order_id} className="flex items-center justify-between py-0.5">
+                  <span>{new Date(line.occurred_at).toLocaleDateString(dateLocale())}</span>
+                  <span className="tabular-nums">
+                    {line.quantity}× · {formatMoney(line.margin_amount, currency)}
+                  </span>
+                </div>
+              ))}
+              {/* El listado viene acotado por el backend. Decirlo es lo que evita
+                  que esta lista parezca ser todo lo vendido del plato. */}
+              {detail.data.lines_truncated ? (
+                <div className="pt-1 italic">
+                  {t("finance.productMargins.linesTruncated", {
+                    count: detail.data.lines.length,
+                  })}
+                </div>
+              ) : null}
+            </>
           ) : (
             <span>{t("finance.productMargins.noLines")}</span>
           )}

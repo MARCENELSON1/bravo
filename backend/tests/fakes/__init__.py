@@ -59,6 +59,9 @@ class FakeTenantRepository(TenantRepository):
     async def add(self, tenant: Tenant) -> None:
         self.by_id[tenant.id] = tenant
 
+    async def list_ids(self) -> list[str]:
+        return sorted(self.by_id)
+
     async def update_fiscal_address(
         self,
         tenant_id: str,
@@ -74,6 +77,9 @@ class FakeTenantRepository(TenantRepository):
             tenant.fiscal_city = city
             tenant.fiscal_state = state
             tenant.fiscal_zip = zip_code
+
+    async def delete(self, tenant_id: str) -> None:
+        self.by_id.pop(tenant_id, None)
 
 
 class FakeUserRepository(UserRepository):
@@ -97,11 +103,28 @@ class FakeUserRepository(UserRepository):
             if u.tenant_id == tenant_id and u.id in ids
         }
 
+    async def roles_by_ids(self, tenant_id: str, ids: set[str]) -> dict[str, Role]:
+        return {
+            u.id: u.role
+            for u in self.by_id.values()
+            if u.tenant_id == tenant_id and u.id in ids and u.active
+        }
+
     async def add(self, user: User) -> None:
         self.by_id[user.id] = user
 
     async def save(self, user: User) -> None:
         self.by_id[user.id] = user
+
+    async def delete(self, tenant_id: str, user_id: str) -> None:
+        self.by_id.pop(user_id, None)
+
+    async def count_active_owners(self, tenant_id: str) -> int:
+        return sum(
+            1
+            for u in self.by_id.values()
+            if u.tenant_id == tenant_id and u.role is Role.OWNER and u.active
+        )
 
 
 class FakeRefreshTokenRepository(RefreshTokenRepository):
@@ -197,11 +220,22 @@ class FakeTenantContext(TenantContext):
 
 
 class FakePasswordHasher(PasswordHasher):
-    def hash(self, password: str) -> str:
+    """Deterministic stand-in for Argon2.
+
+    The port is async (the real adapter offloads to a thread), but the mapping
+    itself is pure, so it is also exposed synchronously as ``hash_value`` for
+    seeding fixtures and writing assertions without an await.
+    """
+
+    @staticmethod
+    def hash_value(password: str) -> str:
         return f"hashed:{password}"
 
-    def verify(self, password: str, password_hash: str) -> bool:
-        return password_hash == f"hashed:{password}"
+    async def hash(self, password: str) -> str:
+        return self.hash_value(password)
+
+    async def verify(self, password: str, password_hash: str) -> bool:
+        return password_hash == self.hash_value(password)
 
 
 class FakeTokenService(TokenService):
@@ -404,7 +438,7 @@ class Harness:
             tenant_id=tenant.id,
             email=Email(email),
             role=role,
-            password_hash=self.hasher.hash(password),
+            password_hash=self.hasher.hash_value(password),
             email_verified=email_verified,
             active=active,
         )

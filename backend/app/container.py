@@ -70,6 +70,7 @@ from app.application.floor.use_cases import GetFloor
 from app.application.identity.accept_invitation import AcceptInvitation
 from app.application.identity.authenticate import Authenticate
 from app.application.identity.change_password import ChangePassword
+from app.application.identity.delete_account import DeleteMyAccount, PreviewAccountDeletion
 from app.application.identity.get_my_profile import GetMyProfile
 from app.application.identity.invite_user import InviteUser
 from app.application.identity.logout import Logout
@@ -108,22 +109,37 @@ from app.application.invoice.connect_afip import (
 )
 from app.application.invoice.use_cases import GetOrderInvoice, IssueInvoice, ListInvoices
 from app.application.marketing.submit_lead import SubmitLead
+from app.application.notification.use_cases import RegisterDeviceToken
+from app.application.order.auto_assign import AutoAssignWaiter
+from app.application.order.self_order import (
+    GetSelfOrderSettings,
+    SubmitCustomerOrder,
+    UpdateSelfOrderSettings,
+)
+from app.application.order.table_bill import GetTableBill
 from app.application.order.use_cases import (
     AddOrderItem,
     AddOrderItemsBatch,
+    AdvanceCourse,
     AdvanceItem,
     AdvanceOrder,
+    CloseSettledOrder,
     CreateOrder,
+    FireAllCourses,
+    FireNextCourse,
     GetKdsOrders,
     GetOrder,
-    ListOrders,
+    ListPendingQrOrders,
     MergeOrders,
     RemoveOrderItem,
     ReopenOrder,
     SendOrder,
+    SetItemCourse,
+    SetItemNote,
     SetItemQuantity,
     TransferOrder,
 )
+from app.application.outbox.drain import DrainAllTenants, DrainOutbox
 from app.application.payment.connect_mercadopago import (
     CompleteMercadoPagoConnection,
     DisconnectMercadoPago,
@@ -131,6 +147,12 @@ from app.application.payment.connect_mercadopago import (
     StartMercadoPagoConnection,
 )
 from app.application.payment.fee_rates import GetPaymentFeeRates, UpdatePaymentFeeRates
+from app.application.payment.pay_table_bill import (
+    GetPublicPaymentReceipt,
+    GetPublicPaymentStatus,
+    PayTableBill,
+)
+from app.application.payment.self_pay import GetSelfPaySettings, UpdateSelfPaySettings
 from app.application.payment.use_cases import (
     ConfirmGatewayPayment,
     ListExpenses,
@@ -139,13 +161,25 @@ from app.application.payment.use_cases import (
     RegisterExpense,
     RegisterPayment,
 )
+from app.application.product.modifiers import (
+    GetProductModifiers,
+    ListMenuModifiers,
+    SetProductModifiers,
+)
 from app.application.product.use_cases import (
     CreateProduct,
     GetPricingInsights,
     GetProductPriceHistory,
     GetProductRotation,
     ListProducts,
+    SetProductAvailability,
+    SetProductCourse,
     UpdateProductPrice,
+)
+from app.application.public_menu.use_cases import (
+    GetPublicMenu,
+    IssueTableQr,
+    RequestTableAttention,
 )
 from app.application.reporting.dashboard import GetDashboardSummary
 from app.application.reporting.exports import ExportReport
@@ -169,6 +203,8 @@ from app.application.table_session.sectors import (
     UpdateSector,
 )
 from app.application.table_session.use_cases import (
+    AssignTableWaiter,
+    CloseSession,
     OpenSession,
     RequestBill,
     SetSessionPax,
@@ -206,18 +242,32 @@ from app.infrastructure.advisor.template_narrator import TemplateNarrator
 from app.infrastructure.billing.mercadopago_gateway import MercadoPagoPreapprovalGateway
 from app.infrastructure.billing.resolver import RailBillingGatewayResolver
 from app.infrastructure.billing.stripe_gateway import StripeBillingGateway
+from app.infrastructure.cache.cached_repositories import (
+    CachedIngredientRepository,
+    CachedModifierRepository,
+    CachedPreparationRepository,
+    CachedProductRepository,
+    CachedSectorRepository,
+    CachedTableRepository,
+)
+from app.infrastructure.cache.memory_cache import InMemoryCache
+from app.infrastructure.cache.redis_cache import RedisCache
 from app.infrastructure.copilot.anthropic_copilot import AnthropicCopilotLLM
 from app.infrastructure.copilot.no_copilot import NoCopilot
 from app.infrastructure.copilot.sql_runner import SqlAlchemyCopilotQueryRunner
 from app.infrastructure.email.console_sender import ConsoleEmailSender
 from app.infrastructure.email.resend_sender import ResendEmailSender
 from app.infrastructure.email.smtp_sender import SmtpEmailSender
+from app.infrastructure.http.client import HttpClientProvider
 from app.infrastructure.invoicing.afip_invoicing import AfipInvoicing
 from app.infrastructure.invoicing.credentials_resolver import DbTaxCredentialsResolver
 from app.infrastructure.invoicing.fake_invoicing import FakeInvoicing
 from app.infrastructure.llm.client import AnthropicClient
 from app.infrastructure.marketing.log_lead_gateway import LogLeadGateway
 from app.infrastructure.marketing.twenty_lead_gateway import TwentyLeadGateway
+from app.infrastructure.notification.fcm_service import FcmPushService
+from app.infrastructure.notification.null_service import NullPushService
+from app.infrastructure.notification.outbox_service import OutboxPushService
 from app.infrastructure.payments.credentials_resolver import DbPaymentCredentialsResolver
 from app.infrastructure.payments.manual_gateway import ManualPaymentGateway
 from app.infrastructure.payments.mercadopago_gateway import MercadoPagoGateway
@@ -272,6 +322,9 @@ from app.infrastructure.persistence.customer_stats_repo import (
 )
 from app.infrastructure.persistence.dashboard_repo import SqlAlchemyDashboardReadModel
 from app.infrastructure.persistence.database import Database
+from app.infrastructure.persistence.device_token_repo import (
+    SqlAlchemyDeviceTokenRepository,
+)
 from app.infrastructure.persistence.finance_repo import (
     SqlAlchemyExpenseBreakdownReadModel,
     SqlAlchemyFinanceCommissionsReadModel,
@@ -288,7 +341,9 @@ from app.infrastructure.persistence.ingredient_repo import SqlAlchemyIngredientR
 from app.infrastructure.persistence.invitation_repo import SqlAlchemyInvitationRepository
 from app.infrastructure.persistence.invoice_repo import SqlAlchemyInvoiceRepository
 from app.infrastructure.persistence.labor_cost_repo import SqlAlchemyLaborCostReadModel
+from app.infrastructure.persistence.modifier_repo import SqlAlchemyModifierRepository
 from app.infrastructure.persistence.order_repo import SqlAlchemyOrderRepository
+from app.infrastructure.persistence.outbox_repo import SqlAlchemyOutbox
 from app.infrastructure.persistence.payment_fee_repo import (
     SqlAlchemyPaymentFeeRateRepository,
 )
@@ -316,6 +371,12 @@ from app.infrastructure.persistence.reservation_repo import (
 from app.infrastructure.persistence.reset_token_repo import SqlAlchemyResetTokenRepository
 from app.infrastructure.persistence.sale_facts_repo import SqlAlchemySaleFactsRepository
 from app.infrastructure.persistence.sector_repo import SqlAlchemySectorRepository
+from app.infrastructure.persistence.self_order_settings_repo import (
+    SqlAlchemySelfOrderSettingsRepository,
+)
+from app.infrastructure.persistence.self_pay_settings_repo import (
+    SqlAlchemySelfPaySettingsRepository,
+)
 from app.infrastructure.persistence.shift_repo import SqlAlchemyShiftRepository
 from app.infrastructure.persistence.staff_report_repo import SqlAlchemyStaffReportReadModel
 from app.infrastructure.persistence.stock_movement_repo import (
@@ -348,9 +409,14 @@ from app.infrastructure.persistence.user_repo import SqlAlchemyUserRepository
 from app.infrastructure.persistence.verification_token_repo import (
     SqlAlchemyVerificationTokenRepository,
 )
+from app.infrastructure.public_menu.signed_table_qr import HmacTableQrToken
 from app.infrastructure.realtime.memory_bus import InMemoryEventBus
+from app.infrastructure.realtime.redis_bus import RedisEventBus
+from app.infrastructure.redis.connection import RedisProvider
 from app.infrastructure.security.fernet_cipher import FernetTokenCipher
 from app.infrastructure.security.hasher import Argon2Hasher
+from app.infrastructure.security.rate_limiter import InMemoryRateLimiter
+from app.infrastructure.security.redis_rate_limiter import RedisRateLimiter
 from app.infrastructure.security.tenant_context import ContextVarTenantContext
 from app.infrastructure.security.token_service import JwtTokenService
 from app.infrastructure.tax.reporter_resolver import DbTaxJarReporterResolver
@@ -366,7 +432,26 @@ class Container(containers.DeclarativeContainer):
     wiring_config = containers.WiringConfiguration(packages=["app.presentation"])
 
     config = providers.Singleton(Settings)
-    db = providers.Singleton(Database, url=config.provided.database_url)
+    db = providers.Singleton(
+        Database,
+        url=config.provided.database_url,
+        pool_size=config.provided.db_pool_size,
+        max_overflow=config.provided.db_max_overflow,
+        pool_timeout=config.provided.db_pool_timeout,
+        pool_recycle=config.provided.db_pool_recycle,
+    )
+
+    # Pool de conexiones salientes compartido por todos los adapters HTTP: se
+    # comparte el TRANSPORT (que es el dueño del pool TCP/TLS), no el cliente,
+    # así cada adapter conserva su base_url y sus credenciales — MercadoPago
+    # autentica por tenant y un cliente compartido podría filtrar el header de
+    # un tenant al request de otro.
+    http_pool = providers.Singleton(HttpClientProvider)
+
+    # Conexión Redis compartida por el caché, el bus y el rate limiter: un solo
+    # pool por proceso en vez de uno por adapter. Se construye igual aunque los
+    # backends estén en "memory" (es lazy: no conecta hasta que alguien la usa).
+    redis_pool = providers.Singleton(RedisProvider, url=config.provided.redis_url)
 
     # --- external services (singletons) ---
     password_hasher = providers.Singleton(Argon2Hasher)
@@ -378,8 +463,13 @@ class Container(containers.DeclarativeContainer):
     )
     tenant_context = providers.Singleton(ContextVarTenantContext)
     # Realtime bus (Fase 13 T4): SINGLETON so publishers (order use cases) and
-    # SSE subscribers share the same in-process instance.
-    event_bus = providers.Singleton(InMemoryEventBus)
+    # SSE subscribers share the same instance. "memory" no cruza procesos: con
+    # varias réplicas hay que pasarlo a "redis" o media sala deja de recibir.
+    event_bus = providers.Selector(
+        config.provided.event_bus_backend,
+        memory=providers.Singleton(InMemoryEventBus),
+        redis=providers.Singleton(RedisEventBus, redis=redis_pool),
+    )
     email_sender = providers.Selector(
         config.provided.email_transport,
         console=providers.Singleton(ConsoleEmailSender),
@@ -396,7 +486,34 @@ class Container(containers.DeclarativeContainer):
             ResendEmailSender,
             api_key=config.provided.resend_api_key,
             from_email=config.provided.from_email,
+            transport=http_pool.provided.transport.call(),
         ),
+    )
+    # Push (Fase 4): none = no-op (default, seguro); fcm = envío real por FCM.
+    device_token_repository = providers.Factory(
+        SqlAlchemyDeviceTokenRepository, session_factory=db.provided.session
+    )
+    # El que realmente manda el push. Lo usa el worker del outbox; los casos de
+    # uso reciben ``push_service`` (abajo), que por default solo encola.
+    push_sender = providers.Selector(
+        config.provided.push_provider,
+        none=providers.Singleton(NullPushService),
+        fcm=providers.Singleton(
+            FcmPushService,
+            device_tokens=device_token_repository,
+            credentials_path=config.provided.fcm_credentials_path,
+            credentials_json=config.provided.fcm_credentials_json,
+            transport=http_pool.provided.transport.call(),
+        ),
+    )
+    outbox = providers.Factory(SqlAlchemyOutbox, session_factory=db.provided.session)
+    # Escalabilidad Fase 4: lo que ven los casos de uso. "outbox" escribe una fila
+    # y vuelve (el FCM real queda para el worker); "inline" manda en el request.
+    # Ambos cumplen el mismo port, así que ningún caso de uso se entera.
+    push_service = providers.Selector(
+        config.provided.push_delivery,
+        outbox=providers.Factory(OutboxPushService, outbox=outbox),
+        inline=push_sender,
     )
     lead_gateway = providers.Selector(
         config.provided.lead_gateway,
@@ -405,6 +522,7 @@ class Container(containers.DeclarativeContainer):
             TwentyLeadGateway,
             base_url=config.provided.twenty_base_url,
             api_key=config.provided.twenty_api_key,
+            transport=http_pool.provided.transport.call(),
         ),
     )
     submit_lead = providers.Factory(SubmitLead, gateway=lead_gateway)
@@ -416,20 +534,52 @@ class Container(containers.DeclarativeContainer):
     user_repository = providers.Factory(
         SqlAlchemyUserRepository, session_factory=db.provided.session
     )
+    # Caché de catálogo. Se elige por env var igual que el resto de los adapters
+    # intercambiables; "memory" es el default (paridad, sin infra nueva).
+    cache = providers.Selector(
+        config.provided.cache_backend,
+        memory=providers.Singleton(InMemoryCache),
+        redis=providers.Singleton(RedisCache, redis=redis_pool),
+    )
+
+    # Repos de catálogo: el decorador cachea lecturas e invalida al escribir.
+    # El dominio y los casos de uso ven el mismo port de siempre.
     table_repository = providers.Factory(
-        SqlAlchemyTableRepository, session_factory=db.provided.session
+        CachedTableRepository,
+        inner=providers.Factory(
+            SqlAlchemyTableRepository, session_factory=db.provided.session
+        ),
+        cache=cache,
     )
     table_session_repository = providers.Factory(
         SqlAlchemyTableSessionRepository, session_factory=db.provided.session
     )
+    shift_repository = providers.Factory(
+        SqlAlchemyShiftRepository, session_factory=db.provided.session
+    )
     sector_repository = providers.Factory(
-        SqlAlchemySectorRepository, session_factory=db.provided.session
+        CachedSectorRepository,
+        inner=providers.Factory(
+            SqlAlchemySectorRepository, session_factory=db.provided.session
+        ),
+        cache=cache,
     )
     customer_repository = providers.Factory(
         SqlAlchemyCustomerRepository, session_factory=db.provided.session
     )
     product_repository = providers.Factory(
-        SqlAlchemyProductRepository, session_factory=db.provided.session
+        CachedProductRepository,
+        inner=providers.Factory(
+            SqlAlchemyProductRepository, session_factory=db.provided.session
+        ),
+        cache=cache,
+    )
+    modifier_repository = providers.Factory(
+        CachedModifierRepository,
+        inner=providers.Factory(
+            SqlAlchemyModifierRepository, session_factory=db.provided.session
+        ),
+        cache=cache,
     )
     price_change_repository = providers.Factory(
         SqlAlchemyPriceChangeRepository, session_factory=db.provided.session
@@ -445,6 +595,11 @@ class Container(containers.DeclarativeContainer):
     )
     refresh_token_repository = providers.Factory(
         SqlAlchemyRefreshTokenRepository, session_factory=db.provided.session
+    )
+    register_device_token = providers.Factory(
+        RegisterDeviceToken,
+        devices=device_token_repository,
+        tenant_context=tenant_context,
     )
     reset_token_repository = providers.Factory(
         SqlAlchemyResetTokenRepository, session_factory=db.provided.session
@@ -545,6 +700,20 @@ class Container(containers.DeclarativeContainer):
         tenants=tenant_repository,
         tenant_context=tenant_context,
     )
+    preview_account_deletion = providers.Factory(
+        PreviewAccountDeletion,
+        users=user_repository,
+        tenants=tenant_repository,
+        tenant_context=tenant_context,
+    )
+    delete_my_account = providers.Factory(
+        DeleteMyAccount,
+        users=user_repository,
+        tenants=tenant_repository,
+        hasher=password_hasher,
+        tenant_context=tenant_context,
+        preview=preview_account_deletion,
+    )
     invite_user = providers.Factory(
         InviteUser,
         users=user_repository,
@@ -577,6 +746,27 @@ class Container(containers.DeclarativeContainer):
     )
     list_products = providers.Factory(
         ListProducts, products=product_repository, tenant_context=tenant_context
+    )
+    set_product_course = providers.Factory(
+        SetProductCourse, products=product_repository, tenant_context=tenant_context
+    )
+    set_product_availability = providers.Factory(
+        SetProductAvailability, products=product_repository, tenant_context=tenant_context
+    )
+    get_product_modifiers = providers.Factory(
+        GetProductModifiers, modifiers=modifier_repository, tenant_context=tenant_context
+    )
+    list_menu_modifiers = providers.Factory(
+        ListMenuModifiers,
+        products=product_repository,
+        modifiers=modifier_repository,
+        tenant_context=tenant_context,
+    )
+    set_product_modifiers = providers.Factory(
+        SetProductModifiers,
+        modifiers=modifier_repository,
+        products=product_repository,
+        tenant_context=tenant_context,
     )
     update_product_price = providers.Factory(
         UpdateProductPrice,
@@ -632,9 +822,22 @@ class Container(containers.DeclarativeContainer):
         sessions=table_session_repository,
         tenant_context=tenant_context,
     )
+    close_session = providers.Factory(
+        CloseSession,
+        sessions=table_session_repository,
+        orders=order_repository,
+        tenant_context=tenant_context,
+    )
     request_bill = providers.Factory(
         RequestBill,
         sessions=table_session_repository,
+        tenant_context=tenant_context,
+        orders=order_repository,
+    )
+    assign_table_waiter = providers.Factory(
+        AssignTableWaiter,
+        sessions=table_session_repository,
+        orders=order_repository,
         tenant_context=tenant_context,
     )
     list_sectors = providers.Factory(
@@ -716,6 +919,7 @@ class Container(containers.DeclarativeContainer):
         AddOrderItem,
         orders=order_repository,
         products=product_repository,
+        modifiers=modifier_repository,
         tenant_context=tenant_context,
     )
     add_order_items_batch = providers.Factory(
@@ -731,23 +935,55 @@ class Container(containers.DeclarativeContainer):
     set_item_quantity = providers.Factory(
         SetItemQuantity, orders=order_repository, tenant_context=tenant_context
     )
+    set_item_note = providers.Factory(
+        SetItemNote, orders=order_repository, tenant_context=tenant_context
+    )
+    set_item_course = providers.Factory(
+        SetItemCourse, orders=order_repository, tenant_context=tenant_context
+    )
+    fire_next_course = providers.Factory(
+        FireNextCourse,
+        orders=order_repository,
+        tenant_context=tenant_context,
+        event_bus=event_bus,
+    )
+    fire_all_courses = providers.Factory(
+        FireAllCourses,
+        orders=order_repository,
+        tenant_context=tenant_context,
+        event_bus=event_bus,
+    )
+    advance_course = providers.Factory(
+        AdvanceCourse,
+        orders=order_repository,
+        tables=table_repository,
+        tenant_context=tenant_context,
+        event_bus=event_bus,
+        notifications=push_service,
+    )
     send_order = providers.Factory(
         SendOrder,
         orders=order_repository,
+        assign_waiter=assign_table_waiter,
         tenant_context=tenant_context,
         event_bus=event_bus,
     )
     advance_order = providers.Factory(
         AdvanceOrder,
         orders=order_repository,
+        tables=table_repository,
         tenant_context=tenant_context,
         event_bus=event_bus,
+        notifications=push_service,
+        sessions=table_session_repository,
     )
     advance_item = providers.Factory(
         AdvanceItem,
         orders=order_repository,
+        tables=table_repository,
         tenant_context=tenant_context,
         event_bus=event_bus,
+        notifications=push_service,
     )
     transfer_order = providers.Factory(
         TransferOrder,
@@ -762,18 +998,22 @@ class Container(containers.DeclarativeContainer):
         tenant_context=tenant_context,
         event_bus=event_bus,
     )
-    list_orders = providers.Factory(
-        ListOrders, orders=order_repository, tenant_context=tenant_context
-    )
     get_kds_orders = providers.Factory(
         GetKdsOrders, orders=order_repository, tenant_context=tenant_context
+    )
+    list_pending_qr = providers.Factory(
+        ListPendingQrOrders, orders=order_repository, tenant_context=tenant_context
     )
 
     # --- Fase 6 (repos de inventario + consumo por venta) ---
     # Definidos antes de pagos porque el settle inyecta el InventoryConsumer.
     # El resto de los casos de uso de inventario está más abajo.
     ingredient_repository = providers.Factory(
-        SqlAlchemyIngredientRepository, session_factory=db.provided.session
+        CachedIngredientRepository,
+        inner=providers.Factory(
+            SqlAlchemyIngredientRepository, session_factory=db.provided.session
+        ),
+        cache=cache,
     )
     supplier_repository = providers.Factory(
         SqlAlchemySupplierRepository, session_factory=db.provided.session
@@ -782,7 +1022,11 @@ class Container(containers.DeclarativeContainer):
         SqlAlchemyRecipeRepository, session_factory=db.provided.session
     )
     preparation_repository = providers.Factory(
-        SqlAlchemyPreparationRepository, session_factory=db.provided.session
+        CachedPreparationRepository,
+        inner=providers.Factory(
+            SqlAlchemyPreparationRepository, session_factory=db.provided.session
+        ),
+        cache=cache,
     )
     stock_movement_repository = providers.Factory(
         SqlAlchemyStockMovementRepository, session_factory=db.provided.session
@@ -808,6 +1052,11 @@ class Container(containers.DeclarativeContainer):
     advisor_settings_repository = providers.Factory(
         SqlAlchemyAdvisorSettingsRepository, session_factory=db.provided.session
     )
+    # Ídem: project_order_sales lo necesita para saber si la comanda está cobrada
+    # (una prepaga nunca llega a PAID, y así y todo la venta es real).
+    payment_repository = providers.Factory(
+        SqlAlchemyPaymentRepository, session_factory=db.provided.session
+    )
     project_order_sales = providers.Factory(
         ProjectOrderSales,
         orders=order_repository,
@@ -818,12 +1067,20 @@ class Container(containers.DeclarativeContainer):
         sale_facts=sale_facts_repository,
         snapshots=finance_snapshot_repository,
         advisor_settings=advisor_settings_repository,
+        payments=payment_repository,
         tenant_context=tenant_context,
     )
 
     # --- Fase 3: pagos (ingresos/egresos) ---
-    payment_repository = providers.Factory(
-        SqlAlchemyPaymentRepository, session_factory=db.provided.session
+    # (``payment_repository`` se define más arriba: lo necesita project_order_sales.)
+    # "Liberar mesa" (Autoservicio): cierra una comanda ya paga → libera el plano.
+    close_settled_order = providers.Factory(
+        CloseSettledOrder,
+        orders=order_repository,
+        payments=payment_repository,
+        tenant_context=tenant_context,
+        event_bus=event_bus,
+        sessions=table_session_repository,
     )
     # Outbox de reportes de sales tax (TaxJar AutoFile). Se enqueue en la
     # transición a PAID solo si se cobró tax (>0) → vacío en AR (paridad).
@@ -843,11 +1100,13 @@ class Container(containers.DeclarativeContainer):
         StripeBillingGateway,
         api_key=config.provided.stripe_api_key,
         webhook_secret=config.provided.stripe_webhook_secret,
+        transport=http_pool.provided.transport.call(),
     )
     mercadopago_billing_gateway = providers.Singleton(
         MercadoPagoPreapprovalGateway,
         access_token=config.provided.mp_billing_access_token,
         webhook_secret=config.provided.mp_billing_webhook_secret,
+        transport=http_pool.provided.transport.call(),
     )
     billing_gateway_resolver = providers.Singleton(
         RailBillingGatewayResolver,
@@ -957,6 +1216,7 @@ class Container(containers.DeclarativeContainer):
         MercadoPagoOAuthClient,
         client_id=config.provided.mp_client_id,
         client_secret=config.provided.mp_client_secret,
+        transport=http_pool.provided.transport.call(),
     )
     payment_credentials_resolver = providers.Singleton(
         DbPaymentCredentialsResolver,
@@ -975,6 +1235,7 @@ class Container(containers.DeclarativeContainer):
         notification_url=config.provided.mp_notification_url,
         access_token=config.provided.mp_access_token,
         marketplace_fee=config.provided.mp_marketplace_fee,
+        transport=http_pool.provided.transport.call(),
     )
     start_mp_connection = providers.Factory(
         StartMercadoPagoConnection,
@@ -1020,6 +1281,30 @@ class Container(containers.DeclarativeContainer):
         policy=cash_session_policy,
         fee_rates=payment_fee_rate_repository,
         tax_outbox=tax_report_ledger,
+        sessions=table_session_repository,
+        event_bus=event_bus,
+    )
+    # Cobro del comensal (Carta QR F3): mismo motor que el cajero pero con la
+    # política de caja RELAJADA (cash=None, policy=None) → no exige caja abierta ni
+    # cajero. Proyecta venta/stock/impuesto igual (idempotente en el webhook).
+    register_public_payment = providers.Factory(
+        RegisterPayment,
+        payments=payment_repository,
+        orders=order_repository,
+        gateway=payment_gateway,
+        tenant_context=tenant_context,
+        inventory=consume_recipes_for_order,
+        sales=project_order_sales,
+        fee_rates=payment_fee_rate_repository,
+        tax_outbox=tax_report_ledger,
+        event_bus=event_bus,
+    )
+    auto_assign_waiter = providers.Factory(
+        AutoAssignWaiter,
+        shifts=shift_repository,
+        users=user_repository,
+        sessions=table_session_repository,
+        tenant_context=tenant_context,
     )
     confirm_gateway_payment = providers.Factory(
         ConfirmGatewayPayment,
@@ -1031,6 +1316,12 @@ class Container(containers.DeclarativeContainer):
         inventory=consume_recipes_for_order,
         sales=project_order_sales,
         tax_outbox=tax_report_ledger,
+        send_order=send_order,
+        auto_assign=auto_assign_waiter,
+        event_bus=event_bus,
+        push=push_service,
+        tables=table_repository,
+        sessions=table_session_repository,
     )
     register_expense = providers.Factory(
         RegisterExpense,
@@ -1125,6 +1416,7 @@ class Container(containers.DeclarativeContainer):
         TaxJarCalculator,
         api_token=config.provided.taxjar_api_token,
         sandbox=config.provided.taxjar_sandbox,
+        transport=http_pool.provided.transport.call(),
     )
     tax_calculator_resolver = providers.Singleton(
         EngineTaxCalculatorResolver,
@@ -1149,9 +1441,12 @@ class Container(containers.DeclarativeContainer):
         DbTaxJarReporterResolver,
         credentials=taxjar_credential_repository,
         cipher=token_cipher,
+        transport=http_pool.provided.transport.call(),
     )
     # Verifica el token contra TaxJar antes de guardarlo (que "conectado" no mienta).
-    taxjar_credential_validator = providers.Singleton(TaxJarCredentialValidator)
+    taxjar_credential_validator = providers.Singleton(
+        TaxJarCredentialValidator, transport=http_pool.provided.transport.call()
+    )
     report_pending_tax_sales = providers.Factory(
         ReportPendingTaxSales,
         ledger=tax_report_ledger,
@@ -1161,6 +1456,24 @@ class Container(containers.DeclarativeContainer):
         tenants=tenant_repository,
         tenant_context=tenant_context,
     )
+    # --- outbox (Escalabilidad Fase 4) ---
+    # El drainer usa el sender REAL, no ``push_service``: si tomara ese, con
+    # PUSH_DELIVERY=outbox se encolaría a sí mismo para siempre.
+    drain_outbox = providers.Factory(
+        DrainOutbox,
+        outbox=outbox,
+        tenant_context=tenant_context,
+        notifications=push_sender,
+    )
+    # El drain de tax ya existía y nunca se agendaba: hasta acá esas filas solo se
+    # movían si alguien pegaba a mano en POST /finance/tax/report-pending.
+    drain_all_tenants = providers.Factory(
+        DrainAllTenants,
+        tenants=tenant_repository,
+        drain=drain_outbox,
+        tax_drain=report_pending_tax_sales,
+    )
+
     tax_report_status_read_model = providers.Factory(
         SqlAlchemyTaxReportStatusReadModel, session_factory=db.provided.session
     )
@@ -1220,9 +1533,6 @@ class Container(containers.DeclarativeContainer):
     )
 
     # --- Fase 5: fichaje (shifts) ---
-    shift_repository = providers.Factory(
-        SqlAlchemyShiftRepository, session_factory=db.provided.session
-    )
     clock_in = providers.Factory(
         ClockIn, shifts=shift_repository, tenant_context=tenant_context
     )
@@ -1269,6 +1579,120 @@ class Container(containers.DeclarativeContainer):
         presence=presence_token,
         punch=punch,
         tenant_context=tenant_context,
+    )
+
+    # --- Carta QR (autopedido F1): token firmado de mesa + carta pública ---
+    # Rate limiter en memoria (baranda de abuso de los endpoints públicos). Singleton
+    # → el estado (hits por mesa) vive mientras corre el proceso.
+    # Guard anti-abuso de los endpoints públicos (Carta QR). "memory" cuenta por
+    # proceso: con N réplicas el límite real se multiplica por N sin que se note.
+    public_rate_limiter = providers.Selector(
+        config.provided.rate_limiter_backend,
+        memory=providers.Singleton(InMemoryRateLimiter),
+        redis=providers.Singleton(RedisRateLimiter, redis=redis_pool),
+    )
+    table_qr_token = providers.Singleton(
+        HmacTableQrToken, secret=config.provided.effective_table_qr_secret
+    )
+    issue_table_qr = providers.Factory(
+        IssueTableQr,
+        token=table_qr_token,
+        tables=table_repository,
+        tenant_context=tenant_context,
+        app_base_url=config.provided.app_base_url,
+    )
+    self_order_settings_repository = providers.Factory(
+        SqlAlchemySelfOrderSettingsRepository, session_factory=db.provided.session
+    )
+    self_pay_settings_repository = providers.Factory(
+        SqlAlchemySelfPaySettingsRepository, session_factory=db.provided.session
+    )
+    get_table_bill = providers.Factory(
+        GetTableBill,
+        token=table_qr_token,
+        tenants=tenant_repository,
+        sessions=table_session_repository,
+        orders=order_repository,
+        payments=payment_repository,
+        settings=self_pay_settings_repository,
+        credentials=payment_credential_repository,
+        tenant_context=tenant_context,
+    )
+    pay_table_bill = providers.Factory(
+        PayTableBill,
+        token=table_qr_token,
+        settings=self_pay_settings_repository,
+        sessions=table_session_repository,
+        orders=order_repository,
+        payments=payment_repository,
+        register_payment=register_public_payment,
+        tenant_context=tenant_context,
+        app_base_url=config.provided.app_base_url,
+        rate_limiter=public_rate_limiter,
+    )
+    get_public_payment_status = providers.Factory(
+        GetPublicPaymentStatus,
+        token=table_qr_token,
+        payments=payment_repository,
+        tenant_context=tenant_context,
+    )
+    get_public_payment_receipt = providers.Factory(
+        GetPublicPaymentReceipt,
+        token=table_qr_token,
+        payments=payment_repository,
+        orders=order_repository,
+        tenants=tenant_repository,
+        tenant_context=tenant_context,
+    )
+    get_self_pay_settings = providers.Factory(
+        GetSelfPaySettings,
+        settings=self_pay_settings_repository,
+        tenant_context=tenant_context,
+    )
+    update_self_pay_settings = providers.Factory(
+        UpdateSelfPaySettings,
+        settings=self_pay_settings_repository,
+        tenant_context=tenant_context,
+    )
+    get_public_menu = providers.Factory(
+        GetPublicMenu,
+        token=table_qr_token,
+        products=product_repository,
+        modifiers=modifier_repository,
+        tenants=tenant_repository,
+        settings=self_order_settings_repository,
+        tenant_context=tenant_context,
+    )
+    request_table_attention = providers.Factory(
+        RequestTableAttention,
+        token=table_qr_token,
+        tables=table_repository,
+        event_bus=event_bus,
+        tenant_context=tenant_context,
+        rate_limiter=public_rate_limiter,
+    )
+    get_self_order_settings = providers.Factory(
+        GetSelfOrderSettings,
+        settings=self_order_settings_repository,
+        tenant_context=tenant_context,
+    )
+    update_self_order_settings = providers.Factory(
+        UpdateSelfOrderSettings,
+        settings=self_order_settings_repository,
+        tenant_context=tenant_context,
+    )
+    submit_customer_order = providers.Factory(
+        SubmitCustomerOrder,
+        token=table_qr_token,
+        settings=self_order_settings_repository,
+        products=product_repository,
+        modifiers=modifier_repository,
+        sessions=table_session_repository,
+        create_order=create_order,
+        add_items_batch=add_order_items_batch,
+        tables=table_repository,
+        tenant_context=tenant_context,
+        rate_limiter=public_rate_limiter,
     )
 
     # --- Fase 6: inventario (casos de uso; repos arriba, antes de pagos) ---

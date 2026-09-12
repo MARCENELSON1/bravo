@@ -1,34 +1,14 @@
 import type { IngredientCostPointDTO } from "@/api/types-inventory"
-import type { ProductSaleLineDTO } from "@/api/types-operations"
 
 // Lógica pura de la Ficha del producto (Fase 7). Deriva del dato ya congelado
 // (sale_facts / cost-history), sin recalcular históricos. Testeable sin backend.
+//
+// La serie de costo por día **ya no se arma acá**: la calcula el backend en SQL
+// (`ProductDetailDTO.cost_series`). Se mudó al acotar `lines`, porque derivarla
+// de un listado con tope le habría comido los días más viejos en silencio.
 
 const DAY_MS = 86_400_000
 export const STALE_PURCHASE_DAYS = 60
-
-// Serie de costo del plato por día: el food cost congelado por venta dividido por
-// las unidades, promediado por día. Solo días con ventas (con food cost). Devuelve
-// milésimas de la moneda (centavos), ascendente por día.
-export interface PlateCostPoint {
-  day: string // YYYY-MM-DD
-  unitCost: number
-}
-
-export function costSeriesByDay(lines: ProductSaleLineDTO[]): PlateCostPoint[] {
-  const byDay = new Map<string, { cost: number; qty: number }>()
-  for (const line of lines) {
-    if (line.food_cost_amount == null || line.quantity <= 0) continue
-    const day = line.occurred_at.slice(0, 10)
-    const acc = byDay.get(day) ?? { cost: 0, qty: 0 }
-    acc.cost += line.food_cost_amount
-    acc.qty += line.quantity
-    byDay.set(day, acc)
-  }
-  return [...byDay.entries()]
-    .map(([day, { cost, qty }]) => ({ day, unitCost: Math.round(cost / qty) }))
-    .sort((a, b) => a.day.localeCompare(b.day))
-}
 
 // Alerta de costo de un insumo desde su histórico de compras (ascendente). El
 // cambio % es primera vs última compra; ``stale`` marca que la última compra es

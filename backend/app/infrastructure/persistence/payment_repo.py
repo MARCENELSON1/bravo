@@ -34,6 +34,17 @@ class SqlAlchemyPaymentRepository(PaymentRepository):
             row = (await session.execute(stmt)).scalar_one_or_none()
             return payment_to_domain(row) if row is not None else None
 
+    async def get_by_idempotency_key(
+        self, tenant_id: str, idempotency_key: str
+    ) -> Payment | None:
+        async with self._session_factory() as session:
+            stmt = select(PaymentORM).where(
+                PaymentORM.idempotency_key == idempotency_key,
+                PaymentORM.tenant_id == tenant_id,
+            )
+            row = (await session.execute(stmt)).scalar_one_or_none()
+            return payment_to_domain(row) if row is not None else None
+
     async def list_by_order(self, tenant_id: str, order_id: str) -> list[Payment]:
         async with self._session_factory() as session:
             stmt = (

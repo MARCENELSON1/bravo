@@ -24,6 +24,7 @@ const order = (items: OrderItemDTO[]): OrderDTO => ({
   currency: "ARS",
   items,
   total_amount: 0,
+  source: "WAITER",
   created_at: null,
   customer_id: null,
 })
@@ -98,6 +99,7 @@ describe("receiptHtml", () => {
     currency: "ARS",
     items: [item],
     total_amount: 300000,
+    source: "WAITER",
     created_at: null,
     customer_id: null,
   }

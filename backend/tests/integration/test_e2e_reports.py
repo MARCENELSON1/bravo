@@ -13,7 +13,8 @@ async def test_dashboard_summary(client):
 
     # Empty tenant → all zeros.
     empty = (await http.get("/api/v1/reports/dashboard", headers=h)).json()
-    assert empty["sales"] == 0 and empty["active_orders"] == 0 and empty["paid_orders"] == 0
+    assert empty["sales_collected"] == 0
+    assert empty["active_orders"] == 0 and empty["paid_orders"] == 0
 
     # One order (total 300000) fully paid + one egreso.
     order_id = await _make_order(http, h)
@@ -33,9 +34,9 @@ async def test_dashboard_summary(client):
     )
 
     s = (await http.get("/api/v1/reports/dashboard", headers=h)).json()
-    assert s["sales"] == 300000
+    assert s["sales_collected"] == 300000
     assert s["expenses"] == 50000
-    assert s["net"] == 250000
+    assert s["profit_gross_of_fees"] == 250000
     assert s["paid_orders"] == 1
     assert s["active_orders"] == 0  # the only order is PAID
     assert s["avg_ticket"] == 300000
@@ -49,15 +50,15 @@ async def test_dashboard_summary(client):
     future = (
         await http.get("/api/v1/reports/dashboard?from=2999-01-01T00:00:00Z", headers=h)
     ).json()
-    assert future["sales"] == 0
+    assert future["sales_collected"] == 0
     assert future["expenses"] == 0
-    assert future["net"] == 0
+    assert future["profit_gross_of_fees"] == 0
     assert future["payment_count"] == 0
     # Un 'from' pasado incluye todo (igual que sin filtro).
     past = (
         await http.get("/api/v1/reports/dashboard?from=2000-01-01T00:00:00Z", headers=h)
     ).json()
-    assert past["sales"] == 300000
+    assert past["sales_collected"] == 300000
     assert past["expenses"] == 50000
 
 
@@ -81,6 +82,6 @@ async def test_dashboard_reflects_commission(client):
     )
     assert r.status_code == 201, r.text
     s = (await http.get("/api/v1/reports/dashboard", headers=h)).json()
-    assert s["sales"] == 200000  # bruto (lo que entró)
+    assert s["sales_collected"] == 200000  # bruto (lo que entró)
     assert s["collected_net"] == 194000  # tras 3% → lo que queda
     assert s["fees_total"] == 6000

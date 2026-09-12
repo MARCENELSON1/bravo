@@ -15,6 +15,12 @@ class ProductRepository(ABC):
     async def list(self, tenant_id: str, *, only_active: bool = False) -> list[Product]: ...
 
     @abstractmethod
+    async def list_for_ids(self, tenant_id: str, product_ids: list[str]) -> list[Product]:
+        """Only the products in ``product_ids``, for hot paths that need a lookup
+        of a handful of them (an order's lines) instead of the whole catalog."""
+        ...
+
+    @abstractmethod
     async def add(self, product: Product) -> None: ...
 
     @abstractmethod

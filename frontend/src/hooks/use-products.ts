@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import type { AnalyticsQuery } from "@/api/types-analytics"
-import type { Station } from "@/api/types-operations"
+import type { ModifierGroupInput, Station } from "@/api/types-operations"
 import { useServices } from "@/services/services-context"
 
 export function useProducts() {
@@ -25,6 +25,44 @@ export function useProductPriceHistory(productId: string | null) {
     queryKey: ["products", "price-history", productId],
     queryFn: () => productsApi.priceHistory(productId!),
     enabled: productId != null,
+  })
+}
+
+// --- Carta QR F2 D/E: modificadores ------------------------------------------
+
+/**
+ * Grupos de modificadores de TODOS los productos activos, en un batch.
+ * La comanda los precarga con el catálogo para que los chips salgan al toque.
+ */
+export function useMenuModifiers() {
+  const { productsApi } = useServices()
+  return useQuery({
+    queryKey: ["menu-modifiers"],
+    queryFn: () => productsApi.menuModifiers(),
+    staleTime: 5 * 60_000, // la carta no cambia durante un servicio
+  })
+}
+
+export function useProductModifiers(productId: string | null) {
+  const { productsApi } = useServices()
+  return useQuery({
+    queryKey: ["products", "modifiers", productId],
+    queryFn: () => productsApi.modifiers(productId!),
+    enabled: productId != null,
+  })
+}
+
+export function useSetProductModifiers() {
+  const { productsApi } = useServices()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (vars: { productId: string; groups: ModifierGroupInput[] }) =>
+      productsApi.setModifiers(vars.productId, vars.groups),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["products", "modifiers", vars.productId],
+      })
+    },
   })
 }
 

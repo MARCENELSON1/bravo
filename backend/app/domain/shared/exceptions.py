@@ -16,3 +16,8 @@ class InvalidMoneyAmount(DomainError):
 class CurrencyMismatch(DomainError):
     code = "currency_mismatch"
     message = "No se pueden operar montos en monedas distintas."
+
+
+class RateLimited(DomainError):
+    code = "rate_limited"
+    message = "Demasiados intentos. Esperá unos segundos y probá de nuevo."

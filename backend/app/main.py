@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from functools import partial
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +13,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.container import Container
+from app.infrastructure.outbox.worker import OutboxWorker
 from app.presentation.api.v1 import (
     advisor,
     analytics,
@@ -20,6 +22,7 @@ from app.presentation.api.v1 import (
     cashier,
     copilot,
     customers,
+    devices,
     expenses,
     finance,
     floor,
@@ -35,10 +38,13 @@ from app.presentation.api.v1 import (
     platform,
     products,
     public,
+    public_menu,
     realtime,
     reports,
     reservations,
     sectors,
+    self_order,
+    self_pay,
     tables,
     tax,
     taxjar,
@@ -55,8 +61,27 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        # Corre en cada réplica: los claims son exclusivos (FOR UPDATE SKIP
+        # LOCKED), así que varias instancias drenando es redundancia, no doble
+        # envío. Arranca acá y no en create_app() para que los tests (que montan
+        # la app sin lifespan) no queden con un timer colgado.
+        settings = container.config()
+        worker = OutboxWorker(
+            partial(
+                container.drain_all_tenants().execute, limit=settings.outbox_batch_size
+            ),
+            interval_s=settings.outbox_interval_s,
+        )
+        worker.start()
         yield
+        await worker.stop()
         await container.db().dispose()
+        # Releases the shared outbound connection pool; adapters never close it
+        # themselves, since they share it for the life of the process.
+        await container.http_pool().aclose()
+        # Idem para Redis: el caché, el bus y el rate limiter comparten este
+        # pool, así que se cierra una sola vez y acá.
+        await container.redis_pool().aclose()
 
     app = FastAPI(title="BRAVO API", version="0.1.0", lifespan=lifespan)
     app.state.container = container
@@ -80,6 +105,7 @@ def create_app() -> FastAPI:
     app.include_router(users.router, prefix="/api/v1")
     app.include_router(ping.router, prefix="/api/v1")
     app.include_router(me.router, prefix="/api/v1")
+    app.include_router(devices.router, prefix="/api/v1")
     app.include_router(tables.router, prefix="/api/v1")
     app.include_router(sectors.router, prefix="/api/v1")
     app.include_router(customers.router, prefix="/api/v1")
@@ -107,6 +133,9 @@ def create_app() -> FastAPI:
     app.include_router(copilot.router, prefix="/api/v1")
     app.include_router(leads.router, prefix="/api/v1")
     app.include_router(public.router, prefix="/api/v1")
+    app.include_router(public_menu.router, prefix="/api/v1")
+    app.include_router(self_order.router, prefix="/api/v1")
+    app.include_router(self_pay.router, prefix="/api/v1")
 
     @app.middleware("http")
     async def security_headers(

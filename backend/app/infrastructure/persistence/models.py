@@ -16,8 +16,10 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
+    Text,
     UniqueConstraint,
     Uuid,
     func,
@@ -47,6 +49,28 @@ class TenantORM(Base):
     # diferencia sale honesta). OFF por default (paridad).
     blind_cash_count: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="false"
+    )
+    # Autopedido (Carta QR F2). Deshabilitado por default → la carta es solo lectura
+    # (paridad). requires_confirmation ON = el mozo confirma el pedido del cliente.
+    self_order_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
+    self_order_requires_confirmation: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="true"
+    )
+    # Autoservicio (Carta QR F3, Fase 3): retiene la orden fuera de la cocina hasta
+    # que se paga; el webhook de pago la marcha + auto-asigna. Default false → paridad.
+    self_order_prepay_required: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
+    # Pago desde la mesa (Carta QR F3). Deshabilitado por default → la carta mantiene
+    # "llamar mozo"/"pedir cuenta" (paridad F1/F2). tips_enabled ON = ofrece propina
+    # (el dueño la puede apagar desde la UI).
+    self_pay_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
+    self_pay_tips_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="true"
     )
     # Regional/fiscal spine (Fase 0 internacionalización). Defaults AR → paridad
     # total para los tenants existentes; los resolvers leen estos campos por tenant.
@@ -119,6 +143,25 @@ class RefreshTokenORM(Base):
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class DeviceTokenORM(Base):
+    """Push token for a user's device (Fase 4). Tenant+user scoped; ``token`` unique."""
+
+    __tablename__ = "device_tokens"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    token: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    platform: Mapped[str] = mapped_column(String(10))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -237,6 +280,16 @@ class TableSessionORM(Base):
     Datos operativos/de plata → RLS."""
 
     __tablename__ = "table_sessions"
+    # Parcial sobre las sesiones abiertas: la tabla acumula una fila por visita,
+    # pero el plano solo necesita las que siguen abiertas.
+    __table_args__ = (
+        Index(
+            "ix_table_sessions_tenant_open",
+            "tenant_id",
+            "opened_at",
+            postgresql_where="closed_at IS NULL AND merged_into_id IS NULL",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(
@@ -275,7 +328,15 @@ class ProductORM(Base):
     price_currency: Mapped[str] = mapped_column(String(3))
     category: Mapped[str | None] = mapped_column(String(60), nullable=True)
     station: Mapped[str] = mapped_column(String(10), server_default="KITCHEN")
+    # Tiempo de servicio: IMMEDIATE | STARTER | MAIN | DESSERT (0054).
+    course: Mapped[str] = mapped_column(String(10), server_default="MAIN")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # QR menu enrichment (Carta QR F2). Nullable/defaulted → parity for existing rows.
+    image_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    available_today: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="true"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -305,6 +366,9 @@ class ProductPriceChangeORM(Base):
 
 class OrderORM(Base):
     __tablename__ = "orders"
+    # Comandas activas (plano/KDS): sin el compuesto, el filtro por estado
+    # recorre todo el historial del tenant.
+    __table_args__ = (Index("ix_orders_tenant_status", "tenant_id", "status"),)
 
     id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(
@@ -318,6 +382,8 @@ class OrderORM(Base):
     # CRM: cliente atribuido a la comanda (para el historial de compras). Nullable.
     customer_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True, index=True)
     currency: Mapped[str] = mapped_column(String(3))
+    # Origen de la comanda (Carta QR F2). Default WAITER → paridad.
+    source: Mapped[str] = mapped_column(String(32), server_default="WAITER")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -341,12 +407,54 @@ class OrderItemORM(Base):
     # Per-item kitchen lifecycle + routing (Fase 14): see ItemStatus / Station.
     status: Mapped[str] = mapped_column(String(20), server_default="PENDING", index=True)
     station: Mapped[str] = mapped_column(String(10), server_default="KITCHEN", index=True)
+    # Tiempo de servicio copiado del producto al cargar (0054).
+    course: Mapped[str] = mapped_column(String(10), server_default="MAIN")
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     ready_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     position: Mapped[int] = mapped_column(Integer, default=0)
+    # Modificadores elegidos (Carta QR F2 D). Snapshot JSON [{option_id,name,price_delta}]
+    # — display-only (el delta ya está en unit_price_amount). Nullable → paridad.
+    selected_options: Mapped[list | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+class ProductModifierGroupORM(Base):
+    """A product's modifier group (ej. "Punto de cocción"). Carta QR F2 D. RLS."""
+
+    __tablename__ = "product_modifier_groups"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    product_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("products.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    min_select: Mapped[int] = mapped_column(Integer, server_default="0")
+    max_select: Mapped[int] = mapped_column(Integer, server_default="1")
+    position: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class ProductModifierOptionORM(Base):
+    """One option inside a modifier group (ej. "+Panceta", price_delta 1200)."""
+
+    __tablename__ = "product_modifier_options"
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    group_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False),
+        ForeignKey("product_modifier_groups.id", ondelete="CASCADE"),
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    price_delta: Mapped[int] = mapped_column(BigInteger, server_default="0")
+    position: Mapped[int] = mapped_column(Integer, default=0)
 
 
 # --- Fase 3: pagos (ingresos/egresos, tenant-scoped) -----------------------
@@ -354,6 +462,16 @@ class OrderItemORM(Base):
 
 class PaymentORM(Base):
     __tablename__ = "payments"
+    # Finanzas/Home: filtran por estado confirmado y ordenan por fecha.
+    __table_args__ = (
+        Index(
+            "ix_payments_tenant_status_created",
+            "tenant_id",
+            "status",
+            "created_at",
+            postgresql_ops={"created_at": "DESC"},
+        ),
+    )
 
     id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(
@@ -381,6 +499,9 @@ class PaymentORM(Base):
     counterparty: Mapped[str | None] = mapped_column(String(120), nullable=True)
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)
     external_ref: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    # Idempotency (Carta QR F3): clave del intento de cobro del comensal; un doble-tap
+    # con la misma clave devuelve el pago ya creado. NULL en cobros del cajero (paridad).
+    idempotency_key: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -809,6 +930,10 @@ class SaleFactORM(Base):
     projection on the PAID transition. Tenant-scoped + RLS (datos de plata)."""
 
     __tablename__ = "sale_facts"
+    # Motor de Finanzas en modo live: rango de fechas por tenant.
+    __table_args__ = (
+        Index("ix_sale_facts_tenant_occurred", "tenant_id", "occurred_at"),
+    )
 
     id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(
@@ -830,6 +955,9 @@ class SaleFactORM(Base):
     food_cost_net_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     # Versión de la receta al momento de la venta (Fase 2D); NULL en filas previas.
     recipe_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Cuánto de `unit_price_amount` eran adicionales (+panceta). Default 0 → filas
+    # previas y platos sin opciones se leen como "todo precio de carta" (paridad).
+    options_amount: Mapped[int] = mapped_column(BigInteger, nullable=False, server_default="0")
     currency: Mapped[str] = mapped_column(String(3))
     waiter_id: Mapped[str] = mapped_column(Uuid(as_uuid=False), index=True)
     table_id: Mapped[str | None] = mapped_column(Uuid(as_uuid=False), nullable=True)
@@ -1048,4 +1176,51 @@ class ContactLogORM(Base):
     contacted_by: Mapped[str] = mapped_column(Uuid(as_uuid=False))
     contacted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), index=True
+    )
+
+
+class OutboxTaskORM(Base):
+    """Generic queue of work deferred off the request path (push, sale effects,
+    tax reports). Same database as the business change, so it survives restarts.
+
+    There is no IN_FLIGHT state on purpose: claiming a task pushes ``run_after``
+    forward by a lease instead, which hides the row from other drainers while it
+    runs and — unlike a status flag — releases itself if the process dies
+    mid-task, with no stuck rows to sweep. ``attempts`` is bumped at claim time
+    so a task that crashes the worker still burns a retry and eventually dies
+    instead of looping forever.
+
+    Payloads carry order/user ids and rendered notification text → RLS.
+    """
+
+    __tablename__ = "outbox_tasks"
+    __table_args__ = (
+        # Idempotency: re-enqueuing the same logical work is a no-op, so a retried
+        # request cannot turn into two pushes for the same course.
+        UniqueConstraint(
+            "tenant_id", "kind", "dedup_key", name="uq_outbox_tasks_tenant_kind_dedup"
+        ),
+        # Drives the claim query: due work for one tenant, oldest first.
+        Index("ix_outbox_tasks_due", "tenant_id", "status", "run_after"),
+    )
+
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        Uuid(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(40))
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    # PENDING (due or retrying) | DONE (ran ok) | DEAD (gave up, kept for inspection)
+    status: Mapped[str] = mapped_column(String(20), server_default="PENDING")
+    dedup_key: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    attempts: Mapped[int] = mapped_column(Integer, server_default="0")
+    last_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    run_after: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

@@ -15,7 +15,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Spinner } from "@/components/ui/spinner"
-import { costSeriesByDay, ingredientCostAlert } from "@/features/products/ficha-logic"
+import { ingredientCostAlert } from "@/features/products/ficha-logic"
 import { useProductDetail } from "@/hooks/use-finance"
 import {
   useFoodCost,
@@ -99,8 +99,11 @@ function FichaBody({ product, period }: { product: ProductDTO; period: RangeWind
 
   const row = foodCost.data?.rows.find((r) => r.product_id === product.id)
   const currency = row?.currency ?? product.currency ?? "ARS"
+  // La serie llega ya agregada por día desde el backend. Antes se derivaba acá
+  // de `detail.lines`, que hoy viene acotada: con un plato muy vendido esta
+  // curva habría perdido los días más viejos sin que se notara.
   const series = useMemo(
-    () => costSeriesByDay(detail.data?.lines ?? []),
+    () => (detail.data?.cost_series ?? []).map((p) => ({ day: p.day, unitCost: p.unit_cost })),
     [detail.data]
   )
   const ingById = useMemo(

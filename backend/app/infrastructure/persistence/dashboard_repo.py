@@ -90,13 +90,14 @@ class SqlAlchemyDashboardReadModel(DashboardReadModel):
             sales, expenses, active, paid = int(sales), int(expenses), int(active), int(paid)
             return DashboardSummary(
                 currency=currency,
-                sales=sales,
+                sales_collected=sales,
                 expenses=expenses,
-                net=sales - expenses,
+                profit_gross_of_fees=sales - expenses,
                 active_orders=active,
                 paid_orders=paid,
                 avg_ticket=sales // paid if paid > 0 else 0,
                 payment_count=int(payment_count),
                 collected_net=int(collected_net),
                 fees_total=int(fees_total),
+                profit_net_of_fees=int(collected_net) - expenses,
             )
