@@ -65,6 +65,52 @@ class SettingsTab {
   String title(bool en) => en ? this.en : es;
 }
 
+/// Qué entra al listado de Ajustes, y con qué filas.
+///
+/// Vive acá y no en la pantalla porque es una propiedad del catálogo de
+/// secciones, no de cómo se dibuja: la misma decisión la toman el listado (qué
+/// entradas hay) y cada sección (qué filas quedan). Tenerlo en un solo lugar es
+/// lo que evita que el listado ofrezca una sección que después aparece vacía.
+
+/// Secciones que renderizan un widget funcional además de (o en vez de) filas.
+/// Espejo del `switch` de `ajustes_page._SectionBody`: si se agrega una sección
+/// allá, va acá.
+const _tabsWithSection = <String>{
+  'apariencia',
+  'caja',
+  'salones',
+  'negocio',
+  'equipo',
+  'integraciones',
+};
+
+/// Las secciones funcionales son de OWNER/MANAGER: a un operativo le darían 403,
+/// así que su sección no se le ofrece. Apariencia es de todos.
+bool tabHasSection(String id, {required bool isAdmin}) =>
+    id == 'apariencia' || (isAdmin && _tabsWithSection.contains(id));
+
+/// Las filas que se dibujan de una sección: las reales (ver [SettingRow.isReal]).
+///
+/// Hubo acá una segunda regla —una lista de filas "que la sección funcional ya
+/// cubre"— y se sacó porque no filtraba nada: las cinco filas que nombraba
+/// (Apertura de caja obligatoria, Arqueo ciego, Sectores, Dirección, Mercado
+/// Pago) no tienen `dyn` ni `open`, así que `isReal` ya las dejaba afuera. Peor
+/// todavía, el día que alguien le diera pantalla a una de ellas, esa lista la
+/// habría escondido justo cuando pasaba a ser real. Si en algún momento una fila
+/// y su sección terminan editando lo mismo, la fila sobra: se borra del catálogo.
+List<SettingRow> visibleRows(SettingsTab tab) => [
+  for (final r in tab.rows)
+    if (r.isReal) r,
+];
+
+/// Las entradas del listado: una sección aparece solo si tiene algo adentro.
+List<SettingsTab> visibleSettingsTabs({required bool isAdmin}) => [
+  for (final t in settingsTabs)
+    if (tabHasSection(t.id, isAdmin: isAdmin) ||
+        visibleRows(t).isNotEmpty)
+      t,
+];
+
 String settingsActionLabel(String action, bool en) => switch (action) {
   'change' => en ? 'Change' : 'Cambiar',
   'edit' => en ? 'Edit' : 'Editar',

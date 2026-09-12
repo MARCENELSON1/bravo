@@ -13,34 +13,21 @@ import 'negocio_settings_section.dart';
 import 'salones_settings_section.dart';
 import 'settings_sections.dart';
 
-/// Filas placeholder que se ocultan porque la sección ya las renderiza como
-/// controles reales (para no mostrarlas dos veces).
-/// Tabs que renderizan un widget real (no filas) — deben sobrevivir el filtro
-/// aunque todas sus filas sean de relleno. Espejo de los `if (tab.id == ...)` del
-/// build; si se agrega una sección allá, va acá.
-const _tabsWithSection = <String>{
-  'apariencia',
-  'caja',
-  'salones',
-  'negocio',
-  'equipo',
-  'integraciones',
-};
+/// Ajustes — **listado de secciones**, no una tira de pestañas.
+///
+/// Espejo de la estructura que el web adoptó en `72d8698`: trece pestañas no
+/// entraban en ninguna pantalla y había que arrastrar de costado para descubrir
+/// que existían Equipo o Integraciones. Un teléfono es peor todavía para eso.
+/// Ahora es una entrada por sección y la salida es siempre un paso.
+///
+/// La diferencia con el web es la mecánica, no la estructura: allá el listado y
+/// la sección se cruzan con un deslizamiento propio; acá se empuja una pantalla,
+/// que es el gesto que el sistema ya trae —con su deslizamiento desde el borde
+/// para volver— y que nadie tiene que aprender.
+///
+/// Una sección entra al listado solo si tiene contenido real: ver
+/// [SettingRow.isReal] y el porqué en `settings_sections.dart`.
 
-bool _hasSection(String id, bool isAdmin) =>
-    id == 'apariencia' || (isAdmin && _tabsWithSection.contains(id));
-
-const _functionalRows = <String, Set<String>>{
-  'caja': {'Apertura de caja obligatoria', 'Arqueo ciego'},
-  'salones': {'Sectores'},
-  'negocio': {'Dirección'},
-  'integraciones': {'Mercado Pago'},
-};
-
-/// Ajustes (Fase 6) — portado 1:1 de la config del web: 13 tabs. Apariencia es
-/// funcional (tema + reducir movimiento); las demás secciones se irán volviendo
-/// reales por tanda (caja, salones, integraciones, equipo, negocio, IA). El
-/// resto de las filas son "Próximamente", igual que en la web.
 class AjustesPage extends ConsumerWidget {
   const AjustesPage({super.key});
 
@@ -48,37 +35,33 @@ class AjustesPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = context.s;
     final en = Localizations.localeOf(context).languageCode == 'en';
-    // Una tab entra si tiene una sección real o al menos una fila real. Sin esto,
-    // filtrar las filas de relleno dejaba tabs vacías — que se ven tan rotas como
-    // el "Próximamente" que vinimos a sacar. Se enciende sola cuando su contenido
-    // se vuelve real, así que no hay una lista que mantener a mano.
     final st = ref.watch(sessionProvider);
-    final isAdmin = (st is SessionAuthenticated
-        ? st.session.role.isAdmin
-        : false);
-    final tabs = [
-      for (final t in settingsTabs)
-        if (_hasSection(t.id, isAdmin) || t.rows.any((r) => r.isReal)) t,
-    ];
-    return DefaultTabController(
-      length: tabs.length,
-      child: Scaffold(
+    final session = st is SessionAuthenticated ? st.session : null;
+    final isAdmin = session?.role.isAdmin ?? false;
+
+    final tabs = visibleSettingsTabs(isAdmin: isAdmin);
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: Text(s.ajustesTitle),
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: Text(s.ajustesTitle),
-          backgroundColor: Colors.transparent,
-          bottom: TabBar(
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            tabs: [for (final t in tabs) Tab(text: t.title(en))],
-          ),
-        ),
-        body: Stack(
+      ),
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
           children: [
-            SafeArea(
-              top: false,
-              child: TabBarView(
-                children: [for (final t in tabs) _TabView(tab: t)],
+            GlassPanel(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Material(
+                type: MaterialType.transparency,
+                child: Column(
+                  children: [
+                    for (final t in tabs)
+                      _SectionEntry(tab: t, en: en, isAdmin: isAdmin),
+                  ],
+                ),
               ),
             ),
           ],
@@ -88,61 +71,90 @@ class AjustesPage extends ConsumerWidget {
   }
 }
 
-class _TabView extends ConsumerWidget {
-  const _TabView({required this.tab});
+/// Una entrada del listado. Sin línea divisoria, igual que el web: el alto de la
+/// fila y el espacio alcanzan para separarlas.
+class _SectionEntry extends StatelessWidget {
+  const _SectionEntry({
+    required this.tab,
+    required this.en,
+    required this.isAdmin,
+  });
+
   final SettingsTab tab;
+  final bool en;
+  final bool isAdmin;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ListTile(
+      title: Text(tab.title(en)),
+      trailing: Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => _SectionPage(tab: tab, isAdmin: isAdmin),
+        ),
+      ),
+    );
+  }
+}
+
+/// Una sección, en su propia pantalla. El título es el de la sección y el único
+/// control de salida es el de volver — "de una sección al listado, del listado
+/// afuera", como en el web.
+class _SectionPage extends ConsumerWidget {
+  const _SectionPage({required this.tab, required this.isAdmin});
+
+  final SettingsTab tab;
+  final bool isAdmin;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final en = Localizations.localeOf(context).languageCode == 'en';
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: Text(tab.title(en)),
+        backgroundColor: Colors.transparent,
+      ),
+      body: SafeArea(
+        top: false,
+        child: _SectionBody(tab: tab, isAdmin: isAdmin),
+      ),
+    );
+  }
+}
+
+class _SectionBody extends ConsumerWidget {
+  const _SectionBody({required this.tab, required this.isAdmin});
+
+  final SettingsTab tab;
+  final bool isAdmin;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = context.s;
     final en = Localizations.localeOf(context).languageCode == 'en';
-    final sessionState = ref.watch(sessionProvider);
-    final session = sessionState is SessionAuthenticated
-        ? sessionState.session
-        : null;
-    // Las secciones funcionales (caja/salones/negocio/equipo/integraciones) son
-    // OWNER/MANAGER — a los operativos les daría 403. Para ellos la tab no
-    // aparece: antes quedaba visible y vacía.
-    final isAdmin = session?.role.isAdmin ?? false;
+    final st = ref.watch(sessionProvider);
+    final session = st is SessionAuthenticated ? st.session : null;
+    final rows = visibleRows(tab);
 
-    // Solo sobrevive la fila que lee estado real o abre algo que existe. Antes se
-    // renderizaban las 83 y las que no tenían backend mostraban "Próximamente" o
-    // un valor inventado; `hidden` tapaba apenas 5. Ver `settings_sections.dart`.
-    final hidden = isAdmin
-        ? (_functionalRows[tab.id] ?? const <String>{})
-        : const <String>{};
-    final rows = [
-      for (final r in tab.rows)
-        if (r.isReal && !hidden.contains(r.es)) r,
-    ];
+    // Las secciones funcionales son OWNER/MANAGER: a un operativo le darían 403,
+    // así que su sección directamente no aparece en el listado.
+    final section = switch (tab.id) {
+      'apariencia' => _Appearance(),
+      'caja' when isAdmin => const CajaSettingsSection(),
+      'salones' when isAdmin => const SalonesSettingsSection(),
+      'negocio' when isAdmin => const NegocioSettingsSection(),
+      'equipo' when isAdmin => const EquipoSettingsSection(),
+      'integraciones' when isAdmin => const IntegracionesSettingsSection(),
+      _ => null,
+    };
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        if (tab.id == 'apariencia') ...[
-          _appearance(context, ref, s),
-          const SizedBox(height: 16),
-        ],
-        if (tab.id == 'caja' && isAdmin) ...[
-          const CajaSettingsSection(),
-          const SizedBox(height: 16),
-        ],
-        if (tab.id == 'salones' && isAdmin) ...[
-          const SalonesSettingsSection(),
-          const SizedBox(height: 16),
-        ],
-        if (tab.id == 'negocio' && isAdmin) ...[
-          const NegocioSettingsSection(),
-          const SizedBox(height: 16),
-        ],
-        if (tab.id == 'equipo' && isAdmin) ...[
-          const EquipoSettingsSection(),
-          const SizedBox(height: 16),
-        ],
-        if (tab.id == 'integraciones' && isAdmin) ...[
-          const IntegracionesSettingsSection(),
-          const SizedBox(height: 16),
-        ],
+        if (section != null) ...[section, const SizedBox(height: 16)],
         if (rows.isNotEmpty)
           GlassPanel(
             padding: const EdgeInsets.symmetric(vertical: 4),
@@ -150,10 +162,8 @@ class _TabView extends ConsumerWidget {
               type: MaterialType.transparency,
               child: Column(
                 children: [
-                  for (var i = 0; i < rows.length; i++) ...[
-                    if (i > 0) const Divider(height: 1),
-                    _row(context, s, en, rows[i], session),
-                  ],
+                  for (final r in rows)
+                    _Row(row: r, en: en, session: session, s: s),
                 ],
               ),
             ),
@@ -161,71 +171,82 @@ class _TabView extends ConsumerWidget {
       ],
     );
   }
+}
 
-  Widget _appearance(BuildContext context, WidgetRef ref, Strings s) {
+class _Appearance extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = context.s;
     final mode = ref.watch(themeModeProvider);
     final reduceMotion = ref.watch(reduceMotionProvider);
+    // El `Material` va adentro del panel a propósito: `GlassPanel` pinta un
+    // fondo, y `ListTile` dibuja su realce sobre el `Material` más cercano —
+    // si ese Material queda por encima del fondo, el toque no se ve.
     return GlassPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(s.theme, style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 8),
-          SegmentedButton<ThemeMode>(
-            segments: [
-              ButtonSegment(value: ThemeMode.light, label: Text(s.themeLight)),
-              ButtonSegment(value: ThemeMode.dark, label: Text(s.themeDark)),
-              ButtonSegment(
-                value: ThemeMode.system,
-                label: Text(s.themeSystem),
-              ),
-            ],
-            selected: {mode},
-            onSelectionChanged: (sel) =>
-                ref.read(themeModeProvider.notifier).set(sel.first),
-          ),
-          const Divider(height: 24),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            value: reduceMotion,
-            onChanged: (v) => ref.read(reduceMotionProvider.notifier).set(v),
-            title: Text(s.reduceMotion),
-            subtitle: Text(s.reduceMotionDesc),
-          ),
-        ],
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(s.theme, style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            SegmentedButton<ThemeMode>(
+              segments: [
+                ButtonSegment(
+                  value: ThemeMode.light,
+                  label: Text(s.themeLight),
+                ),
+                ButtonSegment(value: ThemeMode.dark, label: Text(s.themeDark)),
+                ButtonSegment(
+                  value: ThemeMode.system,
+                  label: Text(s.themeSystem),
+                ),
+              ],
+              selected: {mode},
+              onSelectionChanged: (sel) =>
+                  ref.read(themeModeProvider.notifier).set(sel.first),
+            ),
+            const Divider(height: 24),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: reduceMotion,
+              onChanged: (v) => ref.read(reduceMotionProvider.notifier).set(v),
+              title: Text(s.reduceMotion),
+              subtitle: Text(s.reduceMotionDesc),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _row(
-    BuildContext context,
-    Strings s,
-    bool en,
-    SettingRow r,
-    Session? session,
-  ) {
+/// Una fila: nombre a la izquierda, valor a la derecha. Sin línea divisoria y
+/// sin botón "Editar" — el web lo sacó porque estaba deshabilitado en todas y
+/// prometía una acción que no existía; acá el filtro de [SettingRow.isReal] ya
+/// dejó afuera esas filas, así que la que queda o muestra un dato cierto o abre
+/// una pantalla, y en ese caso la fila ENTERA es lo que se toca.
+class _Row extends StatelessWidget {
+  const _Row({
+    required this.row,
+    required this.en,
+    required this.session,
+    required this.s,
+  });
+
+  final SettingRow row;
+  final bool en;
+  final Session? session;
+  final Strings s;
+
+  @override
+  Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final value = _dyn(r.dyn, session) ?? r.value(en);
-
-    Widget? trailing;
-    if (r.toggle) {
-      trailing = const Switch(value: false, onChanged: null); // deshabilitado
-    } else if (value != null) {
-      trailing = Text(value, style: TextStyle(color: scheme.onSurfaceVariant));
-    } else if (r.open != null) {
-      trailing = TextButton(
-        onPressed: () =>
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => r.open!())),
-        style: TextButton.styleFrom(
-          foregroundColor: r.danger ? scheme.error : scheme.primary,
-        ),
-        child: Text(settingsActionLabel(r.action ?? 'view', en)),
-      );
-    }
+    final value = _dyn(row.dyn, session) ?? row.value(en);
+    final opens = row.open != null;
 
     return ListTile(
-      leading: r.dyn == 'avatar'
+      leading: row.dyn == 'avatar'
           ? CircleAvatar(
               backgroundColor: scheme.primary,
               child: Text(
@@ -238,11 +259,23 @@ class _TabView extends ConsumerWidget {
             )
           : null,
       title: Text(
-        r.label(en),
-        style: r.danger ? TextStyle(color: scheme.error) : null,
+        row.label(en),
+        style: row.danger ? TextStyle(color: scheme.error) : null,
       ),
-      subtitle: r.desc(en) == null ? null : Text(r.desc(en)!),
-      trailing: trailing,
+      subtitle: row.desc(en) == null ? null : Text(row.desc(en)!),
+      trailing: value != null
+          ? Text(value, style: TextStyle(color: scheme.onSurfaceVariant))
+          : opens
+          ? Icon(
+              Icons.chevron_right,
+              color: row.danger ? scheme.error : scheme.onSurfaceVariant,
+            )
+          : null,
+      onTap: opens
+          ? () =>
+                Navigator.of(context)
+                    .push(MaterialPageRoute(builder: (_) => row.open!()))
+          : null,
     );
   }
 
